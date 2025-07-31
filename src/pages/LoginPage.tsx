@@ -100,9 +100,9 @@ export const LoginPage = () => {
 
                 <div className="absolute w-[416px] h-[21px] top-[476px] left-[421px]">
                     <div className="absolute w-52 h-[21px] top-0 left-52">
-                        <button className="absolute w-[105px] top-1 left-[51px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black text-sm text-center tracking-[0] leading-[21px] bg-transparent border-none cursor-pointer hover:text-gray-600 whitespace-nowrap">
+                        <Link to="/find-password" className="absolute w-[105px] top-1 left-[51px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black text-sm text-center tracking-[0] leading-[21px] bg-transparent border-none cursor-pointer hover:text-gray-600 whitespace-nowrap">
                             비밀번호 찾기
-                        </button>
+                        </Link>
                     </div>
 
                     <div className="absolute w-52 h-[21px] top-0 left-0">
