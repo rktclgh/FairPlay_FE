@@ -6,7 +6,7 @@ import {
     FaHeart
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
-import { TopNav } from "./TopNav";
+import { TopNav } from "../components/TopNav";
 import { eventApi } from "../services/api";
 import type { Event, HotPick, HeroPoster } from "../services/api";
 
