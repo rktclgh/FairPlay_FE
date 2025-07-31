@@ -18,7 +18,7 @@ function App() {
           <Route path="/find-password" element={<FindPassword />} />
         </Routes>
       </Router>
-      {/* ToastContainer는 무조건 최상단에, 한 번만 */}
+
       <ToastContainer position="top-center" autoClose={1800} />
     </>
   )
