@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { TopNav } from "../components/TopNav";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { RiKakaoTalkFill } from "react-icons/ri";
+import { Link } from "react-router-dom";
 
 export const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -40,11 +41,13 @@ export const LoginPage = () => {
                     </div>
                 </div>
 
-                <img
-                    className="w-[80px] h-[75px] top-[100px] left-[588px] absolute object-cover"
-                    alt="Fplogo"
-                    src="/images/FPlogo.png"
-                />
+                <div className="absolute top-[100px] left-[588px] flex items-center justify-center">
+                    <img
+                        className="w-[80px] h-[75px] object-contain"
+                        alt="FairPlay Logo"
+                        src="/images/FPlogo.png"
+                    />
+                </div>
 
 
 
@@ -97,16 +100,16 @@ export const LoginPage = () => {
 
                 <div className="absolute w-[416px] h-[21px] top-[476px] left-[421px]">
                     <div className="absolute w-52 h-[21px] top-0 left-52">
-                        <button className="absolute w-[105px] top-0 left-[51px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black text-sm tracking-[0] leading-[21px] bg-transparent border-none cursor-pointer hover:text-gray-600 whitespace-nowrap">
+                        <button className="absolute w-[105px] top-1 left-[51px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black text-sm text-center tracking-[0] leading-[21px] bg-transparent border-none cursor-pointer hover:text-gray-600 whitespace-nowrap">
                             비밀번호 찾기
                         </button>
                     </div>
 
                     <div className="absolute w-52 h-[21px] top-0 left-0">
                         <div className="relative w-[206px] h-[21px] border-r [border-right-style:solid] border-gray-300">
-                            <button className="absolute w-[67px] -top-px left-[69px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black text-sm text-center tracking-[0] leading-[21px] bg-transparent border-none cursor-pointer hover:text-gray-600 whitespace-nowrap">
+                            <Link to="/signup" className="absolute w-[67px] top-1 left-[69px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black text-sm text-center tracking-[0] leading-[21px] bg-transparent border-none cursor-pointer hover:text-gray-600 whitespace-nowrap">
                                 회원가입
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>
