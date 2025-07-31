@@ -87,7 +87,15 @@ export const Main: React.FC = () => {
                 {/* 메인 히어로 이미지 - 전체 화면 */}
                 <div className="absolute inset-0">
                     <img
-                        src={heroPosters[activeHeroIndex]?.horizontalImage || "/images/gd1.png"}
+                        src={
+                            activeHeroIndex === 0 ? "/images/gd1.png" :
+                                activeHeroIndex === 1 ? "/images/YE3.png" :
+                                    activeHeroIndex === 2 ? "/images/NoImage.png" :
+                                        activeHeroIndex === 3 ? "/images/NoImage.png" :
+                                            activeHeroIndex === 4 ? "/images/NoImage.png" :
+                                                activeHeroIndex === 5 ? "/images/NoImage.png" :
+                                                    heroPosters[activeHeroIndex]?.horizontalImage || "/images/gd1.png"
+                        }
                         alt="Hero Image"
                         className="w-full h-full object-cover"
                         onError={(e) => {
@@ -114,19 +122,19 @@ export const Main: React.FC = () => {
                         />
                     </div>
 
-                    {/* 두 번째 포스터 - YE1 이미지, 호버 시 YE1 */}
+                    {/* 두 번째 포스터 - YE3 이미지, 호버 시 YE3 */}
                     <div
                         className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 1 ? 'opacity-100' : 'opacity-60'}`}
                         onMouseEnter={() => {
-                            setActiveHeroIndex(2);
+                            setActiveHeroIndex(1);
                             setHoveredIndex(1);
                         }}
                         onMouseLeave={handleHeroLeave}
                     >
                         <img
                             className={`w-full h-full object-cover rounded-[10px] shadow-lg ${hoveredIndex === 1 ? 'ring-2 ring-white' : ''}`}
-                            alt="YE1 Poster"
-                            src="/images/YE1.png"
+                            alt="YE3 Poster"
+                            src="/images/YE3.png"
                         />
                     </div>
 
