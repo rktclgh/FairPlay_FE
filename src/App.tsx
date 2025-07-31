@@ -6,7 +6,7 @@ import { FindPassword } from './pages/FindPassword'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import './App.css'
-
+{/* ToastContainer는 무조건 최상단에, 한 번만 */}
 function App() {
   return (
     <>
@@ -16,6 +16,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/find-password" element={<FindPassword />} />
+            {/* ToastContainer는 무조건 최상단에, 한 번만 */}
         </Routes>
       </Router>
       {/* ToastContainer는 무조건 최상단에, 한 번만 */}
