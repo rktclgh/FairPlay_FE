@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TopNav } from "../components/TopNav";
+import { TopNav } from "../../components/TopNav";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { RiKakaoTalkFill } from "react-icons/ri";
 
