@@ -8,17 +8,18 @@ import {
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
 import { eventApi } from "../services/api";
-import type { Event, HotPick, HeroPoster } from "../services/api";
+import type { Event, HotPick } from "../services/api";
 import { Link } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, EffectFade } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/effect-fade";
 
 export const Main: React.FC = () => {
 
     const [events, setEvents] = useState<Event[]>([]);
-    const [heroPosters, setHeroPosters] = useState<HeroPoster[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
     const [loading, setLoading] = useState(true);
-    const [activeHeroIndex, setActiveHeroIndex] = useState(0);
-    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
     const [selectedRegion, setSelectedRegion] = useState<string>("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
@@ -36,19 +37,12 @@ export const Main: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const [eventsData, heroPostersData] = await Promise.all([
-                    eventApi.getEvents(),
-                    eventApi.getHeroPosters()
-                ]);
+                const eventsData = await eventApi.getEvents();
                 setEvents(eventsData);
-                setHeroPosters(heroPostersData);
 
                 // TODO: 백엔드 연결 후 Hot Picks 데이터 로드
                 // const hotPicksData = await eventApi.getHotPicks();
                 // setHotPicks(hotPicksData);
-
-                // 첫 번째 포스터를 기본으로 설정
-                setActiveHeroIndex(0);
             } catch (error) {
                 console.error('데이터 로드 실패:', error);
             } finally {
@@ -70,41 +64,7 @@ export const Main: React.FC = () => {
         }
     };
 
-    // 자동 슬라이드 효과
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (hoveredIndex === null) {
-                handleAutoSlide((activeHeroIndex + 1) % 6); // 6개 이미지 순환
-            }
-        }, 4000); // 4초마다 자동 전환
 
-        return () => clearInterval(interval);
-    }, [hoveredIndex, activeHeroIndex]);
-
-    // 마우스가 벗어날 때 - 현재 활성화된 이미지 유지
-    const handleHeroLeave = () => {
-        setHoveredIndex(null);
-    };
-
-    // 히어로 이미지 전환 함수 (자동 슬라이드용)
-    const handleAutoSlide = (index: number) => {
-        setActiveHeroIndex(index);
-    };
-
-    // 히어로 이미지 전환 함수 (마우스 오버용 - 페이드인 효과)
-    const handleHeroChange = (index: number) => {
-        setActiveHeroIndex(index);
-        setHoveredIndex(index);
-
-        // 마우스 오버 시에만 페이드인 효과 적용
-        const heroImage = document.querySelector('.hero-image') as HTMLElement;
-        if (heroImage) {
-            heroImage.style.opacity = '0.3';
-            setTimeout(() => {
-                heroImage.style.opacity = '1';
-            }, 100);
-        }
-    };
 
     // Hot Picks 슬라이드 함수들
     const handleHotPicksPrev = () => {
@@ -219,113 +179,183 @@ export const Main: React.FC = () => {
 
             {/* 히어로 섹션 */}
             <div className="relative w-full h-[600px] bg-gray-100">
-                {/* 메인 히어로 이미지 - 전체 화면 */}
-                <div className="absolute inset-0">
-                    <img
-                        src={
-                            activeHeroIndex === 0 ? "/images/gd1.png" :
-                                activeHeroIndex === 1 ? "/images/YE3.png" :
-                                    activeHeroIndex === 2 ? "/images/NoImage.png" :
-                                        activeHeroIndex === 3 ? "/images/NoImage.png" :
-                                            activeHeroIndex === 4 ? "/images/NoImage.png" :
-                                                activeHeroIndex === 5 ? "/images/NoImage.png" :
-                                                    heroPosters[activeHeroIndex]?.horizontalImage || "/images/gd1.png"
-                        }
-                        alt="Hero Image"
-                        className="w-full h-full object-cover transition-opacity duration-200 ease-in-out hero-image"
-                        style={{
-                            opacity: hoveredIndex !== null ? 1 : 1,
-                        }}
-                        onError={(e) => {
-                            console.log('히어로 이미지 로드 실패:', e);
-                        }}
-                    />
-                </div>
+                <Swiper
+                    modules={[Autoplay, EffectFade]}
+                    effect="fade"
+                    autoplay={{ delay: 4000 }}
+                    loop={true}
+                    className="w-full h-full"
+                    onSwiper={(swiper) => {
+                        // Swiper 인스턴스를 저장
+                        (window as any).heroSwiper = swiper;
+                    }}
+                >
+                    <SwiperSlide>
+                        <img
+                            src="/images/gd1.png"
+                            alt="G-DRAGON 1"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                console.log('히어로 이미지 로드 실패:', e);
+                            }}
+                        />
+                    </SwiperSlide>
+                    <SwiperSlide>
+                        <img
+                            src="/images/YE3.png"
+                            alt="YE3"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                console.log('히어로 이미지 로드 실패:', e);
+                            }}
+                        />
+                    </SwiperSlide>
+                    <SwiperSlide>
+                        <img
+                            src="/images/malone1.jpg"
+                            alt="Malone"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                console.log('히어로 이미지 로드 실패:', e);
+                            }}
+                        />
+                    </SwiperSlide>
+                    <SwiperSlide>
+                        <img
+                            src="/images/NoImage.png"
+                            alt="Event 4"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                console.log('히어로 이미지 로드 실패:', e);
+                            }}
+                        />
+                    </SwiperSlide>
+                    <SwiperSlide>
+                        <img
+                            src="/images/NoImage.png"
+                            alt="Event 5"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                console.log('히어로 이미지 로드 실패:', e);
+                            }}
+                        />
+                    </SwiperSlide>
+                    <SwiperSlide>
+                        <img
+                            src="/images/NoImage.png"
+                            alt="Event 6"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                console.log('히어로 이미지 로드 실패:', e);
+                            }}
+                        />
+                    </SwiperSlide>
+                </Swiper>
 
-
-
-                {/* 하단 작은 포스터들 (세로형) - 더 많은 포스터들 */}
-                <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8">
-                    {/* 첫 번째 포스터 - gd2 이미지, 호버 시 gd1 */}
+                {/* 하단 작은 포스터들 */}
+                <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
+                    {/* 첫 번째 포스터 */}
                     <div
-                        className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 0 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => handleHeroChange(0)}
-                        onMouseLeave={handleHeroLeave}
+                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                        onMouseEnter={() => {
+                            const swiper = (window as any).heroSwiper;
+                            if (swiper) {
+                                swiper.slideTo(0);
+                            }
+                        }}
                     >
                         <img
-                            className={`w-full h-full object-cover rounded-[10px] shadow-lg ${hoveredIndex === 0 ? 'ring-2 ring-white' : ''}`}
+                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
                             alt="G-DRAGON Poster 1"
                             src="/images/gd2.png"
                         />
                     </div>
 
-                    {/* 두 번째 포스터 - YE3 이미지, 호버 시 YE3 */}
+                    {/* 두 번째 포스터 */}
                     <div
-                        className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 1 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => handleHeroChange(1)}
-                        onMouseLeave={handleHeroLeave}
+                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                        onMouseEnter={() => {
+                            const swiper = (window as any).heroSwiper;
+                            if (swiper) {
+                                swiper.slideTo(1);
+                            }
+                        }}
                     >
                         <img
-                            className={`w-full h-full object-cover rounded-[10px] shadow-lg ${hoveredIndex === 1 ? 'ring-2 ring-white' : ''}`}
+                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
                             alt="YE3 Poster"
                             src="/images/YE3.png"
                         />
                     </div>
 
-                    {/* 세 번째 포스터 - NoImage, 호버 시 NoImage */}
+                    {/* 세 번째 포스터 */}
                     <div
-                        className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 2 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => handleHeroChange(2)}
-                        onMouseLeave={handleHeroLeave}
+                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                        onMouseEnter={() => {
+                            const swiper = (window as any).heroSwiper;
+                            if (swiper) {
+                                swiper.slideTo(2);
+                            }
+                        }}
                     >
                         <img
-                            className={`w-full h-full object-cover rounded-[10px] shadow-lg ${hoveredIndex === 2 ? 'ring-2 ring-white' : ''}`}
-                            alt="NoImage Poster 1"
-                            src="/images/NoImage.png"
+                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
+                            alt="Malone Poster"
+                            src="/images/malone.jpg"
                         />
                     </div>
 
-                    {/* 네 번째 포스터 - NoImage, 호버 시 NoImage */}
+                    {/* 네 번째 포스터 */}
                     <div
-                        className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 3 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => handleHeroChange(3)}
-                        onMouseLeave={handleHeroLeave}
+                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                        onMouseEnter={() => {
+                            const swiper = (window as any).heroSwiper;
+                            if (swiper) {
+                                swiper.slideTo(3);
+                            }
+                        }}
                     >
                         <img
-                            className={`w-full h-full object-cover rounded-[10px] shadow-lg ${hoveredIndex === 3 ? 'ring-2 ring-white' : ''}`}
+                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
                             alt="NoImage Poster 2"
                             src="/images/NoImage.png"
                         />
                     </div>
 
-                    {/* 다섯 번째 포스터 - NoImage, 호버 시 NoImage */}
+                    {/* 다섯 번째 포스터 */}
                     <div
-                        className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 4 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => handleHeroChange(4)}
-                        onMouseLeave={handleHeroLeave}
+                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                        onMouseEnter={() => {
+                            const swiper = (window as any).heroSwiper;
+                            if (swiper) {
+                                swiper.slideTo(4);
+                            }
+                        }}
                     >
                         <img
-                            className={`w-full h-full object-cover rounded-[10px] shadow-lg ${hoveredIndex === 4 ? 'ring-2 ring-white' : ''}`}
+                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
                             alt="NoImage Poster 3"
                             src="/images/NoImage.png"
                         />
                     </div>
 
-                    {/* 여섯 번째 포스터 - NoImage, 호버 시 NoImage */}
+                    {/* 여섯 번째 포스터 */}
                     <div
-                        className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 5 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => handleHeroChange(5)}
-                        onMouseLeave={handleHeroLeave}
+                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                        onMouseEnter={() => {
+                            const swiper = (window as any).heroSwiper;
+                            if (swiper) {
+                                swiper.slideTo(5);
+                            }
+                        }}
                     >
                         <img
-                            className={`w-full h-full object-cover rounded-[10px] shadow-lg ${hoveredIndex === 5 ? 'ring-2 ring-white' : ''}`}
+                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
                             alt="NoImage Poster 4"
                             src="/images/NoImage.png"
                         />
                     </div>
                 </div>
-
-
             </div>
 
             {/* Hot Picks 섹션 */}

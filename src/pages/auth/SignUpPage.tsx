@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaCheck, FaTimes } from "react-icons/fa";
 import { RiKakaoTalkFill } from "react-icons/ri";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
@@ -21,7 +21,37 @@ export const SignUpPage = () => {
     const [nicknameChecked, setNicknameChecked] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
     const [verified, setVerified] = useState(false);
+    const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+    const [nicknameVerificationSent, setNicknameVerificationSent] = useState(false);
+    const [emailTimer, setEmailTimer] = useState(0);
+    const [emailVerificationTimer, setEmailVerificationTimer] = useState(0);
+    const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null);
     const navigate = useNavigate();
+
+    // 비밀번호 일치 확인
+    useEffect(() => {
+        if (confirmPassword.length > 0) {
+            setPasswordMatch(password === confirmPassword);
+        } else {
+            setPasswordMatch(null);
+        }
+    }, [password, confirmPassword]);
+
+    // 이메일 인증 타이머
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (emailVerificationTimer > 0) {
+            interval = setInterval(() => {
+                setEmailVerificationTimer((prev) => {
+                    if (prev <= 1) {
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [emailVerificationTimer]);
 
     const handleCheckEmail = async () => {
         if (!email) {
@@ -36,6 +66,7 @@ export const SignUpPage = () => {
             } else {
                 toast.success("사용 가능한 이메일입니다.");
                 setEmailChecked(true);
+                setEmailVerificationSent(true);
             }
         } catch (error) {
             setEmailChecked(false);
@@ -55,6 +86,7 @@ export const SignUpPage = () => {
             } else {
                 toast.success("사용 가능한 닉네임입니다.");
                 setNicknameChecked(true);
+                setNicknameVerificationSent(true);
             }
         } catch (error) {
             setNicknameChecked(false);
@@ -66,6 +98,7 @@ export const SignUpPage = () => {
             await api.post("/api/email/send-verification", { email });
             toast.info("인증번호가 발송되었습니다.");
             setVerificationSent(true);
+            setEmailVerificationTimer(30);
         } catch (error) {
             // handled by interceptor
         }
@@ -73,12 +106,12 @@ export const SignUpPage = () => {
 
     const handleVerifyCode = async () => {
         if (!verificationCode) {
-            toast.warn("인증번호를 입력해주세요.");
+            toast.warn("인증번호를 입력하세요");
             return;
         }
         try {
             await api.post("/api/email/verify-code", { email, code: verificationCode });
-            toast.success("이메일 인증이 완료되었습니다.");
+            toast.success("인증 성공!");
             setVerified(true);
         } catch (error) {
             // handled by interceptor
@@ -99,7 +132,7 @@ export const SignUpPage = () => {
                 phone,
                 roleCodeId: 4 // 일반 사용자
             });
-            toast.success("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.");
+            toast.success("회원가입 완료!");
             navigate("/login");
         } catch (error) {
             // handled by interceptor
@@ -163,45 +196,68 @@ export const SignUpPage = () => {
                         } as React.CSSProperties}
                     />
                 </div>
-                <button onClick={handleCheckNickname} className="absolute w-[60px] h-7 top-[345px] left-[768px] rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center">
+                <button
+                    onClick={handleCheckNickname}
+                    disabled={nicknameChecked}
+                    className={`absolute w-[60px] h-7 top-[345px] left-[768px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${nicknameChecked
+                        ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                        : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
+                        }`}
+                >
                     <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
                         중복 확인
                     </div>
                 </button>
 
-                {/* 이메일 입력 */}
-                <div className="inline-flex items-center gap-[3px] absolute top-[410px] left-[428px]">
-                    <div className="relative w-fit mt-[-1.00px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap">
-                        이메일 주소
-                    </div>
-                </div>
-
-                <div className="absolute w-[400px] h-[52px] top-[440px] left-[428px] border-b [border-bottom-style:solid] border-gray-300">
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="이메일을 입력하세요"
-                        className="absolute w-[350px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                        style={{
-                            WebkitBoxShadow: '0 0 0 1000px white inset'
-                        } as React.CSSProperties}
-                    />
-                </div>
-
-                <button onClick={handleCheckEmail} className="absolute w-[60px] h-7 top-[450px] left-[768px] rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center">
-                    <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                        중복 확인
-                    </div>
-                </button>
-
-                {emailChecked && (
+                {/* 닉네임 중복확인 후 이메일 주소 섹션 */}
+                {nicknameChecked && (
                     <>
-                        <button onClick={handleSendVerification} className="absolute w-[100px] h-7 top-[450px] left-[838px] rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center">
+                        <div className="inline-flex items-center gap-[3px] absolute top-[410px] left-[428px]">
+                            <div className="relative w-fit mt-[-1.00px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap">
+                                이메일 주소
+                            </div>
+                        </div>
+
+                        <div className="absolute w-[400px] h-[52px] top-[440px] left-[428px] border-b [border-bottom-style:solid] border-gray-300">
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="이메일을 입력하세요"
+                                className="absolute w-[350px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
+                                style={{
+                                    WebkitBoxShadow: '0 0 0 1000px white inset'
+                                } as React.CSSProperties}
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleCheckEmail}
+                            disabled={emailChecked}
+                            className={`absolute w-[60px] h-7 top-[450px] left-[768px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${emailChecked
+                                ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
+                                }`}
+                        >
                             <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                인증번호 발송
+                                중복 확인
                             </div>
                         </button>
+
+                        {emailChecked && (
+                            <button
+                                onClick={handleSendVerification}
+                                disabled={emailVerificationTimer > 0}
+                                className={`absolute w-[100px] h-7 top-[450px] left-[838px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${emailVerificationTimer > 0
+                                    ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                    : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
+                                    }`}
+                            >
+                                <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
+                                    {emailVerificationTimer > 0 ? `${emailVerificationTimer}초` : '인증번호 발송'}
+                                </div>
+                            </button>
+                        )}
                     </>
                 )}
 
@@ -226,9 +282,12 @@ export const SignUpPage = () => {
                                 } as React.CSSProperties}
                             />
                         </div>
-                        <button onClick={handleVerifyCode} className="absolute w-[60px] h-7 top-[555px] left-[768px] rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center">
+                        <button
+                            onClick={handleVerifyCode}
+                            className="absolute w-[60px] h-7 top-[555px] left-[768px] rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center"
+                        >
                             <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                인증
+                                인증 확인
                             </div>
                         </button>
                     </>
@@ -300,6 +359,24 @@ export const SignUpPage = () => {
                     </button>
                 </div>
 
+                {/* 비밀번호 일치 상태 표시 */}
+                {passwordMatch !== null && (
+                    <div className={`absolute top-[821px] left-[428px] flex items-center gap-2 ${passwordMatch ? 'text-green-600' : 'text-red-500'
+                        }`}>
+                        {passwordMatch ? (
+                            <>
+                                <FaCheck size={14} />
+                                <span className="text-sm">비밀번호가 일치합니다</span>
+                            </>
+                        ) : (
+                            <>
+                                <FaTimes size={14} />
+                                <span className="text-sm">비밀번호가 일치하지 않습니다</span>
+                            </>
+                        )}
+                    </div>
+                )}
+
                 {/* 휴대폰 번호 입력 */}
                 <div className="absolute top-[854px] left-[428px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap">
                     휴대폰 번호
@@ -318,7 +395,7 @@ export const SignUpPage = () => {
                     />
                 </div>
 
-                {/* 회원가입 완료 버튼 */}
+                {/* 회원가입 버튼 */}
                 <button
                     onClick={handleSignUp}
                     disabled={!isSignUpEnabled}
@@ -329,7 +406,7 @@ export const SignUpPage = () => {
                     style={{ borderRadius: '8px' }}
                 >
                     <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-                        회원가입 완료
+                        회원가입
                     </div>
                 </button>
 
