@@ -38,6 +38,20 @@ export const LoginPage = () => {
         }
     };
 
+    const handleKakaoLogin = () => {
+        const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
+        const KAKAO_REDIRECT_URI = import.meta.env.VITE_KAKAO_REDIRECT_URI;
+
+        if (!KAKAO_CLIENT_ID || !KAKAO_REDIRECT_URI) {
+            toast.error("카카오 로그인 설정이 클라이언트에 구성되지 않았습니다.");
+            console.error("VITE_KAKAO_CLIENT_ID or VITE_KAKAO_REDIRECT_URI is not set in .env file");
+            return;
+        }
+
+        const kakaoURL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
+        window.location.href = kakaoURL;
+    };
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white overflow-hidden w-[1256px] h-[1128px] relative">
@@ -121,7 +135,7 @@ export const LoginPage = () => {
                     </div>
                 </button>
 
-                <button className="absolute w-[411px] h-12 top-[526px] left-[422px] bg-[#fee500] rounded-lg flex items-center justify-center cursor-pointer hover:bg-yellow-400 transition-colors focus:outline-none focus:ring-1 focus:ring-gray-300" style={{ borderRadius: '8px' }}>
+                <button onClick={handleKakaoLogin} className="absolute w-[411px] h-12 top-[526px] left-[422px] bg-[#fee500] rounded-lg flex items-center justify-center cursor-pointer hover:bg-yellow-400 transition-colors focus:outline-none focus:ring-1 focus:ring-gray-300" style={{ borderRadius: '8px' }}>
                     <div className="flex items-center space-x-2">
                         <RiKakaoTalkFill size={20} color="#000000" />
                         <span className="text-black font-semibold text-base">카카오 로그인</span>
