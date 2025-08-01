@@ -44,13 +44,13 @@ export const LoginPage = () => {
                 <TopNav className="!absolute !left-0 !-top-0.5" />
                 {/* ... (하단 고정 footer, UI 동일하게 생략) ... */}
 
-                <div className="absolute top-[100px] left-[588px] flex items-center justify-center">
+                <Link to="/" className="absolute top-[100px] left-[588px] flex items-center justify-center">
                     <img
                         className="w-[80px] h-[75px] object-contain"
                         alt="FairPlay Logo"
                         src="/images/FPlogo.png"
                     />
-                </div>
+                </Link>
 
                 <div className="absolute w-[50px] top-[200px] left-[422px] text-[#2d3748] text-sm">
                     이메일

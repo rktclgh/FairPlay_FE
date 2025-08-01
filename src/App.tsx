@@ -8,9 +8,10 @@ import EventOverview from "./pages/EventOverview";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { SignUpPage } from "./pages/auth/SignUpPage";
 import { FindPassword } from "./pages/auth/FindPassword";
-import { ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import './App.css'
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './toast.css'; // 커스텀 CSS 추가
+
 function App() {
   return (
     <BrowserRouter>
@@ -24,7 +25,18 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/find-password" element={<FindPassword />} />
       </Routes>
-      <ToastContainer position="bottom-right" autoClose={1800} theme="dark" />
+      <ToastContainer 
+        position="bottom-right" 
+        autoClose={2500} 
+        hideProgressBar={false} 
+        newestOnTop={false} 
+        closeOnClick 
+        rtl={false} 
+        pauseOnFocusLoss 
+        draggable 
+        pauseOnHover 
+        theme="dark" 
+      />
     </BrowserRouter>
   );
 }
