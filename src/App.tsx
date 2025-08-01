@@ -24,7 +24,7 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/find-password" element={<FindPassword />} />
       </Routes>
-      <ToastContainer position="top-center" autoClose={1800} />
+      <ToastContainer position="bottom-right" autoClose={1800} theme="dark" />
     </BrowserRouter>
   );
 }
