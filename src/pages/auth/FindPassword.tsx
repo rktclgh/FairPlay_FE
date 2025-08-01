@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TopNav } from "../components/TopNav";
+import { TopNav } from "../../components/TopNav";
 
 export const FindPassword = () => {
     const [email, setEmail] = useState("");

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt } from 'react-icons/hi';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 interface TopNavProps {
     className?: string;
@@ -9,6 +9,7 @@ interface TopNavProps {
 export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const [activeMenu, setActiveMenu] = useState<string>('HOME');
     const location = useLocation();
+    const navigate = useNavigate();
     const isHomePage = location.pathname === '/';
 
     // 현재 경로에 따라 activeMenu 상태를 업데이트
@@ -106,7 +107,10 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     </nav>
                     <div className="flex items-center space-x-8">
                         <HiOutlineSearch className="w-6 h-6 text-black cursor-pointer hover:text-gray-600" />
-                        <HiOutlineUser className="w-6 h-6 text-black cursor-pointer hover:text-gray-600" />
+                        <HiOutlineUser
+                            className="w-6 h-6 text-black cursor-pointer hover:text-gray-600"
+                            onClick={() => navigate('/mypage/info')}
+                        />
                         <HiOutlineGlobeAlt className="w-6 h-6 text-black cursor-pointer hover:text-gray-600" />
                     </div>
                 </div>
