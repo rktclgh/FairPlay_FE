@@ -1,17 +1,15 @@
 import {
     Calendar,
     ChevronDown,
-    Globe,
     Heart,
-    Search,
-    User,
 } from "lucide-react";
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
 
 export default function EventOverview() {
     const [selectedCategory, setSelectedCategory] = React.useState("all");
+    const navigate = useNavigate();
 
     // Event data for mapping
     const categories = [
@@ -206,7 +204,7 @@ export default function EventOverview() {
                     {/* Event Grid */}
                     <div className="grid grid-cols-5 gap-6 mt-10 px-6">
                         {filteredEvents.map((event) => (
-                            <div key={event.id} className="relative">
+                            <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
                                 <div className="relative">
                                     <img
                                         className="w-full h-64 object-cover rounded-[10px]"
