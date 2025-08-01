@@ -13,6 +13,7 @@ export interface HotPick {
   id: number;
   title: string;
   date: string;
+  location: string;
   category: string;
   image: string;
 }
@@ -24,6 +25,18 @@ export interface HeroPoster {
   verticalImage: string;
 }
 
+// 사용자 정보 타입
+export interface UserInfo {
+  email: string;
+  name: string;
+  phoneNumber: string;
+}
+
+export interface PasswordChangeRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
 // API 서비스
 class EventApi {
   // 임시 데이터 (실제 API 연동 시 교체)
@@ -32,48 +45,53 @@ class EventApi {
       id: 1,
       title: "G-DRAGON 2025 WORLD TOUR",
       date: "2025.05.10",
+      location: "올림픽공원",
       category: "공연",
       image: "/images/gd2.png",
     },
     {
       id: 2,
-      title: "G-DRAGON 2025 WORLD TOUR",
-      date: "2025.05.25",
+      title: "BTS 월드투어 서울",
+      date: "2025-08-28 ~ 2025-08-30",
+      location: "올림픽공원",
       category: "공연",
-      image: "/images/gd2.png",
+      image: "/images/NoImage.png",
     },
     {
       id: 3,
-      title: "YE1 Concert",
+      title: "YE LIVE IN KOREA",
       date: "2025.06.15",
+      location: "인천문학경기장",
       category: "공연",
       image: "/images/YE1.png",
     },
     {
       id: 4,
-      title: "YE2 Concert",
-      date: "2025.07.20",
-      category: "공연",
-      image: "/images/YE2.png",
+      title: "AI 기술 컨퍼런스",
+      date: "2025-09-10",
+      location: "삼성동 코엑스",
+      category: "강연/세미나",
+      image: "/images/NoImage.png",
     },
     {
       id: 5,
-      title: "G-DRAGON 2025 WORLD TOUR",
-      date: "2025.08.15",
-      category: "공연",
-      image: "/images/gd1.png",
+      title: "서울 라이트 페스티벌",
+      date: "2025-09-20 ~ 2025-09-25",
+      location: "남산타워",
+      category: "축제",
+      image: "/images/NoImage.png",
     },
   ];
 
   private mockEvents: Event[] = [
     {
       id: 1,
-      title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
-      date: "2025.05.10",
-      location: "TOKYO DOME",
-      price: "₩150,000",
-      category: "공연",
-      image: "/images/gd1.png",
+      title: "2025 AI & 로봇 박람회",
+      date: "2025-08-15 ~ 2025-08-17",
+      location: "코엑스 A홀",
+      price: "15,000원 ~",
+      category: "박람회",
+      image: "/images/NoImage.png",
     },
     {
       id: 2,
@@ -86,30 +104,30 @@ class EventApi {
     },
     {
       id: 3,
-      title: "YE1 Concert",
+      title: "YE LIVE IN KOREA",
       date: "2025.06.15",
-      location: "SEOUL OLYMPIC STADIUM",
+      location: "인천문학경기장",
       price: "₩120,000",
       category: "공연",
       image: "/images/YE1.png",
     },
     {
       id: 4,
-      title: "YE2 Concert",
-      date: "2025.07.20",
-      location: "BUSAN ASIAD STADIUM",
-      price: "₩100,000",
-      category: "공연",
-      image: "/images/YE2.png",
+      title: "현대미술 특별전",
+      date: "2025-09-05 ~ 2025-09-30",
+      location: "국립현대미술관",
+      price: "12,000원 ~",
+      category: "전시/행사",
+      image: "/images/NoImage.png",
     },
     {
       id: 5,
-      title: "G-DRAGON 2025 WORLD TOUR",
-      date: "2025.08.15",
-      location: "SEOUL WORLD CUP STADIUM",
-      price: "₩180,000",
-      category: "공연",
-      image: "/images/gd1.png",
+      title: "서울 국제 도서전",
+      date: "2025-08-22 ~ 2025-08-25",
+      location: "코엑스 B홀",
+      price: "무료",
+      category: "박람회",
+      image: "/images/NoImage.png",
     },
   ];
 
@@ -128,7 +146,7 @@ class EventApi {
     },
     {
       id: 3,
-      title: "YE1 Concert",
+      title: "YE LIVE IN KOREA",
       horizontalImage: "/images/YE1.png",
       verticalImage: "/images/YE1.png",
     },
@@ -157,6 +175,13 @@ class EventApi {
       verticalImage: "/images/NoImage.png",
     },
   ];
+
+  // 사용자 정보 관련 mock 데이터
+  private mockUserInfo: UserInfo = {
+    email: "testuser@naver.com",
+    name: "문정환",
+    phoneNumber: "010-5555-1255",
+  };
 
   async getHotPicks(): Promise<HotPick[]> {
     // 실제 API 호출 시 여기에 fetch 로직 추가
@@ -188,6 +213,30 @@ class EventApi {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(this.mockHeroPosters);
+      }, 500);
+    });
+  }
+
+  // 사용자 정보 조회
+  async getUserInfo(): Promise<UserInfo> {
+    // 실제 API 호출 시 여기에 fetch 로직 추가
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(this.mockUserInfo);
+      }, 300);
+    });
+  }
+
+  // 비밀번호 변경
+  async changePassword(request: PasswordChangeRequest): Promise<boolean> {
+    // 실제 API 호출 시 여기에 fetch 로직 추가
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // 실제로는 서버에서 검증하지만, 여기서는 mock으로 처리
+        const isValidOldPassword = request.oldPassword === "mypassword123"; // 실제로는 서버에서 검증
+        const isValidNewPassword = request.newPassword.length >= 8;
+
+        resolve(isValidOldPassword && isValidNewPassword);
       }, 500);
     });
   }

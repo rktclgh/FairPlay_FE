@@ -9,15 +9,17 @@ import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
 import { eventApi } from "../services/api";
 import type { Event, HotPick, HeroPoster } from "../services/api";
+import { Link } from "react-router-dom";
 
 export const Main: React.FC = () => {
-    const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
+
     const [events, setEvents] = useState<Event[]>([]);
     const [heroPosters, setHeroPosters] = useState<HeroPoster[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
     const [loading, setLoading] = useState(true);
     const [activeHeroIndex, setActiveHeroIndex] = useState(0);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
     const [selectedRegion, setSelectedRegion] = useState<string>("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
     const [selectedDateRange, setSelectedDateRange] = useState<string>("2025년 7월 ~ 8월");
@@ -26,6 +28,7 @@ export const Main: React.FC = () => {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
+    const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
 
 
     // 데이터 로드
@@ -33,15 +36,17 @@ export const Main: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const [hotPicksData, eventsData, heroPostersData] = await Promise.all([
-                    eventApi.getHotPicks(),
+                const [eventsData, heroPostersData] = await Promise.all([
                     eventApi.getEvents(),
                     eventApi.getHeroPosters()
                 ]);
-
-                setHotPicks(hotPicksData);
                 setEvents(eventsData);
                 setHeroPosters(heroPostersData);
+
+                // TODO: 백엔드 연결 후 Hot Picks 데이터 로드
+                // const hotPicksData = await eventApi.getHotPicks();
+                // setHotPicks(hotPicksData);
+
                 // 첫 번째 포스터를 기본으로 설정
                 setActiveHeroIndex(0);
             } catch (error) {
@@ -65,10 +70,140 @@ export const Main: React.FC = () => {
         }
     };
 
+    // 자동 슬라이드 효과
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (hoveredIndex === null) {
+                handleAutoSlide((activeHeroIndex + 1) % 6); // 6개 이미지 순환
+            }
+        }, 4000); // 4초마다 자동 전환
+
+        return () => clearInterval(interval);
+    }, [hoveredIndex, activeHeroIndex]);
+
     // 마우스가 벗어날 때 - 현재 활성화된 이미지 유지
     const handleHeroLeave = () => {
         setHoveredIndex(null);
     };
+
+    // 히어로 이미지 전환 함수 (자동 슬라이드용)
+    const handleAutoSlide = (index: number) => {
+        setActiveHeroIndex(index);
+    };
+
+    // 히어로 이미지 전환 함수 (마우스 오버용 - 페이드인 효과)
+    const handleHeroChange = (index: number) => {
+        setActiveHeroIndex(index);
+        setHoveredIndex(index);
+
+        // 마우스 오버 시에만 페이드인 효과 적용
+        const heroImage = document.querySelector('.hero-image') as HTMLElement;
+        if (heroImage) {
+            heroImage.style.opacity = '0.3';
+            setTimeout(() => {
+                heroImage.style.opacity = '1';
+            }, 100);
+        }
+    };
+
+    // Hot Picks 슬라이드 함수들
+    const handleHotPicksPrev = () => {
+        setHotPicksSlideIndex(prev => Math.max(0, prev - 1));
+    };
+
+    const handleHotPicksNext = () => {
+        setHotPicksSlideIndex(prev => Math.min(5, prev + 1)); // 최대 5 (10개 이벤트, 5개씩 표시)
+    };
+
+    // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
+    const [hotPicks, setHotPicks] = useState<HotPick[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
+
+    // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
+    const tempHotPicks: HotPick[] = [
+        {
+            id: 1,
+            title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
+            date: "2025.05.25",
+            location: "KYOCERA DOME OSAKA",
+            category: "공연",
+            image: "/images/gd2.png",
+        },
+        {
+            id: 2,
+            title: "YE LIVE IN KOREA",
+            date: "2025.06.15",
+            location: "인천문학경기장",
+            category: "공연",
+            image: "/images/YE1.png",
+        },
+        {
+            id: 3,
+            title: "2025 AI & 로봇 박람회",
+            date: "2025-08-15 ~ 2025-08-17",
+            location: "코엑스 A홀",
+            category: "박람회",
+            image: "/images/NoImage.png",
+        },
+        {
+            id: 4,
+            title: "현대미술 특별전",
+            date: "2025-09-05 ~ 2025-09-30",
+            location: "국립현대미술관",
+            category: "전시/행사",
+            image: "/images/NoImage.png",
+        },
+        {
+            id: 5,
+            title: "서울 국제 도서전",
+            date: "2025-08-22 ~ 2025-08-25",
+            location: "코엑스 B홀",
+            category: "박람회",
+            image: "/images/NoImage.png",
+        },
+        {
+            id: 6,
+            title: "블랙핑크 월드투어",
+            date: "2025-09-01 ~ 2025-09-03",
+            location: "고척스카이돔",
+            category: "공연",
+            image: "/images/NoImage.png",
+        },
+        {
+            id: 7,
+            title: "스타트업 투자 세미나",
+            date: "2025-08-15",
+            location: "강남구 컨벤션센터",
+            category: "강연/세미나",
+            image: "/images/NoImage.png",
+        },
+        {
+            id: 8,
+            title: "디자인 페어 서울",
+            date: "2025-09-10 ~ 2025-09-15",
+            location: "예술의전당",
+            category: "전시/행사",
+            image: "/images/NoImage.png",
+        },
+        {
+            id: 9,
+            title: "서울 국제 영화제",
+            date: "2025-09-05 ~ 2025-09-15",
+            location: "여의도 한강공원",
+            category: "축제",
+            image: "/images/NoImage.png",
+        },
+        {
+            id: 10,
+            title: "서울 라이트 페스티벌",
+            date: "2025-09-20 ~ 2025-09-25",
+            location: "남산타워",
+            category: "축제",
+            image: "/images/NoImage.png",
+        },
+    ];
+
+    // Hot Picks 데이터 (백엔드 연결 후 hotPicks로 교체)
+    const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
 
     if (loading) {
         return (
@@ -97,22 +232,24 @@ export const Main: React.FC = () => {
                                                     heroPosters[activeHeroIndex]?.horizontalImage || "/images/gd1.png"
                         }
                         alt="Hero Image"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-opacity duration-200 ease-in-out hero-image"
+                        style={{
+                            opacity: hoveredIndex !== null ? 1 : 1,
+                        }}
                         onError={(e) => {
                             console.log('히어로 이미지 로드 실패:', e);
                         }}
                     />
                 </div>
 
+
+
                 {/* 하단 작은 포스터들 (세로형) - 더 많은 포스터들 */}
                 <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8">
                     {/* 첫 번째 포스터 - gd2 이미지, 호버 시 gd1 */}
                     <div
                         className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 0 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => {
-                            setActiveHeroIndex(0);
-                            setHoveredIndex(0);
-                        }}
+                        onMouseEnter={() => handleHeroChange(0)}
                         onMouseLeave={handleHeroLeave}
                     >
                         <img
@@ -125,10 +262,7 @@ export const Main: React.FC = () => {
                     {/* 두 번째 포스터 - YE3 이미지, 호버 시 YE3 */}
                     <div
                         className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 1 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => {
-                            setActiveHeroIndex(1);
-                            setHoveredIndex(1);
-                        }}
+                        onMouseEnter={() => handleHeroChange(1)}
                         onMouseLeave={handleHeroLeave}
                     >
                         <img
@@ -141,10 +275,7 @@ export const Main: React.FC = () => {
                     {/* 세 번째 포스터 - NoImage, 호버 시 NoImage */}
                     <div
                         className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 2 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => {
-                            setActiveHeroIndex(3);
-                            setHoveredIndex(2);
-                        }}
+                        onMouseEnter={() => handleHeroChange(2)}
                         onMouseLeave={handleHeroLeave}
                     >
                         <img
@@ -157,10 +288,7 @@ export const Main: React.FC = () => {
                     {/* 네 번째 포스터 - NoImage, 호버 시 NoImage */}
                     <div
                         className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 3 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => {
-                            setActiveHeroIndex(4);
-                            setHoveredIndex(3);
-                        }}
+                        onMouseEnter={() => handleHeroChange(3)}
                         onMouseLeave={handleHeroLeave}
                     >
                         <img
@@ -173,10 +301,7 @@ export const Main: React.FC = () => {
                     {/* 다섯 번째 포스터 - NoImage, 호버 시 NoImage */}
                     <div
                         className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 4 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => {
-                            setActiveHeroIndex(5);
-                            setHoveredIndex(4);
-                        }}
+                        onMouseEnter={() => handleHeroChange(4)}
                         onMouseLeave={handleHeroLeave}
                     >
                         <img
@@ -189,10 +314,7 @@ export const Main: React.FC = () => {
                     {/* 여섯 번째 포스터 - NoImage, 호버 시 NoImage */}
                     <div
                         className={`w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 ${hoveredIndex === 5 ? 'opacity-100' : 'opacity-60'}`}
-                        onMouseEnter={() => {
-                            setActiveHeroIndex(6);
-                            setHoveredIndex(5);
-                        }}
+                        onMouseEnter={() => handleHeroChange(5)}
                         onMouseLeave={handleHeroLeave}
                     >
                         <img
@@ -202,6 +324,8 @@ export const Main: React.FC = () => {
                         />
                     </div>
                 </div>
+
+
             </div>
 
             {/* Hot Picks 섹션 */}
@@ -210,36 +334,48 @@ export const Main: React.FC = () => {
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-3xl font-bold text-black">Hot Picks</h2>
                         <div className="flex space-x-2">
-                            <button className="w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center">
+                            <button
+                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={handleHotPicksPrev}
+                                disabled={hotPicksSlideIndex === 0}
+                            >
                                 <FaChevronLeft className="w-5 h-5 text-gray-600" />
                             </button>
-                            <button className="w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center">
+                            <button
+                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={handleHotPicksNext}
+                                disabled={hotPicksSlideIndex === 5}
+                            >
                                 <FaChevronRight className="w-5 h-5 text-gray-600" />
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-5 gap-6">
-                        {hotPicks.map((item, index) => (
-                            <div key={item.id} className="relative">
-                                <img
-                                    className="w-full h-64 object-cover rounded-[10px]"
-                                    alt={`Hot Pick ${index + 1}`}
-                                    src={item.image}
-                                />
-                                <div className="mt-4 text-left">
-                                    <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                        {item.category}
-                                    </span>
-                                    <h3 className="font-bold text-xl text-black mb-2 truncate">{item.title}</h3>
-                                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                                        <span>{item.date}</span>
-                                        <span className="mx-2">•</span>
-                                        <span>올림픽공원</span>
+                    <div className="overflow-hidden">
+                        <div
+                            className="flex gap-6 transition-transform duration-500 ease-in-out"
+                            style={{ transform: `translateX(-${hotPicksSlideIndex * 20}%)` }}
+                        >
+                            {allHotPicks.map((item, index) => (
+                                <div key={item.id} className="relative flex-shrink-0" style={{ width: 'calc(20% - 24px)' }}>
+                                    <img
+                                        className="w-full h-64 object-cover rounded-[10px]"
+                                        alt={`Hot Pick ${index + 1}`}
+                                        src={item.image}
+                                    />
+                                    <div className="mt-4 text-left">
+                                        <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                            {item.category}
+                                        </span>
+                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{item.title}</h3>
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            <div className="font-bold">{item.location}</div>
+                                            <div>{item.date}</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -428,10 +564,9 @@ export const Main: React.FC = () => {
                                         {event.category}
                                     </span>
                                     <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                                        <span>{event.date}</span>
-                                        <span className="mx-2">•</span>
-                                        <span>올림픽공원</span>
+                                    <div className="text-sm text-gray-600 mb-2">
+                                        <div className="font-bold">올림픽공원</div>
+                                        <div>{event.date}</div>
                                     </div>
                                     <p className="font-bold text-lg text-[#ff6b35]">{event.price}</p>
                                 </div>
@@ -441,9 +576,11 @@ export const Main: React.FC = () => {
 
                     {/* 전체보기 버튼 */}
                     <div className="text-center mt-12">
-                        <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
-                            전체보기
-                        </button>
+                        <Link to="/eventoverview">
+                            <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
+                                전체보기
+                            </button>
+                        </Link>
                     </div>
                 </div>
             </div>

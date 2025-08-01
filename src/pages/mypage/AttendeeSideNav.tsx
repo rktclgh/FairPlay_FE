@@ -1,11 +1,13 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface AttendeeSideNavProps {
     className?: string;
 }
 
 export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = "" }) => {
+    const location = useLocation();
+
     return (
         <div className={`w-[240px] h-[800px] bg-white ${className}`}>
             <div className="p-6">
@@ -28,12 +30,61 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                         <div className="space-y-1">
                             <Link
                                 to="/mypage/info"
-                                className="block text-black hover:text-gray-600 transition-colors cursor-pointer [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base tracking-[0] whitespace-nowrap"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/info"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/info" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/info" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/info" ? "black" : "#00000080";
+                                }}
                             >
                                 내 정보 조회
                             </Link>
-                            <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] whitespace-nowrap">환불계좌정보</div>
-                            <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] whitespace-nowrap">관심</div>
+                            <Link
+                                to="/mypage/account"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/account"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/account" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/account" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/account" ? "black" : "#00000080";
+                                }}
+                            >
+                                환불계좌정보
+                            </Link>
+                            <Link
+                                to="/mypage/favorites"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/favorites"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/favorites" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/favorites" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/favorites" ? "black" : "#00000080";
+                                }}
+                            >
+                                관심
+                            </Link>
                             <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] whitespace-nowrap">관람평</div>
                         </div>
                     </div>
