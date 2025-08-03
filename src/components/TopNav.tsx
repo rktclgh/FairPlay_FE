@@ -8,6 +8,7 @@ interface TopNavProps {
 
 export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const [activeMenu, setActiveMenu] = useState<string>('HOME');
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false); // 로그인 상태 관리
     const location = useLocation();
     const navigate = useNavigate();
     const isHomePage = location.pathname === '/';
@@ -23,27 +24,47 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
             setActiveMenu('');
         }
     }, [isHomePage, location.pathname]);
+
+    // 로그인/로그아웃 처리 함수
+    const handleAuthClick = (e: React.MouseEvent) => {
+        if (isLoggedIn) {
+            // 로그아웃 처리
+            e.preventDefault();
+            setIsLoggedIn(false);
+            // 여기에 실제 로그아웃 로직 추가
+        }
+        // 로그인 상태가 아닐 때는 기본 링크 동작 (로그인 페이지로 이동)
+    };
+
     return (
-        <div className={`bg-white w-full flex flex-col ${className}`} style={{ margin: 0, padding: 0, position: 'sticky', top: 0, zIndex: 1000 }}>
+         <div className={`bg-white w-full flex flex-col ${className}`} style={{ margin: 0, padding: 0, position: 'sticky', top: 0, zIndex: 1000 }}>
             {/* 상단 유틸리티 링크들 */}
             <div className="flex justify-end items-center px-6 py-1 space-x-4">
                 <a href="#" className="text-xs text-gray-500 hover:text-black">고객센터</a>
                 <a href="#" className="text-xs text-gray-500 hover:text-black">알림</a>
-                <Link to="/login" className="text-xs text-gray-500 hover:text-black">로그인</Link>
+                <Link 
+                    to={isLoggedIn ? "#" : "/login"} 
+                    className="text-xs text-gray-500 hover:text-black"
+                    onClick={handleAuthClick}
+                >
+                    {isLoggedIn ? '로그아웃' : '로그인'}
+                </Link>
             </div>
 
             {/* 메인 네비게이션 */}
             <div className="flex items-center justify-between px-6 py-3">
                 {/* 로고 */}
                 <div className="flex items-center">
-                    <img
-                        src="/images/FPlogo.png"
-                        alt="FairPlay Logo"
-                        className="h-12 w-auto"
-                        onError={(e) => {
-                            console.log('로고 이미지 로드 실패:', e);
-                        }}
-                    />
+                    <Link to="/" onClick={() => setActiveMenu('HOME')}>
+                        <img
+                            src="/images/FPlogo.png"
+                            alt="FairPlay Logo"
+                            className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                            onError={(e) => {
+                                console.log('로고 이미지 로드 실패:', e);
+                            }}
+                        />
+                    </Link>
                 </div>
 
                 {/* 메뉴와 아이콘들을 오른쪽에 함께 배치 */}
