@@ -57,7 +57,9 @@ export const SignUpPage = () => {
     const [nicknameVerificationSent, setNicknameVerificationSent] = useState(false);
     const [emailTimer, setEmailTimer] = useState(0);
     const [emailVerificationTimer, setEmailVerificationTimer] = useState(0);
+    const [isSendingVerification, setIsSendingVerification] = useState(false);
     const [passwordMatch, setPasswordMatch] = useState(null);
+    const [emailValid, setEmailValid] = useState(null);
 
     const navigate = useNavigate();
 
@@ -70,15 +72,36 @@ export const SignUpPage = () => {
         }
     }, [password, confirmPassword]);
 
+    // 이메일 유효성 검사
+    useEffect(() => {
+        if (email.length > 0) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            setEmailValid(emailRegex.test(email));
+        } else {
+            setEmailValid(null);
+        }
+    }, [email]);
+
     // 이메일 인증 타이머
     useEffect(() => {
-        let interval;
+        let interval: NodeJS.Timeout | null = null;
+
         if (emailVerificationTimer > 0) {
             interval = setInterval(() => {
-                setEmailVerificationTimer((prev) => (prev <= 1 ? 0 : prev - 1));
+                setEmailVerificationTimer((prev) => {
+                    if (prev <= 1) {
+                        return 0;
+                    }
+                    return prev - 1;
+                });
             }, 1000);
         }
-        return () => clearInterval(interval);
+
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
     }, [emailVerificationTimer]);
 
     const handleCheckEmail = async () => {
@@ -122,12 +145,22 @@ export const SignUpPage = () => {
     };
 
     const handleSendVerification = async () => {
+        if (emailVerificationTimer > 0 || isSendingVerification) {
+            return; // 타이머가 실행 중이거나 발송 중이면 함수 실행 방지
+        }
+
+        setIsSendingVerification(true);
+
         try {
             await api.post("/api/email/send-verification", { email });
             toast.info("인증번호가 발송되었습니다.");
             setVerificationSent(true);
             setEmailVerificationTimer(30);
-        } catch { }
+        } catch (error) {
+            toast.error("인증번호 발송에 실패했습니다.");
+        } finally {
+            setIsSendingVerification(false);
+        }
     };
 
     const handleVerifyCode = async () => {
@@ -249,8 +282,8 @@ export const SignUpPage = () => {
 
                 <button
                     onClick={handleCheckEmail}
-                    disabled={emailChecked}
-                    className={`absolute w-[60px] h-7 top-[450px] left-[768px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${emailChecked
+                    disabled={emailChecked || !emailValid}
+                    className={`absolute w-[60px] h-7 top-[450px] left-[768px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${emailChecked || !emailValid
                         ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
                         : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
                         }`}
@@ -259,6 +292,23 @@ export const SignUpPage = () => {
                         중복 확인
                     </div>
                 </button>
+
+                {/* 이메일 유효성 상태 표시 */}
+                {emailValid !== null && (
+                    <div className="absolute left-[428px] flex items-center gap-2 top-[500px]">
+                        {emailValid ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                                <FaCheck size={14} />
+                                <span className="text-sm">올바른 이메일 형식입니다</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 text-red-500">
+                                <FaTimes size={14} />
+                                <span className="text-sm">올바르지 않은 이메일 형식입니다</span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
 
 
@@ -294,14 +344,14 @@ export const SignUpPage = () => {
                         ) : (
                             <button
                                 onClick={handleSendVerification}
-                                disabled={emailVerificationTimer > 0}
-                                className={`absolute w-[100px] h-7 top-[555px] left-[768px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${emailVerificationTimer > 0
+                                disabled={emailVerificationTimer > 0 || isSendingVerification}
+                                className={`absolute w-[100px] h-7 top-[555px] left-[768px] rounded-[10px] border border-solid transition-colors flex items-center justify-center ${emailVerificationTimer > 0 || isSendingVerification
                                     ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
-                                    : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
+                                    : 'border-gray-300 bg-transparent text-black hover:bg-gray-100 cursor-pointer'
                                     }`}
                             >
                                 <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                    {emailVerificationTimer > 0 ? `${emailVerificationTimer}초` : '인증번호 발송'}
+                                    {isSendingVerification ? '발송중' : emailVerificationTimer > 0 ? `${emailVerificationTimer}초` : '인증번호 발송'}
                                 </div>
                             </button>
                         )}
