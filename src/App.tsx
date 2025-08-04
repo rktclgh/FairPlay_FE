@@ -1,26 +1,64 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { Main } from './pages/MainPage'
-import { LoginPage } from './pages/LoginPage'
-import { SignUpPage } from './pages/SignUpPage'
-import { FindPassword } from './pages/FindPassword'
-import { ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import './App.css'
-function App() {
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Main } from "./pages/MainPage";
+import { MyPageInfo } from "./pages/mypage/Info";
+import { MyPageAccount } from "./pages/mypage/Account";
+import { MyPageFavorites } from "./pages/mypage/Favorites";
+import { Withdrawal } from "./pages/mypage/Withdrawal";
+import { MyPageMyReview } from "./pages/mypage/MyReview";
+import EventOverview from "./pages/event/EventOverview";
+import EventDetail from "./pages/event/EventDetail";
+import { LoginPage } from "./pages/auth/LoginPage";
+import { SignUpPage } from "./pages/auth/SignUpPage";
+import { FindPassword } from "./pages/auth/FindPassword";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './App.css';
+import { useScrollToTop } from './hooks/useScrollToTop';
+import KakaoCallback from "./pages/auth/KakaoCallback";
+
+function AppContent() {
+  useScrollToTop();
+
   return (
     <>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Main />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/find-password" element={<FindPassword />} />
-        </Routes>
-      </Router>
-
-      <ToastContainer position="top-center" autoClose={1800} />
+      <Routes>
+        <Route path="/" element={<Main />} />
+        <Route path="/eventoverview" element={<EventOverview />} />
+        <Route path="/eventdetail/:eventId" element={<EventDetail />} />
+        <Route path="/mypage/info" element={<MyPageInfo />} />
+        <Route path="/mypage/account" element={<MyPageAccount />} />
+        <Route path="/mypage/favorites" element={<MyPageFavorites />} />
+        <Route path="/mypage/write-review" element={<MyPageMyReview />} />
+        <Route path="/mypage/my-review" element={<MyPageMyReview />} />
+        <Route path="/mypage/withdrawal" element={<Withdrawal />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/find-password" element={<FindPassword />} />
+        <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+      </Routes>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </>
-  )
+  );
 }
 
-export default App
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+export default App;
