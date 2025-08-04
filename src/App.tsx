@@ -12,7 +12,7 @@ import { SignUpPage } from "./pages/auth/SignUpPage";
 import { FindPassword } from "./pages/auth/FindPassword";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import './toast.css'; // 커스텀 CSS 추가
+import './App.css';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/auth/KakaoCallback";
 

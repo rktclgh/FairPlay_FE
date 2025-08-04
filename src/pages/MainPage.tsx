@@ -15,6 +15,19 @@ import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
 
+// 유료광고 행사 인터페이스
+interface PaidAdvertisement {
+    id: number;
+    title: string;
+    imageUrl: string;
+    thumbnailUrl: string;
+    linkUrl: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    priority: number; // 노출 순서
+}
+
 export const Main: React.FC = () => {
 
     const [events, setEvents] = useState<Event[]>([]);
@@ -28,9 +41,99 @@ export const Main: React.FC = () => {
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2025, 6, 1)); // 2025년 7월
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
+    const [selectedYear, setSelectedYear] = useState<number>(2025);
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
     const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
 
+    // 유료광고 행사 상태
+    const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
+
+    // 유료광고 행사 데이터 로드 (백엔드 연동 전까지 임시 데이터 사용)
+    const loadPaidAdvertisements = async () => {
+        try {
+            // TODO: 백엔드 연동 후 실제 API 호출로 교체
+            // const ads = await eventApi.getPaidAdvertisements();
+            
+            // 임시 데이터 (백엔드 연동 전까지 사용)
+            const tempAds: PaidAdvertisement[] = [
+                {
+                    id: 1,
+                    title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
+                    imageUrl: "/images/gd1.png",
+                    thumbnailUrl: "/images/gd2.png",
+                    linkUrl: "/event/1",
+                    startDate: "2025-05-25",
+                    endDate: "2025-05-25",
+                    isActive: true,
+                    priority: 1
+                },
+                {
+                    id: 2,
+                    title: "YE LIVE IN KOREA",
+                    imageUrl: "/images/YE3.png",
+                    thumbnailUrl: "/images/YE3.png",
+                    linkUrl: "/event/2",
+                    startDate: "2025-06-15",
+                    endDate: "2025-06-15",
+                    isActive: true,
+                    priority: 2
+                },
+                {
+                    id: 3,
+                    title: "Post Malone Concert",
+                    imageUrl: "/images/malone1.jpg",
+                    thumbnailUrl: "/images/malone.jpg",
+                    linkUrl: "/event/3",
+                    startDate: "2025-07-20",
+                    endDate: "2025-07-20",
+                    isActive: true,
+                    priority: 3
+                },
+                {
+                    id: 4,
+                    title: "Event 4",
+                    imageUrl: "/images/NoImage.png",
+                    thumbnailUrl: "/images/NoImage.png",
+                    linkUrl: "/event/4",
+                    startDate: "2025-08-10",
+                    endDate: "2025-08-10",
+                    isActive: true,
+                    priority: 4
+                },
+                {
+                    id: 5,
+                    title: "Event 5",
+                    imageUrl: "/images/NoImage.png",
+                    thumbnailUrl: "/images/NoImage.png",
+                    linkUrl: "/event/5",
+                    startDate: "2025-09-05",
+                    endDate: "2025-09-05",
+                    isActive: true,
+                    priority: 5
+                },
+                {
+                    id: 6,
+                    title: "Event 6",
+                    imageUrl: "/images/NoImage.png",
+                    thumbnailUrl: "/images/NoImage.png",
+                    linkUrl: "/event/6",
+                    startDate: "2025-10-15",
+                    endDate: "2025-10-15",
+                    isActive: true,
+                    priority: 6
+                }
+            ];
+
+            // 활성화된 광고만 필터링하고 우선순위 순으로 정렬
+            const activeAds = tempAds
+                .filter(ad => ad.isActive)
+                .sort((a, b) => a.priority - b.priority);
+
+            setPaidAdvertisements(activeAds);
+        } catch (error) {
+            console.error('유료광고 데이터 로드 실패:', error);
+        }
+    };
 
     // 데이터 로드
     useEffect(() => {
@@ -39,6 +142,9 @@ export const Main: React.FC = () => {
                 setLoading(true);
                 const eventsData = await eventApi.getEvents();
                 setEvents(eventsData);
+
+                // 유료광고 데이터 로드
+                await loadPaidAdvertisements();
 
                 // TODO: 백엔드 연결 후 Hot Picks 데이터 로드
                 // const hotPicksData = await eventApi.getHotPicks();
@@ -190,171 +296,40 @@ export const Main: React.FC = () => {
                         (window as any).heroSwiper = swiper;
                     }}
                 >
-                    <SwiperSlide>
-                        <img
-                            src="/images/gd1.png"
-                            alt="G-DRAGON 1"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                console.log('히어로 이미지 로드 실패:', e);
-                            }}
-                        />
-                    </SwiperSlide>
-                    <SwiperSlide>
-                        <img
-                            src="/images/YE3.png"
-                            alt="YE3"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                console.log('히어로 이미지 로드 실패:', e);
-                            }}
-                        />
-                    </SwiperSlide>
-                    <SwiperSlide>
-                        <img
-                            src="/images/malone1.jpg"
-                            alt="Malone"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                console.log('히어로 이미지 로드 실패:', e);
-                            }}
-                        />
-                    </SwiperSlide>
-                    <SwiperSlide>
-                        <img
-                            src="/images/NoImage.png"
-                            alt="Event 4"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                console.log('히어로 이미지 로드 실패:', e);
-                            }}
-                        />
-                    </SwiperSlide>
-                    <SwiperSlide>
-                        <img
-                            src="/images/NoImage.png"
-                            alt="Event 5"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                console.log('히어로 이미지 로드 실패:', e);
-                            }}
-                        />
-                    </SwiperSlide>
-                    <SwiperSlide>
-                        <img
-                            src="/images/NoImage.png"
-                            alt="Event 6"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                console.log('히어로 이미지 로드 실패:', e);
-                            }}
-                        />
-                    </SwiperSlide>
+                    {paidAdvertisements.map((ad, index) => (
+                        <SwiperSlide key={ad.id}>
+                            <img
+                                src={ad.imageUrl}
+                                alt={ad.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    console.log('히어로 이미지 로드 실패:', e);
+                                }}
+                            />
+                        </SwiperSlide>
+                    ))}
                 </Swiper>
 
                 {/* 하단 작은 포스터들 */}
                 <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
-                    {/* 첫 번째 포스터 */}
-                    <div
-                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                        onMouseEnter={() => {
-                            const swiper = (window as any).heroSwiper;
-                            if (swiper) {
-                                swiper.slideTo(0);
-                            }
-                        }}
-                    >
-                        <img
-                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                            alt="G-DRAGON Poster 1"
-                            src="/images/gd2.png"
-                        />
-                    </div>
-
-                    {/* 두 번째 포스터 */}
-                    <div
-                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                        onMouseEnter={() => {
-                            const swiper = (window as any).heroSwiper;
-                            if (swiper) {
-                                swiper.slideTo(1);
-                            }
-                        }}
-                    >
-                        <img
-                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                            alt="YE3 Poster"
-                            src="/images/YE3.png"
-                        />
-                    </div>
-
-                    {/* 세 번째 포스터 */}
-                    <div
-                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                        onMouseEnter={() => {
-                            const swiper = (window as any).heroSwiper;
-                            if (swiper) {
-                                swiper.slideTo(2);
-                            }
-                        }}
-                    >
-                        <img
-                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                            alt="Malone Poster"
-                            src="/images/malone.jpg"
-                        />
-                    </div>
-
-                    {/* 네 번째 포스터 */}
-                    <div
-                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                        onMouseEnter={() => {
-                            const swiper = (window as any).heroSwiper;
-                            if (swiper) {
-                                swiper.slideTo(3);
-                            }
-                        }}
-                    >
-                        <img
-                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                            alt="NoImage Poster 2"
-                            src="/images/NoImage.png"
-                        />
-                    </div>
-
-                    {/* 다섯 번째 포스터 */}
-                    <div
-                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                        onMouseEnter={() => {
-                            const swiper = (window as any).heroSwiper;
-                            if (swiper) {
-                                swiper.slideTo(4);
-                            }
-                        }}
-                    >
-                        <img
-                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                            alt="NoImage Poster 3"
-                            src="/images/NoImage.png"
-                        />
-                    </div>
-
-                    {/* 여섯 번째 포스터 */}
-                    <div
-                        className="w-20 h-28 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                        onMouseEnter={() => {
-                            const swiper = (window as any).heroSwiper;
-                            if (swiper) {
-                                swiper.slideTo(5);
-                            }
-                        }}
-                    >
-                        <img
-                            className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                            alt="NoImage Poster 4"
-                            src="/images/NoImage.png"
-                        />
-                    </div>
+                    {paidAdvertisements.map((ad, index) => (
+                        <div
+                            key={ad.id}
+                            className="w-16 h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                            onMouseEnter={() => {
+                                const swiper = (window as any).heroSwiper;
+                                if (swiper) {
+                                    swiper.slideTo(index);
+                                }
+                            }}
+                        >
+                            <img
+                                className="w-full h-full object-cover rounded-[10px] shadow-lg"
+                                alt={`Paid Ad ${ad.id}`}
+                                src={ad.thumbnailUrl}
+                            />
+                        </div>
+                    ))}
                 </div>
             </div>
 
@@ -428,15 +403,83 @@ export const Main: React.FC = () => {
 
                                 {/* 날짜 선택 드롭다운 */}
                                 {isDatePickerOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
+                                    <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
+                                        {/* 년도 선택 */}
+                                        <div className="mb-4">
+                                            <h3 className="text-sm font-medium text-gray-700 mb-2">년도 선택</h3>
+                                            <div className="flex items-center justify-center space-x-4">
+                                                <button
+                                                    className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
+                                                    onClick={() => {
+                                                        const newYear = selectedYear - 1;
+                                                        if (newYear >= 2024) {
+                                                            setSelectedYear(newYear);
+                                                            // 년도만 변경하고 기존 선택된 날짜는 유지
+                                                            // 범위 텍스트는 기존 선택된 날짜를 기반으로 업데이트
+                                                            if (startDate && endDate) {
+                                                                const startYear = startDate.getFullYear();
+                                                                const startMonth = startDate.getMonth() + 1;
+                                                                const endYear = endDate.getFullYear();
+                                                                const endMonth = endDate.getMonth() + 1;
+                                                                
+                                                                if (startYear === endYear && startMonth === endMonth) {
+                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
+                                                                } else if (startYear === endYear) {
+                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
+                                                                } else {
+                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
+                                                                }
+                                                            } else {
+                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={selectedYear <= 2024}
+                                                >
+                                                    &lt;
+                                                </button>
+                                                <span className="text-lg font-medium text-black">{selectedYear}</span>
+                                                <button
+                                                    className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
+                                                    onClick={() => {
+                                                        const newYear = selectedYear + 1;
+                                                        if (newYear <= 2028) {
+                                                            setSelectedYear(newYear);
+                                                            // 년도만 변경하고 기존 선택된 날짜는 유지
+                                                            // 범위 텍스트는 기존 선택된 날짜를 기반으로 업데이트
+                                                            if (startDate && endDate) {
+                                                                const startYear = startDate.getFullYear();
+                                                                const startMonth = startDate.getMonth() + 1;
+                                                                const endYear = endDate.getFullYear();
+                                                                const endMonth = endDate.getMonth() + 1;
+                                                                
+                                                                if (startYear === endYear && startMonth === endMonth) {
+                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
+                                                                } else if (startYear === endYear) {
+                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
+                                                                } else {
+                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
+                                                                }
+                                                            } else {
+                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
+                                                            }
+                                                        }
+                                                    }}
+                                                    disabled={selectedYear >= 2028}
+                                                >
+                                                    &gt;
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         {/* 월 선택 */}
                                         <div className="mb-4">
                                             <h3 className="text-sm font-medium text-gray-700 mb-2">월 선택</h3>
                                             <div className="grid grid-cols-3 gap-2">
                                                 {Array.from({ length: 12 }, (_, i) => {
-                                                    const monthDate = new Date(2025, i, 1);
-                                                    const isSelected = (startDate && startDate.getMonth() === i) ||
-                                                        (endDate && endDate.getMonth() === i);
+                                                    const monthDate = new Date(selectedYear, i, 1);
+                                                    const isSelected = (startDate && startDate.getFullYear() === selectedYear && startDate.getMonth() === i) ||
+                                                        (endDate && endDate.getFullYear() === selectedYear && endDate.getMonth() === i);
                                                     return (
                                                         <button
                                                             key={i}
@@ -449,29 +492,37 @@ export const Main: React.FC = () => {
                                                                 // 월 선택 시 범위 설정
                                                                 if (!startDate) {
                                                                     // 첫 번째 선택 (시작월)
-                                                                    setStartDate(new Date(2025, i, 1));
+                                                                    setStartDate(new Date(selectedYear, i, 1));
                                                                 } else if (!endDate) {
                                                                     // 두 번째 선택 (종료월)
-                                                                    if (i >= startDate.getMonth()) {
-                                                                        setEndDate(new Date(2025, i, 1));
+                                                                    const startYear = startDate.getFullYear();
+                                                                    const startMonth = startDate.getMonth();
+                                                                    const endYear = selectedYear;
+                                                                    const endMonth = i;
+                                                                    
+                                                                    // 년도가 다르거나 같은 년도에서 종료월이 시작월보다 크거나 같은 경우
+                                                                    if (endYear > startYear || (endYear === startYear && endMonth >= startMonth)) {
+                                                                        setEndDate(new Date(endYear, endMonth, 1));
 
                                                                         // 범위 텍스트 업데이트
-                                                                        const startMonth = startDate.getMonth() + 1;
-                                                                        const endMonth = i + 1;
-                                                                        if (startMonth === endMonth) {
-                                                                            setSelectedDateRange(`2025년 ${startMonth}월`);
+                                                                        const startMonthNum = startMonth + 1;
+                                                                        const endMonthNum = endMonth + 1;
+                                                                        if (startYear === endYear && startMonthNum === endMonthNum) {
+                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월`);
+                                                                        } else if (startYear === endYear) {
+                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endMonthNum}월`);
                                                                         } else {
-                                                                            setSelectedDateRange(`2025년 ${startMonth}월 ~ ${endMonth}월`);
+                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endYear}년 ${endMonthNum}월`);
                                                                         }
                                                                         setIsDatePickerOpen(false);
                                                                     } else {
                                                                         // 종료월이 시작월보다 이전인 경우 시작월로 재설정
-                                                                        setStartDate(new Date(2025, i, 1));
+                                                                        setStartDate(new Date(selectedYear, i, 1));
                                                                         setEndDate(null);
                                                                     }
                                                                 } else {
                                                                     // 이미 범위가 설정된 경우 새로운 시작월로 설정
-                                                                    setStartDate(new Date(2025, i, 1));
+                                                                    setStartDate(new Date(selectedYear, i, 1));
                                                                     setEndDate(null);
                                                                 }
                                                             }}
@@ -503,16 +554,17 @@ export const Main: React.FC = () => {
 
                                         {/* 범위 초기화 버튼 */}
                                         <div className="flex justify-end">
-                                            <button
-                                                className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                                                onClick={() => {
-                                                    setStartDate(null);
-                                                    setEndDate(null);
-                                                    setSelectedDateRange("2025년 7월 ~ 8월");
-                                                }}
-                                            >
-                                                초기화
-                                            </button>
+                                                                                         <button
+                                                 className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
+                                                 onClick={() => {
+                                                     setStartDate(null);
+                                                     setEndDate(null);
+                                                     setSelectedYear(2025);
+                                                     setSelectedDateRange("2025년 7월 ~ 8월");
+                                                 }}
+                                             >
+                                                 초기화
+                                             </button>
                                         </div>
                                     </div>
                                 )}
@@ -528,7 +580,7 @@ export const Main: React.FC = () => {
 
                                 {/* 드롭다운 메뉴 */}
                                 {isRegionDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                    <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                                         {["모든지역", "서울", "경기", "인천", "강원", "부산", "경남", "대구", "경북", "대전", "충남", "충북", "광주", "전북", "전남", "제주", "울산", "해외"].map((region) => (
                                             <button
                                                 key={region}
