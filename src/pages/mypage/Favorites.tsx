@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
-import { FaChevronLeft, FaChevronRight, FaChevronDown, FaHeart } from "react-icons/fa";
-import { HiOutlineCalendar } from "react-icons/hi";
+import { FaHeart } from "react-icons/fa";
 
 interface Event {
     id: number;
@@ -15,17 +14,18 @@ interface Event {
 }
 
 export const MyPageFavorites = () => {
-    // 홈화면에서 가져온 상태들
+    // 상태들
     const [events, setEvents] = useState<Event[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState("전체");
-    const [selectedRegion, setSelectedRegion] = useState("모든지역");
-    const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
-    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-    const [selectedDateRange, setSelectedDateRange] = useState("2025년 7월 ~ 8월");
-    const [startDate, setStartDate] = useState<Date | null>(null);
-    const [endDate, setEndDate] = useState<Date | null>(null);
-    const [currentMonth, setCurrentMonth] = useState(new Date(2025, 6, 1)); // 7월
-    const [likedEvents, setLikedEvents] = useState(new Set<number>());
+    const [likedEvents, setLikedEvents] = useState<Set<number>>(() => {
+        try {
+            // localStorage에서 좋아요 상태 불러오기
+            const saved = localStorage.getItem('likedEvents');
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch (error) {
+            console.error('localStorage 읽기 오류:', error);
+            return new Set();
+        }
+    });
 
     // 홈화면에서 가져온 데이터
     const mockEvents: Event[] = [
@@ -77,12 +77,33 @@ export const MyPageFavorites = () => {
     ];
 
     useEffect(() => {
-        setEvents(mockEvents);
-    }, []);
+        // 좋아요를 누른 행사만 필터링
+        const likedEventsList = mockEvents.filter(event => likedEvents.has(event.id));
+        setEvents(likedEventsList);
+    }, [likedEvents]);
 
-    const handleCategoryChange = async (category: string) => {
-        setSelectedCategory(category);
-        // 여기에 실제 카테고리 필터링 로직 추가
+    // 좋아요 상태가 변경될 때마다 localStorage에 저장
+    useEffect(() => {
+        try {
+            localStorage.setItem('likedEvents', JSON.stringify(Array.from(likedEvents)));
+        } catch (error) {
+            console.error('localStorage 저장 오류:', error);
+        }
+    }, [likedEvents]);
+
+
+
+    // 좋아요 토글 함수
+    const toggleLike = (eventId: number) => {
+        setLikedEvents(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(eventId)) {
+                newSet.delete(eventId);
+            } else {
+                newSet.add(eventId);
+            }
+            return newSet;
+        });
     };
 
     return (
@@ -99,52 +120,57 @@ export const MyPageFavorites = () => {
                 <div className="absolute top-[239px] left-64 right-0">
                     <div className="px-8">
                         {/* 행사 카드들 */}
-                        <div className="grid grid-cols-4 gap-6">
-                            {events.slice(0, 4).map((event) => (
-                                <div key={event.id} className="relative">
-                                    <div className="relative">
-                                        <img
-                                            className="w-full h-64 object-cover rounded-[10px]"
-                                            alt={event.title}
-                                            src={event.image}
-                                        />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setLikedEvents(prev => {
-                                                    const newSet = new Set(prev);
-                                                    if (newSet.has(event.id)) {
-                                                        newSet.delete(event.id);
-                                                    } else {
-                                                        newSet.add(event.id);
-                                                    }
-                                                    return newSet;
-                                                });
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="mt-4 text-left">
-                                        <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                            {event.category}
-                                        </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
-                                            <div className="font-bold">올림픽공원</div>
-                                            <div>{event.date}</div>
-                                        </div>
-                                        <p className="font-bold text-lg text-[#ff6b35]">{event.price}</p>
-                                    </div>
+                        {events.length === 0 ? (
+                            <div className="text-center py-20">
+                                <div className="text-gray-500 text-lg mb-4">
+                                    아직 관심 행사가 없습니다
                                 </div>
-                            ))}
-                        </div>
+                                <div className="text-gray-400 text-sm">
+                                    홈화면이나 행사 목록에서 좋아요를 눌러 관심 행사를 추가해보세요
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-4 gap-6">
+                                {events.slice(0, 4).map((event) => (
+                                    <div key={event.id} className="relative">
+                                        <div className="relative">
+                                            <img
+                                                className="w-full h-64 object-cover rounded-[10px]"
+                                                alt={event.title}
+                                                src={event.image}
+                                            />
+                                            <FaHeart
+                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleLike(event.id);
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="mt-4 text-left">
+                                            <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                                {event.category}
+                                            </span>
+                                            <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
+                                            <div className="text-sm text-gray-600 mb-2">
+                                                <div className="font-bold">올림픽공원</div>
+                                                <div>{event.date}</div>
+                                            </div>
+                                            <p className="font-bold text-lg text-[#ff6b35]">{event.price}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* 전체보기 버튼 */}
-                        <div className="text-center mt-12">
-                            <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
-                                전체보기
-                            </button>
-                        </div>
+                        {events.length > 0 && (
+                            <div className="text-center mt-12">
+                                <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
+                                    전체보기
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 

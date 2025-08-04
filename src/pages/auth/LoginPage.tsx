@@ -26,9 +26,22 @@ export const LoginPage = () => {
                 password
             });
 
-            const { accessToken, refreshToken } = res.data;
+            const { accessToken, refreshToken, user } = res.data;
             localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("refreshToken", refreshToken);
+
+            // 사용자 정보 저장 (백엔드에서 제공하지 않는 경우를 대비)
+            if (user) {
+                localStorage.setItem("loginEmail", user.email || email);
+                localStorage.setItem("loginName", user.name || "");
+                localStorage.setItem("loginPhone", user.phoneNumber || "");
+            } else {
+                // 백엔드에서 사용자 정보를 제공하지 않는 경우 기본값 저장
+                localStorage.setItem("loginEmail", email);
+                localStorage.setItem("loginName", "사용자");
+                localStorage.setItem("loginPhone", "010-0000-0000");
+            }
+
             toast.success("로그인에 성공했습니다!");
             navigate("/");
         } catch (error) {
@@ -125,7 +138,7 @@ export const LoginPage = () => {
                     className={`absolute w-[411px] h-12 top-[411px] left-[422px] rounded-lg flex items-center justify-center transition-colors focus:outline-none ${isLoginEnabled && !loading
                         ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
                         : 'bg-[#d9d9d9] text-white cursor-not-allowed'
-                    }`}
+                        }`}
                     style={{ borderRadius: '8px' }}
                     disabled={!isLoginEnabled || loading}
                     onClick={handleLogin}
