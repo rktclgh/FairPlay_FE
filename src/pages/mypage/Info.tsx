@@ -76,13 +76,19 @@ export const MyPageInfo = () => {
                 setUserInfo(userData);
             } catch (error) {
                 console.error("사용자 정보 로드 실패:", error);
+                // 로그인이 필요한 경우 로그인 페이지로 리다이렉트
+                if (error instanceof Error && error.message === '로그인이 필요합니다.') {
+                    alert('로그인이 필요합니다.');
+                    navigate('/login');
+                    return;
+                }
             } finally {
                 setIsLoading(false);
             }
         };
 
         loadUserInfo();
-    }, []);
+    }, [navigate]);
 
     // 블러 처리된 데이터 업데이트
     useEffect(() => {
@@ -267,7 +273,7 @@ export const MyPageInfo = () => {
                 </div>
 
                 {/* 개인 정보 섹션 - 비밀번호 변경 폼이 표시되면 아래로 이동 */}
-                <div className={`absolute w-[949px] h-[213px] left-64 ${showPasswordChange ? 'top-[755px]' : 'top-[455px]'}`}>
+                <div className={`absolute w-[949px] h-[213px] left-64 ${showPasswordChange ? 'top-[600px]' : 'top-[455px]'}`}>
                     <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                         개인 정보
                     </div>

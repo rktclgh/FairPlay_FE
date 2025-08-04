@@ -1,14 +1,14 @@
 import {
     Calendar,
     ChevronDown,
-    Heart,
     List,
 } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { TopNav } from "../components/TopNav";
+import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
+import { FaHeart } from "react-icons/fa";
 
 export default function EventOverview() {
     const [selectedCategory, setSelectedCategory] = React.useState("all");
@@ -17,13 +17,23 @@ export default function EventOverview() {
     const [viewMode, setViewMode] = React.useState("list"); // "list" or "calendar"
     const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
+    const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
+        try {
+            // localStorage에서 좋아요 상태 불러오기
+            const saved = localStorage.getItem('likedEvents');
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch (error) {
+            console.error('localStorage 읽기 오류:', error);
+            return new Set();
+        }
+    });
     const [selectedDateRange, setSelectedDateRange] = React.useState(() => {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
         const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
-        
+
         if (currentMonth === 12) {
             return `${currentYear}년 ${currentMonth}월 ~ ${nextYear}년 ${nextMonth}월`;
         } else {
@@ -39,6 +49,28 @@ export default function EventOverview() {
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
     const navigate = useNavigate();
 
+    // 좋아요 토글 함수
+    const toggleLike = (eventId: number) => {
+        setLikedEvents(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(eventId)) {
+                newSet.delete(eventId);
+            } else {
+                newSet.add(eventId);
+            }
+            return newSet;
+        });
+    };
+
+    // 좋아요 상태가 변경될 때마다 localStorage에 저장
+    React.useEffect(() => {
+        try {
+            localStorage.setItem('likedEvents', JSON.stringify(Array.from(likedEvents)));
+        } catch (error) {
+            console.error('localStorage 저장 오류:', error);
+        }
+    }, [likedEvents]);
+
     // 달력 네비게이션 함수들
     const handlePrevMonth = () => {
         if (calendarMonth === 1) {
@@ -47,12 +79,12 @@ export default function EventOverview() {
         } else {
             setCalendarMonth(calendarMonth - 1);
         }
-        
+
         // 캘린더형일 때 상단 날짜 범위도 동기화
         if (viewMode === "calendar") {
             const newYear = calendarMonth === 1 ? calendarYear - 1 : calendarYear;
             const newMonth = calendarMonth === 1 ? 12 : calendarMonth - 1;
-            
+
             setSelectedDateRange(`${newYear}년 ${newMonth}월`);
         }
     };
@@ -64,12 +96,12 @@ export default function EventOverview() {
         } else {
             setCalendarMonth(calendarMonth + 1);
         }
-        
+
         // 캘린더형일 때 상단 날짜 범위도 동기화
         if (viewMode === "calendar") {
             const newYear = calendarMonth === 12 ? calendarYear + 1 : calendarYear;
             const newMonth = calendarMonth === 12 ? 1 : calendarMonth + 1;
-            
+
             setSelectedDateRange(`${newYear}년 ${newMonth}월`);
         }
     };
@@ -77,7 +109,7 @@ export default function EventOverview() {
     // 카테고리별 색상 정의
     const categoryColors = {
         "박람회": "bg-blue-100 text-blue-800 border border-blue-200",
-        "공연": "bg-red-100 text-red-800 border border-red-200", 
+        "공연": "bg-red-100 text-red-800 border border-red-200",
         "강연/세미나": "bg-green-100 text-green-800 border border-green-200",
         "전시/행사": "bg-yellow-100 text-yellow-800 border border-yellow-200",
         "축제": "bg-gray-100 text-gray-800 border border-gray-300"
@@ -96,15 +128,15 @@ export default function EventOverview() {
     // 2차 카테고리 데이터
     const subCategories = {
         exhibition: [
-            "취업/채용", "산업/기술", "유학/이민/해외 취업", "프랜차이즈/창업", 
+            "취업/채용", "산업/기술", "유학/이민/해외 취업", "프랜차이즈/창업",
             "뷰티/패션", "식품/음료", "반려동물", "교육/도서", "IT/전자", "스포츠/레저"
         ],
         seminar: [
-            "취업/진로", "창업/스타트업", "과학/기술", "자기계발/라이프스타일", 
+            "취업/진로", "창업/스타트업", "과학/기술", "자기계발/라이프스타일",
             "인문/문화/예술", "건강/의학"
         ],
         event: [
-            "미술/디자인", "사진/영상", "공예/수공예", "패션/주얼리", "역사/문화", 
+            "미술/디자인", "사진/영상", "공예/수공예", "패션/주얼리", "역사/문화",
             "체험 전시", "아동/가족", "행사/축제", "브랜드 프로모션"
         ],
         performance: [
@@ -211,12 +243,12 @@ export default function EventOverview() {
     // 날짜 범위 필터링 함수
     const isEventInDateRange = (eventDate: string) => {
         if (!startDate || !endDate) return true; // 날짜 범위가 설정되지 않았으면 모든 이벤트 표시
-        
+
         // 이벤트 날짜 파싱 (예: "2025-08-15 ~ 2025-08-17" 또는 "2025-08-15")
         const dateParts = eventDate.split(' ~ ');
         const eventStartDate = new Date(dateParts[0]);
         const eventEndDate = dateParts.length > 1 ? new Date(dateParts[1]) : eventStartDate;
-        
+
         // 선택된 범위와 이벤트 날짜가 겹치는지 확인
         return eventStartDate <= endDate && eventEndDate >= startDate;
     };
@@ -224,12 +256,12 @@ export default function EventOverview() {
     // 카테고리별 이벤트 필터링 함수
     const filteredEvents = events.filter(event => {
         // 카테고리 필터링
-        const categoryMatch = selectedCategory === "all" || 
+        const categoryMatch = selectedCategory === "all" ||
             event.category === categories.find(cat => cat.id === selectedCategory)?.name;
-        
+
         // 날짜 범위 필터링 (리스트형에서만 적용)
         const dateMatch = viewMode === "list" ? isEventInDateRange(event.date) : true;
-        
+
         return categoryMatch && dateMatch;
     });
 
@@ -277,11 +309,10 @@ export default function EventOverview() {
                         <div className="flex bg-white rounded-full border border-gray-200 p-1 shadow-sm">
                             <button
                                 onClick={() => setViewMode("list")}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${
-                                    viewMode === "list"
-                                        ? "bg-black text-white"
-                                        : "bg-white text-black hover:bg-gray-50"
-                                }`}
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
+                                    ? "bg-black text-white"
+                                    : "bg-white text-black hover:bg-gray-50"
+                                    }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <List className="w-4 h-4" />
@@ -293,11 +324,10 @@ export default function EventOverview() {
                                     // 캘린더형으로 전환할 때 상단 날짜 범위를 현재 캘린더 월로 동기화
                                     setSelectedDateRange(`${calendarYear}년 ${calendarMonth}월`);
                                 }}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${
-                                    viewMode === "calendar"
-                                        ? "bg-black text-white"
-                                        : "bg-white text-black hover:bg-gray-50"
-                                }`}
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
+                                    ? "bg-black text-white"
+                                    : "bg-white text-black hover:bg-gray-50"
+                                    }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <Calendar className="w-4 h-4" />
@@ -337,7 +367,7 @@ export default function EventOverview() {
                                                                 const startMonth = startDate.getMonth() + 1;
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
-                                                                
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
                                                                     setSelectedDateRange(`${startYear}년 ${startMonth}월`);
                                                                 } else if (startYear === endYear) {
@@ -353,7 +383,7 @@ export default function EventOverview() {
                                                     disabled={selectedYear <= 2024}
                                                 >
                                                     &lt;
-                            </button>
+                                                </button>
                                                 <span className="text-lg font-medium text-black">{selectedYear}</span>
                                                 <button
                                                     className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
@@ -368,7 +398,7 @@ export default function EventOverview() {
                                                                 const startMonth = startDate.getMonth() + 1;
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
-                                                                
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
                                                                     setSelectedDateRange(`${startYear}년 ${startMonth}월`);
                                                                 } else if (startYear === endYear) {
@@ -384,8 +414,8 @@ export default function EventOverview() {
                                                     disabled={selectedYear >= 2028}
                                                 >
                                                     &gt;
-                            </button>
-                        </div>
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* 월 선택 */}
@@ -415,7 +445,7 @@ export default function EventOverview() {
                                                                     const startMonth = startDate.getMonth();
                                                                     const endYear = selectedYear;
                                                                     const endMonth = i;
-                                                                    
+
                                                                     // 년도가 다르거나 같은 년도에서 종료월이 시작월보다 크거나 같은 경우
                                                                     if (endYear > startYear || (endYear === startYear && endMonth >= startMonth)) {
                                                                         setEndDate(new Date(endYear, endMonth, 1));
@@ -470,17 +500,17 @@ export default function EventOverview() {
 
                                         {/* 범위 초기화 버튼 */}
                                         <div className="flex justify-end">
-                                                                                         <button
-                                                 className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                                                 onClick={() => {
-                                                     setStartDate(null);
-                                                     setEndDate(null);
-                                                     setSelectedYear(2025);
-                                                     setSelectedDateRange("2025년 7월 ~ 8월");
-                                                 }}
-                                             >
-                                                 초기화
-                            </button>
+                                            <button
+                                                className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
+                                                onClick={() => {
+                                                    setStartDate(null);
+                                                    setEndDate(null);
+                                                    setSelectedYear(2025);
+                                                    setSelectedDateRange("2025년 7월 ~ 8월");
+                                                }}
+                                            >
+                                                초기화
+                                            </button>
                                         </div>
                                     </div>
                                 )}
@@ -506,10 +536,10 @@ export default function EventOverview() {
                                                     {/* 1차 카테고리 헤더 */}
                                                     <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
                                                         {categoryKey === "exhibition" ? "박람회" :
-                                                         categoryKey === "seminar" ? "강연/세미나" :
-                                                         categoryKey === "event" ? "전시/행사" :
-                                                         categoryKey === "performance" ? "공연" :
-                                                         categoryKey === "festival" ? "축제" : categoryKey}
+                                                            categoryKey === "seminar" ? "강연/세미나" :
+                                                                categoryKey === "event" ? "전시/행사" :
+                                                                    categoryKey === "performance" ? "공연" :
+                                                                        categoryKey === "festival" ? "축제" : categoryKey}
                                                     </div>
                                                     {/* 2차 카테고리들 */}
                                                     {subCats.map((subCat) => (
@@ -543,7 +573,7 @@ export default function EventOverview() {
                                         )}
                                     </div>
                                 )}
-                        </div>
+                            </div>
 
                             {/* 지역 필터 */}
                             <div className="relative">
@@ -587,11 +617,11 @@ export default function EventOverview() {
                                             alt={event.title}
                                             src={event.image || "/images/NoImage.png"}
                                         />
-                                        <Heart
-                                            className="absolute top-4 right-4 w-5 h-5 cursor-pointer text-white drop-shadow-lg"
+                                        <FaHeart
+                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                // 좋아요 기능 구현 예정
+                                                toggleLike(event.id);
                                             }}
                                         />
                                     </div>
@@ -615,21 +645,21 @@ export default function EventOverview() {
                             <div className="bg-white rounded-lg border border-gray-200 p-6">
                                 {/* 헤더 */}
                                 <div className="flex items-center justify-center mb-4">
-                                    <button 
+                                    <button
                                         className="p-1 hover:bg-gray-100 rounded"
                                         onClick={handlePrevMonth}
                                     >
                                         <ChevronDown className="w-4 h-4 rotate-90 text-gray-500" />
                                     </button>
                                     <h2 className="text-lg font-semibold text-gray-900 mx-4">{calendarYear}.{calendarMonth.toString().padStart(2, '0')}</h2>
-                                    <button 
+                                    <button
                                         className="p-1 hover:bg-gray-100 rounded"
                                         onClick={handleNextMonth}
                                     >
                                         <ChevronDown className="w-4 h-4 -rotate-90 text-gray-500" />
                                     </button>
                                 </div>
-                                
+
                                 {/* 요일 헤더 */}
                                 <div className="grid grid-cols-7 mb-2">
                                     {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
@@ -638,7 +668,7 @@ export default function EventOverview() {
                                         </div>
                                     ))}
                                 </div>
-                                
+
                                 {/* 캘린더 그리드 */}
                                 <div className="grid grid-cols-7">
                                     {/* 이전 달 날짜들 (회색) */}
@@ -648,7 +678,7 @@ export default function EventOverview() {
                                         const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
                                         const firstDayOfMonth = new Date(calendarYear, calendarMonth - 1, 1).getDay();
                                         const daysFromPrevMonth = firstDayOfMonth;
-                                        
+
                                         return Array.from({ length: daysFromPrevMonth }, (_, i) => {
                                             const day = daysInPrevMonth - daysFromPrevMonth + i + 1;
                                             return (
@@ -658,23 +688,23 @@ export default function EventOverview() {
                                             );
                                         });
                                     })()}
-                                    
+
                                     {/* 현재 달 날짜들 */}
                                     {(() => {
                                         const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
-                                        
+
                                         return Array.from({ length: daysInMonth }, (_, i) => {
                                             const day = i + 1;
                                             const dayEvents = filteredEvents.filter(event => {
                                                 return event.date.includes(`${calendarYear}-${calendarMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
                                             });
-                                            
+
                                             // 현재 달의 요일 계산
                                             const firstDayOfMonth = new Date(calendarYear, calendarMonth - 1, 1).getDay();
                                             const dayOfWeek = (firstDayOfMonth + day - 1) % 7;
                                             const isSunday = dayOfWeek === 0; // 0=일요일
                                             const isSaturday = dayOfWeek === 6; // 6=토요일
-                                            
+
                                             return (
                                                 <div key={day} className="h-48 border-b border-r border-gray-100 p-1">
                                                     <div className={`text-sm font-bold mb-1 ${isSunday ? 'text-red-500' : isSaturday ? 'text-blue-500' : 'text-gray-900'}`}>{day}</div>
@@ -688,13 +718,12 @@ export default function EventOverview() {
                                                                     navigate(`/eventdetail/${event.id}`);
                                                                 }}
                                                             >
-                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                                                    event.category === "박람회" ? "bg-blue-500" :
+                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.category === "박람회" ? "bg-blue-500" :
                                                                     event.category === "공연" ? "bg-red-500" :
-                                                                    event.category === "강연/세미나" ? "bg-green-500" :
-                                                                    event.category === "전시/행사" ? "bg-yellow-500" :
-                                                                    event.category === "축제" ? "bg-gray-500" : "bg-gray-400"
-                                                                }`}></div>
+                                                                        event.category === "강연/세미나" ? "bg-green-500" :
+                                                                            event.category === "전시/행사" ? "bg-yellow-500" :
+                                                                                event.category === "축제" ? "bg-gray-500" : "bg-gray-400"
+                                                                    }`}></div>
                                                                 <span className="truncate text-gray-700">{event.title}</span>
                                                             </div>
                                                         ))}
@@ -706,7 +735,7 @@ export default function EventOverview() {
                                             );
                                         });
                                     })()}
-                                    
+
                                     {/* 다음 달 날짜들 (회색) */}
                                     {(() => {
                                         const nextMonth = calendarMonth === 12 ? 1 : calendarMonth + 1;
@@ -716,7 +745,7 @@ export default function EventOverview() {
                                         const daysFromPrevMonth = firstDayOfMonth;
                                         const totalDaysShown = daysFromPrevMonth + daysInMonth;
                                         const remainingDays = 42 - totalDaysShown; // 6주 x 7일 = 42
-                                        
+
                                         return Array.from({ length: remainingDays }, (_, i) => {
                                             const day = i + 1;
                                             return (

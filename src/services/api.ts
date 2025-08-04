@@ -98,7 +98,7 @@ class EventApi {
       title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
       date: "2025.05.25",
       location: "KYOCERA DOME OSAKA",
-      price: "₩150,000",
+      price: "150,000원 ~",
       category: "공연",
       image: "/images/gd2.png",
     },
@@ -107,7 +107,7 @@ class EventApi {
       title: "YE LIVE IN KOREA",
       date: "2025.06.15",
       location: "인천문학경기장",
-      price: "₩120,000",
+      price: "120,000원 ~",
       category: "공연",
       image: "/images/YE1.png",
     },
@@ -176,11 +176,11 @@ class EventApi {
     },
   ];
 
-  // 사용자 정보 관련 mock 데이터
+  // 사용자 정보 관련 mock 데이터 (실제 로그인한 사용자 정보로 교체 필요)
   private mockUserInfo: UserInfo = {
-    email: "testuser@naver.com",
-    name: "문정환",
-    phoneNumber: "010-5555-1255",
+    email: "user@example.com",
+    name: "사용자",
+    phoneNumber: "010-0000-0000",
   };
 
   async getHotPicks(): Promise<HotPick[]> {
@@ -219,10 +219,62 @@ class EventApi {
 
   // 사용자 정보 조회
   async getUserInfo(): Promise<UserInfo> {
-    // 실제 API 호출 시 여기에 fetch 로직 추가
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(this.mockUserInfo);
+    return new Promise((resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          // 로그인 토큰 확인
+          const accessToken = localStorage.getItem("accessToken");
+          const refreshToken = localStorage.getItem("refreshToken");
+
+          if (!accessToken && !refreshToken) {
+            throw new Error("로그인이 필요합니다.");
+          }
+
+          // 실제 백엔드 API 호출 시도
+          try {
+            const response = await fetch("/api/users/me", {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (response.ok) {
+              const userData = await response.json();
+              resolve(userData);
+              return;
+            }
+          } catch (apiError) {
+            console.warn("백엔드 API 호출 중 오류:", apiError);
+          }
+
+          // 백엔드 API가 준비되지 않았거나 실패한 경우
+          // 로그인 시 저장된 정보를 기반으로 사용자 정보 생성
+          const loginEmail = localStorage.getItem("loginEmail");
+          const loginName = localStorage.getItem("loginName");
+          const loginPhone = localStorage.getItem("loginPhone");
+
+          if (loginEmail && loginName && loginPhone) {
+            // 로그인 시 저장된 실제 정보 사용
+            const userData: UserInfo = {
+              email: loginEmail,
+              name: loginName,
+              phoneNumber: loginPhone,
+            };
+            resolve(userData);
+          } else {
+            // 저장된 정보가 없는 경우 기본 mock 데이터 사용
+            console.warn("로그인 정보가 저장되지 않음, 기본 mock 데이터 사용");
+            const mockUserData: UserInfo = {
+              email: "user@fairplay.com",
+              name: "페어플레이 사용자",
+              phoneNumber: "010-1234-5678",
+            };
+            resolve(mockUserData);
+          }
+        } catch (error) {
+          reject(error);
+        }
       }, 300);
     });
   }
