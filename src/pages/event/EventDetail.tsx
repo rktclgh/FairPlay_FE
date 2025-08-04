@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TopNav } from "../components/TopNav";
+import { TopNav } from "../../components/TopNav";
 import { MapPin } from "lucide-react";
 import { VenueInfo } from "./VenueInfo";
 import { CancelPolicy } from "./CancelPolicy";
@@ -38,7 +38,7 @@ const EventDetail = (): JSX.Element => {
         if (dateMatches && dateMatches.length >= 2) {
             const startDate = dateMatches[0].split('.').map(Number);
             const endDate = dateMatches[1].split('.').map(Number);
-            
+
             return {
                 startYear: startDate[0],
                 startMonth: startDate[1],
@@ -75,12 +75,12 @@ const EventDetail = (): JSX.Element => {
         const firstDay = new Date(year, month - 1, 1).getDay();
         const daysInMonth = new Date(year, month, 0).getDate();
         const calendar = [];
-        
+
         // 이전 달의 마지막 날짜들
         const prevMonth = month === 1 ? 12 : month - 1;
         const prevYear = month === 1 ? year - 1 : year;
         const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-        
+
         for (let i = firstDay - 1; i >= 0; i--) {
             calendar.push({
                 day: daysInPrevMonth - i,
@@ -88,7 +88,7 @@ const EventDetail = (): JSX.Element => {
                 isEventDay: false
             });
         }
-        
+
         // 현재 달의 날짜들
         for (let day = 1; day <= daysInMonth; day++) {
             calendar.push({
@@ -97,7 +97,7 @@ const EventDetail = (): JSX.Element => {
                 isEventDay: false
             });
         }
-        
+
         // 다음 달의 날짜들 (6주 완성)
         const remainingDays = 42 - calendar.length;
         for (let day = 1; day <= remainingDays; day++) {
@@ -107,7 +107,7 @@ const EventDetail = (): JSX.Element => {
                 isEventDay: false
             });
         }
-        
+
         return calendar;
     };
 
@@ -325,23 +325,23 @@ const EventDetail = (): JSX.Element => {
                                 const eventDates = parseEventDates(eventData.schedule);
                                 if (eventDates) {
                                     const calendar = generateCalendar(currentCalendarYear, currentCalendarMonth);
-                                    
+
                                     // 이벤트 날짜들 생성 (시작일부터 종료일까지)
                                     const eventDays: number[] = [];
                                     const startDate = new Date(eventDates.startYear, eventDates.startMonth - 1, eventDates.startDay);
                                     const endDate = new Date(eventDates.endYear, eventDates.endMonth - 1, eventDates.endDay);
-                                    
+
                                     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
                                         // 현재 표시되는 월의 날짜만 추가
                                         if (d.getFullYear() === currentCalendarYear && d.getMonth() === currentCalendarMonth - 1) {
                                             eventDays.push(d.getDate());
                                         }
                                     }
-                                    
+
                                     return (
                                         <div>
                                             <div className="flex items-center justify-center mb-4">
-                                                <button 
+                                                <button
                                                     onClick={handlePrevMonth}
                                                     className="p-1 hover:bg-gray-100 rounded mr-2"
                                                 >
@@ -352,7 +352,7 @@ const EventDetail = (): JSX.Element => {
                                                 <span className="text-center">
                                                     {currentCalendarYear}년 {currentCalendarMonth}월
                                                 </span>
-                                                <button 
+                                                <button
                                                     onClick={handleNextMonth}
                                                     className="p-1 hover:bg-gray-100 rounded ml-2"
                                                 >
@@ -363,11 +363,10 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                             <div className="grid grid-cols-7 gap-1 mb-2">
                                                 {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
-                                                    <div key={day} className={`text-center text-xs font-medium py-1 ${
-                                                        day === "일" ? "text-red-500" : 
-                                                        day === "토" ? "text-blue-500" : 
-                                                        "text-gray-600"
-                                                    }`}>
+                                                    <div key={day} className={`text-center text-xs font-medium py-1 ${day === "일" ? "text-red-500" :
+                                                        day === "토" ? "text-blue-500" :
+                                                            "text-gray-600"
+                                                        }`}>
                                                         {day}
                                                     </div>
                                                 ))}
@@ -379,11 +378,11 @@ const EventDetail = (): JSX.Element => {
                                                     const dayOfWeek = currentDate.getDay(); // 0=일요일, 6=토요일
                                                     const isEventDay = eventDays.includes(date.day);
                                                     const isSelected = selectedDate === date.day;
-                                                    
+
                                                     let textColor = "text-gray-400"; // 기본 회색
                                                     let fontWeight = "font-normal";
                                                     let bgColor = "";
-                                                    
+
                                                     if (date.isCurrentMonth && isEventDay) {
                                                         // 행사일인 경우 요일에 따라 색상 결정
                                                         fontWeight = "font-bold";
@@ -406,7 +405,7 @@ const EventDetail = (): JSX.Element => {
                                                         textColor = "text-gray-400";
                                                         fontWeight = "font-normal";
                                                     }
-                                                    
+
                                                     return (
                                                         <div
                                                             key={index}
@@ -446,13 +445,12 @@ const EventDetail = (): JSX.Element => {
                                     const selectedDateStr = `${currentCalendarYear}.${String(currentCalendarMonth).padStart(2, '0')}.${String(selectedDate).padStart(2, '0')}`;
                                     return scheduleDate === selectedDateStr;
                                 }).map((schedule: any, index: number) => (
-                                    <div 
-                                        key={index} 
-                                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                                            selectedSchedule === schedule 
-                                                ? 'border-blue-500 bg-blue-50' 
-                                                : 'border-gray-200 hover:bg-gray-50'
-                                        }`}
+                                    <div
+                                        key={index}
+                                        className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedSchedule === schedule
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:bg-gray-50'
+                                            }`}
                                         onClick={() => setSelectedSchedule(schedule)}
                                     >
                                         <div className="flex items-center gap-3">
@@ -506,14 +504,13 @@ const EventDetail = (): JSX.Element => {
 
                 {/* Book Button */}
                 <div className="flex justify-center mb-12">
-                    <button 
+                    <button
                         onClick={() => setIsExternalBookingOpen(true)}
                         disabled={!selectedDate || !selectedSchedule}
-                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${
-                            selectedDate && selectedSchedule
-                                ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
+                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
+                            ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
                     >
                         예매하기
                     </button>
@@ -576,19 +573,19 @@ const EventDetail = (): JSX.Element => {
                                 </div>
                             </>
                         )}
-                        
+
                         {activeTab === "location" && (
                             <VenueInfo />
                         )}
-                        
+
                         {activeTab === "booking" && (
                             <CancelPolicy bookingInfo={eventData.bookingInfo} />
                         )}
-                        
+
                         {activeTab === "review" && (
                             <Reviews />
                         )}
-                        
+
                         {activeTab === "expectation" && (
                             <Expectations />
                         )}
@@ -612,7 +609,7 @@ const EventDetail = (): JSX.Element => {
             </footer>
 
             {/* External Booking Modal */}
-            <ExternalLink 
+            <ExternalLink
                 isOpen={isExternalBookingOpen}
                 onClose={() => setIsExternalBookingOpen(false)}
             />

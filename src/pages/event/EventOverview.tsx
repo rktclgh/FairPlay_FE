@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { TopNav } from "../components/TopNav";
+import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
@@ -310,8 +310,8 @@ export default function EventOverview() {
                             <button
                                 onClick={() => setViewMode("list")}
                                 className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
-                                        ? "bg-black text-white"
-                                        : "bg-white text-black hover:bg-gray-50"
+                                    ? "bg-black text-white"
+                                    : "bg-white text-black hover:bg-gray-50"
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -325,8 +325,8 @@ export default function EventOverview() {
                                     setSelectedDateRange(`${calendarYear}년 ${calendarMonth}월`);
                                 }}
                                 className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
-                                        ? "bg-black text-white"
-                                        : "bg-white text-black hover:bg-gray-50"
+                                    ? "bg-black text-white"
+                                    : "bg-white text-black hover:bg-gray-50"
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -719,10 +719,10 @@ export default function EventOverview() {
                                                                 }}
                                                             >
                                                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.category === "박람회" ? "bg-blue-500" :
-                                                                        event.category === "공연" ? "bg-red-500" :
-                                                                            event.category === "강연/세미나" ? "bg-green-500" :
-                                                                                event.category === "전시/행사" ? "bg-yellow-500" :
-                                                                                    event.category === "축제" ? "bg-gray-500" : "bg-gray-400"
+                                                                    event.category === "공연" ? "bg-red-500" :
+                                                                        event.category === "강연/세미나" ? "bg-green-500" :
+                                                                            event.category === "전시/행사" ? "bg-yellow-500" :
+                                                                                event.category === "축제" ? "bg-gray-500" : "bg-gray-400"
                                                                     }`}></div>
                                                                 <span className="truncate text-gray-700">{event.title}</span>
                                                             </div>

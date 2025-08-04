@@ -5,8 +5,9 @@ import { MyPageInfo } from "./pages/mypage/Info";
 import { MyPageAccount } from "./pages/mypage/Account";
 import { MyPageFavorites } from "./pages/mypage/Favorites";
 import { Withdrawal } from "./pages/mypage/Withdrawal";
-import EventOverview from "./pages/EventOverview";
-import EventDetail from "./pages/EventDetail";
+import { MyPageMyReview } from "./pages/mypage/MyReview";
+import EventOverview from "./pages/event/EventOverview";
+import EventDetail from "./pages/event/EventDetail";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { SignUpPage } from "./pages/auth/SignUpPage";
 import { FindPassword } from "./pages/auth/FindPassword";
@@ -28,23 +29,25 @@ function AppContent() {
         <Route path="/mypage/info" element={<MyPageInfo />} />
         <Route path="/mypage/account" element={<MyPageAccount />} />
         <Route path="/mypage/favorites" element={<MyPageFavorites />} />
+        <Route path="/mypage/write-review" element={<MyPageMyReview />} />
+        <Route path="/mypage/my-review" element={<MyPageMyReview />} />
         <Route path="/mypage/withdrawal" element={<Withdrawal />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/find-password" element={<FindPassword />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
-      <ToastContainer 
-        position="bottom-right" 
-        autoClose={2500} 
-        hideProgressBar={false} 
-        newestOnTop={false} 
-        closeOnClick 
-        rtl={false} 
-        pauseOnFocusLoss 
-        draggable 
-        pauseOnHover 
-        theme="dark" 
+      <ToastContainer
+        position="bottom-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
       />
     </>
   );

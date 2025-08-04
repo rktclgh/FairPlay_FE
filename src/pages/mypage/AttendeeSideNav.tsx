@@ -85,7 +85,25 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                             >
                                 관심
                             </Link>
-                            <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] whitespace-nowrap">관람평</div>
+                            <Link
+                                to="/mypage/write-review"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/write-review" || location.pathname === "/mypage/my-review"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: (location.pathname === "/mypage/write-review" || location.pathname === "/mypage/my-review") ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = (location.pathname === "/mypage/write-review" || location.pathname === "/mypage/my-review") ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = (location.pathname === "/mypage/write-review" || location.pathname === "/mypage/my-review") ? "black" : "#00000080";
+                                }}
+                            >
+                                관람평
+                            </Link>
                         </div>
                     </div>
                 </nav>
