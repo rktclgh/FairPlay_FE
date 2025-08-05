@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
+import { Star } from "lucide-react";
 
 const reviewsData = [
     {
@@ -49,6 +50,7 @@ const writeReviews = [
         viewDate: "2025.01.16 (목) 14:00",
         location: "코엑스 전시장 A홀",
         ticket: "일반 관람권 1매",
+        image: "/images/NoImage.png"
     },
     {
         id: 2,
@@ -57,6 +59,7 @@ const writeReviews = [
         viewDate: "2025.01.16 (목) 14:00",
         location: "코엑스 전시장 A홀",
         ticket: "일반 관람권 1매",
+        image: "/images/NoImage.png"
     },
     {
         id: 3,
@@ -65,6 +68,7 @@ const writeReviews = [
         viewDate: "2025.01.16 (목) 14:00",
         location: "코엑스 전시장 A홀",
         ticket: "일반 관람권 1매",
+        image: "/images/NoImage.png"
     },
 ];
 
@@ -73,6 +77,9 @@ export const MyPageMyReview = () => {
     const [selectedReviews, setSelectedReviews] = useState<number[]>([]);
     const [selectAll, setSelectAll] = useState(false);
     const [reviews, setReviews] = useState(reviewsData);
+    const [selectedEvent, setSelectedEvent] = useState<any>(null);
+    const [rating, setRating] = useState(0);
+    const [reviewText, setReviewText] = useState("");
 
     const handleSelectAll = (checked: boolean) => {
         setSelectAll(checked);
@@ -92,7 +99,28 @@ export const MyPageMyReview = () => {
         }
     };
 
+    const handleEventClick = (event: any) => {
+        setSelectedEvent(event);
+        setRating(0);
+        setReviewText("");
+    };
 
+    const handleBackToList = () => {
+        setSelectedEvent(null);
+        setRating(0);
+        setReviewText("");
+    };
+
+    const handleSubmitReview = () => {
+        // 여기에 리뷰 제출 로직 추가
+        console.log("리뷰 제출:", {
+            event: selectedEvent,
+            rating,
+            reviewText
+        });
+        // 제출 후 리스트로 돌아가기
+        handleBackToList();
+    };
 
     const renderStars = (rating: number) => {
         return Array.from({ length: 5 }, (_, index) => (
@@ -151,68 +179,193 @@ export const MyPageMyReview = () => {
 
                 <TopNav className="!absolute !left-0 !top-0" />
 
-                <div className="absolute w-[1256px] h-[205px] top-[1146px] left-0 bg-white border-t [border-top-style:solid] border-[#0000001f]">
-                    <p className="absolute top-[62px] left-[515px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
-
-                    <div className="absolute top-[118px] left-[450px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        이용약관
-                    </div>
-
-                    <div className="absolute top-[118px] left-[534px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        개인정보처리방침
-                    </div>
-
-                    <div className="absolute top-[118px] left-[669px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        고객센터
-                    </div>
-
-                    <div className="absolute top-[118px] left-[752px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        회사소개
-                    </div>
-                </div>
-
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* Write Review Content */}
                 {activeTab === 'write' && (
-                    <div className="absolute top-[263px] left-64 flex flex-col gap-8">
-                        {writeReviews.map((item) => (
-                            <div key={item.id} className="flex gap-6">
-                                <img
-                                    src="/images/NoImage.png"
-                                    alt="preview"
-                                    className="w-[158px] h-[190px] object-cover"
-                                />
-                                <div className="flex flex-col gap-2">
-                                    <p className="text-lg font-semibold">{item.title}</p>
-                                    <div className="flex gap-4">
-                                        <div className="text-sm text-black font-semibold w-12">일시</div>
-                                        <div className="text-sm text-[#000000b2]">{item.dateRange}</div>
+                    <div className="absolute top-[263px] left-64 right-0">
+                        {!selectedEvent ? (
+                            // 행사 리스트 표시
+                            <div className="flex flex-col gap-8">
+                                {writeReviews.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="flex gap-6 cursor-pointer p-4 rounded-lg"
+                                        onClick={() => handleEventClick(item)}
+                                    >
+                                        <img
+                                            src={item.image}
+                                            alt="preview"
+                                            className="w-[158px] h-[190px] object-cover"
+                                        />
+                                        <div className="flex flex-col gap-2">
+                                            <p className="text-lg font-semibold">{item.title}</p>
+                                            <div className="flex gap-4">
+                                                <div className="text-sm text-black font-semibold w-12">일시</div>
+                                                <div className="text-sm text-[#000000b2]">{item.dateRange}</div>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <div className="text-sm text-black font-semibold w-12">장소</div>
+                                                <div className="text-sm text-[#000000b2]">{item.location}</div>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <div className="text-sm text-black font-semibold w-12">관람일</div>
+                                                <div className="text-sm text-[#000000b2]">{item.viewDate}</div>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <div className="text-sm text-black font-semibold w-12">티켓</div>
+                                                <div className="text-sm text-[#000000b2]">{item.ticket}</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-4">
-                                        <div className="text-sm text-black font-semibold w-12">장소</div>
-                                        <div className="text-sm text-[#000000b2]">{item.location}</div>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div className="text-sm text-black font-semibold w-12">관람일</div>
-                                        <div className="text-sm text-[#000000b2]">{item.viewDate}</div>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div className="text-sm text-black font-semibold w-12">티켓</div>
-                                        <div className="text-sm text-[#000000b2]">{item.ticket}</div>
+                                ))}
+                            </div>
+                        ) : (
+                            // 관람평 작성 폼
+                            <div className="w-full pb-8">
+                                {/* 뒤로가기 버튼 */}
+                                <button
+                                    onClick={handleBackToList}
+                                    className="mb-6 text-sm text-[#00000099] hover:text-black flex items-center gap-2"
+                                >
+                                    ← 행사 목록으로 돌아가기
+                                </button>
+
+                                {/* 행사 정보 */}
+                                <div className="flex gap-6 mb-8">
+                                    <img
+                                        className="w-[158px] h-[190px] object-cover"
+                                        alt="Event"
+                                        src={selectedEvent.image}
+                                    />
+
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-lg font-semibold">{selectedEvent.title}</p>
+                                        <div className="flex gap-4">
+                                            <div className="text-sm text-black font-semibold w-12">일시</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.dateRange}</div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="text-sm text-black font-semibold w-12">장소</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.location}</div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="text-sm text-black font-semibold w-12">관람일</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.viewDate}</div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="text-sm text-black font-semibold w-12">티켓</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.ticket}</div>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* 별점 평가 */}
+                                <div className="mb-8">
+                                    <h3 className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black text-lg leading-[27px] tracking-[0] mb-[37px]">
+                                        별점 평가
+                                    </h3>
+
+                                    <div className="flex items-center gap-[30px]">
+                                        <div className="flex gap-[30px]">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    onClick={() => setRating(star)}
+                                                    className="w-[27px] h-[26px] p-0"
+                                                >
+                                                    <Star
+                                                        className={`w-[25px] h-[23px] ${star <= rating
+                                                            ? "fill-yellow-400 text-yellow-400"
+                                                            : "text-gray-300"
+                                                            }`}
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-[#00000099] text-base leading-6 tracking-[0]">
+                                            별점을 선택해주세요
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* 관람평 작성 */}
+                                <div className="mb-8">
+                                    <h3 className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black text-lg leading-[27px] tracking-[0] mb-[37px]">
+                                        관람평 작성
+                                    </h3>
+
+                                    <textarea
+                                        value={reviewText}
+                                        onChange={(e) => setReviewText(e.target.value)}
+                                        className="w-full h-[166px] rounded-lg border border-[#0000001f] resize-none p-4"
+                                        placeholder="관람 후기를 작성해주세요..."
+                                    />
+
+                                    <div className="flex justify-between mt-[11px]">
+                                        <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-[#00000080] text-sm leading-[21px] tracking-[0]">
+                                            최소 20자 이상 입력해주세요
+                                        </span>
+                                        <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-[#00000080] text-sm leading-[21px] tracking-[0]">
+                                            {reviewText.length}/1000
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* 관람평 작성 안내 */}
+                                <div className="bg-neutral-100 rounded-lg border-0 mb-8 p-[14px]">
+                                    <h4 className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black text-base leading-6 tracking-[0] mb-[26px]">
+                                        관람평 작성 안내
+                                    </h4>
+
+                                    <div className="space-y-[21px]">
+                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-[#000000b2] text-sm leading-[21px] tracking-[0]">
+                                            • 관람평은 실제 관람 후기를 바탕으로 작성해주세요.
+                                        </div>
+                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-[#000000b2] text-sm leading-[21px] tracking-[0]">
+                                            • 욕설, 비방, 광고성 내용은 삭제될 수 있습니다.
+                                        </div>
+                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-[#000000b2] text-sm leading-[21px] tracking-[0]">
+                                            • 작성된 관람평은 다른 이용자들에게 공개됩니다.
+                                        </div>
+                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-[#000000b2] text-sm leading-[21px] tracking-[0]">
+                                            • 허위 정보나 부적절한 내용이 포함된 경우 제재를 받을 수 있습니다.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 액션 버튼 */}
+                                <div className="flex gap-[20px] justify-center">
+                                    <button
+                                        onClick={handleBackToList}
+                                        className="w-[82px] h-[42px] rounded-lg border border-[#0000001f] bg-white hover:bg-gray-50"
+                                    >
+                                        <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000099] text-base text-center leading-6 tracking-[0]">
+                                            취소
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        onClick={handleSubmitReview}
+                                        disabled={rating === 0 || reviewText.length < 20}
+                                        className={`w-[82px] h-[42px] rounded-lg border border-[#0000001f] ${rating > 0 && reviewText.length >= 20
+                                            ? "bg-black hover:bg-gray-800"
+                                            : "bg-[#d9d9d9]"
+                                            }`}
+                                    >
+                                        <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-white text-base text-center leading-6 tracking-[0]">
+                                            등록
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 )}
 
                 {/* My Review Content */}
                 {activeTab === 'my' && (
                     <>
-
                         {/* Select All Section */}
                         <div className="absolute w-[947px] h-[51px] top-[263px] left-64 bg-neutral-100 rounded-lg flex items-center px-3.5">
                             <input
@@ -240,8 +393,6 @@ export const MyPageMyReview = () => {
                                         onChange={(e) => handleSelectReview(review.id, e.target.checked)}
                                         className="absolute top-[21px] left-[19px] w-[17px] h-[18px] bg-white border border-[#666666]"
                                     />
-
-
 
                                     {/* Action Buttons */}
                                     <div className="absolute top-[21px] right-[47px] flex gap-1">
