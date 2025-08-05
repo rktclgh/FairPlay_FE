@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
+import QrTicket from "../../components/QrTicket";
+import { QrCode, Calendar, MapPin } from "lucide-react";
 
 const eventData = [
     {
@@ -27,12 +29,33 @@ const eventData = [
         venue: "강남구 컨벤션센터",
         seatInfo: "자유석",
         bookingDate: "2024년 8월 1일",
-        participantInfo: "폼링크",
+        participantInfo: "입력하기",
         participantFormLink: "https://forms.google.com/example3",
     },
 ];
 
 export default function MyTickets(): JSX.Element {
+    const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
+    const [selectedTicketData, setSelectedTicketData] = useState<any>(null);
+
+    const handleQrTicketOpen = (eventData: any) => {
+        setSelectedTicketData({
+            eventName: eventData.eventName,
+            eventDate: eventData.eventDate,
+            venue: eventData.venue,
+            seatInfo: eventData.seatInfo,
+            ticketNumber: `KPC-2024-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`,
+            bookingDate: eventData.bookingDate,
+            entryTime: "18:30 ~ 19:00",
+        });
+        setIsQrTicketOpen(true);
+    };
+
+    const handleQrTicketClose = () => {
+        setIsQrTicketOpen(false);
+        setSelectedTicketData(null);
+    };
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] h-[1565px] relative">
@@ -124,10 +147,17 @@ export default function MyTickets(): JSX.Element {
                                         </div>
                                     </div>
 
-                                    <button className="absolute top-6 right-6 w-[119px] h-[54px] bg-[#f7fafc] rounded-lg border border-solid border-[#0000001f] hover:bg-[#f7fafc] flex items-center justify-center">
-                                        <span className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap">
-                                            QR 코드
-                                        </span>
+                                    <button
+                                        onClick={() => handleQrTicketOpen(event)}
+                                        className="absolute top-6 right-6 w-[140px] h-[56px] bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <QrCode className="w-4 h-4 text-white" />
+                                            <span className="font-semibold text-white text-sm tracking-wide">
+                                                QR 티켓
+                                            </span>
+                                        </div>
+                                        <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                                     </button>
                                 </div>
                             </div>
@@ -135,6 +165,12 @@ export default function MyTickets(): JSX.Element {
                     </div>
                 </div>
             </div>
+
+            <QrTicket
+                isOpen={isQrTicketOpen}
+                onClose={handleQrTicketClose}
+                ticketData={selectedTicketData}
+            />
         </div>
     );
 } 

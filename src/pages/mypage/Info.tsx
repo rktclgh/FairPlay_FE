@@ -116,7 +116,7 @@ export const MyPageInfo = () => {
             setPasswordError("");
 
             const request: PasswordChangeRequest = {
-                oldPassword,
+                currentPassword: oldPassword,
                 newPassword
             };
 
@@ -132,7 +132,11 @@ export const MyPageInfo = () => {
             }
         } catch (error) {
             console.error("비밀번호 변경 실패:", error);
-            setPasswordError("비밀번호 변경 중 오류가 발생했습니다.");
+            if (error instanceof Error) {
+                setPasswordError(error.message);
+            } else {
+                setPasswordError("비밀번호 변경 중 오류가 발생했습니다.");
+            }
         } finally {
             setIsChangingPassword(false);
         }
