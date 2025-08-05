@@ -25,4 +25,13 @@ api.interceptors.response.use(
     }
 );
 
+// 인증 헤더 자동 추가 인터셉터
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 export default api;
