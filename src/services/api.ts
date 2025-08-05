@@ -32,6 +32,19 @@ export interface UserInfo {
   phoneNumber: string;
 }
 
+// 알림 정보 타입
+export interface Notification {
+  notificationId: number;
+  typeCode: string;
+  methodCode: string;
+  title: string;
+  message: string;
+  url: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+
 export interface PasswordChangeRequest {
   oldPassword: string;
   newPassword: string;
@@ -292,6 +305,94 @@ class EventApi {
       }, 500);
     });
   }
+
+    // 알림 목록 조회
+  async getNotifications(): Promise<Notification[]> {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      console.log("로그인 토큰 없음, 알림을 조회할 수 없습니다.");
+      return [];
+    }
+
+    try {
+      const response = await fetch("/api/notifications", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`알림 목록 조회 실패: ${response.status} ${response.statusText}`, errorBody);
+        return [];
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("알림 목록 조회 중 네트워크 오류:", error);
+      return [];
+    }
+  }
+
+  // 알림 읽음 처리
+  async markNotificationAsRead(notificationId: number): Promise<boolean> {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return false;
+
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error("알림 읽음 처리 실패:", error);
+      return false;
+    }
+  }
+
+  // 알림 삭제
+  async deleteNotification(notificationId: number): Promise<boolean> {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return false;
+
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error("알림 삭제 실패:", error);
+      return false;
+    }
+  }
+
+  // 여러 알림 삭제
+  async deleteMultipleNotifications(notificationIds: number[]): Promise<boolean> {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return false;
+
+    try {
+      const response = await fetch(`/api/notifications?notificationIds=${notificationIds.join(',')}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error("여러 알림 삭제 실패:", error);
+      return false;
+    }
+  }
 }
+
+// export const eventApi = new EventApi();
 
 export const eventApi = new EventApi();
