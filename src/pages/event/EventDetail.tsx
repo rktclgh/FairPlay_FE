@@ -22,15 +22,15 @@ const EventDetail = (): JSX.Element => {
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
 
     // 이벤트 데이터 로드 시 달력 초기화
-    useEffect(() => {
-        if (eventData) {
-            const eventDates = parseEventDates(eventData.schedule);
-            if (eventDates) {
-                setCurrentCalendarYear(eventDates.startYear);
-                setCurrentCalendarMonth(eventDates.startMonth);
-            }
-        }
-    }, [eventData]);
+    // useEffect(() => {
+    //     if (eventData) {
+    //         const eventDates = parseEventDates(eventData.schedule);
+    //         if (eventDates) {
+    //             setCurrentCalendarYear(eventDates.startYear);
+    //             setCurrentCalendarMonth(eventDates.startMonth);
+    //         }
+    //     }
+    // }, [eventData]);
 
     // 날짜 파싱 함수
     const parseEventDates = (schedule: string) => {
@@ -531,6 +531,7 @@ const EventDetail = (): JSX.Element => {
                                 <span className="text-base text-[#00000099] font-semibold w-20">가격</span>
                                 <div className="grid grid-cols-2 gap-x-4">
                                     {/* TODO: 티켓 및 회차 연결 */}
+                                    <p>티켓 및 회차 연결</p>
                                     {/*<div className="space-y-1">*/}
                                     {/*    {eventData.pricingTiers.map((tier: any, index: number) => (*/}
                                     {/*        <p key={index} className="text-base">*/}
@@ -558,6 +559,7 @@ const EventDetail = (): JSX.Element => {
                             <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">
                                 날짜 선택
                             </h3>
+                            <p>회차 연결</p>
                         {/*    <div className="space-y-3">*/}
                         {/*        {eventData.schedules?.filter((schedule: any) => {*/}
                         {/*            // 선택된 날짜와 일치하는 회차만 필터링*/}
@@ -634,10 +636,10 @@ const EventDetail = (): JSX.Element => {
                             }
                         }}
                         // disabled={!selectedDate || !selectedSchedule}
-                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
-                            ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
+                        // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
+                        //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                        //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        //     }`}
                     >
                         예매하기
                     </button>
@@ -680,11 +682,13 @@ const EventDetail = (): JSX.Element => {
                                 </h3>
                                 <p className="text-base mb-4">{eventData.bio}</p>
 
-                                {eventData.content.map((paragraph: string, index: number) => (
-                                    <p key={index} className="text-base mb-6">
-                                        {paragraph}
-                                    </p>
-                                ))}
+                                {eventData.content
+                                //     .map((paragraph: string, index: number) => (
+                                //     <p key={index} className="text-base mb-6">
+                                //         {paragraph}
+                                //     </p>
+                                // ))
+                                }
 
                                 <div className="bg-[#e7eaff] rounded-lg mt-8 p-4">
                                     <h4 className="text-base font-semibold text-[#212121] mb-4">
@@ -717,7 +721,7 @@ const EventDetail = (): JSX.Element => {
                         {/*)}*/}
 
                         {activeTab === "review" && (
-                            eventData.id === "2" ? (
+                            eventData.mainCategory === "박람회" ? (
                                 <div>
                                     <div className="flex items-center gap-4 mb-8">
                                         <h3 className="text-2xl font-semibold text-[#212121]">
@@ -869,7 +873,7 @@ const EventDetail = (): JSX.Element => {
                         )}
 
                         {activeTab === "expectation" && (
-                            eventData.id === "2" ? (
+                            eventData.mainCategory === "박람회" ? (
                                 <div>
                                     <h3 className="text-2xl font-semibold text-[#212121] mb-8">
                                         박람회 기대평
