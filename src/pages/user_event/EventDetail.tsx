@@ -1037,7 +1037,7 @@ const EventDetail = (): JSX.Element => {
             <ExternalLink
                 isOpen={isExternalBookingOpen}
                 onClose={() => setIsExternalBookingOpen(false)}
-                officialUrl={eventData.officialUrl}
+                title={eventData.titleKr}
                 externalLinks={eventData.externalLinks}
             />
         </div>
