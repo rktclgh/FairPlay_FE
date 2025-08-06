@@ -1083,4 +1083,4 @@ const EventDetail = (): JSX.Element => {
     );
 };
 
-export default EventDetail; 
+export default EventDetail;

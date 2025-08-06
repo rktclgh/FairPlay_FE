@@ -1,3 +1,4 @@
+import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import ChatRoomList from "./ChatRoomList";
 import ChatRoom from "./ChatRoom";
@@ -9,13 +10,10 @@ type ChatRoomInfo = {
     userName?: string;
 };
 
-type Props = {
-    open: boolean;
-    onClose: () => void;
-    selectedRoomId: number | null;
-    setSelectedRoomId: (id: number | null) => void;
-};
-
+/**
+ * 모달(팝업)로 떠 있는 채팅창의 메인입니다.
+ * - 방목록 → 채팅방(메시지)로 뷰 전환
+ */
 export default function ChatModal({
                                       open,
                                       onClose,
@@ -34,6 +32,7 @@ export default function ChatModal({
                         <h2 className="font-bold text-lg text-black">문의/실시간 채팅</h2>
                         <button onClick={onClose} className="text-xl font-bold text-black">×</button>
                     </div>
+                    {/* 방 선택 전 → 방 목록 / 방 선택 → 채팅방 */}
                     {selectedRoomId === null ? (
                         <ChatRoomList onSelect={(roomId, eventTitle, userName) => {
                             setSelectedRoomId(roomId);
