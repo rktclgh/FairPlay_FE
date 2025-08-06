@@ -12,6 +12,7 @@ const defaultReservationData = [
         paymentMethod: "신용카드",
         status: "결제 완료",
         statusColor: "bg-[#4caf50]",
+        quantity: 2,
     },
     {
         id: 2,
@@ -22,6 +23,7 @@ const defaultReservationData = [
         paymentMethod: "카카오페이",
         status: "결제 완료",
         statusColor: "bg-[#4caf50]",
+        quantity: 1,
     },
     {
         id: 3,
@@ -33,6 +35,7 @@ const defaultReservationData = [
         status: "예약 완료",
         statusColor: "bg-[#2196f3]",
         hasButton: true,
+        quantity: 3,
     },
     {
         id: 4,
@@ -43,6 +46,7 @@ const defaultReservationData = [
         paymentMethod: "카카오페이",
         status: "결제 실패",
         statusColor: "bg-[#f44336]",
+        quantity: 1,
     },
     {
         id: 5,
@@ -53,6 +57,7 @@ const defaultReservationData = [
         paymentMethod: "신용카드",
         status: "취소 완료",
         statusColor: "bg-[#9e9e9e]",
+        quantity: 2,
     },
 ];
 
@@ -122,6 +127,9 @@ export default function Reservation(): JSX.Element {
                                                 </div>
                                                 <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
                                                     {reservation.amount}
+                                                    {(reservation.quantity || 1) > 1 && (
+                                                        <span className="text-gray-500 ml-1">({reservation.quantity || 1}매)</span>
+                                                    )}
                                                 </div>
                                             </div>
 
