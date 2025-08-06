@@ -10,7 +10,7 @@ import {HiOutlineCalendar} from "react-icons/hi";
 import {TopNav} from "../components/TopNav";
 import {eventApi} from "../services/api";
 import type {Event, HotPick} from "../services/api";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {Swiper, SwiperSlide} from "swiper/react";
 import {Autoplay, EffectFade} from "swiper/modules";
 import "swiper/css";
@@ -49,6 +49,7 @@ export const Main: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(2025);
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
     const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
+    const navigate = useNavigate();
 
     const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
@@ -694,45 +695,50 @@ export const Main: React.FC = () => {
                     <div className="grid grid-cols-5 gap-6">
                         {events.slice(0, 5).map((event) => (
                             <div key={event.id} className="relative">
-                                <div className="relative">
-                                    <img
-                                        className="w-full h-64 object-cover rounded-[10px]"
-                                        alt={event.title}
-                                        src={event.thumbnailUrl}
-                                    />
-                                    <FaHeart
-                                        className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.eventId) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setLikedEvents(prev => {
-                                                const newSet = new Set(prev);
-                                                if (newSet.has(event.id)) {
-                                                    newSet.delete(event.id);
-                                                } else {
-                                                    newSet.add(event.id);
-                                                }
-                                                return newSet;
-                                            });
-                                        }}
-                                    />
-                                </div>
-                                <div className="mt-4 text-left">
-                                    <span
-                                        className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                        {event.mainCategory}
-                                    </span>
-                                    <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                    <div className="text-sm text-gray-600 mb-2">
-                                        <div className="font-bold">{event.location}</div>
-                                        <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
+                                <Link to={`/eventdetail/${event.id}`}>
+                                    <div className="relative">
+                                        <img
+                                            className="w-full h-64 object-cover rounded-[10px]"
+                                            alt={event.title}
+                                            src={event.thumbnailUrl}
+                                        />
+                                        <FaHeart
+                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLikedEvents(prev => {
+                                                    const newSet = new Set(prev);
+                                                    if (newSet.has(event.id)) {
+                                                        newSet.delete(event.id);
+                                                    } else {
+                                                        newSet.add(event.id);
+                                                    }
+                                                    return newSet;
+                                                });
+                                            }}
+                                        />
+
                                     </div>
-                                    <p className="font-bold text-lg text-[#ff6b35]">{event.minPrice}</p>
-                                </div>
+                                    <div className="mt-4 text-left">
+
+                            <span
+                                className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                        {event.mainCategory}
+                    </span>
+                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            <div className="font-bold">{event.location}</div>
+                                            <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
+                                        </div>
+                                        <p className="font-bold text-lg text-[#ff6b35]">{event.minPrice}</p>
+                                    </div>
+                                </Link>
                             </div>
                         ))}
                     </div>
 
-                    {/* 전체보기 버튼 */}
+                    {/* 전체보기 버튼 */
+                    }
                     <div className="text-center mt-12">
                         <Link to="/eventoverview">
                             <button
@@ -744,7 +750,8 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 푸터 */}
+            {/* 푸터 */
+            }
             <footer className="bg-white border-t border-gray-200 py-16">
                 <div className="max-w-7xl mx-auto px-8 text-center">
                     <p className="text-gray-600 mb-8">
@@ -759,5 +766,6 @@ export const Main: React.FC = () => {
                 </div>
             </footer>
         </div>
-    );
+    )
+        ;
 }; 
