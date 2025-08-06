@@ -1,38 +1,29 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+import * as events from "node:events";
+import {eventAPI} from "@/services/event";
 
 interface ExternalLinkProps {
   isOpen: boolean;
   onClose: () => void;
+  officialUrl?: string;
+  externalLinks?: { url: string; displayText: string; }[];
 }
 
-export const ExternalLink = ({ isOpen, onClose }: ExternalLinkProps) => {
+export const ExternalLink = ({ isOpen, onClose, title, externalLinks }: ExternalLinkProps) => {
   const { eventId } = useParams();
 
-  // 예매처 데이터 (실제로는 API에서 가져올 예정)
-  const bookingPartners = [
-    {
-      id: 1,
-      name: "인터파크 티켓",
-      logo: "https://via.placeholder.com/160x50/FF6B35/FFFFFF?text=인터파크",
-      url: "https://ticket.interpark.com",
-      description: "인터파크 티켓을 통해 예매하실 수 있습니다."
-    },
-    {
-      id: 2,
-      name: "티켓링크",
-      logo: "https://via.placeholder.com/160x50/007BFF/FFFFFF?text=티켓링크",
-      url: "https://www.ticketlink.co.kr",
-      description: "티켓링크를 통해 예매하실 수 있습니다."
-    },
-    {
-      id: 3,
-      name: "멜론티켓",
-      logo: "https://via.placeholder.com/160x50/00D564/FFFFFF?text=멜론티켓",
-      url: "https://ticket.melon.com",
-      description: "멜론티켓을 통해 예매하실 수 있습니다."
-    }
-  ];
+  const linksToDisplay = [];
+  if (externalLinks && externalLinks.length > 0) {
+    externalLinks.forEach((link, index) => {
+      linksToDisplay.push({
+        id: `external-${index}`,
+        name: link.displayText,
+        url: link.url,
+        description: `${link.displayText}를 통해 예매하실 수 있습니다.`
+      });
+    });
+  }
 
   const handleExternalBooking = (url: string) => {
     // 새 창에서 외부 예매처 열기
@@ -50,6 +41,7 @@ export const ExternalLink = ({ isOpen, onClose }: ExternalLinkProps) => {
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30"
+      onClick={handleBackdropClick}
     >
       <div className="bg-white w-[800px] h-[700px] rounded-[10px] border border-solid border-[#0000006b] shadow-[0px_2px_8px_#0000001a] relative">
         {/* 닫기 버튼 */}
@@ -62,7 +54,7 @@ export const ExternalLink = ({ isOpen, onClose }: ExternalLinkProps) => {
 
         {/* 제목 */}
         <p className="absolute top-[58px] left-0 right-0 text-center font-semibold text-black text-[32px] leading-10">
-          POST MALONE LIVE IN SEOUL 2025
+          {title}
         </p>
 
         {/* 구분선 */}
@@ -70,50 +62,56 @@ export const ExternalLink = ({ isOpen, onClose }: ExternalLinkProps) => {
 
         {/* 안내 메시지 */}
         <p className="absolute top-[159px] left-0 right-0 text-center text-black text-xl leading-7 font-normal">
-          해당 공연은 외부 예매처를 통해 예매하실 수 있습니다.
+          해당 행사는 외부 예매처를 통해 예매하실 수 있습니다.
         </p>
 
         {/* 예매처 목록 */}
         <div className="absolute top-[220px] left-0 right-0 px-8">
           <div className="space-y-4">
-            {bookingPartners.map((partner) => (
-              <div key={partner.id} className="flex items-center justify-between p-4 bg-[#f8f9fa] rounded-lg border border-solid border-[#0000001a]">
-                {/* 예매처 정보 */}
-                <div className="flex items-center gap-4">
-                  <div className="w-40 h-[50px] bg-white rounded flex items-center justify-center border border-gray-200">
-                    <img
-                      src={partner.logo}
-                      alt={partner.name}
-                      className="max-w-full max-h-full object-contain"
-                      onError={(e) => {
-                        // 로고 로드 실패 시 텍스트로 대체
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          const fallback = document.createElement('span');
-                          fallback.className = 'text-sm font-medium text-gray-600';
-                          fallback.textContent = partner.name;
-                          parent.appendChild(fallback);
-                        }
-                      }}
-                    />
+            {linksToDisplay.length > 0 ? (
+              linksToDisplay.map((partner) => (
+                <div key={partner.id} className="flex items-center justify-between p-4 bg-[#f8f9fa] rounded-lg border border-solid border-[#0000001a]">
+                  {/* 예매처 정보 */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-40 h-[50px] bg-white rounded flex items-center justify-center border border-gray-200">
+                      <img
+                          src={partner.logo}
+                          alt={partner.name}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            // 로고 로드 실패 시 텍스트로 대체
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const fallback = document.createElement('span');
+                              fallback.className = 'text-sm font-medium text-gray-600';
+                              fallback.textContent = partner.name;
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-lg font-medium text-black">{partner.name}</p>
+                      <p className="text-sm text-gray-600">{partner.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-lg font-medium text-black">{partner.name}</p>
-                    <p className="text-sm text-gray-600">{partner.description}</p>
-                  </div>
-                </div>
 
-                {/* 예매 버튼 */}
-                <button
-                  onClick={() => handleExternalBooking(partner.url)}
-                  className="w-[120px] h-[50px] bg-[#ef6156] hover:bg-[#d85147] rounded-[10px] text-white font-semibold text-lg transition-colors"
-                >
-                  예매하기
-                </button>
+                  {/* 예매 버튼 */}
+                  <button
+                    onClick={() => handleExternalBooking(partner.url)}
+                    className="w-[120px] h-[50px] bg-[#ef6156] hover:bg-[#d85147] rounded-[10px] text-white font-semibold text-lg transition-colors"
+                  >
+                    예매하기
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                현재 이용 가능한 외부 예매처가 없습니다.
               </div>
-            ))}
+            )}
           </div>
         </div>
 

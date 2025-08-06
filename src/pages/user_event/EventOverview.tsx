@@ -9,8 +9,11 @@ import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
+import { eventAPI } from "../../services/event"
+import type { EventSummaryDto } from "../../services/types/eventType";
 
 export default function EventOverview() {
+    const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
@@ -106,6 +109,75 @@ export default function EventOverview() {
         }
     };
 
+    const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+    const mapMainCategoryToId = (name: string): number | undefined => {
+        switch (name) {
+            case "박람회": return 1;
+            case "강연/세미나": return 2;
+            case "전시/행사": return 3;
+            case "공연": return 4;
+            case "축제": return 5;
+            default: return undefined;
+        }
+    };
+
+    const mapSubCategoryToId = (name: string): number | undefined => {
+        const map: Record<string, number> = {
+            // group_id 1
+            "취업/채용": 101,
+            "산업/기술": 102,
+            "유학/이민/해외취업": 103,
+            "프랜차이즈/창업": 104,
+            "뷰티/패션": 105,
+            "식품/음료": 106,
+            "반려동물": 107,
+            "교육/도서": 108,
+            "IT/전자": 109,
+            "스포츠/레저": 110,
+            "기타(박람회)": 111,
+
+            // group_id 2
+            "취업/진로": 201,
+            "창업/스타트업": 202,
+            "과학/기술": 203,
+            "자기계발/라이프스타일": 204,
+            "인문/문화/예술": 205,
+            "건강/의학": 206,
+            "기타(세미나)": 207,
+
+            // group_id 3
+            "미술/디자인": 301,
+            "사진/영상": 302,
+            "공예/수공예": 303,
+            "패션/주얼리": 304,
+            "역사/문화": 305,
+            "체험 전시": 306,
+            "아동/가족": 307,
+            "행사/축제": 308,
+            "브랜드 프로모션": 309,
+            "기타(전시/행사)": 310,
+
+            // group_id 4
+            "콘서트": 401,
+            "연극/뮤지컬": 402,
+            "클래식/무용": 403,
+            "아동/가족(공연)": 404,
+            "기타(공연)": 405,
+
+            // group_id 5
+            "음악 축제": 501,
+            "영화 축제": 502,
+            "문화 축제": 503,
+            "음식 축제": 504,
+            "전통 축제": 505,
+            "지역 축제": 506,
+            "기타(축제)": 507,
+        };
+        return map[name];
+    };
+
+
     // 카테고리별 색상 정의
     const categoryColors = {
         "박람회": "bg-blue-100 text-blue-800 border border-blue-200",
@@ -118,151 +190,207 @@ export default function EventOverview() {
     // Event data for mapping
     const categories = [
         { id: "all", name: "전체" },
-        { id: "exhibition", name: "박람회" },
-        { id: "performance", name: "공연" },
-        { id: "seminar", name: "강연/세미나" },
-        { id: "event", name: "전시/행사" },
-        { id: "festival", name: "축제" },
+        { id: "박람회", name: "박람회" },
+        { id: "공연", name: "공연" },
+        { id: "강연/세미나", name: "강연/세미나" },
+        { id: "전시/행사", name: "전시/행사" },
+        { id: "축제", name: "축제" },
     ];
 
     // 2차 카테고리 데이터
     const subCategories = {
-        exhibition: [
-            "취업/채용", "산업/기술", "유학/이민/해외 취업", "프랜차이즈/창업",
-            "뷰티/패션", "식품/음료", "반려동물", "교육/도서", "IT/전자", "스포츠/레저"
+        "박람회": [
+            "취업/채용", "산업/기술", "유학/이민/해외취업", "프랜차이즈/창업",
+            "뷰티/패션", "식품/음료", "반려동물", "교육/도서", "IT/전자", "스포츠/레저", "기타(박람회)"
         ],
-        seminar: [
+        "강연/세미나": [
             "취업/진로", "창업/스타트업", "과학/기술", "자기계발/라이프스타일",
-            "인문/문화/예술", "건강/의학"
+            "인문/문화/예술", "건강/의학", "기타(세미나)"
         ],
-        event: [
+        "전시/행사": [
             "미술/디자인", "사진/영상", "공예/수공예", "패션/주얼리", "역사/문화",
-            "체험 전시", "아동/가족", "행사/축제", "브랜드 프로모션"
+            "체험 전시", "아동/가족", "행사/축제", "브랜드 프로모션", "기타(전시/행사)"
         ],
-        performance: [
-            "콘서트", "연극/뮤지컬", "클래식/무용", "아동/가족"
+        "공연": [
+            "콘서트", "연극/뮤지컬", "클래식/무용", "아동/가족(공연)", "기타(공연)"
         ],
-        festival: [
-            "음악 축제", "영화 축제", "문화 축제", "음식 축제", "전통 축제"
+        "축제": [
+            "음악 축제", "영화 축제", "문화 축제", "음식 축제", "전통 축제", "지역 축제", "기타(축제)"
         ]
     };
 
-    const events = [
-        {
-            id: 1,
-            title: "포스트 말론 2025 내한 공연",
-            category: "공연",
-            date: "2025-08-25 ~ 2025-08-27",
-            location: "고척스카이돔",
-            price: "100,000원 ~",
-            image: "/images/malone.jpg",
-        },
-        {
-            id: 2,
-            title: "웨덱스 웨딩박람회 in COEX",
-            category: "박람회",
-            date: "2025-07-26 ~ 2025-07-27",
-            location: "코엑스 Hall B",
-            price: "무료",
-            image: "/images/wedding.png",
-        },
-        {
-            id: 3,
-            title: "BTS 월드투어 서울",
-            category: "공연",
-            date: "2025-08-28 ~ 2025-08-30",
-            location: "올림픽공원",
-            price: "120,000원 ~",
-            image: "",
-        },
-        {
-            id: 4,
-            title: "블랙핑크 월드투어",
-            category: "공연",
-            date: "2025-09-01 ~ 2025-09-03",
-            location: "고척스카이돔",
-            price: "150,000원 ~",
-            image: "",
-        },
-        {
-            id: 5,
-            title: "스타트업 투자 세미나",
-            category: "강연/세미나",
-            date: "2025-08-15",
-            location: "강남구 컨벤션센터",
-            price: "무료",
-            image: "",
-        },
-        {
-            id: 6,
-            title: "AI 기술 컨퍼런스",
-            category: "강연/세미나",
-            date: "2025-09-10",
-            location: "삼성동 코엑스",
-            price: "80,000원 ~",
-            image: "",
-        },
-        {
-            id: 7,
-            title: "현대미술 특별전",
-            category: "전시/행사",
-            date: "2025-09-05 ~ 2025-09-30",
-            location: "국립현대미술관",
-            price: "12,000원 ~",
-            image: "",
-        },
-        {
-            id: 8,
-            title: "디자인 페어 서울",
-            category: "전시/행사",
-            date: "2025-09-10 ~ 2025-09-15",
-            location: "예술의전당",
-            price: "25,000원 ~",
-            image: "",
-        },
-        {
-            id: 9,
-            title: "서울 국제 영화제",
-            category: "축제",
-            date: "2025-09-05 ~ 2025-09-15",
-            location: "여의도 한강공원",
-            price: "무료",
-            image: "",
-        },
-        {
-            id: 10,
-            title: "서울 라이트 페스티벌",
-            category: "축제",
-            date: "2025-09-20 ~ 2025-09-25",
-            location: "남산타워",
-            price: "무료",
-            image: "",
-        },
-    ];
+    // const events = [
+    //     {
+    //         id: 1,
+    //         title: "2025 AI & 로봇 박람회",
+    //         category: "박람회",
+    //         date: "2025-08-15 ~ 2025-08-17",
+    //         location: "코엑스 A홀",
+    //         price: "15,000원 ~",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 2,
+    //         title: "서울 국제 도서전",
+    //         category: "박람회",
+    //         date: "2025-08-22 ~ 2025-08-25",
+    //         location: "코엑스 B홀",
+    //         price: "무료",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 3,
+    //         title: "BTS 월드투어 서울",
+    //         category: "공연",
+    //         date: "2025-08-28 ~ 2025-08-30",
+    //         location: "올림픽공원",
+    //         price: "120,000원 ~",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 4,
+    //         title: "블랙핑크 월드투어",
+    //         category: "공연",
+    //         date: "2025-09-01 ~ 2025-09-03",
+    //         location: "고척스카이돔",
+    //         price: "150,000원 ~",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 5,
+    //         title: "스타트업 투자 세미나",
+    //         category: "강연/세미나",
+    //         date: "2025-08-15",
+    //         location: "강남구 컨벤션센터",
+    //         price: "무료",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 6,
+    //         title: "AI 기술 컨퍼런스",
+    //         category: "강연/세미나",
+    //         date: "2025-09-10",
+    //         location: "삼성동 코엑스",
+    //         price: "80,000원 ~",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 7,
+    //         title: "현대미술 특별전",
+    //         category: "전시/행사",
+    //         date: "2025-09-05 ~ 2025-09-30",
+    //         location: "국립현대미술관",
+    //         price: "12,000원 ~",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 8,
+    //         title: "디자인 페어 서울",
+    //         category: "전시/행사",
+    //         date: "2025-09-10 ~ 2025-09-15",
+    //         location: "예술의전당",
+    //         price: "25,000원 ~",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 9,
+    //         title: "서울 국제 영화제",
+    //         category: "축제",
+    //         date: "2025-09-05 ~ 2025-09-15",
+    //         location: "여의도 한강공원",
+    //         price: "무료",
+    //         image: "",
+    //     },
+    //     {
+    //         id: 10,
+    //         title: "서울 라이트 페스티벌",
+    //         category: "축제",
+    //         date: "2025-09-20 ~ 2025-09-25",
+    //         location: "남산타워",
+    //         price: "무료",
+    //         image: "",
+    //     },
+    // ];
 
-    // 날짜 범위 필터링 함수
-    const isEventInDateRange = (eventDate: string) => {
-        if (!startDate || !endDate) return true; // 날짜 범위가 설정되지 않았으면 모든 이벤트 표시
+    const fetchEvents = async () => {
+        try {
+            const params: {
+                mainCategoryId?: number;
+                subCategoryId?: number;
+                regionName?: string;
+                fromDate?: string;
+                toDate?: string;
+                page?: number;
+                size?: number;
+            } = {
+                page: 0,
+                size: 50,
+            };
 
-        // 이벤트 날짜 파싱 (예: "2025-08-15 ~ 2025-08-17" 또는 "2025-08-15")
-        const dateParts = eventDate.split(' ~ ');
-        const eventStartDate = new Date(dateParts[0]);
-        const eventEndDate = dateParts.length > 1 ? new Date(dateParts[1]) : eventStartDate;
+            if (selectedCategory !== "all") {
+                params.mainCategoryId = mapMainCategoryToId(selectedCategory);
+            }
 
-        // 선택된 범위와 이벤트 날짜가 겹치는지 확인
-        return eventStartDate <= endDate && eventEndDate >= startDate;
+            if (selectedSubCategory !== "카테고리") {
+                params.subCategoryId = mapSubCategoryToId(selectedSubCategory);
+            }
+
+            if (selectedRegion !== "모든지역") {
+                params.regionName = selectedRegion;
+            }
+
+            if (startDate) {
+                params.fromDate = formatDate(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
+            }
+            if (endDate) {
+                params.toDate = formatDate(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0));
+            }
+
+            const res = await eventAPI.getEventList(params);
+            setEvents(res.events ?? []);
+        } catch (error) {
+            console.error("행사 불러오기 실패", error);
+        }
     };
 
+    React.useEffect(() => {
+        fetchEvents();
+    }, [selectedCategory, selectedSubCategory, selectedRegion, startDate, endDate]);
+
+    // 날짜 범위 필터링 함수
+    // const isEventInDateRange = (eventDate: string) => {
+    //     if (!startDate || !endDate) return true; // 날짜 범위가 설정되지 않았으면 모든 이벤트 표시
+    //
+    //     // 이벤트 날짜 파싱 (예: "2025-08-15 ~ 2025-08-17" 또는 "2025-08-15")
+    //     const dateParts = eventDate.split(' ~ ');
+    //     const eventStartDate = new Date(dateParts[0]);
+    //     const eventEndDate = dateParts.length > 1 ? new Date(dateParts[1]) : eventStartDate;
+    //
+    //     // 선택된 범위와 이벤트 날짜가 겹치는지 확인
+    //     return eventStartDate <= endDate && eventEndDate >= startDate;
+    // };
+
     // 카테고리별 이벤트 필터링 함수
-    const filteredEvents = events.filter(event => {
-        // 카테고리 필터링
-        const categoryMatch = selectedCategory === "all" ||
-            event.category === categories.find(cat => cat.id === selectedCategory)?.name;
+    // const filteredEvents = events.filter(event => {
+    //     // 카테고리 필터링
+    //     const categoryMatch = selectedCategory === "all" ||
+    //         event.mainCategory === categories.find(cat => cat.id === selectedCategory)?.name;
+    //
+    //     // 날짜 범위 필터링 (리스트형에서만 적용)
+    //     const dateMatch = viewMode === "list" ? isEventInDateRange(event.date) : true;
+    //
+    //     return categoryMatch && dateMatch;
+    // });
 
-        // 날짜 범위 필터링 (리스트형에서만 적용)
-        const dateMatch = viewMode === "list" ? isEventInDateRange(event.date) : true;
+    const isEventInDateRange = (eventStart: string, eventEnd: string) => {
+        if (!startDate || !endDate) return true;
+        const start = new Date(eventStart);
+        const end = new Date(eventEnd);
+        return start <= endDate && end >= startDate;
+    };
 
-        return categoryMatch && dateMatch;
+    const filteredEvents = events.filter((event) => {
+        return isEventInDateRange(event.startDate, event.endDate);
     });
 
     const footerLinks = [
@@ -535,11 +663,7 @@ export default function EventOverview() {
                                                 <div key={categoryKey}>
                                                     {/* 1차 카테고리 헤더 */}
                                                     <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
-                                                        {categoryKey === "exhibition" ? "박람회" :
-                                                            categoryKey === "seminar" ? "강연/세미나" :
-                                                                categoryKey === "event" ? "전시/행사" :
-                                                                    categoryKey === "performance" ? "공연" :
-                                                                        categoryKey === "festival" ? "축제" : categoryKey}
+                                                        {categoryKey}
                                                     </div>
                                                     {/* 2차 카테고리들 */}
                                                     {subCats.map((subCat) => (
@@ -615,7 +739,7 @@ export default function EventOverview() {
                                         <img
                                             className="w-full h-64 object-cover rounded-[10px]"
                                             alt={event.title}
-                                            src={event.image || "/images/NoImage.png"}
+                                            src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
                                         <FaHeart
                                             className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
@@ -626,15 +750,26 @@ export default function EventOverview() {
                                         />
                                     </div>
                                     <div className="mt-4 text-left">
-                                        <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.category as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
-                                            {event.category}
+                                        <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
+                                            {event.mainCategory}
                                         </span>
                                         <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
                                         <div className="text-sm text-gray-600 mb-2">
                                             <div className="font-bold">{event.location}</div>
-                                            <div>{event.date}</div>
+                                            <div>
+                                                {event.startDate === event.endDate
+                                                    ? new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')
+                                                    : `${new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')} ~ ${new Date(event.endDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')}`
+                                                }
+                                            </div>
                                         </div>
-                                        <p className="font-bold text-lg text-[#ff6b35]">{event.price}</p>
+                                        <p className="font-bold text-lg text-[#ff6b35]">
+                                            {event.minPrice == null
+                                                ? "가격 정보 없음"
+                                                : event.minPrice === 0
+                                                    ? "무료"
+                                                    : `${event.minPrice.toLocaleString()}원 ~`}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
@@ -696,7 +831,10 @@ export default function EventOverview() {
                                         return Array.from({ length: daysInMonth }, (_, i) => {
                                             const day = i + 1;
                                             const dayEvents = filteredEvents.filter(event => {
-                                                return event.date.includes(`${calendarYear}-${calendarMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
+                                                const eventDate = new Date(event.startDate);
+                                                return eventDate.getFullYear() === calendarYear &&
+                                                       eventDate.getMonth() === calendarMonth - 1 &&
+                                                       eventDate.getDate() === day;
                                             });
 
                                             // 현재 달의 요일 계산
@@ -709,7 +847,7 @@ export default function EventOverview() {
                                                 <div key={day} className="h-48 border-b border-r border-gray-100 p-1">
                                                     <div className={`text-sm font-bold mb-1 ${isSunday ? 'text-red-500' : isSaturday ? 'text-blue-500' : 'text-gray-900'}`}>{day}</div>
                                                     <div className="space-y-0.5">
-                                                        {dayEvents.slice(0, 6).map((event, index) => (
+                                                        {dayEvents.slice(0, 6).map((event) => (
                                                             <div
                                                                 key={event.id}
                                                                 className="text-xs flex items-center space-x-1"
@@ -718,12 +856,13 @@ export default function EventOverview() {
                                                                     navigate(`/eventdetail/${event.id}`);
                                                                 }}
                                                             >
-                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.category === "박람회" ? "bg-blue-500" :
-                                                                    event.category === "공연" ? "bg-red-500" :
-                                                                        event.category === "강연/세미나" ? "bg-green-500" :
-                                                                            event.category === "전시/행사" ? "bg-yellow-500" :
-                                                                                event.category === "축제" ? "bg-gray-500" : "bg-gray-400"
-                                                                    }`}></div>
+                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                                                    event.mainCategory === "박람회" ? "bg-blue-500" :
+                                                                    event.mainCategory === "공연" ? "bg-red-500" :
+                                                                    event.mainCategory === "강연/세미나" ? "bg-green-500" :
+                                                                    event.mainCategory === "전시/행사" ? "bg-yellow-500" :
+                                                                    event.mainCategory === "축제" ? "bg-gray-500" : "bg-gray-400"
+                                                                }`}></div>
                                                                 <span className="truncate text-gray-700">{event.title}</span>
                                                             </div>
                                                         ))}
