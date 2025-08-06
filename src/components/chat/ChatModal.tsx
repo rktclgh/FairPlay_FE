@@ -40,8 +40,8 @@ export default function ChatModal({
                             setSelectedRoomInfo({ roomId, eventTitle, userName });
                         }} />
                     ) : (
-                        <ChatRoom 
-                            roomId={selectedRoomId} 
+                        <ChatRoom
+                            roomId={selectedRoomId}
                             onBack={() => {
                                 setSelectedRoomId(null);
                                 setSelectedRoomInfo(null);

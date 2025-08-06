@@ -105,7 +105,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
                         minute: '2-digit',
                         hour12: false
                     });
-                    
+
                     return (
                         <div key={`msg-${msg.chatMessageId}-${Date.now()}-${Math.random()}`} className={`mb-3 flex ${isMyMessage ? "justify-end" : "justify-start"}`}>
                             <div className={`max-w-xs ${isMyMessage ? "text-right" : "text-left"}`}>

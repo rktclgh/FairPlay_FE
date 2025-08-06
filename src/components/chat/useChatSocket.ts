@@ -15,14 +15,14 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
         // 룸 ID가 변경되었거나 처음 연결하는 경우
         if (currentRoomIdRef.current !== roomId) {
             console.log(`Room changed from ${currentRoomIdRef.current} to ${roomId}`);
-            
+
             // 기존 구독 해제
             if (subscriptionRef.current) {
                 console.log("Unsubscribing from previous room");
                 subscriptionRef.current.unsubscribe();
                 subscriptionRef.current = null;
             }
-            
+
             currentRoomIdRef.current = roomId;
         }
 
@@ -33,7 +33,7 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
 
             const sock = new SockJS("http://localhost:8080/ws/chat");
             const stomp = Stomp.over(sock);
-            
+
             // 디버그 로그 비활성화
             stomp.debug = null;
             clientRef.current = stomp;
@@ -45,7 +45,7 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
                 headers,
                 () => {
                     console.log(`Connected to WebSocket for room ${roomId}`);
-                    
+
                     // 새로운 룸 구독
                     if (!subscriptionRef.current) {
                         subscriptionRef.current = stomp.subscribe(`/topic/chat.${roomId}`, (message) => {
@@ -92,7 +92,7 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
 
     const send = useCallback((content: string) => {
         const stomp = clientRef.current;
-        
+
         if (!stomp || !stomp.connected || !content.trim()) {
             console.warn("Cannot send message: not connected or empty content");
             return;
@@ -112,15 +112,15 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
                     console.error("토큰 파싱 실패:", error);
                 }
             }
-            
-            const messagePayload = { 
-                chatRoomId: roomId, 
+
+            const messagePayload = {
+                chatRoomId: roomId,
                 content: content.trim(),
                 senderId: userId ? parseInt(userId) : 1
             };
-            
+
             console.log("메시지 전송:", content.trim(), "from userId:", userId);
-            
+
             stomp.send(
                 "/app/chat.sendMessage",
                 headers,

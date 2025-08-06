@@ -50,7 +50,7 @@ function AppContent() {
           <Route path="/find-password" element={<FindPassword />} />
           <Route path="/register" element={<RegisterEvent />} />
           <Route path="/host/dashboard" element={<HostDashboard />} />
-        <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+          <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
         </Routes>
         <ToastContainer
             position="bottom-right"

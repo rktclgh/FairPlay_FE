@@ -32,9 +32,9 @@ export default function ChatRoomList({ onSelect }: Props) {
                 const userRoomsResponse = await axios.get(`/api/chat/rooms`, {
                     headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
                 });
-                
+
                 let allRooms = userRoomsResponse.data;
-                
+
                 // 관리자인 경우 관리하는 채팅방도 추가로 가져오기
                 const token = localStorage.getItem("accessToken");
                 let userId = null;
@@ -53,22 +53,22 @@ export default function ChatRoomList({ onSelect }: Props) {
                         const requestUrl = `/api/chat/rooms/manager`;
                         const requestParams = { targetType: "EVENT_MANAGER", targetId: userId };
                         const requestHeaders = { Authorization: "Bearer " + localStorage.getItem("accessToken") };
-                        
+
                         console.log("관리자 API 요청:", requestUrl, requestParams, requestHeaders);
-                        
+
                         const managerRoomsResponse = await axios.get(requestUrl, {
                             params: requestParams,
                             headers: requestHeaders
                         });
-                        
+
                         console.log("관리자 API 응답:", managerRoomsResponse.data);
-                        
+
                         // 중복 제거하면서 관리자 채팅방 추가
                         const managerRooms = managerRoomsResponse.data;
                         const existingIds = new Set(allRooms.map((r: ChatRoomDto) => r.chatRoomId));
                         const newManagerRooms = managerRooms.filter((r: ChatRoomDto) => !existingIds.has(r.chatRoomId));
                         allRooms = [...allRooms, ...newManagerRooms];
-                        
+
                         console.log("관리자 채팅방 추가:", newManagerRooms.length, "개");
                         console.log("전체 관리자 채팅방:", managerRooms);
                         console.log("새로 추가된 관리자 채팅방:", newManagerRooms);
@@ -80,9 +80,9 @@ export default function ChatRoomList({ onSelect }: Props) {
                 } else {
                     console.log("일반 사용자로 인식됨");
                 }
-                
+
                 console.log("총 채팅방 수:", allRooms.length);
-                
+
                 // 각 채팅방의 최신 메시지 시간을 가져와서 저장
                 const messageTimesPromises = allRooms.map(async (room: ChatRoomDto) => {
                     try {
@@ -101,13 +101,13 @@ export default function ChatRoomList({ onSelect }: Props) {
                         };
                     }
                 });
-                
+
                 const messageTimes = await Promise.all(messageTimesPromises);
                 const messageTimesMap: Record<number, string> = {};
                 messageTimes.forEach(({ roomId, lastMessageTime }) => {
                     messageTimesMap[roomId] = lastMessageTime;
                 });
-                
+
                 setLastMessageTimes(messageTimesMap);
                 setRooms(allRooms);
             } catch (error) {
@@ -120,21 +120,21 @@ export default function ChatRoomList({ onSelect }: Props) {
 
     useEffect(() => {
         fetchRooms();
-        
+
         // WebSocket 연결로 실시간 업데이트
         const sock = new SockJS("http://localhost:8080/ws/chat");
         const stomp = Stomp.over(sock);
         stomp.debug = null;
         clientRef.current = stomp;
-        
+
         const token = localStorage.getItem("accessToken");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        
+
         stomp.connect(
             headers,
             () => {
                 console.log("채팅방 목록 WebSocket 연결됨");
-                
+
                 // 채팅방 목록 업데이트 알림 구독
                 stomp.subscribe("/topic/chat-room-list", () => {
                     console.log("채팅방 목록 업데이트 알림 수신 - 새로고침");
@@ -145,8 +145,8 @@ export default function ChatRoomList({ onSelect }: Props) {
                 console.error("WebSocket 연결 실패:", error);
             }
         );
-        
-        
+
+
         return () => {
             if (clientRef.current?.connected) {
                 clientRef.current.disconnect(() => {
@@ -164,7 +164,7 @@ export default function ChatRoomList({ onSelect }: Props) {
         // 1. 읽지 않은 메시지가 있는 것을 우선
         if ((a.unreadCount || 0) > 0 && (b.unreadCount || 0) === 0) return -1;
         if ((a.unreadCount || 0) === 0 && (b.unreadCount || 0) > 0) return 1;
-        
+
         // 2. 최신 메시지 시간으로 정렬 (lastMessageTimes가 있으면 사용, 없으면 createdAt 사용)
         const aTime = lastMessageTimes[a.chatRoomId] || a.createdAt;
         const bTime = lastMessageTimes[b.chatRoomId] || b.createdAt;
@@ -182,7 +182,7 @@ export default function ChatRoomList({ onSelect }: Props) {
                     <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
                         {room.userName ? room.userName.charAt(0) : 'U'}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                             <span className="font-medium text-gray-900 truncate">
