@@ -27,9 +27,12 @@ export interface HeroPoster {
 
 // 사용자 정보 타입
 export interface UserInfo {
+  userId: number;
   email: string;
+  phone: string;
   name: string;
-  phoneNumber: string;
+  nickname: string;
+  role: string;
 }
 
 // 알림 정보 타입
@@ -190,9 +193,12 @@ class EventApi {
 
   // 사용자 정보 관련 mock 데이터 (실제 로그인한 사용자 정보로 교체 필요)
   private mockUserInfo: UserInfo = {
+    userId: 1,
     email: "user@example.com",
+    phone: "010-0000-0000",
     name: "사용자",
-    phoneNumber: "010-0000-0000",
+    nickname: "사용자닉네임",
+    role: "USER",
   };
 
   async getHotPicks(): Promise<HotPick[]> {
@@ -238,53 +244,146 @@ class EventApi {
           const accessToken = localStorage.getItem("accessToken");
           const refreshToken = localStorage.getItem("refreshToken");
 
+          console.log("사용자 정보 조회 시작 - 토큰 확인:", {
+            accessToken: !!accessToken,
+            refreshToken: !!refreshToken,
+          });
+
           if (!accessToken && !refreshToken) {
             throw new Error("로그인이 필요합니다.");
           }
 
           // 실제 백엔드 API 호출 시도
           try {
-            const response = await fetch("/api/users/me", {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-              },
-            });
+            console.log("API 호출 시도: /api/users/mypage");
+            console.log("Authorization 헤더:", `Bearer ${accessToken}`);
 
-            if (response.ok) {
+            // 여러 가능한 엔드포인트 시도
+            const endpoints = [
+              "/api/users/mypage",
+              "/api/users/me",
+              "/api/user/profile",
+            ];
+
+            let response = null;
+            let successfulEndpoint = null;
+
+            for (const endpoint of endpoints) {
+              try {
+                console.log(`엔드포인트 시도: ${endpoint}`);
+                response = await fetch(endpoint, {
+                  method: "GET",
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                  },
+                });
+
+                console.log(
+                  `${endpoint} 응답 상태:`,
+                  response.status,
+                  response.statusText
+                );
+
+                if (response.ok) {
+                  successfulEndpoint = endpoint;
+                  break;
+                }
+              } catch (endpointError) {
+                console.log(`${endpoint} 호출 실패:`, endpointError);
+                continue;
+              }
+            }
+
+            if (response && response.ok) {
               const userData = await response.json();
-              resolve(userData);
+              console.log(`성공한 엔드포인트: ${successfulEndpoint}`);
+              console.log("API 응답 데이터:", userData);
+
+              // API 응답 구조에 맞게 데이터 매핑
+              const mappedUserData: UserInfo = {
+                userId: userData.userId || userData.id || 1,
+                email: userData.email,
+                phone: userData.phone || userData.phoneNumber || "",
+                name: userData.name || userData.username || "",
+                nickname:
+                  userData.nickname || userData.name || userData.username || "",
+                role: userData.role || "USER",
+              };
+              console.log("매핑된 사용자 데이터:", mappedUserData);
+              resolve(mappedUserData);
               return;
+            } else {
+              console.error("모든 API 엔드포인트 호출 실패");
+              if (response) {
+                console.error(
+                  "마지막 응답 상태:",
+                  response.status,
+                  response.statusText
+                );
+                const errorText = await response.text();
+                console.error("에러 응답:", errorText);
+              }
+
+              // API 호출 실패 시 fallback으로 넘어감
+              throw new Error("모든 API 엔드포인트 호출 실패");
             }
           } catch (apiError) {
-            console.warn("백엔드 API 호출 중 오류:", apiError);
+            console.error("백엔드 API 호출 중 오류:", apiError);
+            console.log("API 호출 실패로 인해 localStorage 기반 데이터 사용");
           }
 
-          // 백엔드 API가 준비되지 않았거나 실패한 경우
-          // 로그인 시 저장된 정보를 기반으로 사용자 정보 생성
+          // API 호출 실패 시 localStorage의 실제 로그인 정보 사용
           const loginEmail = localStorage.getItem("loginEmail");
           const loginName = localStorage.getItem("loginName");
           const loginPhone = localStorage.getItem("loginPhone");
 
+          console.log("localStorage 저장된 정보:", {
+            loginEmail,
+            loginName,
+            loginPhone,
+          });
+
           if (loginEmail && loginName && loginPhone) {
             // 로그인 시 저장된 실제 정보 사용
             const userData: UserInfo = {
+              userId: 1,
               email: loginEmail,
+              phone: loginPhone,
               name: loginName,
-              phoneNumber: loginPhone,
+              nickname: loginName, // 이름을 닉네임으로 사용
+              role: "USER",
             };
+            console.log("localStorage 기반 사용자 데이터:", userData);
+            resolve(userData);
+          } else if (loginEmail) {
+            // 이메일만 있는 경우 (카카오 로그인 등)
+            const userData: UserInfo = {
+              userId: 1,
+              email: loginEmail,
+              phone: "010-0000-0000",
+              name: "사용자",
+              nickname: "사용자",
+              role: "USER",
+            };
+            console.log("이메일 기반 사용자 데이터:", userData);
             resolve(userData);
           } else {
-            // 저장된 정보가 없는 경우 기본 mock 데이터 사용
+            // 저장된 정보가 없는 경우에만 기본 mock 데이터 사용
             console.warn("로그인 정보가 저장되지 않음, 기본 mock 데이터 사용");
             const mockUserData: UserInfo = {
+              userId: 1,
               email: "user@fairplay.com",
+              phone: "010-1234-5678",
               name: "페어플레이 사용자",
-              phoneNumber: "010-1234-5678",
+              nickname: "페어플레이 사용자",
+              role: "USER",
             };
+            console.log("Mock 사용자 데이터:", mockUserData);
             resolve(mockUserData);
           }
         } catch (error) {
+          console.error("사용자 정보 조회 중 오류:", error);
           reject(error);
         }
       }, 300);

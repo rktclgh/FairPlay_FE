@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 
-const reservationData = [
+const defaultReservationData = [
     {
         id: 1,
         title: "G-DRAGON 콘서트: WORLD TOUR",
@@ -57,6 +57,17 @@ const reservationData = [
 ];
 
 export default function Reservation(): JSX.Element {
+    const [reservationData, setReservationData] = useState(defaultReservationData);
+
+    useEffect(() => {
+        // localStorage에서 예매 내역 읽어오기
+        const bookingHistory = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
+
+        // localStorage 데이터와 기본 데이터 합치기
+        const allReservations = [...bookingHistory, ...defaultReservationData];
+        setReservationData(allReservations);
+    }, []);
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] h-[1565px] relative">

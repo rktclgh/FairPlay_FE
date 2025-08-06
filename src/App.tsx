@@ -10,6 +10,7 @@ import Reservation from "./pages/mypage/Reservation";
 import MyTickets from "./pages/mypage/MyTickets";
 import EventOverview from "./pages/event/EventOverview";
 import EventDetail from "./pages/event/EventDetail";
+import { BookingPage } from "./pages/event/BookingPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { SignUpPage } from "./pages/auth/SignUpPage";
 import { FindPassword } from "./pages/auth/FindPassword";
@@ -28,6 +29,7 @@ function AppContent() {
         <Route path="/" element={<Main />} />
         <Route path="/eventoverview" element={<EventOverview />} />
         <Route path="/eventdetail/:eventId" element={<EventDetail />} />
+        <Route path="/booking/:eventId" element={<BookingPage />} />
         <Route path="/mypage/info" element={<MyPageInfo />} />
         <Route path="/mypage/account" element={<MyPageAccount />} />
         <Route path="/mypage/favorites" element={<MyPageFavorites />} />

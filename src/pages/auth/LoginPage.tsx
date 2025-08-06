@@ -16,7 +16,7 @@ export const LoginPage = () => {
 
     const isLoginEnabled = email.trim() !== "" && password.trim().length >= 8;
 
-    const handleLogin = async (e) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isLoginEnabled) return;
         setLoading(true);
@@ -44,10 +44,17 @@ export const LoginPage = () => {
 
             toast.success("로그인에 성공했습니다!");
             navigate("/");
-        } catch (error) {
+        } catch {
             // Handled by axios interceptor
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && isLoginEnabled && !loading) {
+            e.preventDefault();
+            handleLogin(e as React.FormEvent);
         }
     };
 
@@ -87,6 +94,7 @@ export const LoginPage = () => {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="이메일을 입력하세요"
                         className="absolute w-[350px] h-[21px] top-[13px] left-[15px] text-black placeholder:text-gray-400 text-base bg-transparent border-none outline-none"
                         style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
@@ -101,6 +109,7 @@ export const LoginPage = () => {
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="비밀번호를 입력하세요"
                         className="absolute w-[350px] h-[21px] top-[13px] left-[15px] text-black placeholder:text-gray-400 text-base bg-transparent border-none outline-none"
                         style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
