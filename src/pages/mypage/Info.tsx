@@ -41,9 +41,12 @@ export const MyPageInfo = () => {
 
     // 사용자 정보 상태
     const [userInfo, setUserInfo] = useState<UserInfo>({
+        userId: 0,
         email: "",
+        phone: "",
         name: "",
-        phoneNumber: ""
+        nickname: "",
+        role: ""
     });
 
     // 로딩 상태
@@ -53,7 +56,7 @@ export const MyPageInfo = () => {
     const [blurredData, setBlurredData] = useState({
         email: "",
         password: "",
-        phoneNumber: ""
+        phone: ""
     });
 
     // 비밀번호 변경 폼 표시 상태
@@ -95,7 +98,7 @@ export const MyPageInfo = () => {
         setBlurredData({
             email: blurEmail(userInfo.email),
             password: blurPassword("●●●●●●●●●●"), // 비밀번호는 서버에서 받지 않으므로 블러 처리
-            phoneNumber: blurPhoneNumber(userInfo.phoneNumber)
+            phone: blurPhoneNumber(userInfo.phone)
         });
     }, [userInfo]);
 
@@ -116,7 +119,7 @@ export const MyPageInfo = () => {
             setPasswordError("");
 
             const request: PasswordChangeRequest = {
-                oldPassword,
+                currentPassword: oldPassword,
                 newPassword
             };
 
@@ -132,7 +135,11 @@ export const MyPageInfo = () => {
             }
         } catch (error) {
             console.error("비밀번호 변경 실패:", error);
-            setPasswordError("비밀번호 변경 중 오류가 발생했습니다.");
+            if (error instanceof Error) {
+                setPasswordError(error.message);
+            } else {
+                setPasswordError("비밀번호 변경 중 오류가 발생했습니다.");
+            }
         } finally {
             setIsChangingPassword(false);
         }
@@ -273,7 +280,7 @@ export const MyPageInfo = () => {
                 </div>
 
                 {/* 개인 정보 섹션 - 비밀번호 변경 폼이 표시되면 아래로 이동 */}
-                <div className={`absolute w-[949px] h-[213px] left-64 ${showPasswordChange ? 'top-[600px]' : 'top-[455px]'}`}>
+                <div className={`absolute w-[949px] h-[295px] left-64 ${showPasswordChange ? 'top-[600px]' : 'top-[455px]'}`}>
                     <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                         개인 정보
                     </div>
@@ -289,17 +296,27 @@ export const MyPageInfo = () => {
                     <div className="w-[947px] h-[79px] top-[50px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
 
                     <div className="absolute top-32 left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
+                        닉네임
+                    </div>
+
+                    <div className="absolute top-[155px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
+                        {userInfo.nickname}
+                    </div>
+
+                    <div className="w-[947px] h-[79px] top-[134px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
+
+                    <div className="absolute top-[209px] left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
                         휴대폰 번호
                     </div>
 
-                    <p className="absolute top-[155px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
-                        {blurredData.phoneNumber}
+                    <p className="absolute top-[237px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
+                        {blurredData.phone}
                     </p>
 
-                    <div className="w-[947px] h-[79px] top-[134px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
+                    <div className="w-[947px] h-[79px] top-[216px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
                 </div>
 
-                <div className={`absolute left-64 ${showPasswordChange ? 'top-[1057px]' : 'top-[757px]'}`}>
+                <div className={`absolute left-64 ${showPasswordChange ? 'top-[1139px]' : 'top-[839px]'}`}>
                     <div
                         className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap cursor-pointer hover:text-black underline"
                         onClick={() => navigate('/mypage/withdrawal')}

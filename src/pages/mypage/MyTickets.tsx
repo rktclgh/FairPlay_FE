@@ -1,8 +1,33 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
+import QrTicket from "../../components/QrTicket";
+import { QrCode } from "lucide-react";
 
-const eventData = [
+interface EventData {
+    eventName: string;
+    eventDate: string;
+    venue: string;
+    seatInfo: string;
+    bookingDate: string;
+    participantInfo: string | null;
+    participantFormLink: string | null;
+    isConcert: boolean;
+    quantity?: number;
+    amount?: string;
+}
+
+interface QrTicketData {
+    eventName: string;
+    eventDate: string;
+    venue: string;
+    seatInfo: string;
+    ticketNumber: string;
+    bookingDate: string;
+    entryTime: string;
+}
+
+const defaultEventData: EventData[] = [
     {
         eventName: "G-DRAGON 콘서트: WORLD TOUR",
         eventDate: "2024년 8월 9일 (금) 19:00",
@@ -11,6 +36,7 @@ const eventData = [
         bookingDate: "2024년 7월 15일",
         participantInfo: "입력하기",
         participantFormLink: "https://forms.google.com/example1",
+        isConcert: true,
     },
     {
         eventName: "POST MALONE LIVE CONCERT",
@@ -20,6 +46,7 @@ const eventData = [
         bookingDate: "2024년 7월 20일",
         participantInfo: null,
         participantFormLink: null,
+        isConcert: true,
     },
     {
         eventName: "스타트업 투자 세미나",
@@ -27,12 +54,60 @@ const eventData = [
         venue: "강남구 컨벤션센터",
         seatInfo: "자유석",
         bookingDate: "2024년 8월 1일",
-        participantInfo: "폼링크",
+        participantInfo: "입력하기",
         participantFormLink: "https://forms.google.com/example3",
+        isConcert: true,
     },
 ];
 
 export default function MyTickets(): JSX.Element {
+    const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
+    const [selectedTicketData, setSelectedTicketData] = useState<QrTicketData | null>(null);
+    const [eventData, setEventData] = useState<EventData[]>(defaultEventData);
+
+    useEffect(() => {
+        // localStorage에서 예매 내역 읽어오기
+        const bookingHistory = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
+
+        // 박람회 예매를 MyTickets 형식으로 변환
+        const convertedBookings: EventData[] = bookingHistory.map((booking: Record<string, any>) => ({
+            eventName: booking.title,
+            eventDate: "2025년 7월 26일 ~ 27일", // 박람회 날짜
+            venue: "코엑스 Hall B", // 박람회 장소
+            seatInfo: booking.selectedOption === "일반 입장권" ? "일반 입장권" :
+                booking.selectedOption === "VIP 패키지" ? "VIP 패키지" :
+                    booking.selectedOption === "학생 할인권" ? "학생 할인권" : "일반 입장권",
+            bookingDate: booking.bookingDate,
+            participantInfo: null,
+            participantFormLink: null,
+            isConcert: false,
+            quantity: booking.quantity,
+            amount: booking.amount,
+        }));
+
+        // 변환된 예매 내역과 기본 데이터 합치기
+        const allEvents = [...convertedBookings, ...defaultEventData];
+        setEventData(allEvents);
+    }, []);
+
+    const handleQrTicketOpen = (eventData: EventData) => {
+        setSelectedTicketData({
+            eventName: eventData.eventName,
+            eventDate: eventData.eventDate,
+            venue: eventData.venue,
+            seatInfo: eventData.seatInfo,
+            ticketNumber: `KPC-2024-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`,
+            bookingDate: eventData.bookingDate,
+            entryTime: "18:30 ~ 19:00",
+        });
+        setIsQrTicketOpen(true);
+    };
+
+    const handleQrTicketClose = () => {
+        setIsQrTicketOpen(false);
+        setSelectedTicketData(null);
+    };
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] h-[1565px] relative">
@@ -93,10 +168,10 @@ export default function MyTickets(): JSX.Element {
 
                                             <div>
                                                 <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
-                                                    좌석 정보
+                                                    {event.isConcert ? "좌석 정보" : "예매 옵션"}
                                                 </div>
                                                 <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                    {event.seatInfo}
+                                                    {event.isConcert ? event.seatInfo : `${event.seatInfo} ${event.quantity}매`}
                                                 </div>
                                             </div>
 
@@ -124,10 +199,17 @@ export default function MyTickets(): JSX.Element {
                                         </div>
                                     </div>
 
-                                    <button className="absolute top-6 right-6 w-[119px] h-[54px] bg-[#f7fafc] rounded-lg border border-solid border-[#0000001f] hover:bg-[#f7fafc] flex items-center justify-center">
-                                        <span className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap">
-                                            QR 코드
-                                        </span>
+                                    <button
+                                        onClick={() => handleQrTicketOpen(event)}
+                                        className="absolute top-6 right-6 w-[140px] h-[56px] bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <QrCode className="w-4 h-4 text-white" />
+                                            <span className="font-semibold text-white text-sm tracking-wide">
+                                                QR 티켓
+                                            </span>
+                                        </div>
+                                        <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                                     </button>
                                 </div>
                             </div>
@@ -135,6 +217,12 @@ export default function MyTickets(): JSX.Element {
                     </div>
                 </div>
             </div>
+
+            <QrTicket
+                isOpen={isQrTicketOpen}
+                onClose={handleQrTicketClose}
+                ticketData={selectedTicketData || undefined}
+            />
         </div>
     );
 } 
