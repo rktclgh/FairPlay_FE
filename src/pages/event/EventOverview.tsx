@@ -50,7 +50,6 @@ export default function EventOverview() {
     const [selectedYear, setSelectedYear] = React.useState(2025);
     const [calendarYear, setCalendarYear] = React.useState(new Date().getFullYear());
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
-
     const navigate = useNavigate();
 
     // 좋아요 토글 함수
@@ -922,4 +921,4 @@ export default function EventOverview() {
             </div>
         </div>
     );
-}
+} 
