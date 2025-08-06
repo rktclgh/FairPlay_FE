@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useChatSocket } from "./useChatSocket";
 
-// 메시지 DTO 타입
 type ChatMessageDto = {
     chatMessageId: number;
     chatRoomId: number;
@@ -23,19 +22,16 @@ export default function ChatRoom({ roomId, onBack }: Props) {
     const myUserId = Number(localStorage.getItem("userId"));
     const bottomRef = useRef<HTMLDivElement>(null);
 
-    // WebSocket 실시간 연결 (커스텀 훅)
     const { send } = useChatSocket(roomId, (msg: ChatMessageDto) => {
         setMessages(prev => [...prev, msg]);
     });
 
-    // 최초 진입 시 기존 메시지 내역 조회
     useEffect(() => {
         axios.get(`/api/chat/messages?chatRoomId=${roomId}`, {
             headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
         }).then(res => setMessages(res.data));
     }, [roomId]);
 
-    // 스크롤 자동 아래로 내림
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);

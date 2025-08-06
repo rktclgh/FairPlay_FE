@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-// 채팅방 DTO 타입 정의 (API 응답 형태와 동일하게!)
 type ChatRoomDto = {
     chatRoomId: number;
     eventId: number | null;
@@ -20,18 +19,14 @@ export default function ChatRoomList({ onSelect }: Props) {
     const [rooms, setRooms] = useState<ChatRoomDto[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // 실제 사용 시, 로그인 유저 정보에서 받아와야 함!
-    const myUserId = Number(localStorage.getItem("userId"));
-
     useEffect(() => {
-        // 내 채팅방(문의내역) 가져오기
         axios
-            .get(`/api/chat/rooms?userId=${myUserId}`, {
+            .get(`/api/chat/rooms`, {
                 headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
             })
             .then(res => setRooms(res.data))
             .finally(() => setLoading(false));
-    }, [myUserId]);
+    }, []);
 
     if (loading) return <div className="flex-1 flex items-center justify-center">로딩중...</div>;
     if (!rooms.length) return <div className="flex-1 flex flex-col items-center justify-center text-neutral-500">문의 내역이 없습니다.</div>;
@@ -44,12 +39,11 @@ export default function ChatRoomList({ onSelect }: Props) {
                     className="flex items-center gap-2 w-full px-4 py-3 border-b hover:bg-neutral-50 transition"
                     onClick={() => onSelect(room.chatRoomId)}
                 >
-                    {/* 초록불(온라인) 표시 */}
                     <OnlineDot targetType={room.targetType} targetId={room.targetId} />
                     <div className="flex flex-col items-start">
-            <span className="font-medium">
-              {room.eventId ? `행사 문의 (${room.eventId})` : "운영자 문의"}
-            </span>
+                        <span className="font-medium">
+                            {room.eventId ? `행사 문의 (${room.eventId})` : "운영자 문의"}
+                        </span>
                         <span className="text-xs text-neutral-400">{room.createdAt?.slice(0, 16).replace("T", " ")}</span>
                     </div>
                 </button>
@@ -64,13 +58,11 @@ function OnlineDot({ targetType, targetId }: { targetType: string; targetId: num
 
     useEffect(() => {
         let cancelled = false;
-        // REST로 현재 온라인 상태 확인
         axios.get("/api/chat/presence", {
             params: { isManager: targetType !== "SUPER_ADMIN" ? true : false, userId: targetId }
         }).then(res => {
             if (!cancelled) setOnline(res.data === true);
         });
-        // 5초마다 상태 갱신 (ping)
         const interval = setInterval(() => {
             axios.get("/api/chat/presence", {
                 params: { isManager: targetType !== "SUPER_ADMIN" ? true : false, userId: targetId }
