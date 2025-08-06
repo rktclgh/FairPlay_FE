@@ -279,7 +279,7 @@ class EventApi {
     });
   }
 
-  // 비밀번호 변경
+  // 비밀번호 변경 - 기존 로직 유지
   async changePassword(request: PasswordChangeRequest): Promise<boolean> {
     // 실제 API 호출 시 여기에 fetch 로직 추가
     return new Promise((resolve) => {
