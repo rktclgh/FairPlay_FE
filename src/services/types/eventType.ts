@@ -15,7 +15,7 @@ export interface EventUpdateRequestDto {
 
 // EventResponseDto: 행사 상태 업데이트 후 정보
 export interface EventResponseDto {
-    message: string;
+    message?: string;
     eventId: number;
     eventCode: string;
     hidden: boolean;
@@ -38,7 +38,7 @@ export interface EventSummaryDto {
 }
 
 export interface EventSummaryResponseDto {
-    message: string;
+    message?: string;
     events: EventSummaryDto[];
     pageable: any; // 필요시 타입 지정
     totalElements: number;
@@ -115,7 +115,7 @@ export interface ExternalLinkResponseDto {
 
 // EventDetailResponseDto
 export interface EventDetailResponseDto {
-    message: string;
+    message?: string;
 
     // 관리자 전용
     managerId?: number;
@@ -135,7 +135,7 @@ export interface EventDetailResponseDto {
     subCategory: string
 
     address: string;
-    placename: string;
+    placeName: string;
     latitude: number;
     longitude: number;
     placeUrl: string;
