@@ -54,70 +54,70 @@ export const Expectations = () => {
       likeCount: 31,
       isLiked: false
     },
-          {
-        id: 5,
-        author: "최수진",
-        rating: 4,
-        date: "2024.01.12",
-        content: "친구들과 함께 가기로 했는데 정말 설레요. 공연장 분위기도 기대되고 음악도 너무 좋을 것 같아요.",
-        likeCount: 12,
-        isLiked: false
-      },
-      {
-        id: 6,
-        author: "김지훈",
-        rating: 5,
-        date: "2024.01.10",
-        content: "포스트 말론의 라이브를 직접 볼 수 있다니 꿈만 같아요. 무대 연출과 음향이 정말 기대됩니다.",
-        likeCount: 28,
-        isLiked: false
-      },
-      {
-        id: 7,
-        author: "박미영",
-        rating: 4,
-        date: "2024.01.08",
-        content: "원작 소설을 읽고 너무 감동받아서 뮤지컬로는 어떻게 표현될지 정말 궁금해요. 음악과 연출이 기대됩니다!",
-        likeCount: 19,
-        isLiked: false
-      },
-      {
-        id: 8,
-        author: "이준호",
-        rating: 5,
-        date: "2024.01.06",
-        content: "드디어 티켓팅 성공! 작년 시즌1이 너무 좋았어서 이번 시즌2도 정말 기대하고 있어요. 새로운 캐스팅도 궁금합니다.",
-        likeCount: 35,
-        isLiked: false
-      },
-      {
-        id: 9,
-        author: "정수진",
-        rating: 4,
-        date: "2024.01.04",
-        content: "예매 완료했습니다! 포스터만 봐도 정말 기대되는 작품이에요. 배우 라인업도 훌륭하고 스토리도 흥미로워 보입니다.",
-        likeCount: 16,
-        isLiked: false
-      },
-      {
-        id: 10,
-        author: "최민수",
-        rating: 5,
-        date: "2024.01.02",
-        content: "포스트 말론의 히트곡들을 라이브로 들을 수 있어서 정말 행복할 것 같아요. 무대 위에서의 에너지가 기대됩니다.",
-        likeCount: 42,
-        isLiked: false
-      },
-      {
-        id: 11,
-        author: "김영희",
-        rating: 4,
-        date: "2023.12.30",
-        content: "연말을 장식하는 최고의 공연이 될 것 같아요. 포스트 말론의 카리스마 넘치는 무대 매너도 인상적일 것 같습니다.",
-        likeCount: 23,
-        isLiked: false
-      }
-    ]);
+    {
+      id: 5,
+      author: "최수진",
+      rating: 4,
+      date: "2024.01.12",
+      content: "친구들과 함께 가기로 했는데 정말 설레요. 공연장 분위기도 기대되고 음악도 너무 좋을 것 같아요.",
+      likeCount: 12,
+      isLiked: false
+    },
+    {
+      id: 6,
+      author: "김지훈",
+      rating: 5,
+      date: "2024.01.10",
+      content: "포스트 말론의 라이브를 직접 볼 수 있다니 꿈만 같아요. 무대 연출과 음향이 정말 기대됩니다.",
+      likeCount: 28,
+      isLiked: false
+    },
+    {
+      id: 7,
+      author: "박미영",
+      rating: 4,
+      date: "2024.01.08",
+      content: "원작 소설을 읽고 너무 감동받아서 뮤지컬로는 어떻게 표현될지 정말 궁금해요. 음악과 연출이 기대됩니다!",
+      likeCount: 19,
+      isLiked: false
+    },
+    {
+      id: 8,
+      author: "이준호",
+      rating: 5,
+      date: "2024.01.06",
+      content: "드디어 티켓팅 성공! 작년 시즌1이 너무 좋았어서 이번 시즌2도 정말 기대하고 있어요. 새로운 캐스팅도 궁금합니다.",
+      likeCount: 35,
+      isLiked: false
+    },
+    {
+      id: 9,
+      author: "정수진",
+      rating: 4,
+      date: "2024.01.04",
+      content: "예매 완료했습니다! 포스터만 봐도 정말 기대되는 작품이에요. 배우 라인업도 훌륭하고 스토리도 흥미로워 보입니다.",
+      likeCount: 16,
+      isLiked: false
+    },
+    {
+      id: 10,
+      author: "최민수",
+      rating: 5,
+      date: "2024.01.02",
+      content: "포스트 말론의 히트곡들을 라이브로 들을 수 있어서 정말 행복할 것 같아요. 무대 위에서의 에너지가 기대됩니다.",
+      likeCount: 42,
+      isLiked: false
+    },
+    {
+      id: 11,
+      author: "김영희",
+      rating: 4,
+      date: "2023.12.30",
+      content: "연말을 장식하는 최고의 공연이 될 것 같아요. 포스트 말론의 카리스마 넘치는 무대 매너도 인상적일 것 같습니다.",
+      likeCount: 23,
+      isLiked: false
+    }
+  ]);
 
   const expectationsPerPage = 10;
   const totalPages = Math.ceil(expectations.length / expectationsPerPage);
@@ -129,9 +129,8 @@ export const Expectations = () => {
     return Array.from({ length: 5 }, (_, index) => (
       <span
         key={index}
-        className={`text-base leading-6 ${
-          index < rating ? "text-[#ffd700]" : "text-[#dddddd]"
-        }`}
+        className={`text-base leading-6 ${index < rating ? "text-[#ffd700]" : "text-[#dddddd]"
+          }`}
       >
         ★
       </span>
@@ -143,10 +142,10 @@ export const Expectations = () => {
       prevExpectations.map(expectation =>
         expectation.id === expectationId
           ? {
-              ...expectation,
-              isLiked: !expectation.isLiked,
-              likeCount: expectation.isLiked ? expectation.likeCount - 1 : expectation.likeCount + 1
-            }
+            ...expectation,
+            isLiked: !expectation.isLiked,
+            likeCount: expectation.isLiked ? expectation.likeCount - 1 : expectation.likeCount + 1
+          }
           : expectation
       )
     );
@@ -162,15 +161,15 @@ export const Expectations = () => {
       alert("신고 사유를 입력해주세요.");
       return;
     }
-    
+
     // 실제로는 API 호출하여 신고 데이터를 서버에 전송
     console.log(`기대평 ID ${selectedExpectationId} 신고: ${reportReason}`);
-    
+
     // 모달 닫기 및 상태 초기화
     setShowReportModal(false);
     setSelectedExpectationId(null);
     setReportReason("");
-    
+
     // 신고 접수 완료 메시지
     alert("신고가 접수되었습니다.");
   };
@@ -191,22 +190,22 @@ export const Expectations = () => {
       return;
     }
 
-         const newExpectationData: Expectation = {
-       id: expectations.length + 1,
-       author: "나",
-       rating: 0,
-       date: new Date().toLocaleDateString('ko-KR', {
-         year: 'numeric',
-         month: '2-digit',
-         day: '2-digit'
-       }).replace(/\. /g, '.').replace('.', ''),
-       content: newExpectation,
-       likeCount: 0,
-       isLiked: false
-     };
+    const newExpectationData: Expectation = {
+      id: expectations.length + 1,
+      author: "나",
+      rating: 0,
+      date: new Date().toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).replace(/\. /g, '.').replace('.', ''),
+      content: newExpectation,
+      likeCount: 0,
+      isLiked: false
+    };
 
-     setExpectations(prev => [newExpectationData, ...prev]);
-     setNewExpectation("");
+    setExpectations(prev => [newExpectationData, ...prev]);
+    setNewExpectation("");
   };
 
   return (
@@ -215,9 +214,9 @@ export const Expectations = () => {
         기대평
       </h3>
 
-             {/* 기대평 작성 폼 */}
-       <div className="w-full p-6 rounded-lg border border-[#0000001a] mb-6">
-         <div className="mb-4">
+      {/* 기대평 작성 폼 */}
+      <div className="w-full p-6 rounded-lg border border-[#0000001a] mb-6">
+        <div className="mb-4">
           <label className="block text-sm font-medium text-[#212121] mb-2">
             기대평 작성
           </label>
@@ -229,14 +228,14 @@ export const Expectations = () => {
           />
         </div>
 
-                 <div className="flex justify-end">
-           <button
-             onClick={handleSubmitExpectation}
-             className="bg-black hover:bg-gray-800 text-white font-medium text-base px-6 py-3 rounded-[10px] transition-colors"
-           >
-             등록
-           </button>
-         </div>
+        <div className="flex justify-end">
+          <button
+            onClick={handleSubmitExpectation}
+            className="bg-black hover:bg-gray-800 text-white font-medium text-base px-6 py-3 rounded-[10px] transition-colors"
+          >
+            등록
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -245,16 +244,16 @@ export const Expectations = () => {
             key={expectation.id}
             className="w-full p-6 rounded-lg border border-[#0000001a]"
           >
-                         <div className="flex items-center justify-between mb-4">
-               <div className="flex items-center gap-4">
-                 <span className="text-base text-[#212121] font-normal">
-                   {expectation.author}
-                 </span>
-               </div>
-               <span className="text-sm text-[#00000099] font-normal">
-                 {expectation.date}
-               </span>
-             </div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <span className="text-base text-[#212121] font-normal">
+                  {expectation.author}
+                </span>
+              </div>
+              <span className="text-sm text-[#00000099] font-normal">
+                {expectation.date}
+              </span>
+            </div>
 
             <div className="mb-4">
               {expectation.isHidden ? (
@@ -272,11 +271,10 @@ export const Expectations = () => {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => handleLike(expectation.id)}
-                  className={`flex items-center gap-2 text-sm font-normal transition-colors ${
-                    expectation.isLiked 
-                      ? "text-red-500" 
-                      : "text-[#00000099] hover:text-red-500"
-                  }`}
+                  className={`flex items-center gap-2 text-sm font-normal transition-colors ${expectation.isLiked
+                    ? "text-red-500"
+                    : "text-[#00000099] hover:text-red-500"
+                    }`}
                 >
                   <span className="text-lg">
                     {expectation.isLiked ? "❤️" : "🤍"}
@@ -303,37 +301,34 @@ export const Expectations = () => {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${
-                currentPage === 1
-                  ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                  : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-              }`}
+              className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === 1
+                ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                }`}
             >
               &lt;
             </button>
-            
+
             {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${
-                  currentPage === page
-                    ? "bg-black text-white border-black"
-                    : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                }`}
+                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === page
+                  ? "bg-black text-white border-black"
+                  : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                  }`}
               >
                 {page}
               </button>
             ))}
-            
+
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${
-                currentPage === totalPages
-                  ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                  : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-              }`}
+              className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === totalPages
+                ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                }`}
             >
               &gt;
             </button>
@@ -366,7 +361,7 @@ export const Expectations = () => {
 
       {/* 신고 모달 */}
       {showReportModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30">
           <div className="bg-white w-[411px] rounded-[10px] shadow-lg border border-gray-200">
             <div className="p-8">
               <div className="text-center mb-6">
@@ -377,7 +372,7 @@ export const Expectations = () => {
                   신고 사유를 입력해주세요
                 </p>
               </div>
-              
+
               <div className="mb-6">
                 <textarea
                   value={reportReason}
@@ -386,7 +381,7 @@ export const Expectations = () => {
                   className="w-full p-4 border border-gray-300 rounded-lg resize-none h-32 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6"
                 />
               </div>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={handleCloseModal}

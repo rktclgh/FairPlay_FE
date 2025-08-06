@@ -1,24 +1,24 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Main } from "./pages/MainPage";
-import { MyPageInfo } from "./pages/mypage/Info";
-import { MyPageAccount } from "./pages/mypage/Account";
-import { MyPageFavorites } from "./pages/mypage/Favorites";
-import { Withdrawal } from "./pages/mypage/Withdrawal";
-import { MyPageMyReview } from "./pages/mypage/MyReview";
-import Reservation from "./pages/mypage/Reservation";
-import MyTickets from "./pages/mypage/MyTickets";
-import EventOverview from "./pages/event/EventOverview";
-import EventDetail from "./pages/event/EventDetail";
-import { BookingPage } from "./pages/event/BookingPage";
-import { LoginPage } from "./pages/auth/LoginPage";
-import { SignUpPage } from "./pages/auth/SignUpPage";
-import { FindPassword } from "./pages/auth/FindPassword";
+import { MyPageInfo } from "./pages/user_mypage/Info";
+import { MyPageAccount } from "./pages/user_mypage/Account";
+import { MyPageFavorites } from "./pages/user_mypage/Favorites";
+import { Withdrawal } from "./pages/user_mypage/Withdrawal";
+import { MyPageMyReview } from "./pages/user_mypage/MyReview";
+import Reservation from "./pages/user_mypage/Reservation";
+import MyTickets from "./pages/user_mypage/MyTickets";
+import EventOverview from "./pages/user_event/EventOverview";
+import EventDetail from "./pages/user_event/EventDetail";
+import { BookingPage } from "./pages/user_event/BookingPage";
+import { LoginPage } from "./pages/user_auth/LoginPage";
+import { SignUpPage } from "./pages/user_auth/SignUpPage";
+import { FindPassword } from "./pages/user_auth/FindPassword";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { useScrollToTop } from './hooks/useScrollToTop';
-import KakaoCallback from "./pages/auth/KakaoCallback";
+import KakaoCallback from "./pages/user_auth/KakaoCallback";
 
 function AppContent() {
   useScrollToTop();

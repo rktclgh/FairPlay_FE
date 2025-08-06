@@ -116,8 +116,8 @@ export const FindPassword = () => {
                 <button
                     className={`absolute w-[411px] h-[52px] top-[403px] left-[428px] rounded-[10px] flex items-center justify-center transition-colors focus:outline-none
           ${isEmailValid && !loading
-                        ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
-                        : 'bg-[#d9d9d9] text-white cursor-not-allowed'}
+                            ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
+                            : 'bg-[#d9d9d9] text-white cursor-not-allowed'}
           `}
                     disabled={!isEmailValid || loading}
                     onClick={handleSendTempPassword}
@@ -130,7 +130,7 @@ export const FindPassword = () => {
 
                 {/* 모달 */}
                 {showModal && (
-                    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
+                    <div className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30">
                         <div className="bg-white w-[411px] rounded-[10px] shadow-lg border border-gray-200">
                             <div className="p-8 text-center">
                                 <div className="mb-6">
