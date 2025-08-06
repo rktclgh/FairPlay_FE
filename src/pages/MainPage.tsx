@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import dayjs from 'dayjs';
 import {
     FaChevronLeft,
     FaChevronRight,
@@ -14,6 +15,10 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
+import { eventAPI } from "../services/event"
+import type {
+    EventSummaryDto
+} from "../services/types/eventType";
 
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
@@ -30,7 +35,7 @@ interface PaidAdvertisement {
 
 export const Main: React.FC = () => {
 
-    const [events, setEvents] = useState<Event[]>([]);
+    const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
     const [loading, setLoading] = useState(true);
 
@@ -44,6 +49,65 @@ export const Main: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(2025);
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
     const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
+
+    const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+    const mapMainCategoryToId = (name: string): number | undefined => {
+        switch (name) {
+            case "박람회": return 1;
+            case "강연/세미나": return 2;
+            case "전시/행사": return 3;
+            case "공연": return 4;
+            case "축제": return 5;
+            default: return undefined;
+        }
+    };
+
+    const fetchEvents = async () => {
+        try {
+            const params: {
+                mainCategoryId?: number;
+                subCategoryId?: number;
+                regionName?: string;
+                fromDate?: string;
+                toDate?: string;
+                page?: number;
+                size?: number;
+            } = {
+                page: 0,
+                size: 20,
+            };
+
+            if (selectedCategory !== "전체") {
+                params.mainCategoryId = mapMainCategoryToId(selectedCategory);
+            }
+
+            if (selectedRegion !== "모든지역") {
+                params.regionName = selectedRegion;
+            }
+
+            if (startDate) {
+                params.fromDate = formatDate(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
+            }
+            if (endDate) {
+                params.toDate = formatDate(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0));
+            }
+
+            const response = await eventAPI.getEventList(params);
+            setEvents(response.events ?? []);
+        } catch (error) {
+            console.error("행사 필터링 실패:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchEvents();
+    }, [selectedCategory, selectedRegion, startDate, endDate]);
+
+    const handleCategoryChange = (category: string) => {
+        setSelectedCategory(category);
+    };
+
 
     // 유료광고 행사 상태
     const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
@@ -140,8 +204,8 @@ export const Main: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const eventsData = await eventApi.getEvents();
-                setEvents(eventsData);
+                const eventsData = await eventAPI.getEventList();
+                setEvents(eventsData.events);
 
                 // 유료광고 데이터 로드
                 await loadPaidAdvertisements();
@@ -160,15 +224,15 @@ export const Main: React.FC = () => {
     }, []);
 
     // 카테고리 필터링
-    const handleCategoryChange = async (category: string) => {
-        setSelectedCategory(category);
-        try {
-            const filteredEvents = await eventApi.getEvents(category);
-            setEvents(filteredEvents);
-        } catch (error) {
-            console.error('카테고리 필터링 실패:', error);
-        }
-    };
+    // const handleCategoryChange = async (category: string) => {
+    //     setSelectedCategory(category);
+    //     try {
+    //         const filteredEvents = await eventApi.getEvents(category);
+    //         setEvents(filteredEvents);
+    //     } catch (error) {
+    //         console.error('카테고리 필터링 실패:', error);
+    //     }
+    // };
 
 
 
@@ -623,10 +687,10 @@ export const Main: React.FC = () => {
                                     <img
                                         className="w-full h-64 object-cover rounded-[10px]"
                                         alt={event.title}
-                                        src={event.image}
+                                        src={event.thumbnailUrl}
                                     />
                                     <FaHeart
-                                        className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                        className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.eventId) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setLikedEvents(prev => {
@@ -643,14 +707,14 @@ export const Main: React.FC = () => {
                                 </div>
                                 <div className="mt-4 text-left">
                                     <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                        {event.category}
+                                        {event.mainCategory}
                                     </span>
                                     <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
                                     <div className="text-sm text-gray-600 mb-2">
-                                        <div className="font-bold">올림픽공원</div>
-                                        <div>{event.date}</div>
+                                        <div className="font-bold">{event.location}</div>
+                                        <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                     </div>
-                                    <p className="font-bold text-lg text-[#ff6b35]">{event.price}</p>
+                                    <p className="font-bold text-lg text-[#ff6b35]">{event.minPrice}</p>
                                 </div>
                             </div>
                         ))}

@@ -390,7 +390,7 @@ class EventApi {
     });
   }
 
-  // 비밀번호 변경
+  // 비밀번호 변경 - 기존 로직 유지
   async changePassword(request: PasswordChangeRequest): Promise<boolean> {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
@@ -569,6 +569,7 @@ class EventApi {
     }
   }
 }
+
 
 // export const eventApi = new EventApi();
 
