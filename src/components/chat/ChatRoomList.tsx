@@ -3,6 +3,7 @@ import axios from "axios";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
+// 채팅방 DTO 타입 정의 (API 응답 형태와 동일하게!)
 type ChatRoomDto = {
     chatRoomId: number;
     eventId: number | null;

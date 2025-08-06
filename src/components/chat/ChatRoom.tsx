@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useChatSocket } from "./useChatSocket";
 
+// 메시지 DTO 타입
 type ChatMessageDto = {
     chatMessageId: number;
     chatRoomId: number;
@@ -45,6 +46,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
         setMessages(prev => [...prev, msg]);
     });
 
+    // 최초 진입 시 기존 메시지 내역 조회
     useEffect(() => {
         // 메시지 목록 가져오기
         axios.get(`/api/chat/messages?chatRoomId=${roomId}`, {
@@ -79,6 +81,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
         });
     };
 
+    // 스크롤 자동 아래로 내림
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
