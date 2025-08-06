@@ -568,8 +568,46 @@ class EventApi {
       return false;
     }
   }
-}
 
+  // 참여자 토큰 검증
+  async validateParticipantToken(
+    token: string,
+    eventName: string
+  ): Promise<any> {
+    // Mock 처리로 변경 (실제 API가 준비되지 않았으므로)
+    console.warn("백엔드 API가 준비되지 않음, mock 처리로 진행");
+
+    // Mock 시나리오: 토큰에 따라 다른 응답
+    if (token === "expired") {
+      throw {
+        response: {
+          status: 401,
+          data: { message: "만료된 링크" },
+        },
+      };
+    } else if (token === "full") {
+      throw {
+        response: {
+          status: 410,
+          data: { message: "이미 모든 참석자의 정보가 제출되었습니다." },
+        },
+      };
+    } else if (token === "invalid") {
+      throw {
+        response: {
+          status: 400,
+          data: { message: "유효하지 않은 링크입니다." },
+        },
+      };
+    } else {
+      // 유효한 토큰인 경우 성공 응답
+      return {
+        success: true,
+        message: "토큰 검증 성공",
+      };
+    }
+  }
+}
 
 // export const eventApi = new EventApi();
 

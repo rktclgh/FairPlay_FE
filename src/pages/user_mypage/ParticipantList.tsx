@@ -39,8 +39,9 @@ export default function ParticipantList(): JSX.Element {
                     isOwner: true
                 };
 
-                // localStorage에서 참여자 목록 가져오기 (실제 구현에서는 API 호출)
-                const storedParticipants = JSON.parse(localStorage.getItem('participants') || '[]');
+                // 행사별 참여자 목록 가져오기
+                const eventKey = `participants_${eventName}`;
+                const storedParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
 
                 // 계정 주인을 맨 위에 추가
                 const allParticipants = [ownerInfo, ...storedParticipants];
@@ -57,14 +58,15 @@ export default function ParticipantList(): JSX.Element {
                     isOwner: true
                 };
 
-                const storedParticipants = JSON.parse(localStorage.getItem('participants') || '[]');
+                const eventKey = `participants_${eventName}`;
+                const storedParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
                 const allParticipants = [fallbackOwnerInfo, ...storedParticipants];
                 setParticipants(allParticipants);
             }
         };
 
         fetchData();
-    }, []);
+    }, [eventName]);
 
     const handleBack = () => {
         navigate('/mypage/tickets');
@@ -87,12 +89,13 @@ export default function ParticipantList(): JSX.Element {
         );
         setParticipants(updatedParticipants);
 
-        // localStorage 업데이트
-        const storedParticipants = JSON.parse(localStorage.getItem('participants') || '[]');
+        // localStorage 업데이트 (행사별)
+        const eventKey = `participants_${eventName}`;
+        const storedParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
         const updatedStoredParticipants = storedParticipants.map((p: Participant) =>
             p.id === updatedParticipant.id ? updatedParticipant : p
         );
-        localStorage.setItem('participants', JSON.stringify(updatedStoredParticipants));
+        localStorage.setItem(eventKey, JSON.stringify(updatedStoredParticipants));
 
         alert("참여자 정보가 수정되었습니다.");
     };

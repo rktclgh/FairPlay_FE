@@ -30,34 +30,35 @@ interface QrTicketData {
 
 const defaultEventData: EventData[] = [
     {
-        eventName: "웨딩박람회",
-        eventDate: "2024년 8월 9일 (금) 19:00",
-        venue: "고양종합운동장",
-        seatInfo: "입장권",
-        bookingDate: "2024년 7월 15일",
-        participantInfo: "입력하기",
-        participantFormLink: "https://forms.gle/example1",
+        eventName: "웨덱스 웨딩박람회 in COEX",
+        eventDate: "2025년 7월 26일 ~ 27일",
+        venue: "코엑스 Hall B",
+        seatInfo: "일반 입장권",
+        bookingDate: "2024년 12월 15일",
+        participantInfo: null,
+        participantFormLink: null,
         isConcert: false,
         quantity: 2,
     },
     {
-        eventName: "POST MALONE LIVE CONCERT",
+        eventName: "G-DRAGON 콘서트: WORLD TOUR",
         eventDate: "2024년 8월 25일 (일) 18:00",
         venue: "고척스카이돔",
-        seatInfo: "VIP석 5열 8번",
+        seatInfo: "A구역 12열 15번",
         bookingDate: "2024년 7월 20일",
         participantInfo: null,
         participantFormLink: null,
         isConcert: true,
+        quantity: 3,
     },
     {
-        eventName: "스타트업 투자 세미나",
-        eventDate: "2024년 8월 28일 (수) 14:00",
-        venue: "강남구 컨벤션센터",
-        seatInfo: "자유석",
+        eventName: "POST MALONE LIVE CONCERT",
+        eventDate: "2024년 8월 28일 (수) 18:00",
+        venue: "고척스카이돔",
+        seatInfo: "VIP석 5열 8번",
         bookingDate: "2024년 8월 1일",
-        participantInfo: "입력하기",
-        participantFormLink: "https://forms.gle/example3",
+        participantInfo: null,
+        participantFormLink: null,
         isConcert: true,
     },
 ];
@@ -84,7 +85,7 @@ export default function MyTickets(): JSX.Element {
             participantInfo: null,
             participantFormLink: null,
             isConcert: false,
-            quantity: booking.quantity,
+            quantity: booking.title === "웨덱스 웨딩박람회 in COEX" ? 2 : booking.quantity,
             amount: booking.amount,
         }));
 
@@ -189,7 +190,7 @@ export default function MyTickets(): JSX.Element {
 
 
 
-                                            {event.participantInfo && (
+                                            {(event.participantInfo || (event.quantity && event.quantity >= 2)) && (
                                                 <div className="pt-[-10px]">
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
                                                         참여자 입력
@@ -203,7 +204,12 @@ export default function MyTickets(): JSX.Element {
                                                                 {event.participantInfo}
                                                             </button>
                                                         ) : (
-                                                            "입력 완료"
+                                                            <button
+                                                                onClick={() => window.open(`/mypage/participant-form?eventName=${encodeURIComponent(event.eventName)}`, '_blank')}
+                                                                className="text-blue-600 hover:text-blue-800 underline bg-transparent border-none cursor-pointer p-0 font-normal text-base focus:outline-none"
+                                                            >
+                                                                `/mypage/participant-form?eventName=${encodeURIComponent(event.eventName)}`
+                                                            </button>
                                                         )}
                                                     </div>
                                                 </div>
@@ -225,7 +231,7 @@ export default function MyTickets(): JSX.Element {
                                             <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                                         </button>
 
-                                        {event.participantInfo && (
+                                        {(event.participantInfo || (event.quantity && event.quantity >= 2)) && (
                                             <button
                                                 onClick={() => handleParticipantListOpen(event.eventName)}
                                                 className="w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"

@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import RegistrationSuccessModal from "../../components/RegistrationSuccessModal";
+import WarningModal from "../../components/WarningModal";
+import { eventApi } from "../../services/api";
 
 export default function ParticipantForm(): JSX.Element {
     const navigate = useNavigate();
@@ -15,6 +17,10 @@ export default function ParticipantForm(): JSX.Element {
     });
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [registeredParticipant, setRegisteredParticipant] = useState<any>(null);
+    const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+    const [warningTitle, setWarningTitle] = useState("");
+    const [warningMessage, setWarningMessage] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -55,6 +61,27 @@ export default function ParticipantForm(): JSX.Element {
             return;
         }
 
+        // 행사별 참여자 목록 가져오기
+        const eventKey = `participants_${eventName}`;
+        const existingParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
+
+        // 행사별 최대 참여자 수 확인
+        const getMaxParticipants = (eventName: string): number => {
+            if (eventName === "웨덱스 웨딩박람회 in COEX") return 1; // 계정 주인 + 1명 = 총 2명
+            if (eventName === "G-DRAGON 콘서트: WORLD TOUR") return 2; // 계정 주인 + 2명 = 총 3명
+            return 10; // 기본값
+        };
+
+        const maxParticipants = getMaxParticipants(eventName);
+
+        // 현재 등록된 참여자 수가 최대치에 도달했는지 확인
+        if (existingParticipants.length >= maxParticipants) {
+            setWarningTitle("참여자 등록 완료");
+            setWarningMessage("이미 모든 참석자의 정보가 제출되었습니다.");
+            setIsWarningModalOpen(true);
+            return;
+        }
+
         // localStorage에 참여자 정보 저장
         const newParticipant = {
             id: `participant-${Date.now()}`,
@@ -65,25 +92,103 @@ export default function ParticipantForm(): JSX.Element {
             isOwner: false
         };
 
-        // 기존 참여자 목록 가져오기
-        const existingParticipants = JSON.parse(localStorage.getItem('participants') || '[]');
-
         // 새 참여자 추가
         const updatedParticipants = [...existingParticipants, newParticipant];
 
-        // localStorage에 저장
-        localStorage.setItem('participants', JSON.stringify(updatedParticipants));
+        // localStorage에 행사별로 저장
+        localStorage.setItem(eventKey, JSON.stringify(updatedParticipants));
 
         // 성공 모달 표시
         setRegisteredParticipant(newParticipant);
         setIsSuccessModalOpen(true);
     };
 
+
+
     const handleSuccessModalClose = () => {
         setIsSuccessModalOpen(false);
         setRegisteredParticipant(null);
         navigate("/mypage/tickets");
     };
+
+    const handleWarningModalClose = () => {
+        setIsWarningModalOpen(false);
+        navigate("/mypage/tickets");
+    };
+
+    // 토큰 검증 API 호출
+    const validateToken = async () => {
+        try {
+            // URL에서 토큰 추출 (예: ?token=abc123)
+            const token = searchParams.get('token');
+            if (!token) {
+                // 토큰이 없는 경우에도 테스트를 위해 기본값 사용
+                console.log("토큰이 없음, 테스트용 기본값 사용");
+                const testToken = 'valid'; // 테스트용 유효한 토큰
+                const response = await eventApi.validateParticipantToken(testToken, eventName);
+                setIsLoading(false);
+                return true;
+            }
+
+            // API 호출
+            const response = await eventApi.validateParticipantToken(token, eventName);
+
+            // 성공 응답
+            setIsLoading(false);
+            return true;
+        } catch (error: any) {
+            setIsLoading(false);
+
+            // 에러 응답에 따른 처리
+            if (error.response?.status === 410) {
+                // 모든 참석자 정보 제출 완료
+                setWarningTitle("참여자 등록 완료");
+                setWarningMessage("이미 모든 참석자의 정보가 제출되었습니다.");
+                setIsWarningModalOpen(true);
+                return false;
+            } else if (error.response?.status === 401) {
+                // 만료된 링크
+                setWarningTitle("만료된 링크");
+                setWarningMessage("참여자 정보 입력 기한이 지났습니다.\n대표자 및 행사 관리자에게 문의 바랍니다.");
+                setIsWarningModalOpen(true);
+                return false;
+            } else if (error.response?.status === 400) {
+                // 잘못된 링크
+                setWarningTitle("잘못된 링크");
+                setWarningMessage("유효하지 않은 링크입니다.");
+                setIsWarningModalOpen(true);
+                return false;
+            } else {
+                // 기타 에러
+                setWarningTitle("오류 발생");
+                setWarningMessage("일시적인 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.");
+                setIsWarningModalOpen(true);
+                return false;
+            }
+        }
+    };
+
+    // 페이지 로드 시 토큰 검증
+    useEffect(() => {
+        // 토큰 검증 실행
+        validateToken();
+    }, [eventName]);
+
+    if (isLoading) {
+        return (
+            <div className="bg-white flex flex-col items-center min-h-screen w-full">
+                <TopNav />
+                <div className="w-full flex flex-col items-center">
+                    <div className="w-full max-w-[800px] mt-20 mb-8 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                            <p className="text-gray-600">링크를 확인하는 중입니다...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white flex flex-col items-center min-h-screen w-full">
@@ -203,6 +308,12 @@ export default function ParticipantForm(): JSX.Element {
                 onClose={handleSuccessModalClose}
                 participant={registeredParticipant}
                 eventName={eventName}
+            />
+            <WarningModal
+                isOpen={isWarningModalOpen}
+                onClose={handleWarningModalClose}
+                title={warningTitle}
+                message={warningMessage}
             />
         </div>
     );
