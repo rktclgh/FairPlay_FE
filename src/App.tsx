@@ -8,6 +8,8 @@ import { Withdrawal } from "./pages/user_mypage/Withdrawal";
 import { MyPageMyReview } from "./pages/user_mypage/MyReview";
 import Reservation from "./pages/user_mypage/Reservation";
 import MyTickets from "./pages/user_mypage/MyTickets";
+import ParticipantForm from "./pages/user_mypage/ParticipantForm";
+import ParticipantList from "./pages/user_mypage/ParticipantList";
 import EventOverview from "./pages/user_event/EventOverview";
 import EventDetail from "./pages/user_event/EventDetail";
 import { BookingPage } from "./pages/user_event/BookingPage";
@@ -36,6 +38,8 @@ function AppContent() {
         <Route path="/mypage/favorites" element={<MyPageFavorites />} />
         <Route path="/mypage/reservation" element={<Reservation />} />
         <Route path="/mypage/tickets" element={<MyTickets />} />
+        <Route path="/mypage/participant-form" element={<ParticipantForm />} />
+        <Route path="/mypage/participant-list" element={<ParticipantList />} />
         <Route path="/mypage/write-review" element={<MyPageMyReview />} />
         <Route path="/mypage/my-review" element={<MyPageMyReview />} />
         <Route path="/mypage/withdrawal" element={<Withdrawal />} />
