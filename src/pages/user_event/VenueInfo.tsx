@@ -57,11 +57,12 @@ export const VenueInfo = ({placename, address, latitude, longitude, placeUrl, lo
                 font-size: 14px;
                 font-weight: bold;
                 box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+                line-height: 1.5rem;
                 white-space: nowrap;
               ">
                 ${placename}<br />
                 <a href="https://map.kakao.com/link/map/${placeId}" target="_blank" rel="noopener noreferrer" style="color:#5555be;">지도 크게 보기</a>
-                &nbsp;
+                &nbsp; | &nbsp;
                 <a href="https://map.kakao.com/link/to/${placeId}" target="_blank" rel="noopener noreferrer" style="color:#5555be;">길찾기</a>
               </div>
               <div style="
