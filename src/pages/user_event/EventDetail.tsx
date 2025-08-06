@@ -7,6 +7,8 @@ import { CancelPolicy } from "./CancelPolicy";
 import { Reviews } from "./Reviews";
 import { Expectations } from "./Expectations";
 import ExternalLink from "./ExternalLink";
+import api from "../../api/axios";
+import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 
 const EventDetail = (): JSX.Element => {
     const { eventId } = useParams();
@@ -19,6 +21,29 @@ const EventDetail = (): JSX.Element => {
     const [activeTab, setActiveTab] = useState<string>("detail");
     const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
+// 담당자 채팅 오픈 함수
+    const handleInquiry = async () => {
+        try {
+            // 1. 행사 담당자 userId 조회 (없으면 운영자 userId=1)
+            const res1 = await api.get(`/api/event/manager?eventId=${eventId}`);
+            const managerId = res1.data.managerId ?? 1;
+
+            // 2. 채팅방 생성/조회
+            const myUserId = Number(localStorage.getItem("userId"));
+            const res2 = await api.post("/api/chat/room", {
+                userId: myUserId,
+                targetType: "EVENT_MANAGER",
+                targetId: managerId,
+                eventId: Number(eventId)
+            });
+            const chatRoomId = res2.data.chatRoomId;
+
+            // 3. 채팅방 강제 오픈
+            openChatRoomGlobal(chatRoomId);
+        } catch (e) {
+            // 에러 토스트 자동
+        }
+    };
 
     // 이벤트 데이터 로드 시 달력 초기화
     useEffect(() => {
@@ -526,24 +551,32 @@ const EventDetail = (): JSX.Element => {
                                 <span className="text-base">{eventData.introduction}</span>
                             </div>
 
-                            <div className="flex items-start">
-                                <span className="text-base text-[#00000099] font-semibold w-20">가격</span>
-                                <div className="grid grid-cols-2 gap-x-4">
-                                    <div className="space-y-1">
-                                        {eventData.pricingTiers.map((tier: any, index: number) => (
-                                            <p key={index} className="text-base">
-                                                {tier.tier}
-                                            </p>
-                                        ))}
-                                    </div>
-                                    <div className="space-y-1 font-semibold">
-                                        {eventData.pricingTiers.map((tier: any, index: number) => (
-                                            <p key={index} className="text-base">
-                                                {tier.price}
-                                            </p>
-                                        ))}
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-start">
+                                    <span className="text-base text-[#00000099] font-semibold w-20 shrink-0">가격</span>
+                                    <div className="grid grid-cols-2 gap-x-4">
+                                        <div className="space-y-1">
+                                            {eventData.pricingTiers.map((tier: any, index: number) => (
+                                                <p key={index} className="text-base">
+                                                    {tier.tier}
+                                                </p>
+                                            ))}
+                                        </div>
+                                        <div className="space-y-1 font-semibold">
+                                            {eventData.pricingTiers.map((tier: any, index: number) => (
+                                                <p key={index} className="text-base">
+                                                    {tier.price}
+                                                </p>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
+                                <button
+                                    onClick={handleInquiry}
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm"
+                                >
+                                    담당자에게 문의하기
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -701,7 +734,6 @@ const EventDetail = (): JSX.Element => {
                                 ))}
                             </div>
                         </div>
-
                         {/* Seat Availability */}
                         <div className="w-[361px] bg-[#e7eaff] rounded-r-[10px]">
                             <div className="p-6">
@@ -1288,4 +1320,4 @@ const EventDetail = (): JSX.Element => {
     );
 };
 
-export default EventDetail; 
+export default EventDetail;
