@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX, HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { eventApi, Notification } from '../services/api';
+import { eventApi } from '../services/api';
+import type { Notification } from '../services/api';
 
 interface TopNavProps {
     className?: string;
@@ -44,6 +45,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         const path = location.pathname;
         if (path === '/') setActiveMenu('HOME');
         else if (path === '/eventoverview') setActiveMenu('EVENTS');
+        else if (path === '/register') setActiveMenu('REGISTER');
         else setActiveMenu('');
     }, [location.pathname]);
 
@@ -95,7 +97,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const newNotificationCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className={`bg-white w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000 }}>
+        <div className={`bg-white w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
             <div className="flex justify-end items-center px-6 py-1 space-x-4">
                 <a href="#" className="text-xs text-gray-500 hover:text-black">고객센터</a>
                 <button onClick={toggleNotification} className="text-xs text-gray-500 hover:text-black bg-transparent border-none relative">
@@ -115,7 +117,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     <nav className="hidden md:flex items-center space-x-8">
                         <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-bold' : 'font-normal'} text-xl`}>HOME</Link>
                         <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-bold' : 'font-normal'} text-xl`}>EVENTS</Link>
-                        <a href="#" className={`text-black ${activeMenu === 'REGISTER' ? 'font-bold' : 'font-normal'} text-xl`}>REGISTER</a>
+                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-bold' : 'font-normal'} text-xl`}>REGISTER</Link>
                     </nav>
                     <div className="flex items-center space-x-8">
                         <HiOutlineSearch className="w-6 h-6 text-black cursor-pointer" />
@@ -160,8 +162,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                                 <p className="text-sm text-gray-700 mb-2">{n.message}</p>
                                                 <span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
                                             </div>
-                                            <button 
-                                                onClick={(e) => handleDeleteNotification(e, n.notificationId)} 
+                                            <button
+                                                onClick={(e) => handleDeleteNotification(e, n.notificationId)}
                                                 className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none"
                                             >
                                                 <HiOutlineX className="w-4 h-4" />
