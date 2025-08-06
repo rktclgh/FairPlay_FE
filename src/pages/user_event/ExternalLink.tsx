@@ -48,11 +48,18 @@ export const ExternalLink = ({ isOpen, onClose }: ExternalLinkProps) => {
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 flex items-center justify-center z-50"
-      onClick={handleBackdropClick}
+    <div
+      className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30"
     >
       <div className="bg-white w-[800px] h-[700px] rounded-[10px] border border-solid border-[#0000006b] shadow-[0px_2px_8px_#0000001a] relative">
+        {/* 닫기 버튼 */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-transparent hover:bg-gray-100 rounded-full transition-colors text-gray-600 font-bold text-lg focus:outline-none focus:ring-0"
+        >
+          ×
+        </button>
+
         {/* 제목 */}
         <p className="absolute top-[58px] left-0 right-0 text-center font-semibold text-black text-[32px] leading-10">
           POST MALONE LIVE IN SEOUL 2025
@@ -71,33 +78,33 @@ export const ExternalLink = ({ isOpen, onClose }: ExternalLinkProps) => {
           <div className="space-y-4">
             {bookingPartners.map((partner) => (
               <div key={partner.id} className="flex items-center justify-between p-4 bg-[#f8f9fa] rounded-lg border border-solid border-[#0000001a]">
-                                 {/* 예매처 정보 */}
-                 <div className="flex items-center gap-4">
-                   <div className="w-40 h-[50px] bg-white rounded flex items-center justify-center border border-gray-200">
-                     <img 
-                       src={partner.logo} 
-                       alt={partner.name}
-                       className="max-w-full max-h-full object-contain"
-                       onError={(e) => {
-                         // 로고 로드 실패 시 텍스트로 대체
-                         const target = e.target as HTMLImageElement;
-                         target.style.display = 'none';
-                         const parent = target.parentElement;
-                         if (parent) {
-                           const fallback = document.createElement('span');
-                           fallback.className = 'text-sm font-medium text-gray-600';
-                           fallback.textContent = partner.name;
-                           parent.appendChild(fallback);
-                         }
-                       }}
-                     />
-                   </div>
+                {/* 예매처 정보 */}
+                <div className="flex items-center gap-4">
+                  <div className="w-40 h-[50px] bg-white rounded flex items-center justify-center border border-gray-200">
+                    <img
+                      src={partner.logo}
+                      alt={partner.name}
+                      className="max-w-full max-h-full object-contain"
+                      onError={(e) => {
+                        // 로고 로드 실패 시 텍스트로 대체
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('span');
+                          fallback.className = 'text-sm font-medium text-gray-600';
+                          fallback.textContent = partner.name;
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                  </div>
                   <div>
                     <p className="text-lg font-medium text-black">{partner.name}</p>
                     <p className="text-sm text-gray-600">{partner.description}</p>
                   </div>
                 </div>
-                
+
                 {/* 예매 버튼 */}
                 <button
                   onClick={() => handleExternalBooking(partner.url)}
