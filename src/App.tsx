@@ -14,6 +14,7 @@ import { BookingPage } from "./pages/user_event/BookingPage";
 import { LoginPage } from "./pages/user_auth/LoginPage";
 import { SignUpPage } from "./pages/user_auth/SignUpPage";
 import { FindPassword } from "./pages/user_auth/FindPassword";
+import { RegisterEvent } from "./pages/RegisterEvent";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -41,6 +42,7 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/find-password" element={<FindPassword />} />
+        <Route path="/register" element={<RegisterEvent />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer

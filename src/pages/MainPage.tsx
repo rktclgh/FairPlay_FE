@@ -117,7 +117,7 @@ export const Main: React.FC = () => {
         try {
             // TODO: 백엔드 연동 후 실제 API 호출로 교체
             // const ads = await eventApi.getPaidAdvertisements();
-            
+
             // 임시 데이터 (백엔드 연동 전까지 사용)
             const tempAds: PaidAdvertisement[] = [
                 {
@@ -485,7 +485,7 @@ export const Main: React.FC = () => {
                                                                 const startMonth = startDate.getMonth() + 1;
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
-                                                                
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
                                                                     setSelectedDateRange(`${startYear}년 ${startMonth}월`);
                                                                 } else if (startYear === endYear) {
@@ -516,7 +516,7 @@ export const Main: React.FC = () => {
                                                                 const startMonth = startDate.getMonth() + 1;
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
-                                                                
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
                                                                     setSelectedDateRange(`${startYear}년 ${startMonth}월`);
                                                                 } else if (startYear === endYear) {
@@ -563,7 +563,7 @@ export const Main: React.FC = () => {
                                                                     const startMonth = startDate.getMonth();
                                                                     const endYear = selectedYear;
                                                                     const endMonth = i;
-                                                                    
+
                                                                     // 년도가 다르거나 같은 년도에서 종료월이 시작월보다 크거나 같은 경우
                                                                     if (endYear > startYear || (endYear === startYear && endMonth >= startMonth)) {
                                                                         setEndDate(new Date(endYear, endMonth, 1));
@@ -618,17 +618,17 @@ export const Main: React.FC = () => {
 
                                         {/* 범위 초기화 버튼 */}
                                         <div className="flex justify-end">
-                                                                                         <button
-                                                 className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                                                 onClick={() => {
-                                                     setStartDate(null);
-                                                     setEndDate(null);
-                                                     setSelectedYear(2025);
-                                                     setSelectedDateRange("2025년 7월 ~ 8월");
-                                                 }}
-                                             >
-                                                 초기화
-                                             </button>
+                                            <button
+                                                className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
+                                                onClick={() => {
+                                                    setStartDate(null);
+                                                    setEndDate(null);
+                                                    setSelectedYear(2025);
+                                                    setSelectedDateRange("2025년 7월 ~ 8월");
+                                                }}
+                                            >
+                                                초기화
+                                            </button>
                                         </div>
                                     </div>
                                 )}
