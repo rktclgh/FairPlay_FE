@@ -50,7 +50,6 @@ export default function EventOverview() {
     const [selectedYear, setSelectedYear] = React.useState(2025);
     const [calendarYear, setCalendarYear] = React.useState(new Date().getFullYear());
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
-
     const navigate = useNavigate();
 
     // 좋아요 토글 함수
@@ -223,21 +222,21 @@ export default function EventOverview() {
     // const events = [
     //     {
     //         id: 1,
-    //         title: "포스트 말론 2025 내한 공연",
-    //         category: "공연",
-    //         date: "2025-08-25 ~ 2025-08-27",
-    //         location: "고척스카이돔",
-    //         price: "100,000원 ~",
-    //         image: "/images/malone.jpg",
+    //         title: "2025 AI & 로봇 박람회",
+    //         category: "박람회",
+    //         date: "2025-08-15 ~ 2025-08-17",
+    //         location: "코엑스 A홀",
+    //         price: "15,000원 ~",
+    //         image: "",
     //     },
     //     {
     //         id: 2,
-    //         title: "웨덱스 웨딩박람회 in COEX",
+    //         title: "서울 국제 도서전",
     //         category: "박람회",
-    //         date: "2025-07-26 ~ 2025-07-27",
-    //         location: "코엑스 Hall B",
+    //         date: "2025-08-22 ~ 2025-08-25",
+    //         location: "코엑스 B홀",
     //         price: "무료",
-    //         image: "/images/wedding.png",
+    //         image: "",
     //     },
     //     {
     //         id: 3,
@@ -922,4 +921,4 @@ export default function EventOverview() {
             </div>
         </div>
     );
-}
+} 

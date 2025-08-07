@@ -7,19 +7,20 @@ import { CancelPolicy } from "./CancelPolicy";
 import { Reviews } from "./Reviews";
 import { Expectations } from "./Expectations";
 import ExternalLink from "./ExternalLink";
+import { eventAPI }  from "../../services/event";
+import type {EventDetailResponseDto} from "../../services/types/eventType";
 import api from "../../api/axios";
 import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 
 const EventDetail = (): JSX.Element => {
     const { eventId } = useParams();
     const navigate = useNavigate();
-    const [eventData, setEventData] = useState<any>(null);
+    const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(2025);
     const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(7);
     const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
     const [activeTab, setActiveTab] = useState<string>("detail");
-    const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
 // 담당자 채팅 오픈 함수
     const handleInquiry = async () => {

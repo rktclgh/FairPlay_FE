@@ -1,5 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+import * as events from "node:events";
+import {eventAPI} from "@/services/event";
 
 interface ExternalLinkProps {
   isOpen: boolean;
@@ -8,20 +10,10 @@ interface ExternalLinkProps {
   externalLinks?: { url: string; displayText: string; }[];
 }
 
-export const ExternalLink = ({ isOpen, onClose, officialUrl, externalLinks }: ExternalLinkProps) => {
+export const ExternalLink = ({ isOpen, onClose, title, externalLinks }: ExternalLinkProps) => {
   const { eventId } = useParams();
 
   const linksToDisplay = [];
-
-  if (officialUrl) {
-    linksToDisplay.push({
-      id: 'official',
-      name: '공식 예매처',
-      url: officialUrl,
-      description: '행사 공식 웹사이트를 통해 예매하실 수 있습니다.'
-    });
-  }
-
   if (externalLinks && externalLinks.length > 0) {
     externalLinks.forEach((link, index) => {
       linksToDisplay.push({
@@ -34,6 +26,7 @@ export const ExternalLink = ({ isOpen, onClose, officialUrl, externalLinks }: Ex
   }
 
   const handleExternalBooking = (url: string) => {
+    // 새 창에서 외부 예매처 열기
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -48,9 +41,9 @@ export const ExternalLink = ({ isOpen, onClose, officialUrl, externalLinks }: Ex
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30"
+      onClick={handleBackdropClick}
     >
       <div className="bg-white w-[800px] h-[700px] rounded-[10px] border border-solid border-[#0000006b] shadow-[0px_2px_8px_#0000001a] relative">
-        {/* 제목 제거 (동적 데이터 없음) */}
         {/* 닫기 버튼 */}
         <button
           onClick={onClose}
@@ -61,7 +54,7 @@ export const ExternalLink = ({ isOpen, onClose, officialUrl, externalLinks }: Ex
 
         {/* 제목 */}
         <p className="absolute top-[58px] left-0 right-0 text-center font-semibold text-black text-[32px] leading-10">
-          POST MALONE LIVE IN SEOUL 2025
+          {title}
         </p>
 
         {/* 구분선 */}
@@ -81,8 +74,23 @@ export const ExternalLink = ({ isOpen, onClose, officialUrl, externalLinks }: Ex
                   {/* 예매처 정보 */}
                   <div className="flex items-center gap-4">
                     <div className="w-40 h-[50px] bg-white rounded flex items-center justify-center border border-gray-200">
-                      {/* 로고 대신 텍스트 표시 */}
-                      <span className="text-sm font-medium text-gray-600">{partner.name}</span>
+                      <img
+                          src={partner.logo}
+                          alt={partner.name}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            // 로고 로드 실패 시 텍스트로 대체
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const fallback = document.createElement('span');
+                              fallback.className = 'text-sm font-medium text-gray-600';
+                              fallback.textContent = partner.name;
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                      />
                     </div>
                     <div>
                       <p className="text-lg font-medium text-black">{partner.name}</p>
@@ -123,6 +131,6 @@ export const ExternalLink = ({ isOpen, onClose, officialUrl, externalLinks }: Ex
       </div>
     </div>
   );
-};;
+};
 
 export default ExternalLink; 
