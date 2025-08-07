@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from "react";
+import dayjs from 'dayjs';
 import {
     FaChevronLeft,
     FaChevronRight,
     FaChevronDown,
     FaHeart
 } from "react-icons/fa";
-import { HiOutlineCalendar } from "react-icons/hi";
-import { TopNav } from "../components/TopNav";
-import { eventApi } from "../services/api";
-import type { Event, HotPick } from "../services/api";
-import { Link } from "react-router-dom";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade } from "swiper/modules";
+import {HiOutlineCalendar} from "react-icons/hi";
+import {TopNav} from "../components/TopNav";
+import {Link, useNavigate} from "react-router-dom";
+import {Swiper, SwiperSlide} from "swiper/react";
+import {Autoplay, EffectFade} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
+import {eventAPI} from "../services/event"
+import type {
+    EventSummaryDto
+} from "../services/types/eventType";
 
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
@@ -30,7 +33,7 @@ interface PaidAdvertisement {
 
 export const Main: React.FC = () => {
 
-    const [events, setEvents] = useState<Event[]>([]);
+    const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
     const [loading, setLoading] = useState(true);
 
@@ -44,6 +47,72 @@ export const Main: React.FC = () => {
     const [selectedYear, setSelectedYear] = useState<number>(2025);
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
     const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
+    const navigate = useNavigate();
+
+    const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+    const mapMainCategoryToId = (name: string): number | undefined => {
+        switch (name) {
+            case "박람회":
+                return 1;
+            case "강연/세미나":
+                return 2;
+            case "전시/행사":
+                return 3;
+            case "공연":
+                return 4;
+            case "축제":
+                return 5;
+            default:
+                return undefined;
+        }
+    };
+
+    const fetchEvents = async () => {
+        try {
+            const params: {
+                mainCategoryId?: number;
+                subCategoryId?: number;
+                regionName?: string;
+                fromDate?: string;
+                toDate?: string;
+                page?: number;
+                size?: number;
+            } = {
+                page: 0,
+                size: 20,
+            };
+
+            if (selectedCategory !== "전체") {
+                params.mainCategoryId = mapMainCategoryToId(selectedCategory);
+            }
+
+            if (selectedRegion !== "모든지역") {
+                params.regionName = selectedRegion;
+            }
+
+            if (startDate) {
+                params.fromDate = formatDate(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
+            }
+            if (endDate) {
+                params.toDate = formatDate(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0));
+            }
+
+            const response = await eventAPI.getEventList(params);
+            setEvents(response.events ?? []);
+        } catch (error) {
+            console.error("행사 필터링 실패:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchEvents();
+    }, [selectedCategory, selectedRegion, startDate, endDate]);
+
+    const handleCategoryChange = (category: string) => {
+        setSelectedCategory(category);
+    };
+
 
     // 유료광고 행사 상태
     const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
@@ -53,7 +122,7 @@ export const Main: React.FC = () => {
         try {
             // TODO: 백엔드 연동 후 실제 API 호출로 교체
             // const ads = await eventApi.getPaidAdvertisements();
-            
+
             // 임시 데이터 (백엔드 연동 전까지 사용)
             const tempAds: PaidAdvertisement[] = [
                 {
@@ -140,8 +209,8 @@ export const Main: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const eventsData = await eventApi.getEvents();
-                setEvents(eventsData);
+                const eventsData = await eventAPI.getEventList();
+                setEvents(eventsData.events);
 
                 // 유료광고 데이터 로드
                 await loadPaidAdvertisements();
@@ -160,16 +229,15 @@ export const Main: React.FC = () => {
     }, []);
 
     // 카테고리 필터링
-    const handleCategoryChange = async (category: string) => {
-        setSelectedCategory(category);
-        try {
-            const filteredEvents = await eventApi.getEvents(category);
-            setEvents(filteredEvents);
-        } catch (error) {
-            console.error('카테고리 필터링 실패:', error);
-        }
-    };
-
+    // const handleCategoryChange = async (category: string) => {
+    //     setSelectedCategory(category);
+    //     try {
+    //         const filteredEvents = await eventApi.getEvents(category);
+    //         setEvents(filteredEvents);
+    //     } catch (error) {
+    //         console.error('카테고리 필터링 실패:', error);
+    //     }
+    // };
 
 
     // Hot Picks 슬라이드 함수들
@@ -281,14 +349,14 @@ export const Main: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-white">
-            <TopNav />
+            <TopNav/>
 
             {/* 히어로 섹션 */}
             <div className="relative w-full h-[600px] bg-gray-100">
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
-                    autoplay={{ delay: 4000 }}
+                    autoplay={{delay: 4000}}
                     loop={true}
                     className="w-full h-full"
                     onSwiper={(swiper) => {
@@ -344,14 +412,14 @@ export const Main: React.FC = () => {
                                 onClick={handleHotPicksPrev}
                                 disabled={hotPicksSlideIndex === 0}
                             >
-                                <FaChevronLeft className="w-5 h-5 text-gray-600" />
+                                <FaChevronLeft className="w-5 h-5 text-gray-600"/>
                             </button>
                             <button
                                 className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={handleHotPicksNext}
                                 disabled={hotPicksSlideIndex === 5}
                             >
-                                <FaChevronRight className="w-5 h-5 text-gray-600" />
+                                <FaChevronRight className="w-5 h-5 text-gray-600"/>
                             </button>
                         </div>
                     </div>
@@ -359,17 +427,19 @@ export const Main: React.FC = () => {
                     <div className="overflow-hidden">
                         <div
                             className="flex gap-6 transition-transform duration-500 ease-in-out"
-                            style={{ transform: `translateX(-${hotPicksSlideIndex * 20}%)` }}
+                            style={{transform: `translateX(-${hotPicksSlideIndex * 20}%)`}}
                         >
                             {allHotPicks.map((item, index) => (
-                                <div key={item.id} className="relative flex-shrink-0" style={{ width: 'calc(20% - 24px)' }}>
+                                <div key={item.id} className="relative flex-shrink-0"
+                                     style={{width: 'calc(20% - 24px)'}}>
                                     <img
                                         className="w-full h-64 object-cover rounded-[10px]"
                                         alt={`Hot Pick ${index + 1}`}
                                         src={item.image}
                                     />
                                     <div className="mt-4 text-left">
-                                        <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                        <span
+                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
                                             {item.category}
                                         </span>
                                         <h3 className="font-bold text-xl text-black mb-2 truncate">{item.title}</h3>
@@ -396,14 +466,16 @@ export const Main: React.FC = () => {
                                     className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0"
                                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                                 >
-                                    <HiOutlineCalendar className="w-6 h-6 text-gray-600" />
+                                    <HiOutlineCalendar className="w-6 h-6 text-gray-600"/>
                                     <span className="text-lg text-black">{selectedDateRange}</span>
-                                    <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
+                                    <FaChevronDown
+                                        className={`w-4 h-4 text-gray-600 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`}/>
                                 </button>
 
                                 {/* 날짜 선택 드롭다운 */}
                                 {isDatePickerOpen && (
-                                    <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
+                                    <div
+                                        className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
                                         {/* 년도 선택 */}
                                         <div className="mb-4">
                                             <h3 className="text-sm font-medium text-gray-700 mb-2">년도 선택</h3>
@@ -421,7 +493,7 @@ export const Main: React.FC = () => {
                                                                 const startMonth = startDate.getMonth() + 1;
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
-                                                                
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
                                                                     setSelectedDateRange(`${startYear}년 ${startMonth}월`);
                                                                 } else if (startYear === endYear) {
@@ -452,7 +524,7 @@ export const Main: React.FC = () => {
                                                                 const startMonth = startDate.getMonth() + 1;
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
-                                                                
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
                                                                     setSelectedDateRange(`${startYear}년 ${startMonth}월`);
                                                                 } else if (startYear === endYear) {
@@ -476,7 +548,7 @@ export const Main: React.FC = () => {
                                         <div className="mb-4">
                                             <h3 className="text-sm font-medium text-gray-700 mb-2">월 선택</h3>
                                             <div className="grid grid-cols-3 gap-2">
-                                                {Array.from({ length: 12 }, (_, i) => {
+                                                {Array.from({length: 12}, (_, i) => {
                                                     const monthDate = new Date(selectedYear, i, 1);
                                                     const isSelected = (startDate && startDate.getFullYear() === selectedYear && startDate.getMonth() === i) ||
                                                         (endDate && endDate.getFullYear() === selectedYear && endDate.getMonth() === i);
@@ -499,7 +571,7 @@ export const Main: React.FC = () => {
                                                                     const startMonth = startDate.getMonth();
                                                                     const endYear = selectedYear;
                                                                     const endMonth = i;
-                                                                    
+
                                                                     // 년도가 다르거나 같은 년도에서 종료월이 시작월보다 크거나 같은 경우
                                                                     if (endYear > startYear || (endYear === startYear && endMonth >= startMonth)) {
                                                                         setEndDate(new Date(endYear, endMonth, 1));
@@ -554,17 +626,17 @@ export const Main: React.FC = () => {
 
                                         {/* 범위 초기화 버튼 */}
                                         <div className="flex justify-end">
-                                                                                         <button
-                                                 className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                                                 onClick={() => {
-                                                     setStartDate(null);
-                                                     setEndDate(null);
-                                                     setSelectedYear(2025);
-                                                     setSelectedDateRange("2025년 7월 ~ 8월");
-                                                 }}
-                                             >
-                                                 초기화
-                                             </button>
+                                            <button
+                                                className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
+                                                onClick={() => {
+                                                    setStartDate(null);
+                                                    setEndDate(null);
+                                                    setSelectedYear(2025);
+                                                    setSelectedDateRange("2025년 7월 ~ 8월");
+                                                }}
+                                            >
+                                                초기화
+                                            </button>
                                         </div>
                                     </div>
                                 )}
@@ -575,12 +647,14 @@ export const Main: React.FC = () => {
                                     onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
                                 >
                                     <span className="text-sm truncate">{selectedRegion}</span>
-                                    <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <FaChevronDown
+                                        className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`}/>
                                 </button>
 
                                 {/* 드롭다운 메뉴 */}
                                 {isRegionDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                    <div
+                                        className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                                         {["모든지역", "서울", "경기", "인천", "강원", "부산", "경남", "대구", "경북", "대전", "충남", "충북", "광주", "전북", "전남", "제주", "울산", "해외"].map((region) => (
                                             <button
                                                 key={region}
@@ -608,7 +682,7 @@ export const Main: React.FC = () => {
                                 className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter
                                     ? "bg-black text-white font-bold"
                                     : "bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold"
-                                    }`}
+                                }`}
                             >
                                 {filter}
                             </button>
@@ -619,47 +693,54 @@ export const Main: React.FC = () => {
                     <div className="grid grid-cols-5 gap-6">
                         {events.slice(0, 5).map((event) => (
                             <div key={event.id} className="relative">
-                                <div className="relative">
-                                    <img
-                                        className="w-full h-64 object-cover rounded-[10px]"
-                                        alt={event.title}
-                                        src={event.image}
-                                    />
-                                    <FaHeart
-                                        className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setLikedEvents(prev => {
-                                                const newSet = new Set(prev);
-                                                if (newSet.has(event.id)) {
-                                                    newSet.delete(event.id);
-                                                } else {
-                                                    newSet.add(event.id);
-                                                }
-                                                return newSet;
-                                            });
-                                        }}
-                                    />
-                                </div>
-                                <div className="mt-4 text-left">
-                                    <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                        {event.category}
-                                    </span>
-                                    <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                    <div className="text-sm text-gray-600 mb-2">
-                                        <div className="font-bold">올림픽공원</div>
-                                        <div>{event.date}</div>
+                                <Link to={`/eventdetail/${event.id}`}>
+                                    <div className="relative">
+                                        <img
+                                            className="w-full h-64 object-cover rounded-[10px]"
+                                            alt={event.title}
+                                            src={event.thumbnailUrl}
+                                        />
+                                        <FaHeart
+                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLikedEvents(prev => {
+                                                    const newSet = new Set(prev);
+                                                    if (newSet.has(event.id)) {
+                                                        newSet.delete(event.id);
+                                                    } else {
+                                                        newSet.add(event.id);
+                                                    }
+                                                    return newSet;
+                                                });
+                                            }}
+                                        />
+
                                     </div>
-                                    <p className="font-bold text-lg text-[#ff6b35]">{event.price}</p>
-                                </div>
+                                    <div className="mt-4 text-left">
+
+                            <span
+                                className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                        {event.mainCategory}
+                    </span>
+                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            <div className="font-bold">{event.location}</div>
+                                            <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
+                                        </div>
+                                        <p className="font-bold text-lg text-[#ff6b35]">{event.minPrice}</p>
+                                    </div>
+                                </Link>
                             </div>
                         ))}
                     </div>
 
-                    {/* 전체보기 버튼 */}
+                    {/* 전체보기 버튼 */
+                    }
                     <div className="text-center mt-12">
                         <Link to="/eventoverview">
-                            <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
+                            <button
+                                className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
                                 전체보기
                             </button>
                         </Link>
@@ -667,7 +748,8 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 푸터 */}
+            {/* 푸터 */
+            }
             <footer className="bg-white border-t border-gray-200 py-16">
                 <div className="max-w-7xl mx-auto px-8 text-center">
                     <p className="text-gray-600 mb-8">
@@ -682,5 +764,6 @@ export const Main: React.FC = () => {
                 </div>
             </footer>
         </div>
-    );
+    )
+        ;
 }; 
