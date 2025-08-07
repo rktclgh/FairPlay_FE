@@ -25,32 +25,16 @@ const EventDetail = (): JSX.Element => {
 // 담당자 채팅 오픈 함수
     const handleInquiry = async () => {
         try {
-            // 1. 행사 담당자 userId 조회 (없으면 운영자 userId=1)
-            const res1 = await api.get(`/api/event/manager?eventId=${eventId}`);
-            const managerId = res1.data.managerId ?? 1;
-
-            // 2. 채팅방 생성/조회
-            const token = localStorage.getItem("accessToken");
-            let myUserId = 1; // 기본값
-            if (token) {
-                try {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    myUserId = parseInt(payload.sub);
-                } catch (error) {
-                    console.error("토큰 파싱 실패:", error);
-                }
-            }
-            const res2 = await api.post("/api/chat/room", {
-                userId: myUserId,
-                targetType: "EVENT_MANAGER",
-                targetId: managerId,
+            // 이벤트 담당자 채팅방 생성/조회 (API가 자동으로 담당자 찾아서 채팅방 생성)
+            const response = await api.post("/api/chat/event-inquiry", {
                 eventId: Number(eventId)
             });
-            const chatRoomId = res2.data.chatRoomId;
+            const chatRoomId = response.data.chatRoomId;
 
-            // 3. 채팅방 강제 오픈
+            // 채팅방 강제 오픈
             openChatRoomGlobal(chatRoomId);
         } catch (e) {
+            console.error("담당자 채팅방 생성 실패:", e);
             // 에러 토스트 자동
         }
     };

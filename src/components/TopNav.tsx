@@ -3,6 +3,8 @@ import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX } from 'r
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eventApi } from '../services/api';
 import type { Notification } from '../services/api';
+import axios from 'axios';
+import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 
 interface TopNavProps {
     className?: string;
@@ -94,12 +96,39 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         }
     };
 
+    // 운영자(전체 관리자) 문의 채팅방 생성/입장
+    const handleCustomerService = async () => {
+        if (!isLoggedIn) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            const api = axios.create({
+                baseURL: 'http://localhost:8080',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // ADMIN 권한을 가진 사용자에게 연결하는 1:N 구조 (전용 API 사용)
+            const response = await api.post('/api/chat/admin-inquiry');
+            
+            const chatRoomId = response.data.chatRoomId;
+            openChatRoomGlobal(chatRoomId);
+        } catch (error) {
+            console.error('운영자 문의 채팅방 생성 실패:', error);
+        }
+    };
+
     const newNotificationCount = notifications.filter(n => !n.isRead).length;
 
     return (
         <div className={`bg-white w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
             <div className="flex justify-end items-center px-6 py-1 space-x-4">
-                <a href="#" className="text-xs text-gray-500 hover:text-black">고객센터</a>
+                <button onClick={handleCustomerService} className="text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer">고객센터</button>
                 <button onClick={toggleNotification} className="text-xs text-gray-500 hover:text-black bg-transparent border-none relative">
                     알림
                     {isLoggedIn && newNotificationCount > 0 && (
