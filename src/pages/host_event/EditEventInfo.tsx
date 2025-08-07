@@ -190,7 +190,7 @@ export const EditEventInfo = () => {
                     <div className="bg-white">
                         {/* 행사 정보 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                            <div className="bg-white rounded-lg shadow-md p-6">
                                 <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">
                                     행사 정보
                                 </h2>
@@ -550,7 +550,7 @@ export const EditEventInfo = () => {
                         </div>
                         {/* 외부 링크 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                            <div className="bg-white rounded-lg shadow-md p-6">
                                 <h2 className="font-bold text-black text-lg leading-[30px] mb-6">외부 링크</h2>
                                 <div className="grid grid-cols-2 gap-8">
                                     <div>
@@ -580,7 +580,7 @@ export const EditEventInfo = () => {
                         </div>
                         {/* 주최자 정보 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                            <div className="bg-white rounded-lg shadow-md p-6">
                                 <h2 className="font-bold text-black text-lg leading-[30px] mb-6">주최자 정보</h2>
                                 <div className="grid grid-cols-2 gap-8">
                                     <div>
@@ -631,7 +631,7 @@ export const EditEventInfo = () => {
                         </div>
                         {/* 담당자 정보 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                            <div className="bg-white rounded-lg shadow-md p-6">
                                 <h2 className="font-bold text-black text-lg leading-[30px] mb-6">담당자 정보</h2>
                                 <div className="grid grid-cols-2 gap-8">
                                     <div>
