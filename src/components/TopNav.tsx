@@ -121,7 +121,15 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     </nav>
                     <div className="flex items-center space-x-8">
                         <HiOutlineSearch className="w-6 h-6 text-black cursor-pointer" />
-                        <HiOutlineUser className="w-6 h-6 text-black cursor-pointer" onClick={() => navigate('/mypage/info')} />
+                        <HiOutlineUser className="w-6 h-6 text-black cursor-pointer" onClick={() => {
+                            // 사용자 역할에 따른 페이지 이동
+                            const loginEmail = localStorage.getItem("loginEmail");
+                            if (loginEmail === "takonism@naver.com") {
+                                navigate('/host/dashboard');
+                            } else {
+                                navigate('/mypage/info');
+                            }
+                        }} />
                         <HiOutlineGlobeAlt className="w-6 h-6 text-black cursor-pointer" />
                     </div>
                 </div>
