@@ -83,20 +83,20 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                 티켓 관리
                             </Link>
                             <Link
-                                to="/host/session-management"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/session-management"
+                                to="/host/round-management"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/round-management"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                     : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
                                     }`}
                                 style={{
                                     textDecoration: 'none',
-                                    color: location.pathname === "/host/session-management" ? "black" : "#00000080"
+                                    color: location.pathname === "/host/round-management" ? "black" : "#00000080"
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/session-management" ? "black" : "#00000080";
+                                    e.currentTarget.style.color = location.pathname === "/host/round-management" ? "black" : "#00000080";
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/session-management" ? "black" : "#00000080";
+                                    e.currentTarget.style.color = location.pathname === "/host/round-management" ? "black" : "#00000080";
                                 }}
                             >
                                 회차 관리
