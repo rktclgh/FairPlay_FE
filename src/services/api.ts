@@ -344,7 +344,19 @@ class EventApi {
             loginPhone,
           });
 
-          if (loginEmail && loginName && loginPhone) {
+          // 특정 이메일을 행사관리자로 설정
+          if (loginEmail === "takonism@naver.com") {
+            const userData: UserInfo = {
+              userId: 1,
+              email: loginEmail,
+              phone: loginPhone || "010-0000-0000",
+              name: loginName || "행사관리자",
+              nickname: loginName || "행사관리자",
+              role: "HOST",
+            };
+            console.log("행사관리자 계정 데이터:", userData);
+            resolve(userData);
+          } else if (loginEmail && loginName && loginPhone) {
             // 로그인 시 저장된 실제 정보 사용
             const userData: UserInfo = {
               userId: 1,
