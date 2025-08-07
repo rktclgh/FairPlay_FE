@@ -31,7 +31,7 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
             console.log(`Opening WebSocket for room ${roomId}...`);
             isConnectedRef.current = true;
 
-            const sock = new SockJS("http://localhost:8080/ws/chat");
+            const sock = new SockJS("/ws/chat");
             const stomp = Stomp.over(sock);
 
             // 디버그 로그 비활성화

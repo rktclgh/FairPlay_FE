@@ -77,7 +77,7 @@ export default function ChatRoomList({ onSelect }: Props) {
         fetchRooms();
 
         // WebSocket 연결로 실시간 업데이트
-        const sock = new SockJS("http://localhost:8080/ws/chat");
+        const sock = new SockJS("/ws/chat");
         const stomp = Stomp.over(sock);
         stomp.debug = null;
         clientRef.current = stomp;
