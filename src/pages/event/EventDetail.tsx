@@ -9,14 +9,51 @@ import { Expectations } from "./Expectations";
 import ExternalLink from "./ExternalLink";
 import { eventAPI }  from "../../services/event";
 import type {EventDetailResponseDto} from "../../services/types/eventType";
+import api from "../../api/axios";
+import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 
 const EventDetail = (): JSX.Element => {
     const { eventId } = useParams();
     const navigate = useNavigate();
     const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
+    const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(2025);
+    const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(7);
+    const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
     const [activeTab, setActiveTab] = useState<string>("detail");
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
+// 담당자 채팅 오픈 함수
+    const handleInquiry = async () => {
+        try {
+            // 1. 행사 담당자 userId 조회 (없으면 운영자 userId=1)
+            const res1 = await api.get(`/api/event/manager?eventId=${eventId}`);
+            const managerId = res1.data.managerId ?? 1;
+
+            // 2. 채팅방 생성/조회
+            const token = localStorage.getItem("accessToken");
+            let myUserId = 1; // 기본값
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    myUserId = parseInt(payload.sub);
+                } catch (error) {
+                    console.error("토큰 파싱 실패:", error);
+                }
+            }
+            const res2 = await api.post("/api/chat/room", {
+                userId: myUserId,
+                targetType: "EVENT_MANAGER",
+                targetId: managerId,
+                eventId: Number(eventId)
+            });
+            const chatRoomId = res2.data.chatRoomId;
+
+            // 3. 채팅방 강제 오픈
+            openChatRoomGlobal(chatRoomId);
+        } catch (e) {
+            // 에러 토스트 자동
+        }
+    };
 
     // 이벤트 데이터 로드 시 달력 초기화
     // useEffect(() => {
@@ -544,17 +581,23 @@ const EventDetail = (): JSX.Element => {
                                     {/*    ))}*/}
                                     {/*</div>*/}
                                 </div>
+                                <button
+                                    onClick={handleInquiry}
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm"
+                                >
+                                    담당자에게 문의하기
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Date and Time Selection (스케줄 관련 UI는 백엔드 데이터에 따라 추후 구현) */}
+                {/* Date and Time Selection */}
                 <div className="mt-16 mb-8 border border-gray-200 rounded-lg">
                     <div className="p-0 flex">
                         <div className="flex-1 p-6">
                             <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">
-                                날짜 및 시간 선택
+                                날짜 선택
                             </h3>
                             <p>회차 연결</p>
                         {/*    <div className="space-y-3">*/}
@@ -1034,11 +1077,11 @@ const EventDetail = (): JSX.Element => {
             <ExternalLink
                 isOpen={isExternalBookingOpen}
                 onClose={() => setIsExternalBookingOpen(false)}
-                officialUrl={eventData.officialUrl}
+                title={eventData.titleKr}
                 externalLinks={eventData.externalLinks}
             />
         </div>
     );
 };
 
-export default EventDetail; 
+export default EventDetail;

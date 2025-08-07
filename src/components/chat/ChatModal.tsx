@@ -2,7 +2,6 @@ import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import ChatRoomList from "./ChatRoomList";
 import ChatRoom from "./ChatRoom";
-import { useState } from "react";
 
 type ChatRoomInfo = {
     roomId: number;
