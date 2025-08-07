@@ -21,10 +21,14 @@ const KakaoCallback = () => {
         const handleKakaoLogin = async (code: string) => {
             try {
                 const response = await api.post('/api/auth/kakao', { code }); // POST JSON!
-                const { accessToken, refreshToken } = response.data;
+                const { accessToken, refreshToken, userId, email, name, phoneNumber } = response.data;
 
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', refreshToken);
+                localStorage.setItem('userId', userId.toString());
+                localStorage.setItem('loginEmail', email || '');
+                localStorage.setItem('loginName', name || '사용자');
+                localStorage.setItem('loginPhone', phoneNumber || '010-0000-0000');
 
                 toast.success('카카오 로그인에 성공했습니다!');
                 navigate('/');
