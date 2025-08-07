@@ -32,11 +32,20 @@ export const LoginPage = () => {
 
             toast.success("로그인에 성공했습니다!");
 
-            // 사용자 역할에 따른 리다이렉션
-            if (user && user.role === "HOST") {
-                navigate("/host/dashboard");
-            } else {
-                navigate("/");
+            // accessToken에서 사용자 역할 추출
+            try {
+                const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                const userRole = payload.role;
+                
+                // 사용자 역할에 따른 리다이렉션
+                if (userRole === "HOST") {
+                    navigate("/host/dashboard");
+                } else {
+                    navigate("/");
+                }
+            } catch (error) {
+                console.error("토큰 파싱 실패:", error);
+                navigate("/"); // 기본적으로 메인 페이지로
             }
         } catch {
             // Handled by axios interceptor
