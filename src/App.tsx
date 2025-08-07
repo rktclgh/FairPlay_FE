@@ -23,55 +23,57 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
+import ChatFloatingModal from "./components/chat/ChatFloatingModal"; // ← 위치 반드시 확인
 
 function AppContent() {
   useScrollToTop();
 
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<Main />} />
-        <Route path="/eventoverview" element={<EventOverview />} />
-        <Route path="/eventdetail/:eventId" element={<EventDetail />} />
-        <Route path="/booking/:eventId" element={<BookingPage />} />
-        <Route path="/mypage/info" element={<MyPageInfo />} />
-        <Route path="/mypage/account" element={<MyPageAccount />} />
-        <Route path="/mypage/favorites" element={<MyPageFavorites />} />
-        <Route path="/mypage/reservation" element={<Reservation />} />
-        <Route path="/mypage/tickets" element={<MyTickets />} />
-        <Route path="/mypage/participant-form" element={<ParticipantForm />} />
+      <>
+        <Routes>
+          <Route path="/" element={<Main />} />
+          <Route path="/eventoverview" element={<EventOverview />} />
+          <Route path="/eventdetail/:eventId" element={<EventDetail />} />
+          <Route path="/booking/:eventId" element={<BookingPage />} />
+          <Route path="/mypage/info" element={<MyPageInfo />} />
+          <Route path="/mypage/account" element={<MyPageAccount />} />
+          <Route path="/mypage/favorites" element={<MyPageFavorites />} />
+          <Route path="/mypage/reservation" element={<Reservation />} />
+          <Route path="/mypage/tickets" element={<MyTickets />} />
+          <Route path="/mypage/participant-form" element={<ParticipantForm />} />
         <Route path="/mypage/participant-list" element={<ParticipantList />} />
         <Route path="/mypage/write-review" element={<MyPageMyReview />} />
-        <Route path="/mypage/my-review" element={<MyPageMyReview />} />
-        <Route path="/mypage/withdrawal" element={<Withdrawal />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/find-password" element={<FindPassword />} />
-        <Route path="/register" element={<RegisterEvent />} />
-        <Route path="/host/dashboard" element={<HostDashboard />} />
-        <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
-      </Routes>
-      <ToastContainer
-        position="bottom-right"
-        autoClose={2500}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-      />
-    </>
+          <Route path="/mypage/my-review" element={<MyPageMyReview />} />
+          <Route path="/mypage/withdrawal" element={<Withdrawal />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/find-password" element={<FindPassword />} />
+          <Route path="/register" element={<RegisterEvent />} />
+          <Route path="/host/dashboard" element={<HostDashboard />} />
+          <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+        </Routes>
+        <ToastContainer
+            position="bottom-right"
+            autoClose={2500}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+        />
+      </>
   );
 }
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+      <BrowserRouter>
+        <AppContent />
+        <ChatFloatingModal />
+      </BrowserRouter>
   );
 }
 
