@@ -124,7 +124,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                         <HiOutlineUser className="w-6 h-6 text-black cursor-pointer" onClick={() => {
                             // 사용자 역할에 따른 페이지 이동
                             const loginEmail = localStorage.getItem("loginEmail");
-                            if (loginEmail === "takonism@naver.com") {
+                            if (loginEmail === "a@a.a") {
                                 navigate('/host/dashboard');
                             } else {
                                 navigate('/mypage/info');

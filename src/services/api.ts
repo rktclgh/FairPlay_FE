@@ -345,7 +345,7 @@ class EventApi {
           });
 
           // 특정 이메일을 행사관리자로 설정
-          if (loginEmail === "takonism@naver.com") {
+          if (loginEmail === "a@a.a") {
             const userData: UserInfo = {
               userId: 1,
               email: loginEmail,

@@ -45,7 +45,8 @@ export const LoginPage = () => {
             toast.success("로그인에 성공했습니다!");
 
             // 사용자 역할에 따른 리다이렉션
-            if (user && user.role === "HOST") {
+            // 백엔드에서 role 정보를 제공하지 않는 경우를 대비해 localStorage의 이메일도 확인
+            if ((user && user.role === "HOST") || email === "a@a.a") {
                 navigate("/host/dashboard");
             } else {
                 navigate("/");
