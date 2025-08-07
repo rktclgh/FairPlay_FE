@@ -7,6 +7,9 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
     const isConnectedRef = useRef(false);
     const currentRoomIdRef = useRef<number | null>(null);
     const subscriptionRef = useRef<any>(null);
+    const reconnectAttempts = useRef(0);
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 3000; // 3초
 
     // onMessage를 useCallback으로 메모이제이션
     const memoizedOnMessage = useCallback(onMessage, []);
@@ -31,10 +34,19 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
             console.log(`Opening WebSocket for room ${roomId}...`);
             isConnectedRef.current = true;
 
-            const sock = new SockJS("http://localhost:8080/ws/chat");
+            // 배포 환경에 따른 URL 결정
+            const wsUrl = window.location.hostname === 'localhost' 
+                ? "http://localhost:8080/ws/chat"
+                : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat`;
+            
+            console.log(`WebSocket connecting to: ${wsUrl}`);
+            
+            const sock = new SockJS(wsUrl);
             const stomp = Stomp.over(sock);
 
-            // 디버그 로그 비활성화
+            // 배포환경 최적화 설정
+            stomp.heartbeat.outgoing = 25000; // 25초
+            stomp.heartbeat.incoming = 25000; // 25초
             stomp.debug = null;
             clientRef.current = stomp;
 
@@ -63,6 +75,18 @@ export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
                 (error) => {
                     console.error("WebSocket connection failed:", error);
                     isConnectedRef.current = false;
+                    
+                    // 재연결 시도
+                    if (reconnectAttempts.current < maxReconnectAttempts) {
+                        reconnectAttempts.current++;
+                        console.log(`WebSocket 재연결 시도 ${reconnectAttempts.current}/${maxReconnectAttempts} (${reconnectDelay}ms 후)`);
+                        
+                        setTimeout(() => {
+                            isConnectedRef.current = false; // 재연결을 위해 상태 초기화
+                        }, reconnectDelay);
+                    } else {
+                        console.error("WebSocket 최대 재연결 시도 횟수 초과");
+                    }
                 }
             );
         } else if (clientRef.current?.connected && !subscriptionRef.current) {
