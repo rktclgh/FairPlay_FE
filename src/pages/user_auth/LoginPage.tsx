@@ -34,11 +34,11 @@ export const LoginPage = () => {
 
             // accessToken에서 사용자 역할 추출
             try {
-                const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken.split('.')[1]))));
                 const userRole = payload.role;
-                
+
                 // 사용자 역할에 따른 리다이렉션
-                if (userRole === "HOST") {
+                if (userRole === "HOST" || userRole === "ADMIN" || userRole.includes("행사") || userRole.includes("관리자")) {
                     navigate("/host/dashboard");
                 } else {
                     navigate("/");

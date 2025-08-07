@@ -18,6 +18,7 @@ import { SignUpPage } from "./pages/user_auth/SignUpPage";
 import { FindPassword } from "./pages/user_auth/FindPassword";
 import { RegisterEvent } from "./pages/RegisterEvent";
 import { HostDashboard } from "./pages/HostDashboard";
+import { EditEventInfo } from "./pages/host_event/EditEventInfo";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -29,51 +30,52 @@ function AppContent() {
   useScrollToTop();
 
   return (
-      <>
-        <Routes>
-          <Route path="/" element={<Main />} />
-          <Route path="/eventoverview" element={<EventOverview />} />
-          <Route path="/eventdetail/:eventId" element={<EventDetail />} />
-          <Route path="/booking/:eventId" element={<BookingPage />} />
-          <Route path="/mypage/info" element={<MyPageInfo />} />
-          <Route path="/mypage/account" element={<MyPageAccount />} />
-          <Route path="/mypage/favorites" element={<MyPageFavorites />} />
-          <Route path="/mypage/reservation" element={<Reservation />} />
-          <Route path="/mypage/tickets" element={<MyTickets />} />
-          <Route path="/mypage/participant-form" element={<ParticipantForm />} />
+    <>
+      <Routes>
+        <Route path="/" element={<Main />} />
+        <Route path="/eventoverview" element={<EventOverview />} />
+        <Route path="/eventdetail/:eventId" element={<EventDetail />} />
+        <Route path="/booking/:eventId" element={<BookingPage />} />
+        <Route path="/mypage/info" element={<MyPageInfo />} />
+        <Route path="/mypage/account" element={<MyPageAccount />} />
+        <Route path="/mypage/favorites" element={<MyPageFavorites />} />
+        <Route path="/mypage/reservation" element={<Reservation />} />
+        <Route path="/mypage/tickets" element={<MyTickets />} />
+        <Route path="/mypage/participant-form" element={<ParticipantForm />} />
         <Route path="/mypage/participant-list" element={<ParticipantList />} />
         <Route path="/mypage/write-review" element={<MyPageMyReview />} />
-          <Route path="/mypage/my-review" element={<MyPageMyReview />} />
-          <Route path="/mypage/withdrawal" element={<Withdrawal />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/find-password" element={<FindPassword />} />
-          <Route path="/register" element={<RegisterEvent />} />
-          <Route path="/host/dashboard" element={<HostDashboard />} />
-          <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
-        </Routes>
-        <ToastContainer
-            position="bottom-right"
-            autoClose={2500}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-        />
-      </>
+        <Route path="/mypage/my-review" element={<MyPageMyReview />} />
+        <Route path="/mypage/withdrawal" element={<Withdrawal />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/find-password" element={<FindPassword />} />
+        <Route path="/register" element={<RegisterEvent />} />
+        <Route path="/host/dashboard" element={<HostDashboard />} />
+        <Route path="/host/edit-event-info" element={<EditEventInfo />} />
+        <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+      </Routes>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    </>
   );
 }
 
 function App() {
   return (
-      <BrowserRouter>
-        <AppContent />
-        <ChatFloatingModal />
-      </BrowserRouter>
+    <BrowserRouter>
+      <AppContent />
+      <ChatFloatingModal />
+    </BrowserRouter>
   );
 }
 

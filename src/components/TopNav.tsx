@@ -115,7 +115,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
             // ADMIN 권한을 가진 사용자에게 연결하는 1:N 구조 (전용 API 사용)
             const response = await api.post('/api/chat/admin-inquiry');
-            
+
             const chatRoomId = response.data.chatRoomId;
             openChatRoomGlobal(chatRoomId);
         } catch (error) {
@@ -151,12 +151,24 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     <div className="flex items-center space-x-8">
                         <HiOutlineSearch className="w-6 h-6 text-black cursor-pointer" />
                         <HiOutlineUser className="w-6 h-6 text-black cursor-pointer" onClick={() => {
-                            // 사용자 역할에 따른 페이지 이동
-                            const loginEmail = localStorage.getItem("loginEmail");
-                            if (loginEmail === "takonism@naver.com") {
-                                navigate('/host/dashboard');
+                            // 토큰에서 사용자 역할 확인
+                            const accessToken = localStorage.getItem('accessToken');
+                            if (accessToken) {
+                                try {
+                                    const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken.split('.')[1]))));
+                                    const userRole = payload.role;
+
+                                    if (userRole === 'HOST' || userRole === 'ADMIN' || userRole.includes('행사') || userRole.includes('관리자')) {
+                                        navigate('/host/dashboard');
+                                    } else {
+                                        navigate('/mypage/info');
+                                    }
+                                } catch (error) {
+                                    console.error('토큰 파싱 실패:', error);
+                                    navigate('/mypage/info');
+                                }
                             } else {
-                                navigate('/mypage/info');
+                                navigate('/login');
                             }
                         }} />
                         <HiOutlineGlobeAlt className="w-6 h-6 text-black cursor-pointer" />
