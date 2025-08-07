@@ -24,6 +24,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
+import ChatFloatingModal from "./components/chat/ChatFloatingModal"; // ← 위치 반드시 확인
 
 function AppContent() {
   useScrollToTop();
@@ -73,6 +74,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppContent />
+      <ChatFloatingModal />
     </BrowserRouter>
   );
 }

@@ -1,4 +1,4 @@
-// src/pages/SignUpPage.jsx
+// src/pages/SignUpPage.tsx
 
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";

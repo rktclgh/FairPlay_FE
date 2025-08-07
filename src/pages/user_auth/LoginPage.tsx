@@ -26,30 +26,26 @@ export const LoginPage = () => {
                 password
             });
 
-            const { accessToken, refreshToken, user } = res.data;
+            const { accessToken, refreshToken } = res.data;
             localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("refreshToken", refreshToken);
 
-            // 사용자 정보 저장 (백엔드에서 제공하지 않는 경우를 대비)
-            if (user) {
-                localStorage.setItem("loginEmail", user.email || email);
-                localStorage.setItem("loginName", user.name || "");
-                localStorage.setItem("loginPhone", user.phoneNumber || "");
-            } else {
-                // 백엔드에서 사용자 정보를 제공하지 않는 경우 기본값 저장
-                localStorage.setItem("loginEmail", email);
-                localStorage.setItem("loginName", "사용자");
-                localStorage.setItem("loginPhone", "010-0000-0000");
-            }
-
             toast.success("로그인에 성공했습니다!");
 
-            // 사용자 역할에 따른 리다이렉션
-            // 백엔드에서 role 정보를 제공하지 않는 경우를 대비해 localStorage의 이메일도 확인
-            if ((user && user.role === "HOST") || email === "a@a.a") {
-                navigate("/host/dashboard");
-            } else {
-                navigate("/");
+            // accessToken에서 사용자 역할 추출
+            try {
+                const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                const userRole = payload.role;
+
+                // 사용자 역할에 따른 리다이렉션
+                if (userRole === "HOST") {
+                    navigate("/host/dashboard");
+                } else {
+                    navigate("/");
+                }
+            } catch (error) {
+                console.error("토큰 파싱 실패:", error);
+                navigate("/"); // 기본적으로 메인 페이지로
             }
         } catch {
             // Handled by axios interceptor
