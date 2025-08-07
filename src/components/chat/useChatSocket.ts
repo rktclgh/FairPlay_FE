@@ -1,72 +1,135 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
-// 반드시 프록시 설정에 의해 /ws/chat → 8080/ws/chat 으로 리디렉션됨
 export function useChatSocket(roomId: number, onMessage: (msg: any) => void) {
     const clientRef = useRef<Stomp.Client | null>(null);
+    const isConnectedRef = useRef(false);
+    const currentRoomIdRef = useRef<number | null>(null);
+    const subscriptionRef = useRef<any>(null);
+
+    // onMessage를 useCallback으로 메모이제이션
+    const memoizedOnMessage = useCallback(onMessage, []);
 
     useEffect(() => {
-        let isUnmounted = false;
-        const sock = new SockJS("/ws/chat");
-        const stomp = Stomp.over(sock);
-
-        clientRef.current = stomp;
-
-        let connected = false;
-
-        // connect
-        stomp.connect(
-            { Authorization: "Bearer " + localStorage.getItem("accessToken") },
-            () => {
-                if (isUnmounted) {
-                    // 만약 이미 언마운트 상태면 즉시 disconnect
-                    stomp.disconnect();
-                    return;
-                }
-                connected = true;
-                stomp.subscribe(`/topic/chat.${roomId}`, msg => {
-                    try {
-                        onMessage(JSON.parse(msg.body));
-                    } catch (e) {
-                        // parse 실패시 무시
-                    }
-                });
-            },
-            (error) => {
-                // 연결 에러
-                // 필요시 toast, alert 등으로 사용자 알림 가능
-                // console.error("WebSocket 연결 실패:", error);
+        // 룸 ID가 변경되었거나 처음 연결하는 경우
+        if (currentRoomIdRef.current !== roomId) {
+            console.log(`Room changed from ${currentRoomIdRef.current} to ${roomId}`);
+            
+            // 기존 구독 해제
+            if (subscriptionRef.current) {
+                console.log("Unsubscribing from previous room");
+                subscriptionRef.current.unsubscribe();
+                subscriptionRef.current = null;
             }
-        );
+            
+            currentRoomIdRef.current = roomId;
+        }
+
+        // WebSocket 연결이 없으면 새로 생성
+        if (!isConnectedRef.current || !clientRef.current?.connected) {
+            console.log(`Opening WebSocket for room ${roomId}...`);
+            isConnectedRef.current = true;
+
+            const sock = new SockJS("http://localhost:8080/ws/chat");
+            const stomp = Stomp.over(sock);
+            
+            // 디버그 로그 비활성화
+            stomp.debug = null;
+            clientRef.current = stomp;
+
+            const token = localStorage.getItem("accessToken");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            stomp.connect(
+                headers,
+                () => {
+                    console.log(`Connected to WebSocket for room ${roomId}`);
+                    
+                    // 새로운 룸 구독
+                    if (!subscriptionRef.current) {
+                        subscriptionRef.current = stomp.subscribe(`/topic/chat.${roomId}`, (message) => {
+                            try {
+                                const parsedMessage = JSON.parse(message.body);
+                                console.log("메시지 수신:", parsedMessage.content, "from senderId:", parsedMessage.senderId, "roomId:", parsedMessage.chatRoomId);
+                                memoizedOnMessage(parsedMessage);
+                            } catch (error) {
+                                console.error("메시지 파싱 실패:", error, message.body);
+                            }
+                        });
+                        console.log("Subscribed to topic:", `/topic/chat.${roomId}`);
+                    }
+                },
+                (error) => {
+                    console.error("WebSocket connection failed:", error);
+                    isConnectedRef.current = false;
+                }
+            );
+        } else if (clientRef.current?.connected && !subscriptionRef.current) {
+            // 연결되어 있지만 구독이 없는 경우
+            console.log(`Subscribing to room ${roomId} on existing connection`);
+            subscriptionRef.current = clientRef.current.subscribe(`/topic/chat.${roomId}`, (message) => {
+                try {
+                    const parsedMessage = JSON.parse(message.body);
+                    console.log("메시지 수신:", parsedMessage.content, "from senderId:", parsedMessage.senderId, "roomId:", parsedMessage.chatRoomId);
+                    memoizedOnMessage(parsedMessage);
+                } catch (error) {
+                    console.error("메시지 파싱 실패:", error, message.body);
+                }
+            });
+            console.log("Subscribed to topic:", `/topic/chat.${roomId}`);
+        }
 
         return () => {
-            isUnmounted = true;
-            // 연결 완료 후에만 disconnect
-            if (stomp && stomp.connected) {
-                stomp.disconnect();
-            } else {
-                // 연결 중일 때는 SockJS를 바로 닫아서 자원 정리
-                sock.close();
+            // 구독만 해제하고 연결은 유지
+            if (subscriptionRef.current) {
+                console.log(`Unsubscribing from room ${roomId}`);
+                subscriptionRef.current.unsubscribe();
+                subscriptionRef.current = null;
             }
         };
-    }, [roomId, onMessage]);
+    }, [roomId, memoizedOnMessage]);
 
-    return {
-        send: (content: string) => {
-            const stomp = clientRef.current;
-            if (
-                stomp &&
-                stomp.connected &&
-                content.trim() !== ""
-            ) {
-                stomp.send(
-                    "/app/chat.sendMessage",
-                    { Authorization: "Bearer " + localStorage.getItem("accessToken") },
-                    JSON.stringify({ chatRoomId: roomId, content })
-                );
-            }
-            // 연결되지 않은 상태에서는 무시 (실행 X)
+    const send = useCallback((content: string) => {
+        const stomp = clientRef.current;
+        
+        if (!stomp || !stomp.connected || !content.trim()) {
+            console.warn("Cannot send message: not connected or empty content");
+            return;
         }
-    };
+
+        const token = localStorage.getItem("accessToken");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        try {
+            let userId = null;
+            const token = localStorage.getItem("accessToken");
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    userId = payload.sub;
+                } catch (error) {
+                    console.error("토큰 파싱 실패:", error);
+                }
+            }
+            
+            const messagePayload = { 
+                chatRoomId: roomId, 
+                content: content.trim(),
+                senderId: userId ? parseInt(userId) : 1
+            };
+            
+            console.log("메시지 전송:", content.trim(), "from userId:", userId);
+            
+            stomp.send(
+                "/app/chat.sendMessage",
+                headers,
+                JSON.stringify(messagePayload)
+            );
+        } catch (error) {
+            console.error("Failed to send message:", error);
+        }
+    }, [roomId]);
+
+    return { send };
 }
