@@ -146,19 +146,6 @@ export default function ChatRoomList({ onSelect }: Props) {
             }
         );
         
-        // WebSocket 연결 시 자동으로 온라인 상태 설정
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                const userId = payload.sub;
-                // 채팅방 목록 열었을 때 온라인 상태로 설정
-                axios.post("/api/chat/presence/online", { userId, isManager: false }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }).catch(err => console.error("온라인 상태 설정 실패:", err));
-            } catch (error) {
-                console.error("토큰 파싱 실패:", error);
-            }
-        }
         
         return () => {
             if (clientRef.current?.connected) {
@@ -202,7 +189,6 @@ export default function ChatRoomList({ onSelect }: Props) {
                                 {room.userName || room.eventTitle || "문의"}
                             </span>
                             <div className="flex items-center gap-2">
-                                <OnlineDot targetType={room.targetType} targetId={room.targetId} />
                                 {(room.unreadCount || 0) > 0 && (
                                     <div className="bg-red-500 text-white rounded-full min-w-5 h-5 flex items-center justify-center text-xs font-bold px-1">
                                         {room.unreadCount}
@@ -225,31 +211,3 @@ export default function ChatRoomList({ onSelect }: Props) {
     );
 }
 
-// --- 실시간 온라인 표시 (초록불)
-function OnlineDot({ targetType, targetId }: { targetType: string; targetId: number }) {
-    const [online, setOnline] = useState(false);
-
-    useEffect(() => {
-        // targetType에 따라 isManager 값을 결정
-        const isManager = targetType === "EVENT_MANAGER" || targetType === "SUPER_ADMIN";
-        
-        console.log(`온라인 상태 확인 요청: targetType=${targetType}, targetId=${targetId}, isManager=${isManager}`);
-        
-        axios.get("/api/chat/presence", {
-            params: { isManager, userId: targetId },
-            headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-        }).then(res => {
-            console.log(`온라인 상태 응답: userId=${targetId}, online=${res.data}`);
-            setOnline(res.data === true);
-        }).catch(error => {
-            console.error("온라인 상태 확인 실패:", error);
-            setOnline(false);
-        });
-    }, [targetType, targetId]);
-
-    console.log(`OnlineDot 렌더링: targetId=${targetId}, online=${online}`);
-    
-    return (
-        <div className={`w-3 h-3 rounded-full ${online ? "bg-green-500" : "bg-gray-300"} flex-shrink-0`} />
-    );
-}

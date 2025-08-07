@@ -333,30 +333,27 @@ class EventApi {
             console.log("API 호출 실패로 인해 localStorage 기반 데이터 사용");
           }
 
-          // API 호출 실패 시 localStorage의 실제 로그인 정보 사용
-          const loginEmail = localStorage.getItem("loginEmail");
-          const loginName = localStorage.getItem("loginName");
-          const loginPhone = localStorage.getItem("loginPhone");
+          // API 호출 실패 시 accessToken에서 정보 추출
+          const token = localStorage.getItem("accessToken");
+          if (token) {
+            try {
+              const payload = JSON.parse(atob(token.split('.')[1]));
+              const userData: UserInfo = {
+                userId: parseInt(payload.sub),
+                email: payload.email || "",
+                phone: payload.phone || "010-0000-0000",
+                name: payload.name || "사용자",
+                nickname: payload.name || "사용자",
+                role: payload.role || "USER",
+              };
+              console.log("accessToken 기반 사용자 데이터:", userData);
+              resolve(userData);
+            } catch (error) {
+              console.error("토큰 파싱 실패:", error);
+            }
+          }
 
-          console.log("localStorage 저장된 정보:", {
-            loginEmail,
-            loginName,
-            loginPhone,
-          });
-
-          if (loginEmail && loginName && loginPhone) {
-            // 로그인 시 저장된 실제 정보 사용
-            const userData: UserInfo = {
-              userId: 1,
-              email: loginEmail,
-              phone: loginPhone,
-              name: loginName,
-              nickname: loginName, // 이름을 닉네임으로 사용
-              role: "USER",
-            };
-            console.log("localStorage 기반 사용자 데이터:", userData);
-            resolve(userData);
-          } else if (loginEmail) {
+          if (false) { // 기존 localStorage 로직 비활성화
             // 이메일만 있는 경우 (카카오 로그인 등)
             const userData: UserInfo = {
               userId: 1,

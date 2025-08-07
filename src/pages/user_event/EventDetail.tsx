@@ -29,7 +29,16 @@ const EventDetail = (): JSX.Element => {
             const managerId = res1.data.managerId ?? 1;
 
             // 2. 채팅방 생성/조회
-            const myUserId = Number(localStorage.getItem("userId"));
+            const token = localStorage.getItem("accessToken");
+            let myUserId = 1; // 기본값
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    myUserId = parseInt(payload.sub);
+                } catch (error) {
+                    console.error("토큰 파싱 실패:", error);
+                }
+            }
             const res2 = await api.post("/api/chat/room", {
                 userId: myUserId,
                 targetType: "EVENT_MANAGER",

@@ -26,13 +26,9 @@ export const LoginPage = () => {
                 password
             });
 
-            const { accessToken, refreshToken, userId, email: userEmail, name, phoneNumber } = res.data;
+            const { accessToken, refreshToken } = res.data;
             localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("refreshToken", refreshToken);
-            localStorage.setItem("userId", userId.toString());
-            localStorage.setItem("loginEmail", userEmail || email);
-            localStorage.setItem("loginName", name || "사용자");
-            localStorage.setItem("loginPhone", phoneNumber || "010-0000-0000");
 
             toast.success("로그인에 성공했습니다!");
             navigate("/");
