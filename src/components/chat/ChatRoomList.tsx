@@ -29,60 +29,14 @@ export default function ChatRoomList({ onSelect }: Props) {
 
     const fetchRooms = useCallback(async () => {
             try {
-                // 먼저 일반 사용자 채팅방을 시도
-                const userRoomsResponse = await axios.get(`/api/chat/rooms`, {
+                // 백엔드에서 사용자 역할에 따라 적절한 채팅방 목록을 모두 반환
+                // (복잡한 프론트엔드 역할 체크 로직 제거, 백엔드에서 처리)
+                const response = await axios.get(`/api/chat/rooms`, {
                     headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
                 });
 
-                let allRooms = userRoomsResponse.data;
-
-                // 관리자인 경우 관리하는 채팅방도 추가로 가져오기
-                const token = localStorage.getItem("accessToken");
-                let userId = null;
-                if (token) {
-                    try {
-                        const payload = JSON.parse(atob(token.split('.')[1]));
-                        userId = payload.sub;
-                    } catch (error) {
-                        console.error("토큰 파싱 실패:", error);
-                    }
-                }
-                console.log("현재 사용자 ID:", userId);
-                if (userId === "10") { // 관리자 ID가 10인 경우
-                    console.log("관리자로 인식됨, 관리자 채팅방 조회 시작");
-                    try {
-                        const requestUrl = `/api/chat/rooms/manager`;
-                        const requestParams = { targetType: "EVENT_MANAGER", targetId: userId };
-                        const requestHeaders = { Authorization: "Bearer " + localStorage.getItem("accessToken") };
-
-                        console.log("관리자 API 요청:", requestUrl, requestParams, requestHeaders);
-
-                        const managerRoomsResponse = await axios.get(requestUrl, {
-                            params: requestParams,
-                            headers: requestHeaders
-                        });
-
-                        console.log("관리자 API 응답:", managerRoomsResponse.data);
-
-                        // 중복 제거하면서 관리자 채팅방 추가
-                        const managerRooms = managerRoomsResponse.data;
-                        const existingIds = new Set(allRooms.map((r: ChatRoomDto) => r.chatRoomId));
-                        const newManagerRooms = managerRooms.filter((r: ChatRoomDto) => !existingIds.has(r.chatRoomId));
-                        allRooms = [...allRooms, ...newManagerRooms];
-
-                        console.log("관리자 채팅방 추가:", newManagerRooms.length, "개");
-                        console.log("전체 관리자 채팅방:", managerRooms);
-                        console.log("새로 추가된 관리자 채팅방:", newManagerRooms);
-                    } catch (managerError) {
-                        console.error("관리자 채팅방 조회 실패:", managerError);
-                        console.error("에러 상세:", managerError.response?.data);
-                        console.error("에러 상태:", managerError.response?.status);
-                    }
-                } else {
-                    console.log("일반 사용자로 인식됨");
-                }
-
-                console.log("총 채팅방 수:", allRooms.length);
+                const allRooms = response.data;
+                console.log("백엔드에서 반환된 채팅방 수:", allRooms.length);
 
                 // 각 채팅방의 최신 메시지 시간을 가져와서 저장
                 const messageTimesPromises = allRooms.map(async (room: ChatRoomDto) => {

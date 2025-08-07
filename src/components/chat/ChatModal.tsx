@@ -27,10 +27,15 @@ export default function ChatModal({
                 <Dialog.Content
                     className="fixed bottom-24 right-8 w-[380px] max-w-full h-[580px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 animate-in"
                 >
-                    <div className="flex items-center justify-between p-4 border-b bg-white">
-                        <h2 className="font-bold text-lg text-black">문의/실시간 채팅</h2>
-                        <button onClick={onClose} className="text-xl font-bold text-black">×</button>
-                    </div>
+                    <Dialog.Title asChild>
+                        <div className="flex items-center justify-between p-4 border-b bg-white">
+                            <h2 className="font-bold text-lg text-black">문의/실시간 채팅</h2>
+                            <button onClick={onClose} className="text-xl font-bold text-black">×</button>
+                        </div>
+                    </Dialog.Title>
+                    <Dialog.Description className="sr-only">
+                        실시간 채팅을 통해 문의사항을 해결하세요.
+                    </Dialog.Description>
                     {/* 방 선택 전 → 방 목록 / 방 선택 → 채팅방 */}
                     {selectedRoomId === null ? (
                         <ChatRoomList onSelect={(roomId, eventTitle, userName) => {
