@@ -337,7 +337,7 @@ class EventApi {
           const token = localStorage.getItem("accessToken");
           if (token) {
             try {
-              const payload = JSON.parse(atob(token.split('.')[1]));
+              const payload = JSON.parse(atob(token.split(".")[1]));
               const userData: UserInfo = {
                 userId: parseInt(payload.sub),
                 email: payload.email || "",
@@ -353,7 +353,8 @@ class EventApi {
             }
           }
 
-          if (false) { // 기존 localStorage 로직 비활성화
+          if (false) {
+            // 기존 localStorage 로직 비활성화
             // 이메일만 있는 경우 (카카오 로그인 등)
             const userData: UserInfo = {
               userId: 1,

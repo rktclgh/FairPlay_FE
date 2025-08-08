@@ -170,9 +170,7 @@ export const MyPageInfo = () => {
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-                <TopNav
-                    className="!absolute !left-0 !top-0"
-                />
+                <TopNav />
                 <div className={`absolute w-[949px] left-64 ${showPasswordChange ? 'h-[500px]' : 'h-[213px]'} top-[195px]`}>
                     <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                         내 계정

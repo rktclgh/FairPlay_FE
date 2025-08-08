@@ -34,11 +34,11 @@ export const LoginPage = () => {
 
             // accessToken에서 사용자 역할 추출
             try {
-                const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken.split('.')[1]))));
                 const userRole = payload.role;
-                
+
                 // 사용자 역할에 따른 리다이렉션
-                if (userRole === "HOST") {
+                if (userRole === "HOST" || userRole === "ADMIN" || userRole.includes("행사") || userRole.includes("관리자")) {
                     navigate("/host/dashboard");
                 } else {
                     navigate("/");
@@ -63,11 +63,11 @@ export const LoginPage = () => {
 
     const handleKakaoLogin = () => {
         const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
-        const KAKAO_REDIRECT_URI = import.meta.env.VITE_KAKAO_REDIRECT_URI;
+        const KAKAO_REDIRECT_URI = `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`;
 
-        if (!KAKAO_CLIENT_ID || !KAKAO_REDIRECT_URI) {
+        if (!KAKAO_CLIENT_ID || !import.meta.env.VITE_FRONTEND_BASE_URL) {
             toast.error("카카오 로그인 설정이 클라이언트에 구성되지 않았습니다.");
-            console.error("VITE_KAKAO_CLIENT_ID or VITE_KAKAO_REDIRECT_URI is not set in .env file");
+            console.error("VITE_KAKAO_CLIENT_ID or VITE_FRONTEND_BASE_URL is not set in .env file");
             return;
         }
 
@@ -76,13 +76,12 @@ export const LoginPage = () => {
     };
 
     return (
-        <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white overflow-hidden w-[1256px] h-[1128px] relative">
-                <TopNav className="!absolute !left-0 !-top-0.5" />
-                {/* ... (하단 고정 footer, UI 동일하게 생략) ... */}
+        <div className="min-h-screen bg-white">
+            <TopNav />
 
-                {/* 콘텐츠 컨테이너 */}
-                <div className="relative" style={{ marginTop: '80px' }}>
+            {/* 콘텐츠 컨테이너 */}
+            <div className="flex justify-center w-full">
+                <div className="bg-white overflow-hidden w-[1256px] h-[1128px] relative">
                     <Link to="/" className="absolute top-[100px] left-[588px] flex items-center justify-center">
                         <img
                             className="w-[80px] h-[75px] object-contain"

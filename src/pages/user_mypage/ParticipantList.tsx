@@ -108,7 +108,7 @@ export default function ParticipantList(): JSX.Element {
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-                <TopNav className="!absolute !left-0 !top-0" />
+                                    <TopNav />
 
                 <div className="absolute top-[239px] left-64 right-0">
                     <div className="w-[921px] bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] p-8">
