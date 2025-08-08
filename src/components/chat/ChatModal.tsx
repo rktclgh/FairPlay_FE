@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { MessageCircle, X as XIcon } from "lucide-react";
 import ChatRoomList from "./ChatRoomList";
 import ChatRoom from "./ChatRoom";
 import axios from "axios";
@@ -22,11 +23,11 @@ type Props = {
  * - 방목록 → 채팅방(메시지)로 뷰 전환
  */
 export default function ChatModal({
-                                      open,
-                                      onClose,
-                                      selectedRoomId,
-                                      setSelectedRoomId,
-                                  }: Props) {
+    open,
+    onClose,
+    selectedRoomId,
+    setSelectedRoomId,
+}: Props) {
     const [selectedRoomInfo, setSelectedRoomInfo] = useState<ChatRoomInfo | null>(null);
     const [hasOnlineAdmin, setHasOnlineAdmin] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -51,7 +52,7 @@ export default function ChatModal({
             const response = await axios.post('/api/chat/admin-inquiry', {}, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
             });
-            
+
             const roomData = response.data;
             setSelectedRoomId(roomData.chatRoomId);
             setSelectedRoomInfo({
@@ -79,14 +80,15 @@ export default function ChatModal({
     return (
         <Dialog.Root open={open} onOpenChange={v => !v && onClose()}>
             <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40" />
+                <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[1001]" />
                 <Dialog.Content
-                    className="fixed bottom-24 right-8 w-[380px] max-w-full h-[580px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 animate-in"
+                    className="fixed bottom-8 right-8 w-[420px] max-w-[calc(100vw-2rem)] h-[80vh] max-h-[720px] min-h-[520px] bg-white border border-black/5 rounded-xl shadow-xl shadow-black/10 flex flex-col min-h-0 z-[1002] animate-in overflow-hidden"
                 >
                     <Dialog.Title asChild>
-                        <div className="flex items-center justify-between p-4 border-b bg-white">
+                        <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
                             <div className="flex items-center gap-2">
-                                <h2 className="font-bold text-lg text-black">문의/실시간 채팅</h2>
+                                <MessageCircle className="w-5 h-5 text-blue-600" />
+                                <h2 className="font-semibold text-base text-black">문의/실시간 채팅</h2>
                                 {hasOnlineAdmin && (
                                     <div className="flex items-center gap-1">
                                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -94,7 +96,13 @@ export default function ChatModal({
                                     </div>
                                 )}
                             </div>
-                            <button onClick={onClose} className="text-xl font-bold text-black">×</button>
+                            <button
+                                onClick={onClose}
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-neutral-100 text-neutral-600 hover:text-black transition"
+                                aria-label="닫기"
+                            >
+                                <XIcon className="w-4 h-4" />
+                            </button>
                         </div>
                     </Dialog.Title>
                     <Dialog.Description className="sr-only">
@@ -102,13 +110,13 @@ export default function ChatModal({
                     </Dialog.Description>
                     {/* 방 선택 전 → 방 목록 / 방 선택 → 채팅방 */}
                     {selectedRoomId === null ? (
-                        <div className="flex flex-col h-full">
+                        <div className="flex flex-col h-full min-h-0">
                             {/* FairPlay 운영자 문의 버튼 */}
                             <div className="p-4 border-b bg-gray-50">
                                 <button
                                     onClick={handleAdminInquiry}
                                     disabled={loading}
-                                    className="w-full flex items-center justify-center gap-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                                    className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-2.5 px-4 rounded-md font-medium transition-colors"
                                 >
                                     {loading ? (
                                         <>

@@ -126,8 +126,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const newNotificationCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className={`bg-white w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
-            <div className="flex justify-end items-center px-6 py-1 space-x-4">
+        <div className={`bg-white/90 backdrop-blur w-full flex flex-col border-b border-black/5 ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
+            <div className="flex justify-end items-center px-6 py-0.5 gap-3">
                 <button onClick={handleCustomerService} className="text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer">고객센터</button>
                 <button onClick={toggleNotification} className="text-xs text-gray-500 hover:text-black bg-transparent border-none relative">
                     알림
@@ -140,17 +140,17 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                 </Link>
             </div>
 
-            <div className="flex items-center justify-between px-6 py-3">
-                <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-12" /></Link>
-                <div className="flex items-center space-x-8">
-                    <nav className="hidden md:flex items-center space-x-8">
-                        <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-bold' : 'font-normal'} text-xl`}>HOME</Link>
-                        <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-bold' : 'font-normal'} text-xl`}>EVENTS</Link>
-                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-bold' : 'font-normal'} text-xl`}>REGISTER</Link>
+            <div className="flex items-center justify-between px-6 py-2">
+                <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
+                <div className="flex items-center space-x-6">
+                    <nav className="hidden md:flex items-center space-x-6">
+                        <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
+                        <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
+                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>REGISTER</Link>
                     </nav>
-                    <div className="flex items-center space-x-8">
-                        <HiOutlineSearch className="w-6 h-6 text-black cursor-pointer" />
-                        <HiOutlineUser className="w-6 h-6 text-black cursor-pointer" onClick={() => {
+                    <div className="flex items-center space-x-6">
+                        <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
+                        <HiOutlineUser className="w-5 h-5 text-black cursor-pointer" onClick={() => {
                             // 토큰에서 사용자 역할 확인
                             const accessToken = localStorage.getItem('accessToken');
                             if (accessToken) {
@@ -171,7 +171,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                 navigate('/login');
                             }
                         }} />
-                        <HiOutlineGlobeAlt className="w-6 h-6 text-black cursor-pointer" />
+                        <HiOutlineGlobeAlt className="w-5 h-5 text-black cursor-pointer" />
                     </div>
                 </div>
             </div>
