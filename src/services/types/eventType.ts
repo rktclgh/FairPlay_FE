@@ -19,7 +19,7 @@ export interface EventResponseDto {
     eventId: number;
     eventCode: string;
     hidden: boolean;
-    version: number
+    version: number;
 }
 
 // EventSummaryDto: 행사 목록용 요약 정보

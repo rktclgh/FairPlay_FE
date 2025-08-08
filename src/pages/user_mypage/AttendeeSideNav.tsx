@@ -54,7 +54,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/tickets" ? "black" : "#00000080";
                                 }}
                             >
-                                나의 예약/QR
+                                내 티켓
                             </Link>
                             <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] whitespace-nowrap">취소/환불</div>
                         </div>

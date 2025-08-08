@@ -3,6 +3,8 @@ import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX } from 'r
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eventApi } from '../services/api';
 import type { Notification } from '../services/api';
+import axios from 'axios';
+import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 
 interface TopNavProps {
     className?: string;
@@ -94,38 +96,98 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         }
     };
 
+    // 운영자(전체 관리자) 문의 채팅방 생성/입장
+    const handleCustomerService = async () => {
+        if (!isLoggedIn) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            const api = axios.create({
+                baseURL: 'http://localhost:8080',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // ADMIN 권한을 가진 사용자에게 연결하는 1:N 구조 (전용 API 사용)
+            const response = await api.post('/api/chat/admin-inquiry');
+
+            const chatRoomId = response.data.chatRoomId;
+            openChatRoomGlobal(chatRoomId);
+        } catch (error) {
+            console.error('운영자 문의 채팅방 생성 실패:', error);
+        }
+    };
+
     const newNotificationCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className={`bg-white w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
-            <div className="flex justify-end items-center px-6 py-1 space-x-4">
-                <a href="#" className="text-xs text-gray-500 hover:text-black">고객센터</a>
-                <button onClick={toggleNotification} className="text-xs text-gray-500 hover:text-black bg-transparent border-none relative">
+        <div className={`bg-white/90 backdrop-blur w-full flex flex-col border-b border-black/5 ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
+            <div className="flex justify-end items-center px-6 py-0.5 gap-3">
+                <button
+                    onClick={handleCustomerService}
+                    className="p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                >
+                    고객센터
+                </button>
+                <button
+                    onClick={toggleNotification}
+                    className="relative p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                >
                     알림
                     {isLoggedIn && newNotificationCount > 0 && (
-                        <span className="absolute -top-1 -right-2.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                        <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                     )}
                 </button>
-                <Link to={isLoggedIn ? "#" : "/login"} className="text-xs text-gray-500 hover:text-black" onClick={handleAuthClick}>
+                <Link
+                    to={isLoggedIn ? "#" : "/login"}
+                    className="p-0 text-xs text-gray-500 hover:text-black focus:outline-none focus:ring-0"
+                    onClick={handleAuthClick}
+                >
                     {isLoggedIn ? '로그아웃' : '로그인'}
                 </Link>
             </div>
 
-            <div className="flex items-center justify-between px-6 py-3">
-                <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-12" /></Link>
-                <div className="flex items-center space-x-8">
-                    <nav className="hidden md:flex items-center space-x-8">
-                        <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-bold' : 'font-normal'} text-xl`}>HOME</Link>
-                        <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-bold' : 'font-normal'} text-xl`}>EVENTS</Link>
-                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-bold' : 'font-normal'} text-xl`}>REGISTER</Link>
+            <div className="flex items-center justify-between px-6 py-2">
+                <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
+                <div className="flex items-center space-x-6">
+                    <nav className="hidden md:flex items-center space-x-6">
+                        <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
+                        <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
+                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>REGISTER</Link>
                     </nav>
-                    <div className="flex items-center space-x-8">
-                        <HiOutlineSearch className="w-6 h-6 text-black cursor-pointer" />
-                        <HiOutlineUser className="w-6 h-6 text-black cursor-pointer" onClick={() => navigate('/mypage/info')} />
-                        <HiOutlineGlobeAlt className="w-6 h-6 text-black cursor-pointer" />
+                    <div className="flex items-center space-x-6">
+                        <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
+                        <HiOutlineUser className="w-5 h-5 text-black cursor-pointer" onClick={() => {
+                            // 토큰에서 사용자 역할 확인
+                            const accessToken = localStorage.getItem('accessToken');
+                            if (accessToken) {
+                                try {
+                                    const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken.split('.')[1]))));
+                                    const userRole = payload.role;
+
+                                    if (userRole === 'HOST' || userRole === 'ADMIN' || userRole.includes('행사') || userRole.includes('관리자')) {
+                                        navigate('/host/dashboard');
+                                    } else {
+                                        navigate('/mypage/info');
+                                    }
+                                } catch (error) {
+                                    console.error('토큰 파싱 실패:', error);
+                                    navigate('/mypage/info');
+                                }
+                            } else {
+                                navigate('/login');
+                            }
+                        }} />
+                        <HiOutlineGlobeAlt className="w-5 h-5 text-black cursor-pointer" />
                     </div>
                 </div>
             </div>
+            <div className="pb-4"></div>
 
             {isNotificationOpen && (
                 <div className="fixed inset-0 z-50">

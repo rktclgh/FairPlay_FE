@@ -333,30 +333,28 @@ class EventApi {
             console.log("API 호출 실패로 인해 localStorage 기반 데이터 사용");
           }
 
-          // API 호출 실패 시 localStorage의 실제 로그인 정보 사용
-          const loginEmail = localStorage.getItem("loginEmail");
-          const loginName = localStorage.getItem("loginName");
-          const loginPhone = localStorage.getItem("loginPhone");
+          // API 호출 실패 시 accessToken에서 정보 추출
+          const token = localStorage.getItem("accessToken");
+          if (token) {
+            try {
+              const payload = JSON.parse(atob(token.split(".")[1]));
+              const userData: UserInfo = {
+                userId: parseInt(payload.sub),
+                email: payload.email || "",
+                phone: payload.phone || "010-0000-0000",
+                name: payload.name || "사용자",
+                nickname: payload.name || "사용자",
+                role: payload.role || "USER",
+              };
+              console.log("accessToken 기반 사용자 데이터:", userData);
+              resolve(userData);
+            } catch (error) {
+              console.error("토큰 파싱 실패:", error);
+            }
+          }
 
-          console.log("localStorage 저장된 정보:", {
-            loginEmail,
-            loginName,
-            loginPhone,
-          });
-
-          if (loginEmail && loginName && loginPhone) {
-            // 로그인 시 저장된 실제 정보 사용
-            const userData: UserInfo = {
-              userId: 1,
-              email: loginEmail,
-              phone: loginPhone,
-              name: loginName,
-              nickname: loginName, // 이름을 닉네임으로 사용
-              role: "USER",
-            };
-            console.log("localStorage 기반 사용자 데이터:", userData);
-            resolve(userData);
-          } else if (loginEmail) {
+          if (false) {
+            // 기존 localStorage 로직 비활성화
             // 이메일만 있는 경우 (카카오 로그인 등)
             const userData: UserInfo = {
               userId: 1,
@@ -568,8 +566,46 @@ class EventApi {
       return false;
     }
   }
-}
 
+  // 참여자 토큰 검증
+  async validateParticipantToken(
+    token: string,
+    eventName: string
+  ): Promise<any> {
+    // Mock 처리로 변경 (실제 API가 준비되지 않았으므로)
+    console.warn("백엔드 API가 준비되지 않음, mock 처리로 진행");
+
+    // Mock 시나리오: 토큰에 따라 다른 응답
+    if (token === "expired") {
+      throw {
+        response: {
+          status: 401,
+          data: { message: "만료된 링크" },
+        },
+      };
+    } else if (token === "full") {
+      throw {
+        response: {
+          status: 410,
+          data: { message: "이미 모든 참석자의 정보가 제출되었습니다." },
+        },
+      };
+    } else if (token === "invalid") {
+      throw {
+        response: {
+          status: 400,
+          data: { message: "유효하지 않은 링크입니다." },
+        },
+      };
+    } else {
+      // 유효한 토큰인 경우 성공 응답
+      return {
+        success: true,
+        message: "토큰 검증 성공",
+      };
+    }
+  }
+}
 
 // export const eventApi = new EventApi();
 

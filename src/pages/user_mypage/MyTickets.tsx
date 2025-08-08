@@ -3,6 +3,7 @@ import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import QrTicket from "../../components/QrTicket";
 import { QrCode } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface EventData {
     eventName: string;
@@ -29,38 +30,41 @@ interface QrTicketData {
 
 const defaultEventData: EventData[] = [
     {
-        eventName: "G-DRAGON 콘서트: WORLD TOUR",
-        eventDate: "2024년 8월 9일 (금) 19:00",
-        venue: "고양종합운동장",
-        seatInfo: "A구역 12열 15번",
-        bookingDate: "2024년 7월 15일",
-        participantInfo: "입력하기",
-        participantFormLink: "https://forms.google.com/example1",
-        isConcert: true,
+        eventName: "웨덱스 웨딩박람회 in COEX",
+        eventDate: "2025년 7월 26일 ~ 27일",
+        venue: "코엑스 Hall B",
+        seatInfo: "일반 입장권",
+        bookingDate: "2024년 12월 15일",
+        participantInfo: null,
+        participantFormLink: null,
+        isConcert: false,
+        quantity: 2,
     },
     {
-        eventName: "POST MALONE LIVE CONCERT",
+        eventName: "G-DRAGON 콘서트: WORLD TOUR",
         eventDate: "2024년 8월 25일 (일) 18:00",
         venue: "고척스카이돔",
-        seatInfo: "VIP석 5열 8번",
+        seatInfo: "A구역 12열 15번",
         bookingDate: "2024년 7월 20일",
         participantInfo: null,
         participantFormLink: null,
         isConcert: true,
+        quantity: 3,
     },
     {
-        eventName: "스타트업 투자 세미나",
-        eventDate: "2024년 8월 28일 (수) 14:00",
-        venue: "강남구 컨벤션센터",
-        seatInfo: "자유석",
+        eventName: "POST MALONE LIVE CONCERT",
+        eventDate: "2024년 8월 28일 (수) 18:00",
+        venue: "고척스카이돔",
+        seatInfo: "VIP석 5열 8번",
         bookingDate: "2024년 8월 1일",
-        participantInfo: "입력하기",
-        participantFormLink: "https://forms.google.com/example3",
+        participantInfo: null,
+        participantFormLink: null,
         isConcert: true,
     },
 ];
 
 export default function MyTickets(): JSX.Element {
+    const navigate = useNavigate();
     const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
     const [selectedTicketData, setSelectedTicketData] = useState<QrTicketData | null>(null);
     const [eventData, setEventData] = useState<EventData[]>(defaultEventData);
@@ -81,7 +85,7 @@ export default function MyTickets(): JSX.Element {
             participantInfo: null,
             participantFormLink: null,
             isConcert: false,
-            quantity: booking.quantity,
+            quantity: booking.title === "웨덱스 웨딩박람회 in COEX" ? 2 : booking.quantity,
             amount: booking.amount,
         }));
 
@@ -108,11 +112,15 @@ export default function MyTickets(): JSX.Element {
         setSelectedTicketData(null);
     };
 
+    const handleParticipantListOpen = (eventName: string) => {
+        navigate(`/mypage/participant-list?eventName=${encodeURIComponent(eventName)}`);
+    };
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] h-[1565px] relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    나의 예약/QR
+                    내 티켓
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
@@ -171,27 +179,37 @@ export default function MyTickets(): JSX.Element {
                                                     {event.isConcert ? "좌석 정보" : "예매 옵션"}
                                                 </div>
                                                 <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                    {event.isConcert ? event.seatInfo : `${event.seatInfo} ${event.quantity}매`}
+                                                    {event.isConcert
+                                                        ? (event.quantity && event.quantity > 1
+                                                            ? `${event.seatInfo} 외 ${event.quantity - 1}석`
+                                                            : event.seatInfo)
+                                                        : `${event.seatInfo} ${event.quantity}매`
+                                                    }
                                                 </div>
                                             </div>
 
-                                            {event.participantInfo && (
+
+
+                                            {(event.participantInfo || (event.quantity && event.quantity >= 2)) && (
                                                 <div className="pt-[-10px]">
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
                                                         참여자 입력
                                                     </div>
                                                     <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-6 tracking-[0] whitespace-nowrap">
-                                                        {event.participantFormLink ? (
-                                                            <a
-                                                                href={event.participantFormLink}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-blue-600 hover:text-blue-800 underline"
+                                                        {event.participantInfo ? (
+                                                            <button
+                                                                onClick={() => window.open(`/mypage/participant-form?eventName=${encodeURIComponent(event.eventName)}`, '_blank')}
+                                                                className="text-blue-600 hover:text-blue-800 underline bg-transparent border-none cursor-pointer p-0 font-normal text-base focus:outline-none"
                                                             >
                                                                 {event.participantInfo}
-                                                            </a>
+                                                            </button>
                                                         ) : (
-                                                            event.participantInfo
+                                                            <button
+                                                                onClick={() => window.open(`/mypage/participant-form?eventName=${encodeURIComponent(event.eventName)}`, '_blank')}
+                                                                className="text-blue-600 hover:text-blue-800 underline bg-transparent border-none cursor-pointer p-0 font-normal text-base focus:outline-none"
+                                                            >
+                                                                `/mypage/participant-form?eventName=${encodeURIComponent(event.eventName)}`
+                                                            </button>
                                                         )}
                                                     </div>
                                                 </div>
@@ -199,18 +217,32 @@ export default function MyTickets(): JSX.Element {
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={() => handleQrTicketOpen(event)}
-                                        className="absolute top-6 right-6 w-[140px] h-[56px] bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
-                                    >
-                                        <div className="flex items-center space-x-2">
-                                            <QrCode className="w-4 h-4 text-white" />
-                                            <span className="font-semibold text-white text-sm tracking-wide">
-                                                QR 티켓
-                                            </span>
-                                        </div>
-                                        <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                                    </button>
+                                    <div className="absolute top-6 right-6 flex flex-col space-y-2">
+                                        <button
+                                            onClick={() => handleQrTicketOpen(event)}
+                                            className="w-[140px] h-[56px] bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                <QrCode className="w-4 h-4 text-white" />
+                                                <span className="font-semibold text-white text-sm tracking-wide">
+                                                    QR 티켓
+                                                </span>
+                                            </div>
+                                            <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                                        </button>
+
+                                        {(event.participantInfo || (event.quantity && event.quantity >= 2)) && (
+                                            <button
+                                                onClick={() => handleParticipantListOpen(event.eventName)}
+                                                className="w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                            >
+                                                <span className="font-semibold text-white text-xs tracking-wide">
+                                                    참여자 목록 확인
+                                                </span>
+                                                <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}

@@ -1,11 +1,11 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import * as events from "node:events";
-import {eventAPI} from "@/services/event";
+import {eventAPI} from "../../services/event";
 
 interface ExternalLinkProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
   officialUrl?: string;
   externalLinks?: { url: string; displayText: string; }[];
 }
