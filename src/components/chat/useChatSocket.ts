@@ -46,11 +46,11 @@ export function useChatSocket(
       console.log(`Opening WebSocket for room ${roomId}...`);
       isConnectedRef.current = true;
 
-      // 배포 환경에 따른 URL 결정
+      // 배포 환경에 따른 URL 결정 (SockJS는 http/https 프로토콜 사용)
       const wsUrl =
         window.location.hostname === "localhost"
           ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat`
-          : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/chat`;
+          : `${window.location.protocol}//${window.location.host}/ws/chat`;
 
       console.log(`WebSocket connecting to: ${wsUrl}`);
 
