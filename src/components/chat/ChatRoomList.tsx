@@ -76,10 +76,10 @@ export default function ChatRoomList({ onSelect }: Props) {
     useEffect(() => {
         fetchRooms();
 
-        // WebSocket 연결로 실시간 업데이트 (환경 자동 판별)
+        // WebSocket 연결로 실시간 업데이트 (SockJS는 http/https 프로토콜 사용)
         const wsUrl = window.location.hostname === 'localhost'
             ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat`
-            : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat`;
+            : `${window.location.protocol}//${window.location.host}/ws/chat`;
         const sock = new SockJS(wsUrl);
         const stomp = Stomp.over(sock);
         stomp.debug = () => { };
