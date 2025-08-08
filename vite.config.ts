@@ -14,12 +14,12 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api": {
-          target: "http://localhost:9000",
+          target: "http://localhost:8080",
           changeOrigin: true,
         },
         // 이 부분! → 정규식 대신 prefix 전체로 처리
         "/ws": {
-          target: "http://localhost:9000",
+          target: "http://localhost:8080",
           ws: true,
           changeOrigin: true,
         },
