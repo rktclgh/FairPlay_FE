@@ -703,6 +703,7 @@ export const Main: React.FC = () => {
                                         <FaHeart
                                             className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
                                             onClick={(e) => {
+                                                e.preventDefault();
                                                 e.stopPropagation();
                                                 setLikedEvents(prev => {
                                                     const newSet = new Set(prev);
