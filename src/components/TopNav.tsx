@@ -127,28 +127,40 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
     return (
         <div className={`bg-white w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
-            <div className="flex justify-end items-center px-6 py-1 space-x-4">
-                <button onClick={handleCustomerService} className="text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer">고객센터</button>
-                <button onClick={toggleNotification} className="text-xs text-gray-500 hover:text-black bg-transparent border-none relative">
+            <div className="flex justify-end items-center px-6 py-0.5 gap-3">
+                <button
+                    onClick={handleCustomerService}
+                    className="p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                >
+                    고객센터
+                </button>
+                <button
+                    onClick={toggleNotification}
+                    className="relative p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                >
                     알림
                     {isLoggedIn && newNotificationCount > 0 && (
-                        <span className="absolute -top-1 -right-2.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                        <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                     )}
                 </button>
-                <Link to={isLoggedIn ? "#" : "/login"} className="text-xs text-gray-500 hover:text-black" onClick={handleAuthClick}>
+                <Link
+                    to={isLoggedIn ? "#" : "/login"}
+                    className="p-0 text-xs text-gray-500 hover:text-black focus:outline-none focus:ring-0"
+                    onClick={handleAuthClick}
+                >
                     {isLoggedIn ? '로그아웃' : '로그인'}
                 </Link>
             </div>
 
-            <div className="flex items-center justify-between px-6 py-3">
+            <div className="flex items-center justify-between px-6 py-2">
                 <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-12" /></Link>
                 <div className="flex items-center space-x-8">
-                    <nav className="hidden md:flex items-center space-x-8">
+                    <nav className="hidden md:flex items-center space-x-6">
                         <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-bold' : 'font-normal'} text-xl`}>HOME</Link>
                         <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-bold' : 'font-normal'} text-xl`}>EVENTS</Link>
                         <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-bold' : 'font-normal'} text-xl`}>REGISTER</Link>
                     </nav>
-                    <div className="flex items-center space-x-8">
+                    <div className="flex items-center space-x-6">
                         <HiOutlineSearch className="w-6 h-6 text-black cursor-pointer" />
                         <HiOutlineUser className="w-6 h-6 text-black cursor-pointer" onClick={() => {
                             // 토큰에서 사용자 역할 확인
@@ -175,6 +187,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     </div>
                 </div>
             </div>
+            <div className="pb-4"></div>
 
             {isNotificationOpen && (
                 <div className="fixed inset-0 z-50">
