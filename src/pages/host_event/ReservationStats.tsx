@@ -5,10 +5,10 @@ import { HiChevronDown } from 'react-icons/hi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export const ReservationStats = () => {
-    const [selectedPeriod, setSelectedPeriod] = React.useState('주간');
+    const [selectedPeriod, setSelectedPeriod] = React.useState('최근 7일');
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
-    // 주간 데이터 (7일간, 오른쪽이 당일)
+    // 최근 7일 데이터 (7일간, 오른쪽이 당일)
     const weeklyData = [
         { date: '08/04', bookings: 145 },
         { date: '08/05', bookings: 167 },
@@ -19,24 +19,24 @@ export const ReservationStats = () => {
         { date: '08/10', bookings: 121 },
     ];
 
-    // 월간 데이터 (5주간, 맨 끝이 08/10)
+    // 최근 5주 데이터 (5주간, 맨 끝이 08/10)
     const monthlyData = [
-        { date: '07/06', bookings: 120 },
-        { date: '07/13', bookings: 135 },
-        { date: '07/20', bookings: 142 },
-        { date: '07/27', bookings: 158 },
-        { date: '08/10', bookings: 1035 }, // 08/04~08/10까지의 총 예약 수
+        { date: '07/06', bookings: 857 },
+        { date: '07/13', bookings: 462 },
+        { date: '07/20', bookings: 715 },
+        { date: '07/27', bookings: 802 },
+        { date: '08/10', bookings: 1035 }, // 08/04~08/10까지의 총 예약 수 (주간 데이터의 합계)
     ];
 
     // 데이터 자동 계산 함수
     const calculatePeriodData = (period: string) => {
-        let aggregatedData = [];
+        let aggregatedData: Array<{date: string, bookings: number}> = [];
         let totalBookings = 0;
 
-        if (period === '주간') {
+        if (period === '최근 7일') {
             aggregatedData = weeklyData;
             totalBookings = weeklyData.reduce((sum, item) => sum + item.bookings, 0);
-        } else if (period === '월간') {
+        } else if (period === '최근 5주') {
             aggregatedData = monthlyData;
             totalBookings = monthlyData.reduce((sum, item) => sum + item.bookings, 0);
         }
@@ -77,16 +77,16 @@ export const ReservationStats = () => {
 
     // 기간별 데이터
     const periodData = {
-        '주간': (() => {
-            const { aggregatedData, totalBookings } = calculatePeriodData('주간');
+        '최근 7일': (() => {
+            const { aggregatedData, totalBookings } = calculatePeriodData('최근 7일');
             return {
                 bookingData: aggregatedData,
                 ticketData: calculateTicketData(totalBookings),
                 stats: calculateStats(totalBookings)
             };
         })(),
-        '월간': (() => {
-            const { aggregatedData, totalBookings } = calculatePeriodData('월간');
+        '최근 5주': (() => {
+            const { aggregatedData, totalBookings } = calculatePeriodData('최근 5주');
             return {
                 bookingData: aggregatedData,
                 ticketData: calculateTicketData(totalBookings),
@@ -101,7 +101,7 @@ export const ReservationStats = () => {
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] h-[1503px] relative">
-                <TopNav className="!absolute !left-0 !top-0" />
+                <TopNav />
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
@@ -128,7 +128,7 @@ export const ReservationStats = () => {
 
                             {isDropdownOpen && (
                                 <div className="absolute top-full left-0 mt-1 w-[108px] bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                                    {['주간', '월간'].map((period) => (
+                                    {['최근 7일', '최근 5주'].map((period) => (
                                         <div
                                             key={period}
                                             className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 ${selectedPeriod === period ? 'bg-blue-50 text-blue-600' : 'text-gray-700'

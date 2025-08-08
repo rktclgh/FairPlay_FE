@@ -124,7 +124,7 @@ export default function MyTickets(): JSX.Element {
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-                <TopNav className="!absolute !left-0 !top-0" />
+                                    <TopNav />
 
                 <div className="absolute top-[239px] left-64 right-0">
                     <div className="space-y-[47px]">
