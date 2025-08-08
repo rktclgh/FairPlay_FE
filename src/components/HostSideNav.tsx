@@ -118,7 +118,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     e.currentTarget.style.color = location.pathname === "/host/status-management" ? "black" : "#00000080";
                                 }}
                             >
-                                상태 관리
+                                배너/상태 관리
                             </Link>
                         </div>
                     </div>
