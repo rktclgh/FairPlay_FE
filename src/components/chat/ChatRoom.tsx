@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useChatSocket } from "./useChatSocket";
+import { ArrowLeft, Send } from "lucide-react";
 
 // 메시지 DTO 타입
 type ChatMessageDto = {
@@ -23,8 +24,17 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
     const [messages, setMessages] = useState<ChatMessageDto[]>([]);
     const [input, setInput] = useState("");
     const [myUserId, setMyUserId] = useState<number>(0);
+    const [myName, setMyName] = useState<string>("나");
     const [roomTitle, setRoomTitle] = useState<string>(userName || eventTitle || "채팅방");
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    const getInitials = (name: string): string => {
+        if (!name) return "U";
+        const trimmed = name.trim();
+        const firstWord = trimmed.split(/\s+/)[0] ?? trimmed;
+        const firstChar = firstWord.charAt(0);
+        return firstChar ? firstChar.toUpperCase() : "U";
+    };
 
     useEffect(() => {
         // accessToken에서 userId 추출
@@ -34,6 +44,8 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 const userId = parseInt(payload.sub);
                 setMyUserId(userId);
+                const nameFromToken = payload.name || payload.nickname || "나";
+                setMyName(nameFromToken);
                 console.log("ChatRoom 사용자 ID 설정:", userId);
             } catch (error) {
                 console.error("토큰 파싱 실패:", error);
@@ -95,14 +107,22 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
 
 
     return (
-        <div className="flex-1 flex flex-col h-full">
-            <div className="flex items-center gap-2 px-4 py-2 border-b bg-white">
-                <button onClick={onBack} className="mr-2 text-xl font-bold text-black">&larr;</button>
-                <span className="font-semibold text-black">{roomTitle}</span>
+        <div className="flex-1 flex flex-col h-full min-h-0">
+            <div className="flex items-center gap-2 px-4 py-3 border-b bg-white flex-none">
+                <button
+                    onClick={onBack}
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-neutral-100 text-neutral-600 hover:text-black transition"
+                    aria-label="뒤로"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                </button>
+                <span className="font-medium text-black">{roomTitle}</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-white">
+            <div className="flex-1 overflow-y-auto p-4 bg-white min-h-0">
                 {messages.map(msg => {
                     const isMyMessage = msg.senderId === myUserId;
+                    const otherName = userName || "운영자";
+                    const initials = isMyMessage ? getInitials(myName) : getInitials(otherName);
                     const messageTime = new Date(msg.sentAt).toLocaleTimeString('ko-KR', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -110,28 +130,35 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
                     });
 
                     return (
-                        <div key={`msg-${msg.chatMessageId}-${Date.now()}-${Math.random()}`} className={`mb-3 flex ${isMyMessage ? "justify-end" : "justify-start"}`}>
-                            <div className={`max-w-xs ${isMyMessage ? "text-right" : "text-left"}`}>
-                                <div className={`px-4 py-2 rounded-2xl text-sm inline-block ${
-                                    isMyMessage 
-                                        ? "bg-blue-500 text-white" 
-                                        : "bg-blue-50 text-blue-900 border border-blue-200"
-                                }`}>
+                        <div key={`msg-${msg.chatMessageId}-${Date.now()}-${Math.random()}`} className={`mb-3 flex items-start ${isMyMessage ? "justify-end" : "justify-start"}`}>
+                            {!isMyMessage && (
+                                <div className="mr-2 mt-0.5 flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-semibold">
+                                    {initials}
+                                </div>
+                            )}
+                            <div className={`max-w-[70%] ${isMyMessage ? "text-right" : "text-left"}`}>
+                                <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-5 inline-block align-top shadow-sm ${isMyMessage ? "bg-blue-600 text-white" : "bg-neutral-100 text-neutral-900 border border-neutral-200"
+                                    }`}>
                                     {msg.content}
                                 </div>
-                                <div className={`text-xs text-gray-500 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
+                                <div className={`text-[11px] text-gray-400 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
                                     {messageTime}
                                 </div>
                             </div>
+                            {isMyMessage && (
+                                <div className="ml-2 mt-0.5 flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-semibold">
+                                    {initials}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
                 <div ref={bottomRef} />
             </div>
-            <div className="flex items-center gap-2 p-3 border-t bg-white">
+            <div className="flex items-center gap-2 p-3 border-t bg-white flex-none">
                 <input
                     type="text"
-                    className="flex-1 border rounded-xl px-3 py-2 text-black bg-white"
+                    className="flex-1 border border-neutral-200 rounded-full px-4 py-2.5 text-[13px] text-black bg-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="메시지 입력"
                     value={input}
                     onChange={e => setInput(e.target.value)}
@@ -144,8 +171,9 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
                 />
                 <button
                     onClick={handleSend}
-                    className="bg-blue-500 text-white rounded-xl px-4 py-2 font-bold"
+                    className="inline-flex items-center gap-2 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full px-4 py-2.5 text-[13px] font-medium shadow-sm hover:brightness-105 active:scale-95 transition"
                 >
+                    <Send className="w-4 h-4" />
                     전송
                 </button>
             </div>
