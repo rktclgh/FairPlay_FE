@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { MapPin } from "lucide-react";
+import { FaHeart } from "react-icons/fa";
 import { VenueInfo } from "./VenueInfo";
 import { CancelPolicy } from "./CancelPolicy";
 import { Reviews } from "./Reviews";
 import { Expectations } from "./Expectations";
 import ExternalLink from "./ExternalLink";
-import { eventAPI }  from "../../services/event";
-import type {EventDetailResponseDto} from "../../services/types/eventType";
+import { eventAPI } from "../../services/event";
+import type { EventDetailResponseDto } from "../../services/types/eventType";
 import api from "../../api/axios";
 import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 
@@ -22,7 +23,8 @@ const EventDetail = (): JSX.Element => {
     const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
     const [activeTab, setActiveTab] = useState<string>("detail");
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
-// 담당자 채팅 오픈 함수
+    const [isLiked, setIsLiked] = useState<boolean>(false);
+    // 담당자 채팅 오픈 함수
     const handleInquiry = async () => {
         try {
             // 이벤트 담당자 채팅방 생성/조회 (API가 자동으로 담당자 찾아서 채팅방 생성)
@@ -37,6 +39,10 @@ const EventDetail = (): JSX.Element => {
             console.error("담당자 채팅방 생성 실패:", e);
             // 에러 토스트 자동
         }
+    };
+
+    const handleLikeClick = () => {
+        setIsLiked(!isLiked);
     };
 
     // 이벤트 데이터 로드 시 달력 초기화
@@ -506,9 +512,24 @@ const EventDetail = (): JSX.Element => {
 
                     <div className="flex-1">
                         <div className="text-left">
-                            <h1 className="text-[32px] font-semibold leading-tight">
-                                {eventData.titleKr}
-                            </h1>
+                            <div className="flex items-center gap-4">
+                                <h1 className="text-[32px] font-semibold leading-tight">
+                                    {eventData.titleKr}
+                                </h1>
+                                <button
+                                    onClick={handleLikeClick}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none focus:ring-0 hover:outline-none hover:ring-0 focus:border-none hover:border-none ${isLiked
+                                        ? 'bg-[#EF6156] text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    style={{ outline: 'none', border: 'none' }}
+                                >
+                                    <FaHeart className={`w-4 h-4 ${isLiked ? 'text-white' : 'text-gray-600'}`} />
+                                    <span className="font-bold text-sm">
+                                        {isLiked ? ' 관심' : ' 관심'}
+                                    </span>
+                                </button>
+                            </div>
                             <p className="text-[#00000099] text-xl mt-1">
                                 {eventData.titleEng}
                             </p>
@@ -584,68 +605,68 @@ const EventDetail = (): JSX.Element => {
                                 날짜 선택
                             </h3>
                             <p>회차 연결</p>
-                        {/*    <div className="space-y-3">*/}
-                        {/*        {eventData.schedules?.filter((schedule: any) => {*/}
-                        {/*            // 선택된 날짜와 일치하는 회차만 필터링*/}
-                        {/*            const scheduleDate = schedule.date.split(' ')[0]; // "2025.07.26" 부분만 추출*/}
-                        {/*            const selectedDateStr = `${currentCalendarYear}.${String(currentCalendarMonth).padStart(2, '0')}.${String(selectedDate).padStart(2, '0')}`;*/}
-                        {/*            return scheduleDate === selectedDateStr;*/}
-                        {/*        }).map((schedule: any, index: number) => (*/}
-                        {/*            <div*/}
-                        {/*                key={index}*/}
-                        {/*                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedSchedule === schedule*/}
-                        {/*                    ? 'border-blue-500 bg-blue-50'*/}
-                        {/*                    : 'border-gray-200 hover:bg-gray-50'*/}
-                        {/*                    }`}*/}
-                        {/*                onClick={() => setSelectedSchedule(schedule)}*/}
-                        {/*            >*/}
-                        {/*                <div className="flex items-center gap-3">*/}
-                        {/*                    <span className="text-sm font-medium text-gray-600">*/}
-                        {/*                        {index + 1}회차*/}
-                        {/*                    </span>*/}
-                        {/*                    <span className="text-base font-semibold text-[#212121]">*/}
-                        {/*                        {schedule.time}*/}
-                        {/*                    </span>*/}
-                        {/*                </div>*/}
-                        {/*            </div>*/}
-                        {/*        ))}*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
+                            {/*    <div className="space-y-3">*/}
+                            {/*        {eventData.schedules?.filter((schedule: any) => {*/}
+                            {/*            // 선택된 날짜와 일치하는 회차만 필터링*/}
+                            {/*            const scheduleDate = schedule.date.split(' ')[0]; // "2025.07.26" 부분만 추출*/}
+                            {/*            const selectedDateStr = `${currentCalendarYear}.${String(currentCalendarMonth).padStart(2, '0')}.${String(selectedDate).padStart(2, '0')}`;*/}
+                            {/*            return scheduleDate === selectedDateStr;*/}
+                            {/*        }).map((schedule: any, index: number) => (*/}
+                            {/*            <div*/}
+                            {/*                key={index}*/}
+                            {/*                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedSchedule === schedule*/}
+                            {/*                    ? 'border-blue-500 bg-blue-50'*/}
+                            {/*                    : 'border-gray-200 hover:bg-gray-50'*/}
+                            {/*                    }`}*/}
+                            {/*                onClick={() => setSelectedSchedule(schedule)}*/}
+                            {/*            >*/}
+                            {/*                <div className="flex items-center gap-3">*/}
+                            {/*                    <span className="text-sm font-medium text-gray-600">*/}
+                            {/*                        {index + 1}회차*/}
+                            {/*                    </span>*/}
+                            {/*                    <span className="text-base font-semibold text-[#212121]">*/}
+                            {/*                        {schedule.time}*/}
+                            {/*                    </span>*/}
+                            {/*                </div>*/}
+                            {/*            </div>*/}
+                            {/*        ))}*/}
+                            {/*    </div>*/}
+                            {/*</div>*/}
 
-                        {/*/!* Seat Availability *!/*/}
-                        {/*<div className="w-[361px] bg-[#e7eaff] rounded-r-[10px]">*/}
-                        {/*    <div className="p-6">*/}
-                        {/*        <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">*/}
-                        {/*            예매 가능한 좌석*/}
-                        {/*        </h3>*/}
-                        {/*        <div className="space-y-4">*/}
-                        {/*            {selectedSchedule ? (*/}
-                        {/*                // 선택된 회차가 있을 때 해당 회차의 좌석 정보 표시*/}
-                        {/*                <div className="space-y-3">*/}
-                        {/*                    {eventData.seatAvailability.map((seat: any, index: number) => (*/}
-                        {/*                        <div*/}
-                        {/*                            key={index}*/}
-                        {/*                            className="flex justify-between items-center"*/}
-                        {/*                        >*/}
-                        {/*                            <span className="text-base font-semibold text-[#00000080]">*/}
-                        {/*                                {seat.type}*/}
-                        {/*                            </span>*/}
-                        {/*                            <span className="text-base font-semibold text-right">*/}
-                        {/*                                {seat.status}*/}
-                        {/*                            </span>*/}
-                        {/*                        </div>*/}
-                        {/*                    ))}*/}
-                        {/*                </div>*/}
-                        {/*            ) : (*/}
-                        {/*                // 선택된 회차가 없을 때 안내 메시지*/}
-                        {/*                <div className="text-center text-gray-500 py-8">*/}
-                        {/*                    시간을 선택해주세요*/}
-                        {/*                </div>*/}
-                        {/*            )}*/}
-                        {/*        </div>*/}
-                            </div>
+                            {/*/!* Seat Availability *!/*/}
+                            {/*<div className="w-[361px] bg-[#e7eaff] rounded-r-[10px]">*/}
+                            {/*    <div className="p-6">*/}
+                            {/*        <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">*/}
+                            {/*            예매 가능한 좌석*/}
+                            {/*        </h3>*/}
+                            {/*        <div className="space-y-4">*/}
+                            {/*            {selectedSchedule ? (*/}
+                            {/*                // 선택된 회차가 있을 때 해당 회차의 좌석 정보 표시*/}
+                            {/*                <div className="space-y-3">*/}
+                            {/*                    {eventData.seatAvailability.map((seat: any, index: number) => (*/}
+                            {/*                        <div*/}
+                            {/*                            key={index}*/}
+                            {/*                            className="flex justify-between items-center"*/}
+                            {/*                        >*/}
+                            {/*                            <span className="text-base font-semibold text-[#00000080]">*/}
+                            {/*                                {seat.type}*/}
+                            {/*                            </span>*/}
+                            {/*                            <span className="text-base font-semibold text-right">*/}
+                            {/*                                {seat.status}*/}
+                            {/*                            </span>*/}
+                            {/*                        </div>*/}
+                            {/*                    ))}*/}
+                            {/*                </div>*/}
+                            {/*            ) : (*/}
+                            {/*                // 선택된 회차가 없을 때 안내 메시지*/}
+                            {/*                <div className="text-center text-gray-500 py-8">*/}
+                            {/*                    시간을 선택해주세요*/}
+                            {/*                </div>*/}
+                            {/*            )}*/}
+                            {/*        </div>*/}
                         </div>
                     </div>
+                </div>
 
                 {/* Book Button */}
                 <div className="flex justify-center mb-12">
@@ -659,11 +680,11 @@ const EventDetail = (): JSX.Element => {
                                 setIsExternalBookingOpen(true);
                             }
                         }}
-                        // disabled={!selectedDate || !selectedSchedule}
-                        // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
-                        //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                        //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        //     }`}
+                    // disabled={!selectedDate || !selectedSchedule}
+                    // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
+                    //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                    //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    //     }`}
                     >
                         예매하기
                     </button>
@@ -707,11 +728,11 @@ const EventDetail = (): JSX.Element => {
                                 <p className="text-base mb-4">{eventData.bio}</p>
 
                                 {eventData.content
-                                //     .map((paragraph: string, index: number) => (
-                                //     <p key={index} className="text-base mb-6">
-                                //         {paragraph}
-                                //     </p>
-                                // ))
+                                    //     .map((paragraph: string, index: number) => (
+                                    //     <p key={index} className="text-base mb-6">
+                                    //         {paragraph}
+                                    //     </p>
+                                    // ))
                                 }
 
                                 <div className="bg-[#e7eaff] rounded-lg mt-8 p-4">

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
 import {
     FaChevronLeft,
@@ -6,14 +6,14 @@ import {
     FaChevronDown,
     FaHeart
 } from "react-icons/fa";
-import {HiOutlineCalendar} from "react-icons/hi";
-import {TopNav} from "../components/TopNav";
-import {Link, useNavigate} from "react-router-dom";
-import {Swiper, SwiperSlide} from "swiper/react";
-import {Autoplay, EffectFade} from "swiper/modules";
+import { HiOutlineCalendar } from "react-icons/hi";
+import { TopNav } from "../components/TopNav";
+import { Link, useNavigate } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
-import {eventAPI} from "../services/event"
+import { eventAPI } from "../services/event"
 import type {
     EventSummaryDto
 } from "../services/types/eventType";
@@ -209,7 +209,7 @@ export const Main: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const eventsData = await eventAPI.getEventList();
+                const eventsData = await eventAPI.getEventList({ size: 15 });
                 setEvents(eventsData.events);
 
                 // 유료광고 데이터 로드
@@ -349,14 +349,14 @@ export const Main: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-white">
-            <TopNav/>
+            <TopNav />
 
             {/* 히어로 섹션 */}
             <div className="relative w-full h-[600px] bg-gray-100">
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
-                    autoplay={{delay: 4000}}
+                    autoplay={{ delay: 4000 }}
                     loop={true}
                     className="w-full h-full"
                     onSwiper={(swiper) => {
@@ -412,14 +412,14 @@ export const Main: React.FC = () => {
                                 onClick={handleHotPicksPrev}
                                 disabled={hotPicksSlideIndex === 0}
                             >
-                                <FaChevronLeft className="w-5 h-5 text-gray-600"/>
+                                <FaChevronLeft className="w-5 h-5 text-gray-600" />
                             </button>
                             <button
                                 className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={handleHotPicksNext}
                                 disabled={hotPicksSlideIndex === 5}
                             >
-                                <FaChevronRight className="w-5 h-5 text-gray-600"/>
+                                <FaChevronRight className="w-5 h-5 text-gray-600" />
                             </button>
                         </div>
                     </div>
@@ -427,11 +427,11 @@ export const Main: React.FC = () => {
                     <div className="overflow-hidden">
                         <div
                             className="flex gap-6 transition-transform duration-500 ease-in-out"
-                            style={{transform: `translateX(-${hotPicksSlideIndex * 20}%)`}}
+                            style={{ transform: `translateX(-${hotPicksSlideIndex * 20}%)` }}
                         >
                             {allHotPicks.map((item, index) => (
                                 <div key={item.id} className="relative flex-shrink-0"
-                                     style={{width: 'calc(20% - 24px)'}}>
+                                    style={{ width: 'calc(20% - 24px)' }}>
                                     <img
                                         className="w-full h-64 object-cover rounded-[10px]"
                                         alt={`Hot Pick ${index + 1}`}
@@ -466,10 +466,10 @@ export const Main: React.FC = () => {
                                     className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0"
                                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                                 >
-                                    <HiOutlineCalendar className="w-6 h-6 text-gray-600"/>
+                                    <HiOutlineCalendar className="w-6 h-6 text-gray-600" />
                                     <span className="text-lg text-black">{selectedDateRange}</span>
                                     <FaChevronDown
-                                        className={`w-4 h-4 text-gray-600 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`}/>
+                                        className={`w-4 h-4 text-gray-600 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* 날짜 선택 드롭다운 */}
@@ -548,7 +548,7 @@ export const Main: React.FC = () => {
                                         <div className="mb-4">
                                             <h3 className="text-sm font-medium text-gray-700 mb-2">월 선택</h3>
                                             <div className="grid grid-cols-3 gap-2">
-                                                {Array.from({length: 12}, (_, i) => {
+                                                {Array.from({ length: 12 }, (_, i) => {
                                                     const monthDate = new Date(selectedYear, i, 1);
                                                     const isSelected = (startDate && startDate.getFullYear() === selectedYear && startDate.getMonth() === i) ||
                                                         (endDate && endDate.getFullYear() === selectedYear && endDate.getMonth() === i);
@@ -648,7 +648,7 @@ export const Main: React.FC = () => {
                                 >
                                     <span className="text-sm truncate">{selectedRegion}</span>
                                     <FaChevronDown
-                                        className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`}/>
+                                        className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* 드롭다운 메뉴 */}
@@ -682,7 +682,7 @@ export const Main: React.FC = () => {
                                 className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter
                                     ? "bg-black text-white font-bold"
                                     : "bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold"
-                                }`}
+                                    }`}
                             >
                                 {filter}
                             </button>
@@ -691,7 +691,7 @@ export const Main: React.FC = () => {
 
                     {/* 행사 카드들 */}
                     <div className="grid grid-cols-5 gap-6">
-                        {events.slice(0, 5).map((event) => (
+                        {events.map((event) => (
                             <div key={event.id} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
                                     <div className="relative">
@@ -703,6 +703,7 @@ export const Main: React.FC = () => {
                                         <FaHeart
                                             className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
                                             onClick={(e) => {
+                                                e.preventDefault();
                                                 e.stopPropagation();
                                                 setLikedEvents(prev => {
                                                     const newSet = new Set(prev);
@@ -719,10 +720,10 @@ export const Main: React.FC = () => {
                                     </div>
                                     <div className="mt-4 text-left">
 
-                            <span
-                                className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                        {event.mainCategory}
-                    </span>
+                                        <span
+                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                            {event.mainCategory}
+                                        </span>
                                         <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
                                         <div className="text-sm text-gray-600 mb-2">
                                             <div className="font-bold">{event.location}</div>
