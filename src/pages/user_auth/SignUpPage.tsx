@@ -10,7 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 // .env 환경변수 적용
 const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
-const REDIRECT_URI = import.meta.env.VITE_KAKAO_REDIRECT_URI;
+const REDIRECT_URI = `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`;
 
 export const SignUpPage = () => {
     const [showPassword, setShowPassword] = useState(false);

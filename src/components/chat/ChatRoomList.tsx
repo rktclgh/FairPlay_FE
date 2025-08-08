@@ -78,7 +78,7 @@ export default function ChatRoomList({ onSelect }: Props) {
 
         // WebSocket 연결로 실시간 업데이트 (환경 자동 판별)
         const wsUrl = window.location.hostname === 'localhost'
-            ? "http://localhost:8080/ws/chat"
+            ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat`
             : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat`;
         const sock = new SockJS(wsUrl);
         const stomp = Stomp.over(sock);

@@ -3,10 +3,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const api = axios.create({
-
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
-    withCredentials: true,
-
+  baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
+  withCredentials: true,
 });
 
 // ✅ 모든 응답 에러를 toast로 띄우는 인터셉터

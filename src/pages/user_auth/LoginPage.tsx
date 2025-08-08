@@ -63,11 +63,11 @@ export const LoginPage = () => {
 
     const handleKakaoLogin = () => {
         const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
-        const KAKAO_REDIRECT_URI = import.meta.env.VITE_KAKAO_REDIRECT_URI;
+        const KAKAO_REDIRECT_URI = `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`;
 
-        if (!KAKAO_CLIENT_ID || !KAKAO_REDIRECT_URI) {
+        if (!KAKAO_CLIENT_ID || !import.meta.env.VITE_FRONTEND_BASE_URL) {
             toast.error("카카오 로그인 설정이 클라이언트에 구성되지 않았습니다.");
-            console.error("VITE_KAKAO_CLIENT_ID or VITE_KAKAO_REDIRECT_URI is not set in .env file");
+            console.error("VITE_KAKAO_CLIENT_ID or VITE_FRONTEND_BASE_URL is not set in .env file");
             return;
         }
 
