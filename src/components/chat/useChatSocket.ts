@@ -49,7 +49,7 @@ export function useChatSocket(
       // 배포 환경에 따른 URL 결정
       const wsUrl =
         window.location.hostname === "localhost"
-          ? "http://localhost:8080/ws/chat"
+          ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat`
           : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/chat`;
 
       console.log(`WebSocket connecting to: ${wsUrl}`);

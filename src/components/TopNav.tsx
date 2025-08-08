@@ -106,7 +106,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         try {
             const token = localStorage.getItem('accessToken');
             const api = axios.create({
-                baseURL: 'http://localhost:8080',
+                baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
