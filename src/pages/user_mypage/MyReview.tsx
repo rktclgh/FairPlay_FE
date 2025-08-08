@@ -342,7 +342,7 @@ export const MyPageMyReview = () => {
                     </div>
                 </div>
 
-                <TopNav className="!absolute !left-0 !top-0" />
+                                    <TopNav />
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
 

@@ -64,6 +64,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
     const toggleNotification = () => {
         if (!isLoggedIn) {
+            alert('로그인이 필요한 서비스입니다.');
             navigate('/login');
             return;
         }
@@ -126,7 +127,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const newNotificationCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className={`bg-white/90 backdrop-blur w-full flex flex-col border-b border-black/5 ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
+        <div className={`bg-white/90 backdrop-blur w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
             <div className="flex justify-end items-center px-6 py-0.5 gap-3">
                 <button
                     onClick={handleCustomerService}
@@ -158,7 +159,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     <nav className="hidden md:flex items-center space-x-6">
                         <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
                         <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
-                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>REGISTER</Link>
+                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>NEWEVENT</Link>
                     </nav>
                     <div className="flex items-center space-x-6">
                         <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
@@ -180,6 +181,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                     navigate('/mypage/info');
                                 }
                             } else {
+                                alert('로그인이 필요한 서비스입니다.');
                                 navigate('/login');
                             }
                         }} />

@@ -79,7 +79,7 @@ export const MyPageAccount = () => {
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-                <TopNav className="!absolute !left-0 !top-0" />
+                                    <TopNav />
 
                 {/* Main form */}
                 <div className="absolute w-[509px] h-[250px] top-[239px] left-64">

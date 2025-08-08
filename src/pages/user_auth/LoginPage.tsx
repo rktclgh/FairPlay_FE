@@ -76,13 +76,12 @@ export const LoginPage = () => {
     };
 
     return (
-        <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white overflow-hidden w-[1256px] h-[1128px] relative">
-                <TopNav className="!absolute !left-0 !-top-0.5" />
-                {/* ... (하단 고정 footer, UI 동일하게 생략) ... */}
+        <div className="min-h-screen bg-white">
+            <TopNav />
 
-                {/* 콘텐츠 컨테이너 */}
-                <div className="relative" style={{ marginTop: '80px' }}>
+            {/* 콘텐츠 컨테이너 */}
+            <div className="flex justify-center w-full">
+                <div className="bg-white overflow-hidden w-[1256px] h-[1128px] relative">
                     <Link to="/" className="absolute top-[100px] left-[588px] flex items-center justify-center">
                         <img
                             className="w-[80px] h-[75px] object-contain"

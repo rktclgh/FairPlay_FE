@@ -108,13 +108,14 @@ export const MyPageFavorites = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-full max-w-7xl mx-auto relative">
+            <div className="bg-white w-[1256px] h-[1407px] relative">
+            <TopNav />
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                     관심
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-                <TopNav className="!absolute !left-0 !top-0" />
+                                    
 
                 {/* 행사 섹션 - 홈화면에서 가져온 부분 */}
                 <div className="absolute top-[239px] left-64 right-0">
