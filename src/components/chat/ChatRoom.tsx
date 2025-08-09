@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useChatSocket } from "./useChatSocket";
 import { ArrowLeft, Send } from "lucide-react";
+import UserOnlineStatus from "./UserOnlineStatus";
 
 // 메시지 DTO 타입
 type ChatMessageDto = {
@@ -18,14 +19,16 @@ type Props = {
     onBack: () => void;
     eventTitle?: string;
     userName?: string;
+    otherUserId?: number; // 상대방 userId 추가
 };
 
-export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props) {
+export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUserId }: Props) {
     const [messages, setMessages] = useState<ChatMessageDto[]>([]);
     const [input, setInput] = useState("");
     const [myUserId, setMyUserId] = useState<number>(0);
     const [myName, setMyName] = useState<string>("나");
     const [roomTitle, setRoomTitle] = useState<string>(userName || eventTitle || "채팅방");
+    const [detectedOtherUserId, setDetectedOtherUserId] = useState<number | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     const getInitials = (name: string): string => {
@@ -65,6 +68,15 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
             headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
         }).then(res => {
             setMessages(res.data);
+            
+            // 메시지에서 상대방 userId 추출 (내가 아닌 다른 발신자)
+            if (res.data.length > 0 && myUserId) {
+                const otherSender = res.data.find((msg: ChatMessageDto) => msg.senderId !== myUserId);
+                if (otherSender && !detectedOtherUserId) {
+                    setDetectedOtherUserId(otherSender.senderId);
+                }
+            }
+            
             // 메시지를 불러온 후 읽음 처리
             markMessagesAsRead();
         });
@@ -82,7 +94,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
                 console.warn("채팅방 정보 가져오기 실패:", err);
             });
         }
-    }, [roomId, eventTitle]);
+    }, [roomId, eventTitle, myUserId]);
 
     // 메시지 읽음 처리
     const markMessagesAsRead = () => {
@@ -116,7 +128,17 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </button>
-                <span className="font-medium text-black">{roomTitle}</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-medium text-black">{roomTitle}</span>
+                    {/* 상대방의 온라인 상태 표시 */}
+                    {(otherUserId || detectedOtherUserId) && (
+                        <UserOnlineStatus 
+                            userId={otherUserId || detectedOtherUserId!} 
+                            showText={true}
+                            className="ml-1"
+                        />
+                    )}
+                </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-white min-h-0">
                 {messages.map(msg => {
@@ -132,8 +154,16 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName }: Props
                     return (
                         <div key={`msg-${msg.chatMessageId}-${Date.now()}-${Math.random()}`} className={`mb-3 flex items-start ${isMyMessage ? "justify-end" : "justify-start"}`}>
                             {!isMyMessage && (
-                                <div className="mr-2 mt-0.5 flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-semibold">
-                                    {initials}
+                                <div className="relative mr-2 mt-0.5 flex-shrink-0">
+                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-semibold">
+                                        {initials}
+                                    </div>
+                                    {/* 상대방 메시지의 온라인 상태 표시 */}
+                                    {(otherUserId || detectedOtherUserId) && (
+                                        <div className="absolute -bottom-0.5 -right-0.5">
+                                            <UserOnlineStatus userId={otherUserId || detectedOtherUserId!} />
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             <div className={`max-w-[70%] ${isMyMessage ? "text-right" : "text-left"}`}>

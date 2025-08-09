@@ -9,6 +9,7 @@ type ChatRoomInfo = {
     roomId: number;
     eventTitle?: string;
     userName?: string;
+    otherUserId?: number;
 };
 
 type Props = {
@@ -138,9 +139,9 @@ export default function ChatModal({
                                     </p>
                                 )}
                             </div>
-                            <ChatRoomList onSelect={(roomId, eventTitle, userName) => {
+                            <ChatRoomList onSelect={(roomId, eventTitle, userName, otherUserId) => {
                                 setSelectedRoomId(roomId);
-                                setSelectedRoomInfo({ roomId, eventTitle, userName });
+                                setSelectedRoomInfo({ roomId, eventTitle, userName, otherUserId });
                             }} />
                         </div>
                     ) : (
@@ -152,6 +153,7 @@ export default function ChatModal({
                             }}
                             eventTitle={selectedRoomInfo?.eventTitle}
                             userName={selectedRoomInfo?.userName}
+                            otherUserId={selectedRoomInfo?.otherUserId}
                         />
                     )}
                 </Dialog.Content>
