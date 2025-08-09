@@ -4,134 +4,154 @@ import { TopNav } from "../../components/TopNav";
 import { FaHeart } from "react-icons/fa";
 import api from "../../api/axios";
 
+
 interface WishlistEvent {
     eventId: number;
-    imageUrl: string;
-    category: string;
-    title: string;
-    date: string;
+    eventTitle: string;
+    categoryName: string;
     location: string;
-    price: string;
+    startDate: string;
+    endDate: string;
+    price: number;
+    thumbnailUrl: string;
 }
 
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("ko-KR").replace(/\s/g, "");
+const fmtRange = (s: string, e: string) => `${fmtDate(s)} ~ ${fmtDate(e)}`;
+const fmtPrice = (p: number) => (p === 0 ? "무료" : `${p.toLocaleString("ko-KR")}원 ~`);
+
 export const MyPageFavorites = () => {
-    const [events, setEvents] = useState<WishlistEvent[]>([]);
+  const [events, setEvents] = useState<WishlistEvent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    // 위시리스트 불러오기
-    const fetchWishlist = async () => {
-        try {
-            const res = await api.get<WishlistEvent[]>("/api/wishlist");
-            setEvents(res.data);
-        } catch (error) {
-            console.error("위시리스트 불러오기 실패:", error);
-        }
-    };
+   
+const fetchWishlist = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get<WishlistEvent[]>("/api/wishlist",{
+      withCredentials: true,
+    });
+      setEvents(res.data || []);
+    } catch (e) {
+      console.error("위시리스트 조회 실패:", e);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        fetchWishlist();
-    }, []);
+  // 처음 로딩
+  useEffect(() => {
+    fetchWishlist();
+  }, []);
+  
 
-    // 좋아요 토글
-    const toggleLike = async (eventId: number) => {
-        try {
-            const isLiked = events.some(e => e.eventId === eventId);
+  // 찜 취소
+  const removeWishlist = async (eventId: number) => {
+    try {
+      await api.delete(`/api/wishlist/${eventId}`);
+      setEvents((prev) => prev.filter((e) => e.eventId !== eventId));
+    } catch (e) {
+      console.error("찜 취소 실패:", e);
+    }
+  };
 
-            if (isLiked) {
-                // 찜 취소
-                await api.delete(`/api/wishlist/${eventId}`);
-                setEvents(prev => prev.filter(e => e.eventId !== eventId));
-            } else {
-                // 찜 등록
-                await api.post(`/api/wishlist`, null, { params: { eventId } });
-                await fetchWishlist();
-            }
-        } catch (error) {
-            console.error("위시리스트 토글 실패:", error);
-        }
-    };
 
-    return (
-        <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1407px] relative">
-                <TopNav />
-                <div className="top-[137px] left-64 font-bold text-black text-2xl absolute leading-[54px]">
-                    관심
-                </div>
 
-                <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-
-                {/* 행사 섹션 */}
-                <div className="absolute top-[239px] left-64 right-0">
-                    <div className="px-8">
-                        {events.length === 0 ? (
-                            <div className="text-center py-20">
-                                <div className="text-gray-500 text-lg mb-4">
-                                    아직 관심 행사가 없습니다
-                                </div>
-                                <div className="text-gray-400 text-sm">
-                                    홈화면이나 행사 목록에서 좋아요를 눌러 관심 행사를 추가해보세요
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-4 gap-6">
-                                {events.slice(0, 4).map((event) => (
-                                    <div key={event.eventId} className="relative">
-                                        <div className="relative">
-                                            <img
-                                                className="w-full h-64 object-cover rounded-[10px]"
-                                                alt={event.title}
-                                                src={event.imageUrl || "/images/NoImage.png"}
-                                            />
-                                            <FaHeart
-                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${
-                                                    events.some(e => e.eventId === event.eventId)
-                                                        ? "text-red-500"
-                                                        : "text-white"
-                                                } drop-shadow-lg`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleLike(event.eventId);
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="mt-4 text-left">
-                                            <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                                {event.category}
-                                            </span>
-                                            <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                            <div className="text-sm text-gray-600 mb-2">
-                                                <div className="font-bold">{event.location}</div>
-                                                <div>{event.date}</div>
-                                            </div>
-                                            <p className="font-bold text-lg text-[#ff6b35]">{event.price}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {events.length > 0 && (
-                            <div className="text-center mt-12">
-                                <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
-                                    전체보기
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="absolute w-full h-[205px] bottom-0 bg-white border-t border-[#0000001f]">
-                    <p className="absolute top-[62px] left-1/2 transform -translate-x-1/2 text-[#666666] text-base text-center">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
-                    <div className="absolute top-[118px] left-1/2 transform -translate-x-1/2 flex space-x-8 text-[#666666] text-sm">
-                        <div>이용약관</div>
-                        <div>개인정보처리방침</div>
-                        <div>고객센터</div>
-                        <div>회사소개</div>
-                    </div>
-                </div>
-            </div>
+   return (
+    <div className="bg-white flex flex-row justify-center w-full">
+      <div className="bg-white w-[1256px] min-h-[1407px] relative">
+        <TopNav />
+        <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
+          관심
         </div>
-    );
+
+        <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+
+        {/* 행사 섹션 */}
+        <div className="absolute top-[239px] left-64 right-0">
+          <div className="px-8">
+            {loading ? (
+              <div className="text-center py-20 text-gray-500">불러오는 중…</div>
+            ) : events.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-gray-500 text-lg mb-4">아직 관심 행사가 없습니다</div>
+                <div className="text-gray-400 text-sm">
+                  홈화면이나 행사 목록에서 하트를 눌러 관심 행사를 추가해보세요
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-6">
+                {events.slice(0, 4).map((event) => (
+                  <div key={event.eventId} className="relative">
+                    <div className="relative">
+                      <img
+                        className="w-full h-64 object-cover rounded-[10px]"
+                        alt={event.eventTitle}
+                        src={event.thumbnailUrl || "/images/NoImage.png"}
+                      />
+                      <FaHeart
+                        className="absolute top-4 right-4 w-5 h-5 cursor-pointer text-red-500 drop-shadow-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeWishlist(event.eventId);
+                        }}
+                        title="찜 취소"
+                      />
+                    </div>
+                    <div className="mt-4 text-left">
+                      <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                        {event.categoryName}
+                      </span>
+                      <h3 className="font-bold text-xl text-black mb-2 truncate">
+                        {event.eventTitle}
+                      </h3>
+                      <div className="text-sm text-gray-600 mb-2">
+                        <div className="font-bold">{event.location}</div>
+                        <div>{fmtRange(event.startDate, event.endDate)}</div>
+                      </div>
+                      <p className="font-bold text-lg text-[#ff6b35]">
+                        {fmtPrice(event.price)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 전체보기 버튼 */}
+            {events.length > 0 && (
+              <div className="text-center mt-12">
+                <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
+                  전체보기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="absolute w-full h-[205px] bottom-0 bg-white border-t [border-top-style:solid] border-[#0000001f]">
+          <p className="absolute top-[62px] left-1/2 transform -translate-x-1/2 [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-base text-center leading-6 tracking-[0] whitespace-nowrap">
+            간편하고 안전한 행사 관리 솔루션
+          </p>
+
+          <div className="absolute top-[118px] left-1/2 transform -translate-x-1/2 flex space-x-8">
+            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
+              이용약관
+            </div>
+            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
+              개인정보처리방침
+            </div>
+            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
+              고객센터
+            </div>
+            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
+              회사소개
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
