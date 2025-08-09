@@ -55,7 +55,7 @@ export const BoothApplicationList = () => {
         {
             id: 2,
             applicationNumber: "BOOTH-2024-002",
-            boothName: "혁신 기술 전시관",
+            boothName: "AI 솔루션 체험관",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.10 15:45",
             processStatus: "검토중",
@@ -70,7 +70,7 @@ export const BoothApplicationList = () => {
         {
             id: 3,
             applicationNumber: "BOOTH-2024-003",
-            boothName: "창작 아트 갤러리",
+            boothName: "그린 에너지 전시관",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.11 09:20",
             processStatus: "승인완료",
@@ -85,7 +85,7 @@ export const BoothApplicationList = () => {
         {
             id: 4,
             applicationNumber: "BOOTH-2024-004",
-            boothName: "친환경 제품 홍보관",
+            boothName: "스마트 헬스케어 존",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.11 11:15",
             processStatus: "반려",
@@ -100,7 +100,7 @@ export const BoothApplicationList = () => {
         {
             id: 5,
             applicationNumber: "BOOTH-2024-005",
-            boothName: "게임 체험 존",
+            boothName: "핀테크 혁신 라운지",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.11 16:30",
             processStatus: "승인완료",
@@ -115,7 +115,7 @@ export const BoothApplicationList = () => {
         {
             id: 6,
             applicationNumber: "BOOTH-2024-006",
-            boothName: "핸드메이드 공예품",
+            boothName: "디지털 교육 체험관",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.12 10:45",
             processStatus: "검토중",
@@ -130,7 +130,7 @@ export const BoothApplicationList = () => {
         {
             id: 7,
             applicationNumber: "BOOTH-2024-007",
-            boothName: "AI 솔루션 전시",
+            boothName: "블록체인 기술 showcase",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.12 13:20",
             processStatus: "승인완료",
@@ -145,7 +145,7 @@ export const BoothApplicationList = () => {
         {
             id: 8,
             applicationNumber: "BOOTH-2024-008",
-            boothName: "건강 관리 서비스",
+            boothName: "로봇 자동화 데모존",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.12 17:10",
             processStatus: "검토중",
@@ -160,7 +160,7 @@ export const BoothApplicationList = () => {
         {
             id: 9,
             applicationNumber: "BOOTH-2024-009",
-            boothName: "로컬 푸드 마켓",
+            boothName: "바이오테크 연구소",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.13 10:00",
             processStatus: "승인완료",
@@ -175,7 +175,7 @@ export const BoothApplicationList = () => {
         {
             id: 10,
             applicationNumber: "BOOTH-2024-010",
-            boothName: "교육 콘텐츠 체험관",
+            boothName: "가상현실 체험관",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.13 14:15",
             processStatus: "승인완료",
@@ -190,7 +190,7 @@ export const BoothApplicationList = () => {
         {
             id: 11,
             applicationNumber: "BOOTH-2024-011",
-            boothName: "패션 디자인 쇼룸",
+            boothName: "사물인터넷 스마트홈",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.13 16:45",
             processStatus: "검토중",
@@ -205,7 +205,7 @@ export const BoothApplicationList = () => {
         {
             id: 12,
             applicationNumber: "BOOTH-2024-012",
-            boothName: "IoT 가전 전시",
+            boothName: "클라우드 컴퓨팅 센터",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.14 09:30",
             processStatus: "승인완료",
@@ -220,7 +220,7 @@ export const BoothApplicationList = () => {
         {
             id: 13,
             applicationNumber: "BOOTH-2024-013",
-            boothName: "문화 예술 체험관",
+            boothName: "자율주행 기술 체험",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.14 12:00",
             processStatus: "승인완료",
@@ -235,7 +235,7 @@ export const BoothApplicationList = () => {
         {
             id: 14,
             applicationNumber: "BOOTH-2024-014",
-            boothName: "스마트 모빌리티",
+            boothName: "양자컴퓨팅 연구실",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.14 15:20",
             processStatus: "검토중",
@@ -250,7 +250,7 @@ export const BoothApplicationList = () => {
         {
             id: 15,
             applicationNumber: "BOOTH-2024-015",
-            boothName: "바이오테크 연구소",
+            boothName: "우주항공 기술관",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.15 08:45",
             processStatus: "승인완료",
@@ -265,7 +265,7 @@ export const BoothApplicationList = () => {
         {
             id: 16,
             applicationNumber: "BOOTH-2024-016",
-            boothName: "친환경 에너지 솔루션",
+            boothName: "메타버스 콘텐츠 존",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.15 11:30",
             processStatus: "승인완료",
@@ -280,7 +280,7 @@ export const BoothApplicationList = () => {
         {
             id: 17,
             applicationNumber: "BOOTH-2024-017",
-            boothName: "여행 서비스 플랫폼",
+            boothName: "신재생에너지 솔루션",
             boothType: "스탠다드 부스",
             applicationDate: "2024.12.15 18:00",
             processStatus: "반려",
@@ -295,7 +295,7 @@ export const BoothApplicationList = () => {
         {
             id: 18,
             applicationNumber: "BOOTH-2024-018",
-            boothName: "온라인 교육 플랫폼",
+            boothName: "인공지능 모델링 스튜디오",
             boothType: "프리미엄 부스",
             applicationDate: "2024.12.16 10:15",
             processStatus: "검토중",
@@ -309,29 +309,54 @@ export const BoothApplicationList = () => {
         }
     ]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    // 검색 폼 변경 핸들러
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setSearchForm(prev => ({
             ...prev,
             [name]: value
         }));
-        // 필터링이 변경되면 첫 페이지로 이동
-        setCurrentPage(1);
+        setCurrentPage(1); // 검색 시 첫 페이지로 리셋
     };
 
-    // 실시간 필터링 로직
-    const filteredApplications = applications.filter((application) => {
-        const applicationNumberMatch = searchForm.applicationNumber === "" || application.applicationNumber.toLowerCase().includes(searchForm.applicationNumber.toLowerCase());
-        const boothNameMatch = searchForm.boothName === "" || application.boothName.toLowerCase().includes(searchForm.boothName.toLowerCase());
-        const boothTypeMatch = searchForm.boothType === "" || application.boothType === searchForm.boothType;
-
-        return applicationNumberMatch && boothNameMatch && boothTypeMatch;
+    // 검색된 데이터 필터링
+    const filteredApplications = applications.filter(application => {
+        const matchesApplicationNumber = !searchForm.applicationNumber || 
+            application.applicationNumber.toLowerCase().includes(searchForm.applicationNumber.toLowerCase());
+        const matchesBoothName = !searchForm.boothName || 
+            application.boothName.toLowerCase().includes(searchForm.boothName.toLowerCase());
+        const matchesBoothType = !searchForm.boothType || 
+            application.boothType === searchForm.boothType;
+        
+        return matchesApplicationNumber && matchesBoothName && matchesBoothType;
     });
 
-    const handleExcelDownload = () => {
-        console.log("엑셀 다운로드");
+    // 페이지네이션 계산
+    const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentApplications = filteredApplications.slice(startIndex, endIndex);
 
-        // 엑셀용 데이터 변환 (필터링된 데이터 기준)
+    // 페이지 변경 핸들러
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    // 엑셀 다운로드 함수
+    const handleExcelDownload = () => {
+        // 현재 필터링된 데이터를 엑셀 형태로 변환
         const excelData = filteredApplications.map((application, index) => ({
             '번호': index + 1,
             '신청번호': application.applicationNumber,
@@ -367,44 +392,23 @@ export const BoothApplicationList = () => {
 
         // 파일명 생성 (현재 날짜 포함)
         const today = new Date();
-        const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD 형태
-        const fileName = `부스_신청_목록_${dateString}.xlsx`;
+        const dateString = today.getFullYear() + 
+                          String(today.getMonth() + 1).padStart(2, '0') + 
+                          String(today.getDate()).padStart(2, '0');
+        const fileName = `부스신청목록_${dateString}.xlsx`;
 
         // 파일 다운로드
         XLSX.writeFile(wb, fileName);
     };
 
-    // 상세보기 핸들러
     const handleViewDetail = (applicationId: number) => {
         navigate(`/host/booth-applications/${applicationId}`);
-    };
-
-    // 페이지네이션 로직 (필터링된 데이터 기준)
-    const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentApplications = filteredApplications.slice(startIndex, endIndex);
-
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-    };
-
-    const handlePrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
-    const handleNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-        }
     };
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] h-[1407px] relative">
-            <TopNav />
+                <TopNav />
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
@@ -416,50 +420,40 @@ export const BoothApplicationList = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px]">
-
-                    {/* 검색 섹션 */}
+                    
+                    {/* 검색 영역 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                        <div className="grid grid-cols-3 gap-6">
-                            {/* 신청번호 */}
+                        <h3 className="text-lg font-semibold mb-4">검색 조건</h3>
+                        <div className="grid grid-cols-3 gap-4 mb-4">
                             <div>
-                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                    신청번호
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">신청번호</label>
                                 <input
                                     type="text"
                                     name="applicationNumber"
                                     value={searchForm.applicationNumber}
-                                    onChange={handleInputChange}
-                                    placeholder="신청번호를 입력하세요"
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${searchForm.applicationNumber ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                    onChange={handleSearchChange}
+                                    placeholder="신청번호 검색"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
-
-                            {/* 부스명 */}
                             <div>
-                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                    부스명
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">부스명</label>
                                 <input
                                     type="text"
                                     name="boothName"
                                     value={searchForm.boothName}
-                                    onChange={handleInputChange}
-                                    placeholder="부스명을 입력하세요"
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${searchForm.boothName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                    onChange={handleSearchChange}
+                                    placeholder="부스명 검색"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
-
-                            {/* 부스타입 */}
                             <div>
-                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                    부스타입
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">부스타입</label>
                                 <select
                                     name="boothType"
                                     value={searchForm.boothType}
-                                    onChange={handleInputChange}
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${searchForm.boothType ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                    onChange={handleSearchChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 >
                                     <option value="">전체</option>
                                     <option value="스탠다드 부스">스탠다드 부스</option>
@@ -467,22 +461,28 @@ export const BoothApplicationList = () => {
                                 </select>
                             </div>
                         </div>
+                        
+                        {/* 엑셀 다운로드 버튼 */}
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handleExcelDownload}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                            >
+                                <Download size={16} />
+                                엑셀 다운로드
+                            </button>
+                        </div>
                     </div>
 
-                    {/* 엑셀 다운로드 버튼 */}
-                    <div className="flex justify-end mb-4">
-                        <button
-                            onClick={handleExcelDownload}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-md text-sm font-semibold hover:bg-emerald-700 transition-colors focus:outline-none flex items-center gap-2"
-                        >
-                            <Download className="w-4 h-4" />
-                            엑셀 다운로드
-                        </button>
+                    {/* 결과 요약 */}
+                    <div className="mb-4">
+                        <p className="text-sm text-gray-600">
+                            총 <span className="font-semibold text-blue-600">{filteredApplications.length}</span>건의 부스 신청이 있습니다.
+                        </p>
                     </div>
 
-                    {/* 부스 신청 리스트 섹션 */}
-                    <div className="bg-white rounded-lg shadow-md mb-6">
-
+                    {/* 테이블 */}
+                    <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* 테이블 헤더 */}
                         <div className="bg-gray-50 border-b">
                             <div className="grid gap-4 p-4 items-center" style={{ gridTemplateColumns: '120px 180px 100px 130px 90px 90px 100px' }}>
@@ -538,10 +538,11 @@ export const BoothApplicationList = () => {
                                 <button
                                     onClick={handlePrevPage}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                                        currentPage === 1
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                    }`}
                                 >
                                     이전
                                 </button>
@@ -550,10 +551,11 @@ export const BoothApplicationList = () => {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === page
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                            }`}
+                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                                            currentPage === page
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        }`}
                                     >
                                         {page}
                                     </button>
@@ -562,10 +564,11 @@ export const BoothApplicationList = () => {
                                 <button
                                     onClick={handleNextPage}
                                     disabled={currentPage === totalPages}
-                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                                        currentPage === totalPages
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                    }`}
                                 >
                                     다음
                                 </button>
