@@ -18,14 +18,17 @@ import { LoginPage } from "./pages/user_auth/LoginPage";
 import { SignUpPage } from "./pages/user_auth/SignUpPage";
 import { FindPassword } from "./pages/user_auth/FindPassword";
 import { RegisterEvent } from "./pages/RegisterEvent";
+import { EventRegistrationIntro } from "./pages/EventRegistrationIntro";
 import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
 import TicketManagement from "./pages/host_event/TicketManagement";
 import RoundManagement from "./pages/host_event/RoundManagement";
 import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
-import { ReservationList } from "./pages/host_event/ReservationList";
-import { ReservationStats } from "./pages/host_event/ReservationStats";
-import { BoothTypeManagement } from "./pages/host_event/BoothTypeManagement";
+import { ReservationList } from "./pages/host_reservation/ReservationList";
+import { ReservationStats } from "./pages/host_reservation/ReservationStats";
+import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
+import { BoothApplicationList } from "./pages/host_booth/BoothApplicationList";
+import { BoothApplicationDetail } from "./pages/host_booth/BoothApplicationDetail";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -114,6 +117,7 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/find-password" element={<FindPassword />} />
+        <Route path="/event-registration-intro" element={<EventRegistrationIntro />} />
         <Route path="/register" element={<RegisterEvent />} />
         <Route path="/host/dashboard" element={<HostDashboard />} />
         <Route path="/host/edit-event-info" element={<EditEventInfo />} />
@@ -123,6 +127,8 @@ function AppContent() {
         <Route path="/host/reservation-list" element={<ReservationList />} />
         <Route path="/host/reservation-stats" element={<ReservationStats />} />
         <Route path="/host/booth-type" element={<BoothTypeManagement />} />
+        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
+        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer

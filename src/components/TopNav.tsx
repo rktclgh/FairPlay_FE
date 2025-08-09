@@ -48,6 +48,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         if (path === '/') setActiveMenu('HOME');
         else if (path === '/eventoverview') setActiveMenu('EVENTS');
         else if (path === '/register') setActiveMenu('REGISTER');
+        else if (path === '/event-registration-intro') setActiveMenu('REGISTER');
         else setActiveMenu('');
     }, [location.pathname]);
 
@@ -159,7 +160,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     <nav className="hidden md:flex items-center space-x-6">
                         <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
                         <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
-                        <Link to="/register" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>NEWEVENT</Link>
+                        <Link to="/event-registration-intro" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>NEWEVENT</Link>
                     </nav>
                     <div className="flex items-center space-x-6">
                         <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
