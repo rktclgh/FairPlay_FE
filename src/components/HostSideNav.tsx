@@ -165,25 +165,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                             >
                                 예약 통계 요약
                             </Link>
-                            <Link
-                                to="/host/inquiry-history"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/inquiry-history"
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname === "/host/inquiry-history" ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/inquiry-history" ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/inquiry-history" ? "black" : "#00000080";
-                                }}
-                            >
-                                문의 내역
-                            </Link>
+
                         </div>
                     </div>
 

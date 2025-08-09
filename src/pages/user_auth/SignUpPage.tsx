@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
-import { FaEye, FaEyeSlash, FaCheck, FaTimes } from "react-icons/fa";
+import { FaCheck, FaTimes } from "react-icons/fa";
 import { RiKakaoTalkFill } from "react-icons/ri";
+import { Eye, EyeOff } from "lucide-react";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
@@ -53,13 +54,11 @@ export const SignUpPage = () => {
     const [nicknameChecked, setNicknameChecked] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
     const [verified, setVerified] = useState(false);
-    const [emailVerificationSent, setEmailVerificationSent] = useState(false);
-    const [nicknameVerificationSent, setNicknameVerificationSent] = useState(false);
-    const [emailTimer, setEmailTimer] = useState(0);
+
     const [emailVerificationTimer, setEmailVerificationTimer] = useState(0);
     const [isSendingVerification, setIsSendingVerification] = useState(false);
-    const [passwordMatch, setPasswordMatch] = useState(null);
-    const [emailValid, setEmailValid] = useState(null);
+    const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null);
+    const [emailValid, setEmailValid] = useState<boolean | null>(null);
 
     const navigate = useNavigate();
 
@@ -117,7 +116,6 @@ export const SignUpPage = () => {
             } else {
                 toast.success("사용 가능한 이메일입니다.");
                 setEmailChecked(true);
-                setEmailVerificationSent(true);
             }
         } catch {
             setEmailChecked(false);
@@ -137,7 +135,6 @@ export const SignUpPage = () => {
             } else {
                 toast.success("사용 가능한 닉네임입니다.");
                 setNicknameChecked(true);
-                setNicknameVerificationSent(true);
             }
         } catch {
             setNicknameChecked(false);
@@ -376,12 +373,13 @@ export const SignUpPage = () => {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute top-[12px] right-[15px] w-8 h-8 flex items-center justify-center cursor-pointer hover:text-gray-600 z-10 bg-transparent border-none"
+                            className="absolute top-[15px] right-[15px] cursor-pointer hover:text-gray-700 z-10 border-none outline-none p-0 m-0 focus:outline-none focus:ring-0 focus:border-none"
+                            style={{ background: 'none', backgroundColor: 'transparent', boxShadow: 'none' }}
                         >
                             {showPassword ? (
-                                <span className="text-gray-500 text-lg">👁️‍🗨️</span>
+                                <EyeOff className="w-5 h-5 text-gray-600" />
                             ) : (
-                                <span className="text-gray-500 text-lg">👁️</span>
+                                <Eye className="w-5 h-5 text-gray-600" />
                             )}
                         </button>
                     </div>
@@ -405,12 +403,13 @@ export const SignUpPage = () => {
                         <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute top-[12px] right-[15px] w-8 h-8 flex items-center justify-center cursor-pointer hover:text-gray-600 z-10 bg-transparent border-none"
+                            className="absolute top-[15px] right-[15px] cursor-pointer hover:text-gray-700 z-10 border-none outline-none p-0 m-0 focus:outline-none focus:ring-0 focus:border-none"
+                            style={{ background: 'none', backgroundColor: 'transparent', boxShadow: 'none' }}
                         >
                             {showConfirmPassword ? (
-                                <span className="text-gray-500 text-lg">👁️‍🗨️</span>
+                                <EyeOff className="w-5 h-5 text-gray-600" />
                             ) : (
-                                <span className="text-gray-500 text-lg">👁️</span>
+                                <Eye className="w-5 h-5 text-gray-600" />
                             )}
                         </button>
                     </div>
