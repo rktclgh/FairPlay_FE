@@ -61,7 +61,26 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     e.currentTarget.style.color = location.pathname === "/host/edit-event-info" ? "black" : "#00000080";
                                 }}
                             >
-                                행사 정보 수정
+                                행사 상세 정보
+                            </Link>
+                            <Link
+                                to="/host/status-management"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/status-management"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/host/status-management" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/status-management" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/status-management" ? "black" : "#00000080";
+                                }}
+                            >
+                                행사 노출 상태
                             </Link>
                             <Link
                                 to="/host/ticket-management"
@@ -100,25 +119,6 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                 }}
                             >
                                 회차 관리
-                            </Link>
-                            <Link
-                                to="/host/status-management"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/status-management"
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname === "/host/status-management" ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/status-management" ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/status-management" ? "black" : "#00000080";
-                                }}
-                            >
-                                배너/상태 관리
                             </Link>
                         </div>
                     </div>
