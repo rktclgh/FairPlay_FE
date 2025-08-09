@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
+import api from "../api/axios";
 import {
     FaChevronLeft,
     FaChevronRight,
@@ -50,6 +51,45 @@ export const Main: React.FC = () => {
     const navigate = useNavigate();
 
     const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+    const authHeaders = () => {
+  const t = localStorage.getItem("accessToken");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
+
+const toggleWish = async (eventId: number) => {
+  const wasLiked = likedEvents.has(eventId);
+
+  // 낙관적 업데이트
+  setLikedEvents(prev => {
+    const next = new Set(prev);
+    wasLiked ? next.delete(eventId) : next.add(eventId);
+    return next;
+  });
+
+  try {
+    if (wasLiked) {
+      // 찜 취소
+      await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+    } else {
+      // 찜 등록 (@RequestParam Long eventId)
+      await api.post(`/api/wishlist`, null, {
+        params: { eventId },            // ★ body 말고 params!
+        headers: authHeaders(),
+      });
+    }
+  } catch (e) {
+    console.error("찜 토글 실패:", e);
+    // 실패 시 롤백
+    setLikedEvents(prev => {
+      const next = new Set(prev);
+      wasLiked ? next.add(eventId) : next.delete(eventId);
+      return next;
+    });
+    // 필요하면 안내
+    // alert("로그인이 필요하거나 권한이 부족합니다.");
+  }
+};
 
     const mapMainCategoryToId = (name: string): number | undefined => {
         switch (name) {
@@ -203,6 +243,20 @@ export const Main: React.FC = () => {
             console.error('유료광고 데이터 로드 실패:', error);
         }
     };
+
+    useEffect(() => {
+  (async () => {
+    try {
+      const res = await api.get("/api/wishlist", { headers: authHeaders() });
+      const s = new Set<number>();
+      (res.data || []).forEach((w: any) => s.add(w.eventId)); // 응답 구조: {eventId,...}
+      setLikedEvents(s);
+    } catch (e) {
+      console.error("위시리스트 로드 실패:", e);
+    }
+  })();
+}, []);
+
 
     // 데이터 로드
     useEffect(() => {
@@ -705,6 +759,7 @@ export const Main: React.FC = () => {
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
+                                                toggleWish(event.id);
                                                 setLikedEvents(prev => {
                                                     const newSet = new Set(prev);
                                                     if (newSet.has(event.id)) {
