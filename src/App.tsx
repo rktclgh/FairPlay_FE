@@ -18,6 +18,7 @@ import { LoginPage } from "./pages/user_auth/LoginPage";
 import { SignUpPage } from "./pages/user_auth/SignUpPage";
 import { FindPassword } from "./pages/user_auth/FindPassword";
 import { RegisterEvent } from "./pages/RegisterEvent";
+import { EventRegistrationIntro } from "./pages/EventRegistrationIntro";
 import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
 import TicketManagement from "./pages/host_event/TicketManagement";
@@ -114,6 +115,7 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/find-password" element={<FindPassword />} />
+        <Route path="/event-registration-intro" element={<EventRegistrationIntro />} />
         <Route path="/register" element={<RegisterEvent />} />
         <Route path="/host/dashboard" element={<HostDashboard />} />
         <Route path="/host/edit-event-info" element={<EditEventInfo />} />
