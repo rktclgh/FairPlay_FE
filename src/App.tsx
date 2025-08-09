@@ -27,6 +27,8 @@ import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import { ReservationList } from "./pages/host_event/ReservationList";
 import { ReservationStats } from "./pages/host_event/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_event/BoothTypeManagement";
+import { BoothApplicationList } from "./pages/host_event/BoothApplicationList";
+import { BoothApplicationDetail } from "./pages/host_event/BoothApplicationDetail";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -125,6 +127,8 @@ function AppContent() {
         <Route path="/host/reservation-list" element={<ReservationList />} />
         <Route path="/host/reservation-stats" element={<ReservationStats />} />
         <Route path="/host/booth-type" element={<BoothTypeManagement />} />
+        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
+        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer
