@@ -177,7 +177,7 @@ export const EditEventInfo = () => {
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    행사 정보 수정
+                    행사 상세 정보
                 </div>
 
                 {/* 사이드바 */}
@@ -701,7 +701,7 @@ export const EditEventInfo = () => {
                                 : 'bg-gray-400 text-white cursor-not-allowed'
                                 }`}
                         >
-                            행사 정보 수정
+                            행사 상세 정보 수정
                         </button>
                         <p className="text-sm text-gray-500 text-center">
                             수정된 정보는 즉시 반영됩니다.
