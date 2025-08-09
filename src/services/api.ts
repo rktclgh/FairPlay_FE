@@ -52,6 +52,8 @@ export interface PasswordChangeRequest {
   newPassword: string;
 }
 
+import authManager from '../utils/auth';
+
 // API 서비스
 class EventApi {
   // 임시 데이터 (실제 API 연동 시 교체)
@@ -256,7 +258,6 @@ class EventApi {
           // 실제 백엔드 API 호출 시도
           try {
             console.log("API 호출 시도: /api/users/mypage");
-            console.log("Authorization 헤더:", `Bearer ${accessToken}`);
 
             // 여러 가능한 엔드포인트 시도
             const endpoints = [
@@ -271,13 +272,7 @@ class EventApi {
             for (const endpoint of endpoints) {
               try {
                 console.log(`엔드포인트 시도: ${endpoint}`);
-                response = await fetch(endpoint, {
-                  method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                  },
-                });
+                response = await authManager.authenticatedFetch(endpoint);
 
                 console.log(
                   `${endpoint} 응답 상태:`,
@@ -479,12 +474,7 @@ class EventApi {
     }
 
     try {
-      const response = await fetch("/api/notifications", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await authManager.authenticatedFetch("/api/notifications");
 
       if (!response.ok) {
         const errorBody = await response.text();
