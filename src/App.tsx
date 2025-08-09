@@ -1,6 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
+import authManager from "./utils/auth";
+import tokenValidator from "./utils/tokenValidator";
 import { Main } from "./pages/MainPage";
 import { MyPageInfo } from "./pages/user_mypage/Info";
 import { MyPageAccount } from "./pages/user_mypage/Account";
@@ -38,33 +40,60 @@ import ChatFloatingModal from "./components/chat/ChatFloatingModal"; // ← 위�
 
 function AppContent() {
   useScrollToTop();
+  const [isTokenValidated, setIsTokenValidated] = useState(false);
+
+  // 앱 시작 시 토큰 유효성 검증
+  useEffect(() => {
+    const validateTokens = async () => {
+      await tokenValidator.validateTokensOnStartup();
+      setIsTokenValidated(true);
+    };
+    
+    validateTokens();
+    
+    // 주기적 토큰 검증 시작
+    tokenValidator.startPeriodicValidation();
+  }, []);
 
   // 사용자 접속 상태 관리
   useEffect(() => {
+    if (!isTokenValidated) return;
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
     // 페이지 로드 시 사용자 온라인 상태로 설정
     const setUserOnline = async () => {
       try {
-        await axios.post('/api/chat/presence/connect', {}, {
-          headers: { Authorization: `Bearer ${token}` }
+        console.log('사용자 온라인 상태 설정 시도 시작');
+        const response = await authManager.authenticatedFetch('/api/chat/presence/connect', {
+          method: 'POST',
         });
-        console.log('사용자 온라인 상태로 설정됨');
+        
+        if (response.ok) {
+          console.log('✅ 사용자 온라인 상태로 설정 성공');
+        } else {
+          console.error('❌ 온라인 상태 설정 실패:', response.status, response.statusText);
+        }
       } catch (error) {
-        console.error('온라인 상태 설정 실패:', error);
+        console.error('❌ 온라인 상태 설정 오류:', error);
       }
     };
 
     // 페이지를 벗어날 때 사용자 오프라인 상태로 설정
     const setUserOffline = async () => {
       try {
-        await axios.post('/api/chat/presence/disconnect', {}, {
-          headers: { Authorization: `Bearer ${token}` }
+        console.log('사용자 오프라인 상태 설정 시도 시작');
+        const response = await authManager.authenticatedFetch('/api/chat/presence/disconnect', {
+          method: 'POST',
         });
-        console.log('사용자 오프라인 상태로 설정됨');
+        
+        if (response.ok) {
+          console.log('✅ 사용자 오프라인 상태로 설정 성공');
+        } else {
+          console.error('❌ 오프라인 상태 설정 실패:', response.status, response.statusText);
+        }
       } catch (error) {
-        console.error('오프라인 상태 설정 실패:', error);
+        console.error('❌ 오프라인 상태 설정 오류:', error);
       }
     };
 
@@ -95,7 +124,7 @@ function AppContent() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       setUserOffline();
     };
-  }, []);
+  }, [isTokenValidated]);
 
   return (
     <>

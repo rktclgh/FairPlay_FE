@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
+import UserOnlineStatus from "./UserOnlineStatus";
 
 // 채팅방 DTO 타입 정의 (API 응답 형태와 동일하게!)
 type ChatRoomDto = {
@@ -18,7 +19,7 @@ type ChatRoomDto = {
 };
 
 type Props = {
-    onSelect: (roomId: number, eventTitle?: string, userName?: string) => void;
+    onSelect: (roomId: number, eventTitle?: string, userName?: string, otherUserId?: number) => void;
 };
 
 export default function ChatRoomList({ onSelect }: Props) {
@@ -147,10 +148,16 @@ export default function ChatRoomList({ onSelect }: Props) {
                 <div
                     key={room.chatRoomId}
                     className="group flex items-center w-full px-4 py-3 border-b hover:bg-neutral-50 cursor-pointer transition-colors bg-white"
-                    onClick={() => onSelect(room.chatRoomId, room.eventTitle, room.userName)}
+                    onClick={() => onSelect(room.chatRoomId, room.eventTitle, room.userName, room.userId)}
                 >
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3 shadow-sm">
-                        {getInitials(room.userName)}
+                    <div className="relative mr-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                            {getInitials(room.userName)}
+                        </div>
+                        {/* 온라인 상태 표시 */}
+                        <div className="absolute -bottom-0.5 -right-0.5">
+                            <UserOnlineStatus userId={room.userId} />
+                        </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
