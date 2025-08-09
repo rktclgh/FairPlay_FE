@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
+import { toast } from "react-toastify";
 
 export const Withdrawal = () => {
     const navigate = useNavigate();
@@ -11,6 +13,7 @@ export const Withdrawal = () => {
         restrictions: false,
         finalAgreement: false
     });
+    const [isWithdrawing, setIsWithdrawing] = useState(false);
 
     const handleCheckboxChange = (key: keyof typeof checkboxes) => {
         setCheckboxes(prev => ({
@@ -20,6 +23,36 @@ export const Withdrawal = () => {
     };
 
     const allChecked = Object.values(checkboxes).every(checked => checked);
+
+    const handleWithdrawal = async () => {
+        if (!allChecked) {
+            toast.error('모든 항목에 동의해야 탈퇴할 수 있습니다.');
+            return;
+        }
+
+        if (!confirm('정말로 회원탈퇴를 진행하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            return;
+        }
+
+        setIsWithdrawing(true);
+        
+        try {
+            await api.post('/api/users/mypage/quit');
+            
+            // 로컬스토리지에서 토큰 삭제
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            
+            toast.success('회원탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.');
+            
+            // 메인 페이지로 리다이렉트
+            navigate('/');
+        } catch (error) {
+            console.error('회원탈퇴 실패:', error);
+        } finally {
+            setIsWithdrawing(false);
+        }
+    };
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -162,13 +195,14 @@ export const Withdrawal = () => {
                             취소하기
                         </button>
                         <button
-                            disabled={!allChecked}
-                            className={`px-6 py-2 rounded-[10px] transition-colors text-sm ${allChecked
-                                ? 'bg-gray-500 text-white hover:bg-gray-600'
+                            onClick={handleWithdrawal}
+                            disabled={!allChecked || isWithdrawing}
+                            className={`px-6 py-2 rounded-[10px] transition-colors text-sm ${allChecked && !isWithdrawing
+                                ? 'bg-red-500 text-white hover:bg-red-600'
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}
                         >
-                            탈퇴하기
+                            {isWithdrawing ? '탈퇴 처리 중...' : '탈퇴하기'}
                         </button>
                     </div>
                 </div>

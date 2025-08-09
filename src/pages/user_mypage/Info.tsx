@@ -4,6 +4,7 @@ import { TopNav } from "../../components/TopNav";
 import { useNavigate } from "react-router-dom";
 import { eventApi } from "../../services/api";
 import type { UserInfo, PasswordChangeRequest } from "../../services/api";
+import { EditProfileModal } from "../../components/EditProfileModal";
 
 // 블러 처리 유틸리티 함수들
 const blurEmail = (email: string) => {
@@ -21,19 +22,16 @@ const blurPassword = (password: string) => {
     return '●'.repeat(password.length);
 };
 
-const blurPhoneNumber = (phoneNumber: string) => {
+const formatPhoneNumber = (phoneNumber: string) => {
     if (!phoneNumber) return "";
+    // 전화번호가 이미 포맷팅되어 있으면 그대로 반환
+    if (phoneNumber.includes('-')) return phoneNumber;
+    
     const cleaned = phoneNumber.replace(/[^0-9]/g, '');
-    if (cleaned.length !== 11) return phoneNumber;
-
-    const first = cleaned.substring(0, 3);
-    const middle = cleaned.substring(3, 7);
-    const last = cleaned.substring(7);
-
-    const blurredMiddle = middle.substring(0, 1) + '•••';
-    const blurredLast = '•' + last.substring(1);
-
-    return `${first} - ${blurredMiddle} - ${blurredLast}`;
+    if (cleaned.length === 11) {
+        return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 7)}-${cleaned.substring(7)}`;
+    }
+    return phoneNumber;
 };
 
 export const MyPageInfo = () => {
@@ -70,6 +68,9 @@ export const MyPageInfo = () => {
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [passwordError, setPasswordError] = useState("");
 
+    // 개인정보 수정 모달 상태
+    const [showEditModal, setShowEditModal] = useState(false);
+
     // 사용자 정보 로드
     useEffect(() => {
         const loadUserInfo = async () => {
@@ -98,7 +99,7 @@ export const MyPageInfo = () => {
         setBlurredData({
             email: blurEmail(userInfo.email),
             password: blurPassword("●●●●●●●●●●"), // 비밀번호는 서버에서 받지 않으므로 블러 처리
-            phone: blurPhoneNumber(userInfo.phone)
+            phone: formatPhoneNumber(userInfo.phone) // 전체 전화번호 표시
         });
     }, [userInfo]);
 
@@ -142,6 +143,19 @@ export const MyPageInfo = () => {
             }
         } finally {
             setIsChangingPassword(false);
+        }
+    };
+
+    // 개인정보 수정 성공 후 새로고침
+    const handleEditSuccess = async () => {
+        try {
+            setIsLoading(true);
+            const userData = await eventApi.getUserInfo();
+            setUserInfo(userData);
+        } catch (error) {
+            console.error("사용자 정보 새로고침 실패:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -279,8 +293,16 @@ export const MyPageInfo = () => {
 
                 {/* 개인 정보 섹션 - 비밀번호 변경 폼이 표시되면 아래로 이동 */}
                 <div className={`absolute w-[949px] h-[295px] left-64 ${showPasswordChange ? 'top-[600px]' : 'top-[455px]'}`}>
-                    <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                        개인 정보
+                    <div className="flex justify-between items-center">
+                        <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
+                            개인 정보
+                        </div>
+                        <button
+                            onClick={() => setShowEditModal(true)}
+                            className="absolute top-0 right-0 px-4 py-2 border border-gray-300 rounded-[10px] text-gray-600 bg-white hover:bg-gray-50 transition-colors text-sm"
+                        >
+                            수정하기
+                        </button>
                     </div>
 
                     <div className="top-11 left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] absolute tracking-[0] leading-[54px] whitespace-nowrap">
@@ -344,6 +366,15 @@ export const MyPageInfo = () => {
                         회사소개
                     </div>
                 </div>
+
+                {/* 개인정보 수정 모달 */}
+                <EditProfileModal
+                    isOpen={showEditModal}
+                    onClose={() => setShowEditModal(false)}
+                    currentPhone={userInfo.phone}
+                    currentNickname={userInfo.nickname}
+                    onSuccess={handleEditSuccess}
+                />
             </div>
         </div>
     );
