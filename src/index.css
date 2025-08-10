@@ -32,6 +32,41 @@ body {
   min-height: 100vh;
   background-color: #ffffff;
   color: #213547;
+  overflow-y: scroll;
+}
+
+/* 채팅 모달이 열려도 스크롤바 유지 */
+html, body {
+  overflow-y: scroll !important;
+}
+
+/* Radix UI Dialog가 body에 overflow: hidden을 적용하는 것을 방지 */
+body[style*="overflow: hidden"] {
+  overflow-y: scroll !important;
+}
+
+/* 채팅 모달 내부 스크롤 설정 */
+.chat-modal-content {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.chat-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-modal-content::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.chat-modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.chat-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
 }
 
 h1 {

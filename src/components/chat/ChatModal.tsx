@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { MessageCircle, X as XIcon } from "lucide-react";
+import { MessageCircle, ChevronLeft } from "lucide-react";
 import ChatRoomList from "./ChatRoomList";
 import ChatRoom from "./ChatRoom";
 import axios from "axios";
@@ -10,6 +10,7 @@ type ChatRoomInfo = {
     eventTitle?: string;
     userName?: string;
     otherUserId?: number;
+    isAdminInquiry?: boolean; // FairPlay 운영자 문의 채팅방 여부
 };
 
 type Props = {
@@ -59,7 +60,8 @@ export default function ChatModal({
             setSelectedRoomInfo({
                 roomId: roomData.chatRoomId,
                 eventTitle: roomData.eventTitle,
-                userName: undefined
+                userName: undefined,
+                isAdminInquiry: true
             });
         } catch (error) {
             console.error('전체 관리자 문의 생성 실패:', error);
@@ -78,66 +80,80 @@ export default function ChatModal({
             return () => clearInterval(interval);
         }
     }, [open]);
+
     return (
         <Dialog.Root open={open} onOpenChange={v => !v && onClose()}>
             <Dialog.Portal>
                 <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[1001]" />
                 <Dialog.Content
-                    className="fixed bottom-8 right-8 w-[420px] max-w-[calc(100vw-2rem)] h-[80vh] max-h-[720px] min-h-[520px] bg-white border border-black/5 rounded-xl shadow-xl shadow-black/10 flex flex-col min-h-0 z-[1002] animate-in overflow-hidden"
+                    className="fixed bottom-24 right-6 w-[420px] max-w-[calc(100vw-2rem)] h-[80vh] max-h-[720px] min-h-[520px] bg-white border border-black/5 rounded-t-xl rounded-b-xl shadow-xl shadow-black/10 flex flex-col min-h-0 z-[1002] animate-in chat-modal-content"
                 >
-                    <Dialog.Title asChild>
-                        <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
-                            <div className="flex items-center gap-2">
-                                <MessageCircle className="w-5 h-5 text-blue-600" />
-                                <h2 className="font-semibold text-base text-black">문의/실시간 채팅</h2>
-                                {hasOnlineAdmin && (
-                                    <div className="flex items-center gap-1">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                        <span className="text-xs text-green-600 font-medium">관리자 접속중</span>
-                                    </div>
-                                )}
-                            </div>
-                            <button
-                                onClick={onClose}
-                                className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-neutral-100 text-neutral-600 hover:text-black transition"
-                                aria-label="닫기"
-                            >
-                                <XIcon className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </Dialog.Title>
+                                         <Dialog.Title asChild>
+                                                      <div className="bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-4 rounded-t-xl min-h-[72px] flex items-center">
+                                 <div className="flex items-center gap-3 w-full">
+                                     {selectedRoomId !== null ? (
+                                         <button
+                                             onClick={() => {
+                                                 setSelectedRoomId(null);
+                                                 setSelectedRoomInfo(null);
+                                             }}
+                                             className="inline-flex items-center justify-center p-1 text-white bg-white/20 rounded transition-colors focus:outline-none w-8 h-8"
+                                             aria-label="뒤로"
+                                         >
+                                             <svg 
+                                                 width="24" 
+                                                 height="24" 
+                                                 viewBox="0 0 24 24" 
+                                                 fill="none" 
+                                                 xmlns="http://www.w3.org/2000/svg"
+                                                 className="text-white"
+                                             >
+                                                 <path 
+                                                     d="M15 18L9 12L15 6" 
+                                                     stroke="currentColor" 
+                                                     strokeWidth="2" 
+                                                     strokeLinecap="round" 
+                                                     strokeLinejoin="round"
+                                                 />
+                                             </svg>
+                                         </button>
+                                     ) : null}
+                                     <div className="flex items-center gap-3">
+                                         <MessageCircle className="w-6 h-6 text-white" />
+                                         <h2 className="font-semibold text-lg text-white">문의/실시간 채팅</h2>
+                                     </div>
+                                 </div>
+                             </div>
+                     </Dialog.Title>
                     <Dialog.Description className="sr-only">
                         실시간 채팅을 통해 문의사항을 해결하세요.
                     </Dialog.Description>
                     {/* 방 선택 전 → 방 목록 / 방 선택 → 채팅방 */}
                     {selectedRoomId === null ? (
                         <div className="flex flex-col h-full min-h-0">
-                            {/* FairPlay 운영자 문의 버튼 */}
-                            <div className="p-4 border-b bg-gray-50">
-                                <button
-                                    onClick={handleAdminInquiry}
-                                    disabled={loading}
-                                    className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-2.5 px-4 rounded-md font-medium transition-colors"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            연결중...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-2">
-                                                {hasOnlineAdmin && <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>}
-                                                <span>💬 FairPlay 운영자에게 문의하기</span>
-                                            </div>
-                                        </>
-                                    )}
-                                </button>
-                                {hasOnlineAdmin && (
-                                    <p className="text-xs text-green-600 text-center mt-1">
-                                        ✅ 관리자가 온라인 상태입니다. 빠른 답변을 받을 수 있어요!
-                                    </p>
-                                )}
+                            {/* FairPlay 운영자 문의하기 */}
+                            <div className="p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors" onClick={handleAdminInquiry}>
+                                <div className="flex items-start gap-3">
+                                    {/* 원형 프로필 (로고) */}
+                                    <div className="w-10 h-10 rounded-full border-2 border-gray-200 flex-shrink-0 overflow-hidden">
+                                        <img 
+                                            src="/images/FPlogo.png" 
+                                            alt="FairPlay 로고" 
+                                            className="w-full h-full object-contain p-1"
+                                        />
+                                    </div>
+                                    
+                                    {/* 채팅 정보 */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <h3 className="font-semibold text-gray-900">FairPlay 채팅 상담센터</h3>
+                                            <span className="text-xs text-gray-500">방금 전</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 line-clamp-2">
+                                            {loading ? "연결중..." : "안녕하세요! FairPlay 상담센터입니다."}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                             <ChatRoomList onSelect={(roomId, eventTitle, userName, otherUserId) => {
                                 setSelectedRoomId(roomId);
@@ -154,6 +170,7 @@ export default function ChatModal({
                             eventTitle={selectedRoomInfo?.eventTitle}
                             userName={selectedRoomInfo?.userName}
                             otherUserId={selectedRoomInfo?.otherUserId}
+                            isAdminInquiry={selectedRoomInfo?.isAdminInquiry}
                         />
                     )}
                 </Dialog.Content>

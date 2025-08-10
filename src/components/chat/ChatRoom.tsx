@@ -20,14 +20,17 @@ type Props = {
     eventTitle?: string;
     userName?: string;
     otherUserId?: number; // 상대방 userId 추가
+    isAdminInquiry?: boolean; // FairPlay 운영자 문의 채팅방 여부
 };
 
-export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUserId }: Props) {
+export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUserId, isAdminInquiry }: Props) {
     const [messages, setMessages] = useState<ChatMessageDto[]>([]);
     const [input, setInput] = useState("");
     const [myUserId, setMyUserId] = useState<number>(0);
     const [myName, setMyName] = useState<string>("나");
-    const [roomTitle, setRoomTitle] = useState<string>(userName || eventTitle || "채팅방");
+    const [roomTitle, setRoomTitle] = useState<string>(
+        isAdminInquiry ? "FairPlay 운영자 문의" : (userName || eventTitle || "채팅방")
+    );
     const [detectedOtherUserId, setDetectedOtherUserId] = useState<number | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -67,11 +70,12 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         axios.get(`/api/chat/messages?chatRoomId=${roomId}`, {
             headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
         }).then(res => {
-            setMessages(res.data);
+            const messageData = res.data || [];
+            setMessages(messageData);
             
             // 메시지에서 상대방 userId 추출 (내가 아닌 다른 발신자)
-            if (res.data.length > 0 && myUserId) {
-                const otherSender = res.data.find((msg: ChatMessageDto) => msg.senderId !== myUserId);
+            if (messageData.length > 0 && myUserId) {
+                const otherSender = messageData.find((msg: ChatMessageDto) => msg.senderId !== myUserId);
                 if (otherSender && !detectedOtherUserId) {
                     setDetectedOtherUserId(otherSender.senderId);
                 }
@@ -79,10 +83,13 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
             
             // 메시지를 불러온 후 읽음 처리
             markMessagesAsRead();
+        }).catch(err => {
+            console.warn("메시지 목록 가져오기 실패:", err);
+            setMessages([]);
         });
 
         // 채팅방 정보 가져오기 (제목 설정용)
-        if (!eventTitle) {
+        if (!eventTitle && !isAdminInquiry) {
             axios.get(`/api/chat/rooms`, {
                 headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
             }).then(res => {
@@ -94,7 +101,14 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                 console.warn("채팅방 정보 가져오기 실패:", err);
             });
         }
-    }, [roomId, eventTitle, myUserId]);
+    }, [roomId, eventTitle, myUserId, isAdminInquiry]);
+
+    // isAdminInquiry가 변경될 때 roomTitle 업데이트
+    useEffect(() => {
+        if (isAdminInquiry) {
+            setRoomTitle("FairPlay 운영자 문의");
+        }
+    }, [isAdminInquiry]);
 
     // 메시지 읽음 처리
     const markMessagesAsRead = () => {
@@ -121,13 +135,6 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     return (
         <div className="flex-1 flex flex-col h-full min-h-0">
             <div className="flex items-center gap-2 px-4 py-3 border-b bg-white flex-none">
-                <button
-                    onClick={onBack}
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-neutral-100 text-neutral-600 hover:text-black transition"
-                    aria-label="뒤로"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                </button>
                 <div className="flex items-center gap-2">
                     <span className="font-medium text-black">{roomTitle}</span>
                     {/* 상대방의 온라인 상태 표시 */}
@@ -175,11 +182,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                                     {messageTime}
                                 </div>
                             </div>
-                            {isMyMessage && (
-                                <div className="ml-2 mt-0.5 flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-semibold">
-                                    {initials}
-                                </div>
-                            )}
+
                         </div>
                     );
                 })}
