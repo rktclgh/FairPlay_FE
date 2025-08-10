@@ -162,7 +162,7 @@ export const MyPageInfo = () => {
     if (isLoading) {
         return (
             <div className="bg-white flex flex-row justify-center w-full">
-                <div className="bg-white w-[1256px] h-[1207px] relative">
+                <div className="bg-white w-[1256px] min-h-screen relative">
                     <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
                     <TopNav className="!absolute !left-0 !top-0" />
                     <div className="absolute top-[400px] left-1/2 transform -translate-x-1/2">
@@ -178,14 +178,14 @@ export const MyPageInfo = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1207px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                     내 정보 조회
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
                 <TopNav />
-                <div className={`absolute w-[949px] left-64 ${showPasswordChange ? 'h-[500px]' : 'h-[213px]'} top-[195px]`}>
+                <div className={`absolute w-[949px] left-64 ${showPasswordChange ? 'h-[500px]' : 'h-[213px]'} top-[195px] pb-20`}>
                     <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                         내 계정
                     </div>

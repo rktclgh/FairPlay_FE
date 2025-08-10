@@ -56,7 +56,7 @@ export const Withdrawal = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1207px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <TopNav />
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
 

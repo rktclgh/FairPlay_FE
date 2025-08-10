@@ -75,7 +75,7 @@ export const FindPassword = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1128px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <TopNav className="!absolute !left-0 !-top-0.5" />
 
                 <div className="absolute top-44 left-[535px] font-bold text-black text-[32px] text-center leading-[48px] whitespace-nowrap">

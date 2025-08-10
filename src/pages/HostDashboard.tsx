@@ -144,7 +144,7 @@ export const HostDashboard = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1407px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <TopNav />
 
                 {/* 페이지 제목 */}
@@ -156,7 +156,7 @@ export const HostDashboard = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px]">
+                <div className="absolute left-64 top-[195px] w-[949px] pb-20">
 
                     {/* 통계 카드 섹션 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
