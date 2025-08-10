@@ -6,6 +6,7 @@ import type { Notification } from '../services/api';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 
+
 interface TopNavProps {
     className?: string;
 }
@@ -15,6 +16,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
+
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -97,6 +99,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
             setNotifications(prev => prev.filter(n => !n.isRead));
         }
     };
+
+
 
     // 운영자(전체 관리자) 문의 채팅방 생성/입장
     const handleCustomerService = async () => {
