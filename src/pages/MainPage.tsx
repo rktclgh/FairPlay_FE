@@ -4,10 +4,8 @@ import api from "../api/axios";
 import {
     FaChevronLeft,
     FaChevronRight,
-    FaChevronDown,
     FaHeart
 } from "react-icons/fa";
-import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
 import { Link, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -32,20 +30,23 @@ interface PaidAdvertisement {
     priority: number; // 노출 순서
 }
 
+// Hot Pick 인터페이스
+interface HotPick {
+    id: number;
+    title: string;
+    date: string;
+    location: string;
+    category: string;
+    image: string;
+}
+
 export const Main: React.FC = () => {
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
     const [loading, setLoading] = useState(true);
 
-    const [selectedRegion, setSelectedRegion] = useState<string>("모든지역");
-    const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
-    const [selectedDateRange, setSelectedDateRange] = useState<string>("2025년 7월 ~ 8월");
-    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2025, 6, 1)); // 2025년 7월
-    const [startDate, setStartDate] = useState<Date | null>(null);
-    const [endDate, setEndDate] = useState<Date | null>(null);
-    const [selectedYear, setSelectedYear] = useState<number>(2025);
+
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
     const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
     const navigate = useNavigate();
@@ -127,16 +128,7 @@ const toggleWish = async (eventId: number) => {
                 params.mainCategoryId = mapMainCategoryToId(selectedCategory);
             }
 
-            if (selectedRegion !== "모든지역") {
-                params.regionName = selectedRegion;
-            }
 
-            if (startDate) {
-                params.fromDate = formatDate(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
-            }
-            if (endDate) {
-                params.toDate = formatDate(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0));
-            }
 
             const response = await eventAPI.getEventList(params);
             setEvents(response.events ?? []);
@@ -147,7 +139,7 @@ const toggleWish = async (eventId: number) => {
 
     useEffect(() => {
         fetchEvents();
-    }, [selectedCategory, selectedRegion, startDate, endDate]);
+    }, [selectedCategory]);
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
@@ -514,217 +506,6 @@ const toggleWish = async (eventId: number) => {
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-3xl font-bold text-black">행사</h2>
-                        <div className="flex items-center space-x-4">
-                            <div className="relative">
-                                <button
-                                    className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0"
-                                    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                                >
-                                    <HiOutlineCalendar className="w-6 h-6 text-gray-600" />
-                                    <span className="text-lg text-black">{selectedDateRange}</span>
-                                    <FaChevronDown
-                                        className={`w-4 h-4 text-gray-600 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {/* 날짜 선택 드롭다운 */}
-                                {isDatePickerOpen && (
-                                    <div
-                                        className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
-                                        {/* 년도 선택 */}
-                                        <div className="mb-4">
-                                            <h3 className="text-sm font-medium text-gray-700 mb-2">년도 선택</h3>
-                                            <div className="flex items-center justify-center space-x-4">
-                                                <button
-                                                    className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
-                                                    onClick={() => {
-                                                        const newYear = selectedYear - 1;
-                                                        if (newYear >= 2024) {
-                                                            setSelectedYear(newYear);
-                                                            // 년도만 변경하고 기존 선택된 날짜는 유지
-                                                            // 범위 텍스트는 기존 선택된 날짜를 기반으로 업데이트
-                                                            if (startDate && endDate) {
-                                                                const startYear = startDate.getFullYear();
-                                                                const startMonth = startDate.getMonth() + 1;
-                                                                const endYear = endDate.getFullYear();
-                                                                const endMonth = endDate.getMonth() + 1;
-
-                                                                if (startYear === endYear && startMonth === endMonth) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
-                                                                } else if (startYear === endYear) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
-                                                                } else {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
-                                                                }
-                                                            } else {
-                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
-                                                            }
-                                                        }
-                                                    }}
-                                                    disabled={selectedYear <= 2024}
-                                                >
-                                                    &lt;
-                                                </button>
-                                                <span className="text-lg font-medium text-black">{selectedYear}</span>
-                                                <button
-                                                    className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
-                                                    onClick={() => {
-                                                        const newYear = selectedYear + 1;
-                                                        if (newYear <= 2028) {
-                                                            setSelectedYear(newYear);
-                                                            // 년도만 변경하고 기존 선택된 날짜는 유지
-                                                            // 범위 텍스트는 기존 선택된 날짜를 기반으로 업데이트
-                                                            if (startDate && endDate) {
-                                                                const startYear = startDate.getFullYear();
-                                                                const startMonth = startDate.getMonth() + 1;
-                                                                const endYear = endDate.getFullYear();
-                                                                const endMonth = endDate.getMonth() + 1;
-
-                                                                if (startYear === endYear && startMonth === endMonth) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
-                                                                } else if (startYear === endYear) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
-                                                                } else {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
-                                                                }
-                                                            } else {
-                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
-                                                            }
-                                                        }
-                                                    }}
-                                                    disabled={selectedYear >= 2028}
-                                                >
-                                                    &gt;
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* 월 선택 */}
-                                        <div className="mb-4">
-                                            <h3 className="text-sm font-medium text-gray-700 mb-2">월 선택</h3>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {Array.from({ length: 12 }, (_, i) => {
-                                                    const monthDate = new Date(selectedYear, i, 1);
-                                                    const isSelected = (startDate && startDate.getFullYear() === selectedYear && startDate.getMonth() === i) ||
-                                                        (endDate && endDate.getFullYear() === selectedYear && endDate.getMonth() === i);
-                                                    return (
-                                                        <button
-                                                            key={i}
-                                                            className={`px-3 py-2 text-sm rounded ${isSelected
-                                                                ? 'bg-black text-white'
-                                                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-                                                            onClick={() => {
-                                                                setCurrentMonth(monthDate);
-
-                                                                // 월 선택 시 범위 설정
-                                                                if (!startDate) {
-                                                                    // 첫 번째 선택 (시작월)
-                                                                    setStartDate(new Date(selectedYear, i, 1));
-                                                                } else if (!endDate) {
-                                                                    // 두 번째 선택 (종료월)
-                                                                    const startYear = startDate.getFullYear();
-                                                                    const startMonth = startDate.getMonth();
-                                                                    const endYear = selectedYear;
-                                                                    const endMonth = i;
-
-                                                                    // 년도가 다르거나 같은 년도에서 종료월이 시작월보다 크거나 같은 경우
-                                                                    if (endYear > startYear || (endYear === startYear && endMonth >= startMonth)) {
-                                                                        setEndDate(new Date(endYear, endMonth, 1));
-
-                                                                        // 범위 텍스트 업데이트
-                                                                        const startMonthNum = startMonth + 1;
-                                                                        const endMonthNum = endMonth + 1;
-                                                                        if (startYear === endYear && startMonthNum === endMonthNum) {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월`);
-                                                                        } else if (startYear === endYear) {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endMonthNum}월`);
-                                                                        } else {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endYear}년 ${endMonthNum}월`);
-                                                                        }
-                                                                        setIsDatePickerOpen(false);
-                                                                    } else {
-                                                                        // 종료월이 시작월보다 이전인 경우 시작월로 재설정
-                                                                        setStartDate(new Date(selectedYear, i, 1));
-                                                                        setEndDate(null);
-                                                                    }
-                                                                } else {
-                                                                    // 이미 범위가 설정된 경우 새로운 시작월로 설정
-                                                                    setStartDate(new Date(selectedYear, i, 1));
-                                                                    setEndDate(null);
-                                                                }
-                                                            }}
-                                                        >
-                                                            {i + 1}월
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* 선택된 범위 표시 */}
-                                        <div className="mb-4 p-3 bg-gray-50 rounded">
-                                            <div className="text-sm text-gray-600 mb-1">선택된 범위</div>
-                                            <div className="text-sm font-medium">
-                                                {startDate ? `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월 ${startDate.getDate()}일` : '시작일 미선택'} ~
-                                                {endDate ? `${endDate.getFullYear()}년 ${endDate.getMonth() + 1}월 ${endDate.getDate()}일` : '종료일 미선택'}
-                                            </div>
-                                        </div>
-
-                                        {/* 월 선택만 표시 */}
-                                        <div className="mb-4">
-                                            <div className="text-center">
-                                                <span className="font-medium text-sm">
-                                                    {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* 범위 초기화 버튼 */}
-                                        <div className="flex justify-end">
-                                            <button
-                                                className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                                                onClick={() => {
-                                                    setStartDate(null);
-                                                    setEndDate(null);
-                                                    setSelectedYear(2025);
-                                                    setSelectedDateRange("2025년 7월 ~ 8월");
-                                                }}
-                                            >
-                                                초기화
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="relative">
-                                <button
-                                    className="flex items-center justify-between w-32 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
-                                    onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
-                                >
-                                    <span className="text-sm truncate">{selectedRegion}</span>
-                                    <FaChevronDown
-                                        className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {/* 드롭다운 메뉴 */}
-                                {isRegionDropdownOpen && (
-                                    <div
-                                        className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                                        {["모든지역", "서울", "경기", "인천", "강원", "부산", "경남", "대구", "경북", "대전", "충남", "충북", "광주", "전북", "전남", "제주", "울산", "해외"].map((region) => (
-                                            <button
-                                                key={region}
-                                                className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedRegion === region ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
-                                                onClick={() => {
-                                                    setSelectedRegion(region);
-                                                    setIsRegionDropdownOpen(false);
-                                                }}
-                                            >
-                                                {region}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
                     </div>
 
                     {/* 필터 버튼들 */}
