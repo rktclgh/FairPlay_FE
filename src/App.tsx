@@ -64,7 +64,13 @@ function AppContent() {
     // 페이지 로드 시 사용자 온라인 상태로 설정
     const setUserOnline = async () => {
       try {
-        console.log('사용자 온라인 상태 설정 시도 시작');
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.log('🚫 토큰이 없어서 온라인 상태 설정 건너뜀');
+          return;
+        }
+        
+        console.log('🟢 사용자 온라인 상태 설정 시도 시작');
         const response = await authManager.authenticatedFetch('/api/chat/presence/connect', {
           method: 'POST',
         });
@@ -72,7 +78,8 @@ function AppContent() {
         if (response.ok) {
           console.log('✅ 사용자 온라인 상태로 설정 성공');
         } else {
-          console.error('❌ 온라인 상태 설정 실패:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('❌ 온라인 상태 설정 실패:', response.status, response.statusText, errorText);
         }
       } catch (error) {
         console.error('❌ 온라인 상태 설정 오류:', error);
@@ -82,7 +89,13 @@ function AppContent() {
     // 페이지를 벗어날 때 사용자 오프라인 상태로 설정
     const setUserOffline = async () => {
       try {
-        console.log('사용자 오프라인 상태 설정 시도 시작');
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.log('🚫 토큰이 없어서 오프라인 상태 설정 건너뜀');
+          return;
+        }
+        
+        console.log('🔴 사용자 오프라인 상태 설정 시도 시작');
         const response = await authManager.authenticatedFetch('/api/chat/presence/disconnect', {
           method: 'POST',
         });
@@ -90,7 +103,8 @@ function AppContent() {
         if (response.ok) {
           console.log('✅ 사용자 오프라인 상태로 설정 성공');
         } else {
-          console.error('❌ 오프라인 상태 설정 실패:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('❌ 오프라인 상태 설정 실패:', response.status, response.statusText, errorText);
         }
       } catch (error) {
         console.error('❌ 오프라인 상태 설정 오류:', error);
