@@ -22,7 +22,10 @@ export default function ChatFloatingModal() {
 
     return (
         <>
-            <ChatFloatingButton onClick={() => setOpen(true)} />
+            <ChatFloatingButton 
+                onClick={() => setOpen(!open)} 
+                isOpen={open}
+            />
             <ChatModal
                 open={open}
                 onClose={() => setOpen(false)}
