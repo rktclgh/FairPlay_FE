@@ -13,6 +13,13 @@ import { eventAPI } from "../../services/event";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
 import api from "../../api/axios";
 import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
+import type { WishlistResponseDto } from "../../services/types/wishlist";
+
+
+const authHeaders = () => {
+  const t = localStorage.getItem("accessToken");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
 
 const EventDetail = (): JSX.Element => {
     const { eventId } = useParams();
@@ -24,7 +31,6 @@ const EventDetail = (): JSX.Element => {
     const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
     const [activeTab, setActiveTab] = useState<string>("detail");
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
-    const [isLiked, setIsLiked] = useState<boolean>(false);
     // 담당자 채팅 오픈 함수
     const handleInquiry = async () => {
         try {
@@ -42,12 +48,54 @@ const EventDetail = (): JSX.Element => {
         }
     };
 
-    const handleLikeClick = () => {
+ // 관심(위시) 상태
+  const [isLiked, setIsLiked] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  const id = Number(eventId); // 컴포넌트 내부에서 계산
+
+  // 초기 위시 상태 로드
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+          headers: authHeaders(),
+        });
         if (!requireAuth(navigate, '관심 등록')) {
             return;
         }
-        setIsLiked(!isLiked);
-    };
+        setIsLiked((data ?? []).some(w => w.eventId === id));
+      } catch (e) {
+        console.error("상세 위시 상태 로드 실패:", e);
+      }
+    })();
+  }, [id]);
+
+  // 관심 토글
+  const toggleLike = async () => {
+    if (!id || pending) return;
+    setPending(true);
+
+    const was = isLiked;
+    setIsLiked(!was); // 낙관적 업데이트
+
+    try {
+      if (was) {
+        await api.delete(`/api/wishlist/${id}`, { headers: authHeaders() });
+      } else {
+        await api.post(`/api/wishlist`, null, {
+          params: { eventId: id },
+          headers: authHeaders(),
+        });
+      }
+    } catch (e) {
+      setIsLiked(was); // 실패 롤백
+      console.error("상세 찜 토글 실패:", e);
+    } finally {
+      setPending(false);
+    }
+  };
 
     // 이벤트 데이터 로드 시 달력 초기화
     // useEffect(() => {
@@ -521,18 +569,22 @@ const EventDetail = (): JSX.Element => {
                                     {eventData.titleKr}
                                 </h1>
                                 <button
-                                    onClick={handleLikeClick}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none focus:ring-0 hover:outline-none hover:ring-0 focus:border-none hover:border-none ${isLiked
-                                        ? 'bg-[#EF6156] text-white'
-                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                        }`}
-                                    style={{ outline: 'none', border: 'none' }}
-                                >
-                                    <FaHeart className={`w-4 h-4 ${isLiked ? 'text-white' : 'text-gray-600'}`} />
-                                    <span className="font-bold text-sm">
-                                        {isLiked ? ' 관심' : ' 관심'}
-                                    </span>
-                                </button>
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleLike();
+  }}
+  disabled={pending}
+  aria-pressed={isLiked}
+  className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none
+              ${isLiked ? "bg-[#EF6156] text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}
+              ${pending ? "opacity-70 cursor-wait" : ""}`}
+  style={{ outline: "none", border: "none" }}
+>
+  <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`} />
+  <span className="font-bold text-sm">{isLiked ? "관심 취소" : "관심"}</span>
+</button>
+
                             </div>
                             <p className="text-[#00000099] text-xl mt-1">
                                 {eventData.titleEng}
@@ -567,7 +619,7 @@ const EventDetail = (): JSX.Element => {
 
                             <div className="flex items-start">
                                 <span className="text-base text-[#00000099] font-semibold w-20">행사 소개</span>
-                                <span className="text-base">{eventData.bio}</span>
+                                <div className="text-base" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
                             </div>
 
                             <div className="flex items-start">
@@ -729,15 +781,11 @@ const EventDetail = (): JSX.Element => {
                                 <h3 className="text-lg font-semibold text-[#212121] mb-4">
                                     {eventData.mainCategory === "공연" ? "공연 소개" : "행사 소개"}
                                 </h3>
-                                <p className="text-base mb-4">{eventData.bio}</p>
+                                <div className="text-base mb-4" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
 
-                                {eventData.content
-                                    //     .map((paragraph: string, index: number) => (
-                                    //     <p key={index} className="text-base mb-6">
-                                    //         {paragraph}
-                                    //     </p>
-                                    // ))
-                                }
+                                {eventData.content && (
+                                    <div className="text-base mb-6" dangerouslySetInnerHTML={{ __html: eventData.content }} />
+                                )}
 
                                 <div className="bg-[#e7eaff] rounded-lg mt-8 p-4">
                                     <h4 className="text-base font-semibold text-[#212121] mb-4">
