@@ -35,14 +35,11 @@ body {
   overflow-y: scroll;
 }
 
-/* 채팅 모달이 열려도 스크롤바 유지 */
-html, body {
-  overflow-y: scroll !important;
-}
+
 
 /* Radix UI Dialog가 body에 overflow: hidden을 적용하는 것을 방지 */
 body[style*="overflow: hidden"] {
-  overflow-y: scroll !important;
+  overflow-y: auto;
 }
 
 /* 채팅 모달 내부 스크롤 설정 */

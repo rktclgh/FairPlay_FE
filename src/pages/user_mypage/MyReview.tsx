@@ -301,7 +301,7 @@ export const MyPageMyReview = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1351px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="absolute w-[947px] h-[107px] top-[137px] left-64">
                     <div className="absolute top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl leading-[54px] tracking-[0] whitespace-nowrap">
                         관람평
@@ -348,7 +348,7 @@ export const MyPageMyReview = () => {
 
                 {/* Write Review Content */}
                 {activeTab === 'write' && (
-                    <div className="absolute top-[263px] left-64 right-0">
+                    <div className="absolute top-[263px] left-64 right-0 pb-20">
                         {!selectedEvent ? (
                             // 행사 리스트 표시
                             <div className="flex flex-col gap-8">
@@ -598,7 +598,7 @@ export const MyPageMyReview = () => {
                         </div>
 
                         {/* Review Cards */}
-                        <div className="absolute top-[334px] left-64 space-y-4">
+                        <div className="absolute top-[334px] left-64 space-y-4 pb-20">
                             {reviews.map((review) => (
                                 <div key={review.id} className="w-[947px] rounded-lg border border-[#0000001f] bg-white p-5 relative">
                                     {/* Checkbox */}

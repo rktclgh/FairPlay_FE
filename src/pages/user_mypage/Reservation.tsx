@@ -75,7 +75,7 @@ export default function Reservation(): JSX.Element {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1565px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                     예약/결제 내역
                 </div>

@@ -139,7 +139,7 @@ export const RegisterEvent = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-auto relative min-h-screen">
+            <div className="bg-white w-[1256px] min-h-screen relative">
             <TopNav />
 
                 {/* 페이지 제목 */}

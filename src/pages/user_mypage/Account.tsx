@@ -73,7 +73,7 @@ export const MyPageAccount = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1207px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                     환불 계좌 정보
                 </div>

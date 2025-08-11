@@ -407,7 +407,7 @@ export const BoothApplicationList = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1407px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <TopNav />
 
                 {/* 페이지 제목 */}
@@ -419,7 +419,7 @@ export const BoothApplicationList = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px]">
+                <div className="absolute left-64 top-[195px] w-[949px] pb-20">
                     
                     {/* 검색 영역 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
