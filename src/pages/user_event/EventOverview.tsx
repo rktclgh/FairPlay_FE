@@ -2,6 +2,7 @@ import {
     Calendar,
     ChevronDown,
     List,
+    Map,
 } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -11,13 +12,21 @@ import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
 import { eventAPI } from "../../services/event"
 import type { EventSummaryDto } from "../../services/types/eventType";
+import api from "../../api/axios";
+import type { WishlistResponseDto } from "../../services/types/wishlist";
+
+
+const authHeaders = () => {
+  const t = localStorage.getItem("accessToken");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
 
 export default function EventOverview() {
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
-    const [viewMode, setViewMode] = React.useState("list"); // "list" or "calendar"
+    const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
     const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
@@ -51,28 +60,67 @@ export default function EventOverview() {
     const [calendarYear, setCalendarYear] = React.useState(new Date().getFullYear());
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
     const navigate = useNavigate();
+const [pending, setPending] = React.useState<Set<number>>(new Set());
 
-    // 좋아요 토글 함수
-    const toggleLike = (eventId: number) => {
-        setLikedEvents(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(eventId)) {
-                newSet.delete(eventId);
-            } else {
-                newSet.add(eventId);
-            }
-            return newSet;
-        });
-    };
+     // 좋아요 토글 함수
+  const toggleLike = async (eventId: number) => {
+  if (pending.has(eventId)) return;                 // 연타 방지
+  setPending(p => new Set(p).add(eventId));
 
-    // 좋아요 상태가 변경될 때마다 localStorage에 저장
-    React.useEffect(() => {
-        try {
-            localStorage.setItem('likedEvents', JSON.stringify(Array.from(likedEvents)));
-        } catch (error) {
-            console.error('localStorage 저장 오류:', error);
-        }
-    }, [likedEvents]);
+  const wasLiked = likedEvents.has(eventId);
+
+setLikedEvents(prev => {
+  const next = new Set(prev);
+  if (wasLiked) {
+    next.delete(eventId);
+  } else {
+    next.add(eventId);
+  }
+  return next;
+});
+
+
+try {
+  if (wasLiked) {
+    await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+  } else {
+    await api.post(`/api/wishlist`, null, {
+      params: { eventId },
+      headers: authHeaders(),
+    });
+  }
+} catch (e) {
+  // 실패 시 롤백
+  setLikedEvents(prev => {
+  const next = new Set(prev);
+  if (wasLiked) {
+    next.add(eventId);
+  } else {
+    next.delete(eventId);
+  }
+  return next;
+});
+
+  console.error("찜 토글 실패:", e);
+}
+
+  };
+
+  // 초기 위시리스트 로드 
+React.useEffect(() => {
+  (async () => {
+    try {
+      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+        headers: authHeaders(),
+      });
+      const s = new Set<number>();
+      (data ?? []).forEach(w => s.add(w.eventId));
+      setLikedEvents(s);
+    } catch (e) {
+      console.error("위시리스트 로드 실패:", e);
+    }
+  })();
+}, []);
 
     // 달력 네비게이션 함수들
     const handlePrevMonth = () => {
@@ -433,7 +481,7 @@ export default function EventOverview() {
 
                     {/* View Toggle and Filters */}
                     <div className="flex justify-between items-center mt-[30px] px-7">
-                        {/* 리스트형/캘린더형 탭 */}
+                        {/* 리스트형/캘린더형/지도형 탭 */}
                         <div className="flex bg-white rounded-full border border-gray-200 p-1 shadow-sm">
                             <button
                                 onClick={() => setViewMode("list")}
@@ -460,6 +508,17 @@ export default function EventOverview() {
                             >
                                 <Calendar className="w-4 h-4" />
                                 <span className="text-sm font-medium">캘린더형</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode("map")}
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "map"
+                                    ? "bg-black text-white"
+                                    : "bg-white text-black hover:bg-gray-50"
+                                    }`}
+                                style={{ outline: 'none', border: 'none' }}
+                            >
+                                <Map className="w-4 h-4" />
+                                <span className="text-sm font-medium">지도형</span>
                             </button>
                         </div>
 
@@ -731,7 +790,7 @@ export default function EventOverview() {
                     </div>
 
                     {/* Event Grid */}
-                    {viewMode === "list" ? (
+                    {viewMode === "list" && (
                         <div className="grid grid-cols-5 gap-6 mt-10 px-6">
                             {filteredEvents.map((event) => (
                                 <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
@@ -741,13 +800,16 @@ export default function EventOverview() {
                                             alt={event.title}
                                             src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleLike(event.id);
-                                            }}
-                                        />
+                                        <button
+  className={`absolute top-3 right-3 bg-white/80 rounded-full p-2 ${pending.has(event.id) ? "cursor-wait opacity-70" : ""}`}
+  onClick={(e) => { e.stopPropagation(); toggleLike(event.id); }}
+  disabled={pending.has(event.id)}
+  aria-label={likedEvents.has(event.id) ? "찜 취소" : "찜"}
+  title={likedEvents.has(event.id) ? "찜 취소" : "찜"}
+>
+  <FaHeart className={`w-5 h-5 ${likedEvents.has(event.id) ? "text-red-500" : "opacity-40"}`} />
+</button>
+
                                     </div>
                                     <div className="mt-4 text-left">
                                         <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
@@ -774,7 +836,9 @@ export default function EventOverview() {
                                 </div>
                             ))}
                         </div>
-                    ) : (
+                    )}
+
+                    {viewMode === "calendar" && (
                         <div className="mt-10 px-6">
                             {/* 캘린더형 뷰 */}
                             <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -894,6 +958,19 @@ export default function EventOverview() {
                                             );
                                         });
                                     })()}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {viewMode === "map" && (
+                        <div className="mt-10 px-6">
+                            {/* 지도형 뷰 */}
+                            <div className="bg-white rounded-lg border border-gray-200 p-6">
+                                <div className="text-center py-20">
+                                    <Map className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">지도형 뷰</h3>
+                                    <p className="text-gray-500">지도형 화면은 추후 구현 예정입니다.</p>
                                 </div>
                             </div>
                         </div>
