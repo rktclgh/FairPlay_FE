@@ -34,6 +34,7 @@ import { BoothApplicationDetail } from "./pages/host_booth/BoothApplicationDetai
 import { BookingAnalysis } from "./pages/host_analytics/BookingAnalysis";
 import { RevenueSummary } from "./pages/host_analytics/RevenueSummary";
 import { TimeAnalysis } from "./pages/host_analytics/TimeAnalysis";
+import QRScanPage from "./pages/QRScanPage";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -51,9 +52,9 @@ function AppContent() {
       await tokenValidator.validateTokensOnStartup();
       setIsTokenValidated(true);
     };
-    
+
     validateTokens();
-    
+
     // 주기적 토큰 검증 시작
     tokenValidator.startPeriodicValidation();
   }, []);
@@ -72,12 +73,12 @@ function AppContent() {
           console.log('🚫 토큰이 없어서 온라인 상태 설정 건너뜀');
           return;
         }
-        
+
         console.log('🟢 사용자 온라인 상태 설정 시도 시작');
         const response = await authManager.authenticatedFetch('/api/chat/presence/connect', {
           method: 'POST',
         });
-        
+
         if (response.ok) {
           console.log('✅ 사용자 온라인 상태로 설정 성공');
         } else {
@@ -97,12 +98,12 @@ function AppContent() {
           console.log('🚫 토큰이 없어서 오프라인 상태 설정 건너뜀');
           return;
         }
-        
+
         console.log('🔴 사용자 오프라인 상태 설정 시도 시작');
         const response = await authManager.authenticatedFetch('/api/chat/presence/disconnect', {
           method: 'POST',
         });
-        
+
         if (response.ok) {
           console.log('✅ 사용자 오프라인 상태로 설정 성공');
         } else {
@@ -178,6 +179,7 @@ function AppContent() {
         <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
         <Route path="/host/revenue-summary" element={<RevenueSummary />} />
         <Route path="/host/time-analysis" element={<TimeAnalysis />} />
+        <Route path="/host/qr-scan" element={<QRScanPage />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer

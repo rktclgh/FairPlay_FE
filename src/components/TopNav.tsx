@@ -19,7 +19,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
     const location = useLocation();
     const navigate = useNavigate();
-    
+
     // 웹소켓 기반 알림 시스템 사용
     const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
 
@@ -151,7 +151,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                         <nav className="hidden md:flex items-center space-x-6">
                             <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
                             <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
-                            <Link to="/event-registration-intro" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>NEWEVENT</Link>
+                            <Link to="/event-registration-intro" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
                         </nav>
                         <div className="flex items-center space-x-6">
                             <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
@@ -159,7 +159,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                 if (!requireAuth(navigate, '마이페이지')) {
                                     return;
                                 }
-                                
+
                                 // 토큰에서 사용자 역할 확인
                                 const accessToken = localStorage.getItem('accessToken');
                                 try {
@@ -188,7 +188,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                 <div className="fixed inset-0 z-[9999]">
                     {/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
                     <div className="absolute inset-0 bg-black bg-opacity-50" onClick={toggleNotification} />
-                    
+
                     {/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
                     <div className="absolute right-0 top-0 h-full left-[calc(100vw-420px)] bg-white shadow-2xl flex flex-col">
                         <div className="flex items-center justify-between p-4 border-b">

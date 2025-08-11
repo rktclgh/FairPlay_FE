@@ -1,0 +1,244 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { TopNav } from '../components/TopNav';
+import { HostSideNav } from '../components/HostSideNav';
+import { HiCamera, HiSearch } from 'react-icons/hi';
+
+const QRScanPage: React.FC = () => {
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [manualCode, setManualCode] = useState('');
+    const [scanResult, setScanResult] = useState<string | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+
+    // 카메라 시작
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            });
+
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                streamRef.current = stream;
+                setIsCameraActive(true);
+
+                // 비디오 로드 완료 후 상태 확인
+                videoRef.current.onloadedmetadata = () => {
+                    console.log('비디오 메타데이터 로드 완료');
+                    console.log('비디오 크기:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
+                };
+
+                videoRef.current.onplay = () => {
+                    console.log('비디오 재생 시작');
+                };
+
+                videoRef.current.onerror = (e) => {
+                    console.error('비디오 에러:', e);
+                };
+            }
+        } catch (error) {
+            console.error('카메라를 시작할 수 없습니다:', error);
+            alert('카메라 접근 권한이 필요합니다.');
+        }
+    };
+
+    // 카메라 중지
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+        setIsCameraActive(false);
+    };
+
+    // 수동 코드 검색
+    const handleManualSearch = () => {
+        if (!manualCode.trim()) {
+            alert('수동 코드를 입력해주세요.');
+            return;
+        }
+
+        // QR 코드 형식 검증 (AB12-C3F4 형식)
+        const codePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+        if (!codePattern.test(manualCode.trim())) {
+            alert('올바른 코드 형식을 입력해주세요. (예: AB12-C3F4)');
+            return;
+        }
+
+        // 여기에 실제 검색 로직을 구현할 수 있습니다
+        setScanResult(`수동 코드 "${manualCode}" 검색 완료`);
+        console.log('수동 코드 검색:', manualCode);
+    };
+
+    // QR 코드 스캔 처리 (실제 구현에서는 QR 코드 라이브러리 사용)
+    const handleQRScan = () => {
+        // 실제 구현에서는 QR 코드 인식 라이브러리를 사용하여 스캔 결과를 처리합니다
+        setScanResult('QR 코드 스캔 완료');
+        console.log('QR 코드 스캔됨');
+    };
+
+    // 컴포넌트 언마운트 시 카메라 정리
+    useEffect(() => {
+        return () => {
+            stopCamera();
+        };
+    }, []);
+
+    return (
+        <div className="bg-white flex flex-row justify-center w-full">
+            <div className="bg-white w-[1256px] min-h-screen relative">
+                <TopNav />
+
+                {/* 페이지 제목 */}
+                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
+                    QR 체크인
+                </div>
+
+                {/* 사이드바 */}
+                <HostSideNav className="!absolute !left-0 !top-[117px]" />
+
+                {/* 메인 콘텐츠 */}
+                <div className="absolute left-64 top-[195px] w-[949px] pb-20">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* QR 코드 스캔 섹션 */}
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">
+                                QR 코드 스캔
+                            </h3>
+
+                            {/* 스캔 영역 */}
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-8 mb-6 flex flex-col items-center justify-center min-h-[300px]">
+                                {isCameraActive ? (
+                                    <div className="w-full flex flex-col items-center">
+                                        <div className="relative w-full max-w-md h-64 bg-black rounded-lg overflow-hidden mb-4">
+                                            <video
+                                                ref={videoRef}
+                                                autoPlay
+                                                playsInline
+                                                muted
+                                                className="w-full h-full object-cover"
+                                                onClick={handleQRScan}
+                                            />
+                                            {/* 스캔 가이드 오버레이 */}
+                                            <div className="absolute inset-0 border-2 border-blue-500 border-dashed pointer-events-none"></div>
+                                        </div>
+                                        <div className="text-center text-sm text-gray-600">
+                                            QR 코드를 클릭하여 스캔하세요
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center">
+                                        <HiCamera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-gray-600 mb-4">카메라를 활성화하여 QR 코드를 스캔하세요</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 카메라 제어 버튼 */}
+                            <div className="text-center">
+                                {isCameraActive ? (
+                                    <button
+                                        onClick={stopCamera}
+                                        className="px-6 py-2 rounded-[10px] transition-colors text-sm bg-red-500 text-white hover:bg-red-600"
+                                    >
+                                        카메라 중지
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={startCamera}
+                                        className="px-6 py-2 rounded-[10px] transition-colors text-sm bg-blue-500 text-white hover:bg-blue-600"
+                                    >
+                                        카메라 시작
+                                    </button>
+                                )}
+                                {/* 디버깅 정보 */}
+                                <div className="mt-2 text-xs text-gray-500">
+                                    카메라 상태: {isCameraActive ? '활성화됨' : '비활성화'}
+                                    {isCameraActive && streamRef.current && (
+                                        <span className="ml-2">• 스트림 연결됨</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 수동 코드 입력 섹션 */}
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">
+                                수동 코드 입력
+                            </h3>
+
+                            {/* 입력 필드와 검색 버튼 */}
+                            <div className="flex gap-3 mb-6">
+                                <input
+                                    type="text"
+                                    value={manualCode}
+                                    onChange={(e) => setManualCode(e.target.value)}
+                                    placeholder="수동 코드를 입력하세요"
+                                    className="flex-1 h-10 border-2 border-gray-300 rounded-lg px-3 text-sm bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-gray-400"
+                                    onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
+                                />
+                                <button
+                                    onClick={handleManualSearch}
+                                    className="px-6 py-2 rounded-[10px] transition-colors text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
+                                >
+                                    <HiSearch className="w-4 h-4" />
+                                    검색
+                                </button>
+                            </div>
+
+                            {/* 도움말 영역 */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h4 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-3">
+                                    검색 도움말
+                                </h4>
+                                <ul className="text-sm text-gray-600 space-y-2">
+                                    <li className="flex items-center">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                                        수동 코드: AB12-C3F4 형식
+                                    </li>
+                                    <li className="flex items-center">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                                        대문자와 숫자만 사용 가능
+                                    </li>
+                                    <li className="flex items-center">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                                        하이픈(-)으로 구분
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 스캔 결과 표시 */}
+                    {scanResult && (
+                        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+                            <h4 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-4">
+                                스캔 결과
+                            </h4>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <p className="text-blue-800 font-medium">{scanResult}</p>
+                            </div>
+                            <div className="text-center">
+                                <button
+                                    onClick={() => setScanResult(null)}
+                                    className="px-6 py-2 rounded-[10px] transition-colors text-sm bg-gray-500 text-white hover:bg-gray-600"
+                                >
+                                    결과 지우기
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default QRScanPage;
