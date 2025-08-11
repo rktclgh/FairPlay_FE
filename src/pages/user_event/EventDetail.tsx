@@ -563,7 +563,7 @@ const EventDetail = (): JSX.Element => {
 
                             <div className="flex items-start">
                                 <span className="text-base text-[#00000099] font-semibold w-20">행사 소개</span>
-                                <span className="text-base">{eventData.bio}</span>
+                                <div className="text-base" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
                             </div>
 
                             <div className="flex items-start">
@@ -725,15 +725,11 @@ const EventDetail = (): JSX.Element => {
                                 <h3 className="text-lg font-semibold text-[#212121] mb-4">
                                     {eventData.mainCategory === "공연" ? "공연 소개" : "행사 소개"}
                                 </h3>
-                                <p className="text-base mb-4">{eventData.bio}</p>
+                                <div className="text-base mb-4" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
 
-                                {eventData.content
-                                    //     .map((paragraph: string, index: number) => (
-                                    //     <p key={index} className="text-base mb-6">
-                                    //         {paragraph}
-                                    //     </p>
-                                    // ))
-                                }
+                                {eventData.content && (
+                                    <div className="text-base mb-6" dangerouslySetInnerHTML={{ __html: eventData.content }} />
+                                )}
 
                                 <div className="bg-[#e7eaff] rounded-lg mt-8 p-4">
                                     <h4 className="text-base font-semibold text-[#212121] mb-4">
