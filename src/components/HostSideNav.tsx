@@ -83,6 +83,25 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                 행사 노출 상태
                             </Link>
                             <Link
+                                to="/host/event-version"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/event-version"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/host/event-version" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/event-version" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/event-version" ? "black" : "#00000080";
+                                }}
+                            >
+                                행사 버전 관리
+                            </Link>
+                            <Link
                                 to="/host/ticket-management"
                                 className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/ticket-management"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
