@@ -2,7 +2,7 @@ import {
     Calendar,
     ChevronDown,
     List,
-    Map,
+    Map as MapIcon,
 } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -15,11 +15,21 @@ import type { EventSummaryDto } from "../../services/types/eventType";
 import api from "../../api/axios";
 import type { WishlistResponseDto } from "../../services/types/wishlist";
 
-
 const authHeaders = () => {
   const t = localStorage.getItem("accessToken");
   return t ? { Authorization: `Bearer ${t}` } : {};
 };
+
+// 캘린더 api 데이터 함수
+type CalendarGroupedDto = { date: string; titles: string[] };
+
+const fetchCalendarGrouped = (year: number, month: number) =>
+  api.get<CalendarGroupedDto[]>("/api/calendar/events/grouped", {
+    params: { year, month },
+    headers: authHeaders(),
+  });
+
+
 
 export default function EventOverview() {
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
@@ -29,6 +39,7 @@ export default function EventOverview() {
     const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
     const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
+    
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
         try {
             // localStorage에서 좋아요 상태 불러오기
@@ -39,6 +50,8 @@ export default function EventOverview() {
             return new Set();
         }
     });
+    const [pending, setPending] = React.useState<Set<number>>(new Set());
+
     const [selectedDateRange, setSelectedDateRange] = React.useState(() => {
         const now = new Date();
         const currentYear = now.getFullYear();
@@ -57,10 +70,11 @@ export default function EventOverview() {
     const [startDate, setStartDate] = React.useState<Date | null>(null);
     const [endDate, setEndDate] = React.useState<Date | null>(null);
     const [selectedYear, setSelectedYear] = React.useState(2025);
+    
+    // 캘린더 현재 연/월
     const [calendarYear, setCalendarYear] = React.useState(new Date().getFullYear());
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
     const navigate = useNavigate();
-const [pending, setPending] = React.useState<Set<number>>(new Set());
 
      // 좋아요 토글 함수
   const toggleLike = async (eventId: number) => {
@@ -102,7 +116,9 @@ try {
 });
 
   console.error("찜 토글 실패:", e);
-}
+}finally {
+    setPending(p => { const n = new Set(p); n.delete(eventId); return n; }); // ← 이거 추가
+  }
 
   };
 
@@ -121,6 +137,54 @@ React.useEffect(() => {
     }
   })();
 }, []);
+
+// 캘린더 데이터 상태
+const [calendarData, setCalendarData] = React.useState<Map<string, string[]>>(new Map());
+const [calendarLoading, setCalendarLoading] = React.useState(false);
+const [calendarError, setCalendarError] = React.useState<string | null>(null);
+
+
+// 캘린더 데이터 fetch (뷰/월 변경 시)
+React.useEffect(() => {
+    if (viewMode !== "calendar") return;
+    (async () => {
+      setCalendarLoading(true);
+      setCalendarError(null);
+      try {
+        const { data } = await fetchCalendarGrouped(calendarYear, calendarMonth);
+        const map = new Map<string, string[]>();
+        data.forEach((d) => map.set(d.date, d.titles));
+        setCalendarData(map);
+      } catch (e) {
+  console.error(e);
+  setCalendarError(
+    e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
+  );
+} finally {
+  setCalendarLoading(false);
+}
+    })();
+  }, [viewMode, calendarYear, calendarMonth]);
+
+// 헬퍼
+ const formatDate = React.useCallback((date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}, []);
+
+ const daysInMonth = React.useMemo(() => {
+    return new Date(calendarYear, calendarMonth, 0).getDate(); // month: 1~12
+  }, [calendarYear, calendarMonth]);
+
+ const firstWeekdayOffset = React.useMemo(() => {
+    return new Date(calendarYear, calendarMonth - 1, 1).getDay(); // 0=일 ~ 6=토
+  }, [calendarYear, calendarMonth]);
+
+ const keyOf = React.useCallback((y: number, m: number, d: number) => {
+    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }, []);
 
     // 달력 네비게이션 함수들
     const handlePrevMonth = () => {
@@ -156,8 +220,6 @@ React.useEffect(() => {
             setSelectedDateRange(`${newYear}년 ${newMonth}월`);
         }
     };
-
-    const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
     const mapMainCategoryToId = (name: string): number | undefined => {
         switch (name) {
@@ -517,7 +579,7 @@ React.useEffect(() => {
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
-                                <Map className="w-4 h-4" />
+                                <MapIcon className="w-4 h-4" />
                                 <span className="text-sm font-medium">지도형</span>
                             </button>
                         </div>
@@ -945,8 +1007,6 @@ React.useEffect(() => {
 
                                     {/* 다음 달 날짜들 (회색) */}
                                     {(() => {
-                                        const nextMonth = calendarMonth === 12 ? 1 : calendarMonth + 1;
-                                        const nextYear = calendarMonth === 12 ? calendarYear + 1 : calendarYear;
                                         const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
                                         const firstDayOfMonth = new Date(calendarYear, calendarMonth - 1, 1).getDay();
                                         const daysFromPrevMonth = firstDayOfMonth;
@@ -972,7 +1032,7 @@ React.useEffect(() => {
                             {/* 지도형 뷰 */}
                             <div className="bg-white rounded-lg border border-gray-200 p-6">
                                 <div className="text-center py-20">
-                                    <Map className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                    <MapIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                                     <h3 className="text-lg font-medium text-gray-900 mb-2">지도형 뷰</h3>
                                     <p className="text-gray-500">지도형 화면은 추후 구현 예정입니다.</p>
                                 </div>
