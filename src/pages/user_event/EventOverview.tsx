@@ -12,6 +12,14 @@ import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
 import { eventAPI } from "../../services/event"
 import type { EventSummaryDto } from "../../services/types/eventType";
+import api from "../../api/axios";
+import type { WishlistResponseDto } from "../../services/types/wishlist";
+
+
+const authHeaders = () => {
+  const t = localStorage.getItem("accessToken");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
 
 export default function EventOverview() {
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
@@ -52,28 +60,67 @@ export default function EventOverview() {
     const [calendarYear, setCalendarYear] = React.useState(new Date().getFullYear());
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
     const navigate = useNavigate();
+const [pending, setPending] = React.useState<Set<number>>(new Set());
 
-    // 좋아요 토글 함수
-    const toggleLike = (eventId: number) => {
-        setLikedEvents(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(eventId)) {
-                newSet.delete(eventId);
-            } else {
-                newSet.add(eventId);
-            }
-            return newSet;
-        });
-    };
+     // 좋아요 토글 함수
+  const toggleLike = async (eventId: number) => {
+  if (pending.has(eventId)) return;                 // 연타 방지
+  setPending(p => new Set(p).add(eventId));
 
-    // 좋아요 상태가 변경될 때마다 localStorage에 저장
-    React.useEffect(() => {
-        try {
-            localStorage.setItem('likedEvents', JSON.stringify(Array.from(likedEvents)));
-        } catch (error) {
-            console.error('localStorage 저장 오류:', error);
-        }
-    }, [likedEvents]);
+  const wasLiked = likedEvents.has(eventId);
+
+setLikedEvents(prev => {
+  const next = new Set(prev);
+  if (wasLiked) {
+    next.delete(eventId);
+  } else {
+    next.add(eventId);
+  }
+  return next;
+});
+
+
+try {
+  if (wasLiked) {
+    await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+  } else {
+    await api.post(`/api/wishlist`, null, {
+      params: { eventId },
+      headers: authHeaders(),
+    });
+  }
+} catch (e) {
+  // 실패 시 롤백
+  setLikedEvents(prev => {
+  const next = new Set(prev);
+  if (wasLiked) {
+    next.add(eventId);
+  } else {
+    next.delete(eventId);
+  }
+  return next;
+});
+
+  console.error("찜 토글 실패:", e);
+}
+
+  };
+
+  // 초기 위시리스트 로드 
+React.useEffect(() => {
+  (async () => {
+    try {
+      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+        headers: authHeaders(),
+      });
+      const s = new Set<number>();
+      (data ?? []).forEach(w => s.add(w.eventId));
+      setLikedEvents(s);
+    } catch (e) {
+      console.error("위시리스트 로드 실패:", e);
+    }
+  })();
+}, []);
 
     // 달력 네비게이션 함수들
     const handlePrevMonth = () => {
@@ -753,13 +800,20 @@ export default function EventOverview() {
                                             alt={event.title}
                                             src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleLike(event.id);
-                                            }}
-                                        />
+                                        <button
+  className={`absolute top-3 right-3 p-0 ${pending.has(event.id) ? "cursor-wait opacity-70" : ""}`}
+  style={{ background: "transparent", border: "none" }}
+  onClick={(e) => { e.stopPropagation(); toggleLike(event.id); }}
+  disabled={pending.has(event.id)}
+  aria-label={likedEvents.has(event.id) ? "찜 취소" : "찜"}
+  title={likedEvents.has(event.id) ? "찜 취소" : "찜"}
+>
+  <FaHeart
+    className={`w-5 h-5 ${likedEvents.has(event.id) ? "text-red-500" : "text-white opacity-70"}`}
+  />
+</button>
+
+
                                     </div>
                                     <div className="mt-4 text-left">
                                         <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
