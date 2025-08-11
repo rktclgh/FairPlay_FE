@@ -17,8 +17,8 @@ import type { WishlistResponseDto } from "../../services/types/wishlist";
 
 
 const authHeaders = () => {
-  const t = localStorage.getItem("accessToken");
-  return t ? { Authorization: `Bearer ${t}` } : {};
+    const t = localStorage.getItem("accessToken");
+    return t ? { Authorization: `Bearer ${t}` } : {};
 };
 
 const EventDetail = (): JSX.Element => {
@@ -48,54 +48,54 @@ const EventDetail = (): JSX.Element => {
         }
     };
 
- // 관심(위시) 상태
-  const [isLiked, setIsLiked] = useState(false);
-  const [pending, setPending] = useState(false);
+    // 관심(위시) 상태
+    const [isLiked, setIsLiked] = useState(false);
+    const [pending, setPending] = useState(false);
 
-  const id = Number(eventId); // 컴포넌트 내부에서 계산
+    const id = Number(eventId); // 컴포넌트 내부에서 계산
 
-  // 초기 위시 상태 로드
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      try {
-        const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
-          headers: authHeaders(),
-        });
-        if (!requireAuth(navigate, '관심 등록')) {
-            return;
+    // 초기 위시 상태 로드
+    useEffect(() => {
+        if (!id) return;
+        (async () => {
+            try {
+                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+                    headers: authHeaders(),
+                });
+                if (!requireAuth(navigate, '관심 등록')) {
+                    return;
+                }
+                setIsLiked((data ?? []).some(w => w.eventId === id));
+            } catch (e) {
+                console.error("상세 위시 상태 로드 실패:", e);
+            }
+        })();
+    }, [id]);
+
+    // 관심 토글
+    const toggleLike = async () => {
+        if (!id || pending) return;
+        setPending(true);
+
+        const was = isLiked;
+        setIsLiked(!was); // 낙관적 업데이트
+
+        try {
+            if (was) {
+                await api.delete(`/api/wishlist/${id}`, { headers: authHeaders() });
+            } else {
+                await api.post(`/api/wishlist`, null, {
+                    params: { eventId: id },
+                    headers: authHeaders(),
+                });
+            }
+        } catch (e) {
+            setIsLiked(was); // 실패 롤백
+            console.error("상세 찜 토글 실패:", e);
+        } finally {
+            setPending(false);
         }
-        setIsLiked((data ?? []).some(w => w.eventId === id));
-      } catch (e) {
-        console.error("상세 위시 상태 로드 실패:", e);
-      }
-    })();
-  }, [id]);
-
-  // 관심 토글
-  const toggleLike = async () => {
-    if (!id || pending) return;
-    setPending(true);
-
-    const was = isLiked;
-    setIsLiked(!was); // 낙관적 업데이트
-
-    try {
-      if (was) {
-        await api.delete(`/api/wishlist/${id}`, { headers: authHeaders() });
-      } else {
-        await api.post(`/api/wishlist`, null, {
-          params: { eventId: id },
-          headers: authHeaders(),
-        });
-      }
-    } catch (e) {
-      setIsLiked(was); // 실패 롤백
-      console.error("상세 찜 토글 실패:", e);
-    } finally {
-      setPending(false);
-    }
-  };
+    };
 
     // 이벤트 데이터 로드 시 달력 초기화
     // useEffect(() => {
@@ -569,21 +569,21 @@ const EventDetail = (): JSX.Element => {
                                     {eventData.titleKr}
                                 </h1>
                                 <button
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleLike();
-  }}
-  disabled={pending}
-  aria-pressed={isLiked}
-  className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        toggleLike();
+                                    }}
+                                    disabled={pending}
+                                    aria-pressed={isLiked}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none
               ${isLiked ? "bg-[#EF6156] text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}
               ${pending ? "opacity-70 cursor-wait" : ""}`}
-  style={{ outline: "none", border: "none" }}
->
-  <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`} />
-  <span className="font-bold text-sm">{isLiked ? "관심 취소" : "관심"}</span>
-</button>
+                                    style={{ outline: "none", border: "none" }}
+                                >
+                                    <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`} />
+                                    <span className="font-bold text-sm">{isLiked ? "관심" : "관심"}</span>
+                                </button>
 
                             </div>
                             <p className="text-[#00000099] text-xl mt-1">
