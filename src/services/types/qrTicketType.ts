@@ -1,9 +1,9 @@
 // 마이페이지 QR 티켓 조회 요청
 export interface QrTicketRequestDto{
-    attendeeId: number,
+    attendeeId: number | null,
     eventId: number,
     ticketId: number,
-    reservationId: number
+    reservationId: number | null
 }
 
 interface ViewingScheduleInfo{
