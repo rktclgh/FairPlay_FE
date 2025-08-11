@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
+import { isAuthenticated } from "../utils/authGuard";
 
 export type Notification = {
   notificationId: number;
@@ -60,7 +61,7 @@ export function useNotificationSocket() {
   }, [updateUnreadCount]);
 
   const connect = useCallback(() => {
-    if (isConnectedRef.current || !localStorage.getItem("accessToken")) return;
+    if (isConnectedRef.current || !isAuthenticated()) return;
 
     console.log("Connecting to notification WebSocket...");
     isConnectedRef.current = true;

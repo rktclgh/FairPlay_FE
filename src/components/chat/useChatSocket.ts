@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
+import { isAuthenticated } from "../../utils/authGuard";
 
 type ChatMessage = {
   chatMessageId: number;
@@ -39,6 +40,12 @@ export function useChatSocket(
       }
 
       currentRoomIdRef.current = roomId;
+    }
+
+    // 인증되지 않은 사용자는 연결하지 않음
+    if (!isAuthenticated()) {
+      console.log("User not authenticated, skipping WebSocket connection");
+      return;
     }
 
     // WebSocket 연결이 없으면 새로 생성

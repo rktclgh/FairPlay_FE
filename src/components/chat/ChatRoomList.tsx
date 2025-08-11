@@ -3,6 +3,7 @@ import axios from "axios";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 import UserOnlineStatus from "./UserOnlineStatus";
+import { isAuthenticated } from "../../utils/authGuard";
 
 // 채팅방 DTO 타입 정의 (API 응답 형태와 동일하게!)
 type ChatRoomDto = {
@@ -29,6 +30,11 @@ export default function ChatRoomList({ onSelect }: Props) {
     const clientRef = useRef<Stomp.Client | null>(null);
 
     const fetchRooms = useCallback(async () => {
+        if (!isAuthenticated()) {
+            setLoading(false);
+            return;
+        }
+
         try {
             // 백엔드에서 사용자 역할에 따라 적절한 채팅방 목록을 모두 반환
             // (복잡한 프론트엔드 역할 체크 로직 제거, 백엔드에서 처리)
@@ -75,6 +81,11 @@ export default function ChatRoomList({ onSelect }: Props) {
     }, []);
 
     useEffect(() => {
+        if (!isAuthenticated()) {
+            setLoading(false);
+            return;
+        }
+
         fetchRooms();
 
         // WebSocket 연결로 실시간 업데이트 (SockJS는 http/https 프로토콜 사용)
@@ -115,6 +126,15 @@ export default function ChatRoomList({ onSelect }: Props) {
         };
     }, [fetchRooms]);
 
+    if (!isAuthenticated()) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 bg-white">
+                <p className="text-center">로그인이 필요한 서비스입니다.</p>
+                <p className="text-sm text-gray-400 mt-2">채팅 기능을 사용하려면 로그인해 주세요.</p>
+            </div>
+        );
+    }
+    
     if (loading) return <div className="flex-1 flex items-center justify-center bg-white text-neutral-500">로딩중...</div>;
     if (!rooms.length) return (
         <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 bg-white">

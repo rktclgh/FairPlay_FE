@@ -5,6 +5,7 @@ import { eventApi } from '../services/api';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket, Notification } from '../hooks/useNotificationSocket';
+import { requireAuth, isAuthenticated } from '../utils/authGuard';
 
 
 interface TopNavProps {
@@ -23,7 +24,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
 
     const checkLoginStatus = useCallback(() => {
-        const loggedIn = !!localStorage.getItem('accessToken');
+        const loggedIn = isAuthenticated();
         setIsLoggedIn(loggedIn);
         if (loggedIn) {
             connect(); // 로그인 시 웹소켓 연결
@@ -62,9 +63,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     };
 
     const toggleNotification = () => {
-        if (!isLoggedIn) {
-            alert('로그인이 필요한 서비스입니다.');
-            navigate('/login');
+        if (!requireAuth(navigate, '알림')) {
             return;
         }
         setIsNotificationOpen(prev => !prev);
@@ -92,8 +91,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
     // 운영자(전체 관리자) 문의 채팅방 생성/입장
     const handleCustomerService = async () => {
-        if (!isLoggedIn) {
-            navigate('/login');
+        if (!requireAuth(navigate, '고객센터 채팅')) {
             return;
         }
 
@@ -158,25 +156,24 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                         <div className="flex items-center space-x-6">
                             <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
                             <HiOutlineUser className="w-5 h-5 text-black cursor-pointer" onClick={() => {
+                                if (!requireAuth(navigate, '마이페이지')) {
+                                    return;
+                                }
+                                
                                 // 토큰에서 사용자 역할 확인
                                 const accessToken = localStorage.getItem('accessToken');
-                                if (accessToken) {
-                                    try {
-                                        const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken.split('.')[1]))));
-                                        const userRole = payload.role;
+                                try {
+                                    const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken!.split('.')[1]))));
+                                    const userRole = payload.role;
 
-                                        if (userRole === 'HOST' || userRole === 'ADMIN' || userRole.includes('행사') || userRole.includes('관리자')) {
-                                            navigate('/host/dashboard');
-                                        } else {
-                                            navigate('/mypage/info');
-                                        }
-                                    } catch (error) {
-                                        console.error('토큰 파싱 실패:', error);
+                                    if (userRole === 'HOST' || userRole === 'ADMIN' || userRole.includes('행사') || userRole.includes('관리자')) {
+                                        navigate('/host/dashboard');
+                                    } else {
                                         navigate('/mypage/info');
                                     }
-                                } else {
-                                    alert('로그인이 필요한 서비스입니다.');
-                                    navigate('/login');
+                                } catch (error) {
+                                    console.error('토큰 파싱 실패:', error);
+                                    navigate('/mypage/info');
                                 }
                             }} />
                             <HiOutlineGlobeAlt className="w-5 h-5 text-black cursor-pointer" />

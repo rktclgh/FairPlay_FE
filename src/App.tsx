@@ -200,6 +200,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppContent />
+      {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
       <ChatFloatingModal />
     </BrowserRouter>
   );

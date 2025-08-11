@@ -4,6 +4,7 @@ import { MessageCircle, ChevronLeft } from "lucide-react";
 import ChatRoomList from "./ChatRoomList";
 import ChatRoom from "./ChatRoom";
 import axios from "axios";
+import { isAuthenticated } from "../../utils/authGuard";
 
 type ChatRoomInfo = {
     roomId: number;
@@ -36,6 +37,11 @@ export default function ChatModal({
 
     // 관리자 온라인 상태 확인
     const checkAdminStatus = async () => {
+        if (!isAuthenticated()) {
+            setHasOnlineAdmin(false);
+            return;
+        }
+        
         try {
             const response = await axios.get('/api/chat/presence/admin-status', {
                 headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }

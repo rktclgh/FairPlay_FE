@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { MapPin } from "lucide-react";
 import { FaHeart } from "react-icons/fa";
+import { requireAuth } from "../../utils/authGuard";
 import { VenueInfo } from "./VenueInfo";
 import { CancelPolicy } from "./CancelPolicy";
 import { Reviews } from "./Reviews";
@@ -42,6 +43,9 @@ const EventDetail = (): JSX.Element => {
     };
 
     const handleLikeClick = () => {
+        if (!requireAuth(navigate, '관심 등록')) {
+            return;
+        }
         setIsLiked(!isLiked);
     };
 

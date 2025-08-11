@@ -58,8 +58,20 @@ export const eventAPI = {
         page?: number;
         size?: number;
     }): Promise<EventSummaryResponseDto> => {
-        const res = await api.get('/api/events', { params });
-        return res.data;
+        try {
+            const res = await api.get('/api/events', { params });
+            return res.data;
+        } catch (error) {
+            console.error('이벤트 목록 로드 실패:', error);
+            // 기본값 반환하여 앱이 깨지지 않도록 함
+            return {
+                events: [],
+                totalPages: 0,
+                totalElements: 0,
+                currentPage: 0,
+                pageSize: params.size || 20
+            };
+        }
     },
 
     /**
