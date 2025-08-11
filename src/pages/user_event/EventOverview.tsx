@@ -801,14 +801,18 @@ React.useEffect(() => {
                                             src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
                                         <button
-  className={`absolute top-3 right-3 bg-white/80 rounded-full p-2 ${pending.has(event.id) ? "cursor-wait opacity-70" : ""}`}
+  className={`absolute top-3 right-3 p-0 ${pending.has(event.id) ? "cursor-wait opacity-70" : ""}`}
+  style={{ background: "transparent", border: "none" }}
   onClick={(e) => { e.stopPropagation(); toggleLike(event.id); }}
   disabled={pending.has(event.id)}
   aria-label={likedEvents.has(event.id) ? "찜 취소" : "찜"}
   title={likedEvents.has(event.id) ? "찜 취소" : "찜"}
 >
-  <FaHeart className={`w-5 h-5 ${likedEvents.has(event.id) ? "text-red-500" : "opacity-40"}`} />
+  <FaHeart
+    className={`w-5 h-5 ${likedEvents.has(event.id) ? "text-red-500" : "text-white opacity-70"}`}
+  />
 </button>
+
 
                                     </div>
                                     <div className="mt-4 text-left">

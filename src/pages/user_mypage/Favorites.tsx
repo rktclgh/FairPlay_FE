@@ -3,6 +3,7 @@ import { AttendeeSideNav } from "./AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
 import { FaHeart } from "react-icons/fa";
 import api from "../../api/axios";
+import { Link } from "react-router-dom";
 
 
 interface WishlistEvent {
@@ -100,13 +101,27 @@ const fetchWishlist = async () => {
                         title="찜 취소"
                       />
                     </div>
+
                     <div className="mt-4 text-left">
                       <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
                         {event.categoryName}
                       </span>
-                      <h3 className="font-bold text-xl text-black mb-2 truncate">
-                        {event.eventTitle}
-                      </h3>
+                      <h3
+  className="text-lg font-extrabold text-black mb-2 truncate"
+  style={{ fontWeight: 800 }}
+>
+  <Link
+    to={`/eventdetail/${event.eventId}`}
+    onClick={(e) => e.stopPropagation()}
+    className="block no-underline text-black visited:text-black hover:underline hover:text-black"
+    style={{ fontWeight: 800 }}
+  >
+    {event.eventTitle}
+  </Link>
+</h3>
+
+
+
                       <div className="text-sm text-gray-600 mb-2">
                         <div className="font-bold">{event.location}</div>
                         <div>{fmtRange(event.startDate, event.endDate)}</div>
