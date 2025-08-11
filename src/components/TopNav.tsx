@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eventApi } from '../services/api';
-import type { Notification } from '../services/api';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
+import { useNotificationSocket, Notification } from '../hooks/useNotificationSocket';
 
 
 interface TopNavProps {
@@ -15,35 +15,31 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const [activeMenu, setActiveMenu] = useState<string>('HOME');
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-
 
     const location = useLocation();
     const navigate = useNavigate();
-
-    const fetchNotifications = useCallback(async () => {
-        if (!localStorage.getItem('accessToken')) return;
-        try {
-            const fetchedNotifications = await eventApi.getNotifications();
-            setNotifications(fetchedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        } catch (error) {
-            console.error("알림 로딩 실패:", error);
-        }
-    }, []);
+    
+    // 웹소켓 기반 알림 시스템 사용
+    const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
 
     const checkLoginStatus = useCallback(() => {
         const loggedIn = !!localStorage.getItem('accessToken');
         setIsLoggedIn(loggedIn);
         if (loggedIn) {
-            fetchNotifications();
+            connect(); // 로그인 시 웹소켓 연결
+        } else {
+            disconnect(); // 로그아웃 시 웹소켓 연결 해제
         }
-    }, [fetchNotifications]);
+    }, [connect, disconnect]);
 
     useEffect(() => {
         checkLoginStatus();
         window.addEventListener('storage', checkLoginStatus); // 다른 탭에서 로그인/로그아웃 시 상태 동기화
-        return () => window.removeEventListener('storage', checkLoginStatus);
-    }, [checkLoginStatus]);
+        return () => {
+            window.removeEventListener('storage', checkLoginStatus);
+            disconnect(); // 컴포넌트 언마운트 시 웹소켓 연결 해제
+        };
+    }, [checkLoginStatus, disconnect]);
 
     useEffect(() => {
         const path = location.pathname;
@@ -60,7 +56,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             setIsLoggedIn(false);
-            setNotifications([]);
+            disconnect(); // 로그아웃 시 웹소켓 연결 해제
             navigate('/');
         }
     };
@@ -72,32 +68,24 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
             return;
         }
         setIsNotificationOpen(prev => !prev);
-        if (!isNotificationOpen) {
-            fetchNotifications();
-        }
     };
 
-    const handleMarkAsRead = async (notificationId: number) => {
-        await eventApi.markNotificationAsRead(notificationId);
-        setNotifications(prev => prev.map(n => n.notificationId === notificationId ? { ...n, isRead: true } : n));
+    const handleMarkAsRead = (notificationId: number) => {
+        markAsRead(notificationId); // 웹소켓을 통한 읽음 처리
     };
 
     const handleDeleteNotification = async (e: React.MouseEvent, notificationId: number) => {
         e.stopPropagation(); // 이벤트 버블링 방지
-        const success = await eventApi.deleteNotification(notificationId);
-        if (success) {
-            setNotifications(prev => prev.filter(n => n.notificationId !== notificationId));
-        }
+        await eventApi.deleteNotification(notificationId);
+        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
     };
 
     const handleDeleteAllRead = async () => {
         const readNotificationIds = notifications.filter(n => n.isRead).map(n => n.notificationId);
         if (readNotificationIds.length === 0) return;
 
-        const success = await eventApi.deleteMultipleNotifications(readNotificationIds);
-        if (success) {
-            setNotifications(prev => prev.filter(n => !n.isRead));
-        }
+        await eventApi.deleteMultipleNotifications(readNotificationIds);
+        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
     };
 
 
@@ -129,7 +117,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         }
     };
 
-    const newNotificationCount = notifications.filter(n => !n.isRead).length;
+    // 웹소켓에서 제공하는 unreadCount 사용
 
     return (
         <>
@@ -146,7 +134,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                         className="relative p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
                     >
                         알림
-                        {isLoggedIn && newNotificationCount > 0 && (
+                        {isLoggedIn && unreadCount > 0 && (
                             <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                         )}
                     </button>
