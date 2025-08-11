@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { MapPin } from "lucide-react";
 import { FaHeart } from "react-icons/fa";
+import { requireAuth } from "../../utils/authGuard";
 import { VenueInfo } from "./VenueInfo";
 import { CancelPolicy } from "./CancelPolicy";
 import { Reviews } from "./Reviews";
@@ -61,6 +62,9 @@ const EventDetail = (): JSX.Element => {
         const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
           headers: authHeaders(),
         });
+        if (!requireAuth(navigate, '관심 등록')) {
+            return;
+        }
         setIsLiked((data ?? []).some(w => w.eventId === id));
       } catch (e) {
         console.error("상세 위시 상태 로드 실패:", e);

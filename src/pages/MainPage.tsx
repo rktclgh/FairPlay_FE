@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import { TopNav } from "../components/TopNav";
 import { Link, useNavigate } from "react-router-dom";
+import { requireAuth, isAuthenticated } from "../utils/authGuard";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
@@ -59,6 +60,11 @@ export const Main: React.FC = () => {
 };
 
 const toggleWish = async (eventId: number) => {
+  // 인증 확인
+  if (!requireAuth(navigate, '관심 등록')) {
+    return;
+  }
+
   const wasLiked = likedEvents.has(eventId);
 
   // 낙관적 업데이트
@@ -134,6 +140,8 @@ const toggleWish = async (eventId: number) => {
             setEvents(response.events ?? []);
         } catch (error) {
             console.error("행사 필터링 실패:", error);
+            // 오류 발생 시 빈 배열로 설정하여 UI가 깨지지 않도록 함
+            setEvents([]);
         }
     };
 
@@ -238,6 +246,11 @@ const toggleWish = async (eventId: number) => {
 
     useEffect(() => {
   (async () => {
+    // 로그인한 사용자만 위시리스트 로드
+    if (!isAuthenticated()) {
+      return;
+    }
+    
     try {
       const res = await api.get("/api/wishlist", { headers: authHeaders() });
       const s = new Set<number>();
@@ -266,6 +279,8 @@ const toggleWish = async (eventId: number) => {
                 // setHotPicks(hotPicksData);
             } catch (error) {
                 console.error('데이터 로드 실패:', error);
+                // 오류 발생 시 빈 상태로 설정하여 UI가 깨지지 않도록 함
+                setEvents([]);
             } finally {
                 setLoading(false);
             }
@@ -541,15 +556,6 @@ const toggleWish = async (eventId: number) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 toggleWish(event.id);
-                                                setLikedEvents(prev => {
-                                                    const newSet = new Set(prev);
-                                                    if (newSet.has(event.id)) {
-                                                        newSet.delete(event.id);
-                                                    } else {
-                                                        newSet.add(event.id);
-                                                    }
-                                                    return newSet;
-                                                });
                                             }}
                                         />
 
