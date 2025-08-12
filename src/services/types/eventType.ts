@@ -31,6 +31,8 @@ export interface EventSummaryDto {
     minPrice: number;
     mainCategory: string;
     location: string;
+    latitude: number;
+    longitude: number;
     startDate: string;
     endDate: string;
     thumbnailUrl: string;
