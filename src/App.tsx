@@ -40,7 +40,22 @@ import { TimeAnalysis } from "./pages/host_analytics/TimeAnalysis";
 import QRScanPage from "./pages/QRScanPage";
 import { HostRouteGuard } from "./components/HostRouteGuard";
 import { AdminRouteGuard } from "./components/AdminRouteGuard";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
+import EventComparison from "./pages/admin_dashboard/EventComparison";
+import EventList from "./pages/admin_event/EventList";
+import EventApprovals from "./pages/admin_event/EventApprovals";
+import EventEditRequests from "./pages/admin_event/EventEditRequests";
+import AccountIssue from "./pages/admin_account/AccountIssue";
+import AccountRoles from "./pages/admin_account/AccountRoles";
+import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
+import SettlementManagement from "./pages/admin_settlement/SettlementManagement";
+import RemittanceHistory from "./pages/admin_settlement/RemittanceHistory";
+import ReservationStatistics from "./pages/admin_statistics/ReservationStatistics";
+import PopularEvents from "./pages/admin_statistics/PopularEvents";
+import IntegrationSettings from "./pages/admin_settings/IntegrationSettings";
+import MessageTemplates from "./pages/admin_settings/MessageTemplates";
+import AccessLogs from "./pages/admin_security/AccessLogs";
+import ChangeLogs from "./pages/admin_security/ChangeLogs";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -189,7 +204,36 @@ function AppContent() {
         <Route path="/host/revenue-summary" element={<HostRouteGuard><RevenueSummary /></HostRouteGuard>} />
         <Route path="/host/time-analysis" element={<HostRouteGuard><TimeAnalysis /></HostRouteGuard>} />
         <Route path="/host/qr-scan" element={<HostRouteGuard><QRScanPage /></HostRouteGuard>} />
-        <Route path="/admin/dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-comparison" element={<AdminRouteGuard><EventComparison /></AdminRouteGuard>} />
+
+        {/* 행사 관리 */}
+        <Route path="/admin_dashboard/events" element={<AdminRouteGuard><EventList /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApprovals /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
+
+        {/* 계정 관리 */}
+        <Route path="/admin_dashboard/accounts/issue" element={<AdminRouteGuard><AccountIssue /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/accounts/roles" element={<AdminRouteGuard><AccountRoles /></AdminRouteGuard>} />
+
+        {/* VIP 배너 광고 */}
+        <Route path="/admin_dashboard/vip-banners" element={<AdminRouteGuard><VipBannerManagement /></AdminRouteGuard>} />
+
+        {/* 정산 관리 */}
+        <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/remittances" element={<AdminRouteGuard><RemittanceHistory /></AdminRouteGuard>} />
+
+        {/* 통합 통계 */}
+        <Route path="/admin_dashboard/analytics/reservations" element={<AdminRouteGuard><ReservationStatistics /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/analytics/popular" element={<AdminRouteGuard><PopularEvents /></AdminRouteGuard>} />
+
+        {/* 시스템 설정 */}
+        <Route path="/admin_dashboard/settings/integrations" element={<AdminRouteGuard><IntegrationSettings /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/settings/message-templates" element={<AdminRouteGuard><MessageTemplates /></AdminRouteGuard>} />
+
+        {/* 로그/보안 */}
+        <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer
