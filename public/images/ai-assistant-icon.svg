@@ -1,0 +1,22 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- AI Robot Head -->
+  <circle cx="20" cy="20" r="18" fill="#3B82F6"/>
+  
+  <!-- Face Circle -->
+  <circle cx="20" cy="20" r="14" fill="white"/>
+  
+  <!-- Eyes -->
+  <circle cx="15" cy="17" r="2" fill="#3B82F6"/>
+  <circle cx="25" cy="17" r="2" fill="#3B82F6"/>
+  
+  <!-- Mouth -->
+  <path d="M15 25 Q20 27 25 25" stroke="#7DD3FC" stroke-width="2" stroke-linecap="round" fill="none"/>
+  
+  <!-- Antenna -->
+  <rect x="19" y="2" width="2" height="6" fill="#3B82F6"/>
+  <polygon points="17,2 20,8 23,2" fill="#FB923C"/>
+  
+  <!-- Arms -->
+  <ellipse cx="6" cy="26" rx="3" ry="8" fill="#3B82F6"/>
+  <ellipse cx="34" cy="26" rx="3" ry="8" fill="#3B82F6"/>
+</svg>

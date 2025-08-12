@@ -21,15 +21,16 @@ type Props = {
     userName?: string;
     otherUserId?: number; // 상대방 userId 추가
     isAdminInquiry?: boolean; // FairPlay 운영자 문의 채팅방 여부
+    isAiChat?: boolean; // AI 채팅방 여부
 };
 
-export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUserId, isAdminInquiry }: Props) {
+export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUserId, isAdminInquiry, isAiChat }: Props) {
     const [messages, setMessages] = useState<ChatMessageDto[]>([]);
     const [input, setInput] = useState("");
     const [myUserId, setMyUserId] = useState<number>(0);
     const [myName, setMyName] = useState<string>("나");
     const [roomTitle, setRoomTitle] = useState<string>(
-        isAdminInquiry ? "FairPlay 운영자 문의" : (userName || eventTitle || "채팅방")
+        isAiChat ? "AI 챗봇" : (isAdminInquiry ? "FairPlay 운영자 문의" : (userName || eventTitle || "채팅방"))
     );
     const [detectedOtherUserId, setDetectedOtherUserId] = useState<number | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -61,7 +62,15 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     }, []);
 
     const { send } = useChatSocket(roomId, (msg: ChatMessageDto) => {
-        setMessages(prev => [...prev, msg]);
+        setMessages(prev => {
+            // 중복 메시지 방지
+            if (prev.some(existingMsg => existingMsg.chatMessageId === msg.chatMessageId)) {
+                return prev;
+            }
+            // 새 메시지 추가 후 시간순 정렬
+            const newMessages = [...prev, msg];
+            return newMessages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+        });
     });
 
     // 최초 진입 시 기존 메시지 내역 조회
@@ -71,7 +80,11 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
             headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
         }).then(res => {
             const messageData = res.data || [];
-            setMessages(messageData);
+            // 메시지를 시간순으로 정렬 (오래된 것부터)
+            const sortedMessages = messageData.sort((a: ChatMessageDto, b: ChatMessageDto) => 
+                new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+            );
+            setMessages(sortedMessages);
             
             // 메시지에서 상대방 userId 추출 (내가 아닌 다른 발신자)
             if (messageData.length > 0 && myUserId) {
@@ -138,7 +151,9 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                 <div className="flex items-center gap-2">
                     <span className="font-medium text-black">{roomTitle}</span>
                     {/* 상대방의 온라인 상태 표시 */}
-                    {(otherUserId || detectedOtherUserId) && (
+                    {isAiChat ? (
+                        <span className="text-xs text-green-600 font-medium ml-1">● 항상 온라인</span>
+                    ) : (otherUserId || detectedOtherUserId) && (
                         <UserOnlineStatus 
                             userId={otherUserId || detectedOtherUserId!} 
                             showText={true}
@@ -159,14 +174,18 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                     });
 
                     return (
-                        <div key={`msg-${msg.chatMessageId}-${Date.now()}-${Math.random()}`} className={`mb-3 flex items-start ${isMyMessage ? "justify-end" : "justify-start"}`}>
+                        <div key={`msg-${msg.chatMessageId}-${msg.sentAt}`} className={`mb-3 flex items-start ${isMyMessage ? "justify-end" : "justify-start"}`}>
                             {!isMyMessage && (
                                 <div className="relative mr-2 mt-0.5 flex-shrink-0">
-                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-semibold">
-                                        {initials}
+                                    <div className={`w-7 h-7 rounded-full text-white flex items-center justify-center text-[10px] font-semibold ${
+                                        isAiChat ? "bg-gradient-to-br from-blue-500 to-purple-600" : "bg-gradient-to-br from-blue-600 to-indigo-600"
+                                    }`}>
+                                        {isAiChat ? "AI" : initials}
                                     </div>
                                     {/* 상대방 메시지의 온라인 상태 표시 */}
-                                    {(otherUserId || detectedOtherUserId) && (
+                                    {isAiChat ? (
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                    ) : (otherUserId || detectedOtherUserId) && (
                                         <div className="absolute -bottom-0.5 -right-0.5">
                                             <UserOnlineStatus userId={otherUserId || detectedOtherUserId!} />
                                         </div>
