@@ -25,6 +25,9 @@ import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
 import TicketManagement from "./pages/host_event/TicketManagement";
 import RoundManagement from "./pages/host_event/RoundManagement";
+import EventVersionManagement from "./pages/host_event/EventVersionManagement";
+import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
+import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
 import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
@@ -35,6 +38,24 @@ import { BookingAnalysis } from "./pages/host_analytics/BookingAnalysis";
 import { RevenueSummary } from "./pages/host_analytics/RevenueSummary";
 import { TimeAnalysis } from "./pages/host_analytics/TimeAnalysis";
 import QRScanPage from "./pages/QRScanPage";
+import { HostRouteGuard } from "./components/HostRouteGuard";
+import { AdminRouteGuard } from "./components/AdminRouteGuard";
+import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
+import EventComparison from "./pages/admin_dashboard/EventComparison";
+import EventList from "./pages/admin_event/EventList";
+import EventApprovals from "./pages/admin_event/EventApprovals";
+import EventEditRequests from "./pages/admin_event/EventEditRequests";
+import AccountIssue from "./pages/admin_account/AccountIssue";
+import AccountRoles from "./pages/admin_account/AccountRoles";
+import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
+import SettlementManagement from "./pages/admin_settlement/SettlementManagement";
+import RemittanceHistory from "./pages/admin_settlement/RemittanceHistory";
+import ReservationStatistics from "./pages/admin_statistics/ReservationStatistics";
+import PopularEvents from "./pages/admin_statistics/PopularEvents";
+import IntegrationSettings from "./pages/admin_settings/IntegrationSettings";
+import MessageTemplates from "./pages/admin_settings/MessageTemplates";
+import AccessLogs from "./pages/admin_security/AccessLogs";
+import ChangeLogs from "./pages/admin_security/ChangeLogs";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -166,20 +187,53 @@ function AppContent() {
         <Route path="/find-password" element={<FindPassword />} />
         <Route path="/event-registration-intro" element={<EventRegistrationIntro />} />
         <Route path="/register" element={<RegisterEvent />} />
-        <Route path="/host/dashboard" element={<HostDashboard />} />
-        <Route path="/host/edit-event-info" element={<EditEventInfo />} />
-        <Route path="/host/ticket-management" element={<TicketManagement />} />
-        <Route path="/host/round-management" element={<RoundManagement />} />
-        <Route path="/host/status-management" element={<EventStatusBanner />} />
-        <Route path="/host/reservation-list" element={<ReservationList />} />
-        <Route path="/host/reservation-stats" element={<ReservationStats />} />
-        <Route path="/host/booth-type" element={<BoothTypeManagement />} />
-        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
-        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
-        <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
-        <Route path="/host/revenue-summary" element={<RevenueSummary />} />
-        <Route path="/host/time-analysis" element={<TimeAnalysis />} />
-        <Route path="/host/qr-scan" element={<QRScanPage />} />
+        <Route path="/host/dashboard" element={<HostRouteGuard><HostDashboard /></HostRouteGuard>} />
+        <Route path="/host/edit-event-info" element={<HostRouteGuard><EditEventInfo /></HostRouteGuard>} />
+        <Route path="/host/ticket-management" element={<HostRouteGuard><TicketManagement /></HostRouteGuard>} />
+        <Route path="/host/round-management" element={<HostRouteGuard><RoundManagement /></HostRouteGuard>} />
+        <Route path="/host/status-management" element={<HostRouteGuard><EventStatusBanner /></HostRouteGuard>} />
+        <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
+        <Route path="/host/event-version/:versionId" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
+        <Route path="/host/event-version/comparison" element={<HostRouteGuard><EventVersionComparison /></HostRouteGuard>} />
+        <Route path="/host/reservation-list" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
+        <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
+        <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
+        <Route path="/host/booth-applications" element={<HostRouteGuard><BoothApplicationList /></HostRouteGuard>} />
+        <Route path="/host/booth-applications/:id" element={<HostRouteGuard><BoothApplicationDetail /></HostRouteGuard>} />
+        <Route path="/host/booking-analysis" element={<HostRouteGuard><BookingAnalysis /></HostRouteGuard>} />
+        <Route path="/host/revenue-summary" element={<HostRouteGuard><RevenueSummary /></HostRouteGuard>} />
+        <Route path="/host/time-analysis" element={<HostRouteGuard><TimeAnalysis /></HostRouteGuard>} />
+        <Route path="/host/qr-scan" element={<HostRouteGuard><QRScanPage /></HostRouteGuard>} />
+        <Route path="/admin_dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-comparison" element={<AdminRouteGuard><EventComparison /></AdminRouteGuard>} />
+
+        {/* 행사 관리 */}
+        <Route path="/admin_dashboard/events" element={<AdminRouteGuard><EventList /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApprovals /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
+
+        {/* 계정 관리 */}
+        <Route path="/admin_dashboard/accounts/issue" element={<AdminRouteGuard><AccountIssue /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/accounts/roles" element={<AdminRouteGuard><AccountRoles /></AdminRouteGuard>} />
+
+        {/* VIP 배너 광고 */}
+        <Route path="/admin_dashboard/vip-banners" element={<AdminRouteGuard><VipBannerManagement /></AdminRouteGuard>} />
+
+        {/* 정산 관리 */}
+        <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/remittances" element={<AdminRouteGuard><RemittanceHistory /></AdminRouteGuard>} />
+
+        {/* 통합 통계 */}
+        <Route path="/admin_dashboard/analytics/reservations" element={<AdminRouteGuard><ReservationStatistics /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/analytics/popular" element={<AdminRouteGuard><PopularEvents /></AdminRouteGuard>} />
+
+        {/* 시스템 설정 */}
+        <Route path="/admin_dashboard/settings/integrations" element={<AdminRouteGuard><IntegrationSettings /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/settings/message-templates" element={<AdminRouteGuard><MessageTemplates /></AdminRouteGuard>} />
+
+        {/* 로그/보안 */}
+        <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer

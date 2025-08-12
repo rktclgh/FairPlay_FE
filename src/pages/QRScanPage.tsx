@@ -17,34 +17,54 @@ const QRScanPage: React.FC = () => {
                 video: {
                     facingMode: 'environment',
                     width: { ideal: 640 },
-                    height: { ideal: 480 }
-                }
+                    height: { ideal: 480 },
+                },
+                audio: false,
             });
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                streamRef.current = stream;
-                setIsCameraActive(true);
-
-                // 비디오 로드 완료 후 상태 확인
-                videoRef.current.onloadedmetadata = () => {
-                    console.log('비디오 메타데이터 로드 완료');
-                    console.log('비디오 크기:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
-                };
-
-                videoRef.current.onplay = () => {
-                    console.log('비디오 재생 시작');
-                };
-
-                videoRef.current.onerror = (e) => {
-                    console.error('비디오 에러:', e);
-                };
-            }
+            // 먼저 스트림을 저장하고, 비디오가 렌더되도록 상태를 변경
+            streamRef.current = stream;
+            setIsCameraActive(true);
         } catch (error) {
             console.error('카메라를 시작할 수 없습니다:', error);
             alert('카메라 접근 권한이 필요합니다.');
         }
     };
+
+    // 비디오 엘리먼트가 렌더된 뒤 스트림을 연결
+    useEffect(() => {
+        const video = videoRef.current;
+        const stream = streamRef.current;
+
+        if (!isCameraActive || !video || !stream) {
+            return;
+        }
+
+        try {
+            (video as HTMLVideoElement).srcObject = stream;
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch((err) => {
+                    console.error('비디오 재생 실패:', err);
+                });
+            }
+        } catch (err) {
+            console.error('비디오 소스 연결 실패:', err);
+        }
+
+        video.onloadedmetadata = () => {
+            console.log('비디오 메타데이터 로드 완료');
+            console.log('비디오 크기:', video.videoWidth, 'x', video.videoHeight);
+        };
+
+        video.onplay = () => {
+            console.log('비디오 재생 시작');
+        };
+
+        video.onerror = (e) => {
+            console.error('비디오 에러:', e);
+        };
+    }, [isCameraActive]);
 
     // 카메라 중지
     const stopCamera = () => {
