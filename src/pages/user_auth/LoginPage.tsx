@@ -5,6 +5,8 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { RiKakaoTalkFill } from "react-icons/ri";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { hasHostPermission, hasEventManagerPermission, hasAdminPermission } from "../../utils/permissions";
+import { setCachedRoleCode } from "../../utils/role";
 
 export const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -32,19 +34,35 @@ export const LoginPage = () => {
 
             toast.success("로그인에 성공했습니다!");
 
-            // accessToken에서 사용자 역할 추출
+            // API를 통해 사용자 역할 조회
             try {
-                const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken.split('.')[1]))));
-                const userRole = payload.role;
+                const roleResponse = await api.get("/api/events/user/role");
+                const userRole = roleResponse.data.roleCode;
+                if (userRole) {
+                    setCachedRoleCode(userRole);
+                }
 
-                // 사용자 역할에 따른 리다이렉션
-                if (userRole === "HOST" || userRole === "ADMIN" || userRole.includes("행사") || userRole.includes("관리자")) {
+                console.log("=== 로그인 디버깅 정보 ===");
+                console.log("Role API Response:", roleResponse.data);
+                console.log("User Role:", userRole);
+                console.log("hasHostPermission:", hasHostPermission(userRole));
+                console.log("hasEventManagerPermission:", hasEventManagerPermission(userRole));
+                console.log("hasAdminPermission:", hasAdminPermission(userRole));
+                console.log("==========================");
+
+                // 권한별 리다이렉션 (ADMIN 우선)
+                if (hasAdminPermission(userRole)) {
+                    console.log("관리자 권한으로 /admin/dashboard로 이동");
+                    navigate("/admin/dashboard");
+                } else if (hasHostPermission(userRole)) {
+                    console.log("행사관리자 권한으로 /host/dashboard로 이동");
                     navigate("/host/dashboard");
                 } else {
+                    console.log("일반사용자 권한으로 /로 이동");
                     navigate("/");
                 }
             } catch (error) {
-                console.error("토큰 파싱 실패:", error);
+                console.error("Role API 호출 실패:", error);
                 navigate("/"); // 기본적으로 메인 페이지로
             }
         } catch {

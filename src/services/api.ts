@@ -32,7 +32,7 @@ export interface UserInfo {
   phone: string;
   name: string;
   nickname: string;
-  role: string;
+  role: "ADMIN" | "EVENT_MANAGER" | "BOOTH_MANAGER" | "COMMON";
 }
 
 // 알림 정보 타입
@@ -52,7 +52,7 @@ export interface PasswordChangeRequest {
   newPassword: string;
 }
 
-import authManager from '../utils/auth';
+import authManager from "../utils/auth";
 
 // API 서비스
 class EventApi {
@@ -339,7 +339,7 @@ class EventApi {
                 phone: payload.phone || "010-0000-0000",
                 name: payload.name || "사용자",
                 nickname: payload.name || "사용자",
-                role: payload.role || "USER",
+                role: payload.role || "COMMON",
               };
               console.log("accessToken 기반 사용자 데이터:", userData);
               resolve(userData);
@@ -357,7 +357,7 @@ class EventApi {
               phone: "010-0000-0000",
               name: "사용자",
               nickname: "사용자",
-              role: "USER",
+              role: "COMMON",
             };
             console.log("이메일 기반 사용자 데이터:", userData);
             resolve(userData);
@@ -370,7 +370,7 @@ class EventApi {
               phone: "010-1234-5678",
               name: "페어플레이 사용자",
               nickname: "페어플레이 사용자",
-              role: "USER",
+              role: "COMMON",
             };
             console.log("Mock 사용자 데이터:", mockUserData);
             resolve(mockUserData);
@@ -474,7 +474,8 @@ class EventApi {
     }
 
     try {
-      const response = await authManager.authenticatedFetch("/api/notifications");
+      const response =
+        await authManager.authenticatedFetch("/api/notifications");
 
       if (!response.ok) {
         const errorBody = await response.text();
