@@ -16,7 +16,7 @@ export const LoginPage = () => {
 
     const navigate = useNavigate();
 
-    const isLoginEnabled = email.trim() !== "" && password.trim().length >= 8;
+    const isLoginEnabled = email.trim() !== "" && password.trim().length >= 0;
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
