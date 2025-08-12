@@ -38,6 +38,9 @@ import { BookingAnalysis } from "./pages/host_analytics/BookingAnalysis";
 import { RevenueSummary } from "./pages/host_analytics/RevenueSummary";
 import { TimeAnalysis } from "./pages/host_analytics/TimeAnalysis";
 import QRScanPage from "./pages/QRScanPage";
+import { HostRouteGuard } from "./components/HostRouteGuard";
+import { AdminRouteGuard } from "./components/AdminRouteGuard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -169,23 +172,24 @@ function AppContent() {
         <Route path="/find-password" element={<FindPassword />} />
         <Route path="/event-registration-intro" element={<EventRegistrationIntro />} />
         <Route path="/register" element={<RegisterEvent />} />
-        <Route path="/host/dashboard" element={<HostDashboard />} />
-        <Route path="/host/edit-event-info" element={<EditEventInfo />} />
-        <Route path="/host/ticket-management" element={<TicketManagement />} />
-        <Route path="/host/round-management" element={<RoundManagement />} />
-        <Route path="/host/status-management" element={<EventStatusBanner />} />
-        <Route path="/host/event-version" element={<EventVersionManagement />} />
-        <Route path="/host/event-version/:versionId" element={<EventVersionDetail />} />
-        <Route path="/host/event-version/comparison" element={<EventVersionComparison />} />
-        <Route path="/host/reservation-list" element={<ReservationList />} />
-        <Route path="/host/reservation-stats" element={<ReservationStats />} />
-        <Route path="/host/booth-type" element={<BoothTypeManagement />} />
-        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
-        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
-        <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
-        <Route path="/host/revenue-summary" element={<RevenueSummary />} />
-        <Route path="/host/time-analysis" element={<TimeAnalysis />} />
-        <Route path="/host/qr-scan" element={<QRScanPage />} />
+        <Route path="/host/dashboard" element={<HostRouteGuard><HostDashboard /></HostRouteGuard>} />
+        <Route path="/host/edit-event-info" element={<HostRouteGuard><EditEventInfo /></HostRouteGuard>} />
+        <Route path="/host/ticket-management" element={<HostRouteGuard><TicketManagement /></HostRouteGuard>} />
+        <Route path="/host/round-management" element={<HostRouteGuard><RoundManagement /></HostRouteGuard>} />
+        <Route path="/host/status-management" element={<HostRouteGuard><EventStatusBanner /></HostRouteGuard>} />
+        <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
+        <Route path="/host/event-version/:versionId" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
+        <Route path="/host/event-version/comparison" element={<HostRouteGuard><EventVersionComparison /></HostRouteGuard>} />
+        <Route path="/host/reservation-list" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
+        <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
+        <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
+        <Route path="/host/booth-applications" element={<HostRouteGuard><BoothApplicationList /></HostRouteGuard>} />
+        <Route path="/host/booth-applications/:id" element={<HostRouteGuard><BoothApplicationDetail /></HostRouteGuard>} />
+        <Route path="/host/booking-analysis" element={<HostRouteGuard><BookingAnalysis /></HostRouteGuard>} />
+        <Route path="/host/revenue-summary" element={<HostRouteGuard><RevenueSummary /></HostRouteGuard>} />
+        <Route path="/host/time-analysis" element={<HostRouteGuard><TimeAnalysis /></HostRouteGuard>} />
+        <Route path="/host/qr-scan" element={<HostRouteGuard><QRScanPage /></HostRouteGuard>} />
+        <Route path="/admin/dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer
