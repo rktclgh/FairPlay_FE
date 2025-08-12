@@ -401,7 +401,7 @@ const AddRoundModal: React.FC<{
     );
 };
 
-export const RoundManagement = () => {
+export const ScheduleManagement = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -763,4 +763,4 @@ export const RoundManagement = () => {
     );
 };
 
-export default RoundManagement;
+export default ScheduleManagement;

@@ -25,7 +25,7 @@ import { EventRegistrationIntro } from "./pages/EventRegistrationIntro";
 import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
 import TicketManagement from "./pages/host_event/TicketManagement";
-import RoundManagement from "./pages/host_event/RoundManagement";
+import ScheduleManagement from "./pages/host_event/ScheduleManagement";
 import EventVersionManagement from "./pages/host_event/EventVersionManagement";
 import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
 import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
@@ -120,7 +120,7 @@ function AppContent() {
         <Route path="/host/dashboard" element={<HostRouteGuard><HostDashboard /></HostRouteGuard>} />
         <Route path="/host/edit-event-info" element={<HostRouteGuard><EditEventInfo /></HostRouteGuard>} />
         <Route path="/host/ticket-management" element={<HostRouteGuard><TicketManagement /></HostRouteGuard>} />
-        <Route path="/host/round-management" element={<HostRouteGuard><RoundManagement /></HostRouteGuard>} />
+        <Route path="/host/round-management" element={<HostRouteGuard><ScheduleManagement /></HostRouteGuard>} />
         <Route path="/host/status-management" element={<HostRouteGuard><EventStatusBanner /></HostRouteGuard>} />
         <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
         <Route path="/host/event-version/:versionId" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
