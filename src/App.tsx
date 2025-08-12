@@ -25,6 +25,9 @@ import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
 import TicketManagement from "./pages/host_event/TicketManagement";
 import RoundManagement from "./pages/host_event/RoundManagement";
+import EventVersionManagement from "./pages/host_event/EventVersionManagement";
+import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
+import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
 import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
@@ -171,6 +174,9 @@ function AppContent() {
         <Route path="/host/ticket-management" element={<TicketManagement />} />
         <Route path="/host/round-management" element={<RoundManagement />} />
         <Route path="/host/status-management" element={<EventStatusBanner />} />
+        <Route path="/host/event-version" element={<EventVersionManagement />} />
+        <Route path="/host/event-version/:versionId" element={<EventVersionDetail />} />
+        <Route path="/host/event-version/comparison" element={<EventVersionComparison />} />
         <Route path="/host/reservation-list" element={<ReservationList />} />
         <Route path="/host/reservation-stats" element={<ReservationStats />} />
         <Route path="/host/booth-type" element={<BoothTypeManagement />} />
