@@ -52,8 +52,8 @@ export const LoginPage = () => {
 
                 // 권한별 리다이렉션 (ADMIN 우선)
                 if (hasAdminPermission(userRole)) {
-                    console.log("관리자 권한으로 /admin/dashboard로 이동");
-                    navigate("/admin/dashboard");
+                    console.log("관리자 권한으로 /admin_dashboard로 이동");
+                    navigate("/admin_dashboard");
                 } else if (hasHostPermission(userRole)) {
                     console.log("행사관리자 권한으로 /host/dashboard로 이동");
                     navigate("/host/dashboard");

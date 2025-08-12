@@ -31,7 +31,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
         <div className={`w-[240px] h-[800px] bg-white ${className}`}>
             <div className="p-6">
                 <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[40px] whitespace-nowrap mb-4 text-left">
-                    ADMIN
+                    ADMIN PAGE
                 </h2>
 
                 <nav className="text-left">
@@ -42,18 +42,18 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/dashboard"
-                                className={linkClass("/admin/dashboard")}
-                                style={linkStyle("/admin/dashboard")}
+                                to="/admin_dashboard"
+                                className={linkClass("/admin_dashboard")}
+                                style={linkStyle("/admin_dashboard")}
                             >
                                 플랫폼 KPI
                             </Link>
                             <Link
-                                to="/admin/event-comparison"
-                                className={linkClass("/admin/event-comparison")}
-                                style={linkStyle("/admin/event-comparison")}
+                                to="/admin_dashboard/event-comparison"
+                                className={linkClass("/admin_dashboard/event-comparison")}
+                                style={linkStyle("/admin_dashboard/event-comparison")}
                             >
-                                행사별 비교 지표
+                                행사별 비교
                             </Link>
                         </div>
                     </div>
@@ -65,25 +65,25 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/events"
-                                className={linkClass("/admin/events")}
-                                style={linkStyle("/admin/events")}
+                                to="/admin_dashboard/events"
+                                className={linkClass("/admin_dashboard/events")}
+                                style={linkStyle("/admin_dashboard/events")}
                             >
                                 행사 목록
                             </Link>
                             <Link
-                                to="/admin/event-approvals"
-                                className={linkClass("/admin/event-approvals")}
-                                style={linkStyle("/admin/event-approvals")}
+                                to="/admin_dashboard/event-approvals"
+                                className={linkClass("/admin_dashboard/event-approvals")}
+                                style={linkStyle("/admin_dashboard/event-approvals")}
                             >
                                 행사 등록 승인
                             </Link>
                             <Link
-                                to="/admin/event-edit-requests"
-                                className={linkClass("/admin/event-edit-requests")}
-                                style={linkStyle("/admin/event-edit-requests")}
+                                to="/admin_dashboard/event-edit-requests"
+                                className={linkClass("/admin_dashboard/event-edit-requests")}
+                                style={linkStyle("/admin_dashboard/event-edit-requests")}
                             >
-                                행사 상세 수정 요청 목록
+                                행사 수정 요청
                             </Link>
                         </div>
                     </div>
@@ -95,16 +95,16 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/accounts/issue"
-                                className={linkClass("/admin/accounts/issue")}
-                                style={linkStyle("/admin/accounts/issue")}
+                                to="/admin_dashboard/accounts/issue"
+                                className={linkClass("/admin_dashboard/accounts/issue")}
+                                style={linkStyle("/admin_dashboard/accounts/issue")}
                             >
                                 계정 발급
                             </Link>
                             <Link
-                                to="/admin/accounts/roles"
-                                className={linkClass("/admin/accounts/roles")}
-                                style={linkStyle("/admin/accounts/roles")}
+                                to="/admin_dashboard/accounts/roles"
+                                className={linkClass("/admin_dashboard/accounts/roles")}
+                                style={linkStyle("/admin_dashboard/accounts/roles")}
                             >
                                 권한 설정
                             </Link>
@@ -118,9 +118,9 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/vip-banners"
-                                className={linkClass("/admin/vip-banners")}
-                                style={linkStyle("/admin/vip-banners")}
+                                to="/admin_dashboard/vip-banners"
+                                className={linkClass("/admin_dashboard/vip-banners")}
+                                style={linkStyle("/admin_dashboard/vip-banners")}
                             >
                                 배너 관리
                             </Link>
@@ -134,16 +134,16 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/settlements"
-                                className={linkClass("/admin/settlements")}
-                                style={linkStyle("/admin/settlements")}
+                                to="/admin_dashboard/settlements"
+                                className={linkClass("/admin_dashboard/settlements")}
+                                style={linkStyle("/admin_dashboard/settlements")}
                             >
                                 매출 정산
                             </Link>
                             <Link
-                                to="/admin/remittances"
-                                className={linkClass("/admin/remittances")}
-                                style={linkStyle("/admin/remittances")}
+                                to="/admin_dashboard/remittances"
+                                className={linkClass("/admin_dashboard/remittances")}
+                                style={linkStyle("/admin_dashboard/remittances")}
                             >
                                 송금 내역
                             </Link>
@@ -157,16 +157,16 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/analytics/reservations"
-                                className={linkClass("/admin/analytics/reservations")}
-                                style={linkStyle("/admin/analytics/reservations")}
+                                to="/admin_dashboard/analytics/reservations"
+                                className={linkClass("/admin_dashboard/analytics/reservations")}
+                                style={linkStyle("/admin_dashboard/analytics/reservations")}
                             >
                                 예약 통계
                             </Link>
                             <Link
-                                to="/admin/analytics/popular"
-                                className={linkClass("/admin/analytics/popular")}
-                                style={linkStyle("/admin/analytics/popular")}
+                                to="/admin_dashboard/analytics/popular"
+                                className={linkClass("/admin_dashboard/analytics/popular")}
+                                style={linkStyle("/admin_dashboard/analytics/popular")}
                             >
                                 인기 행사
                             </Link>
@@ -180,18 +180,18 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/settings/integrations"
-                                className={linkClass("/admin/settings/integrations")}
-                                style={linkStyle("/admin/settings/integrations")}
+                                to="/admin_dashboard/settings/integrations"
+                                className={linkClass("/admin_dashboard/settings/integrations")}
+                                style={linkStyle("/admin_dashboard/settings/integrations")}
                             >
                                 연동 설정
                             </Link>
                             <Link
-                                to="/admin/settings/message-templates"
-                                className={linkClass("/admin/settings/message-templates")}
-                                style={linkStyle("/admin/settings/message-templates")}
+                                to="/admin_dashboard/settings/message-templates"
+                                className={linkClass("/admin_dashboard/settings/message-templates")}
+                                style={linkStyle("/admin_dashboard/settings/message-templates")}
                             >
-                                메시지 템플릿
+                                이메일 템플릿
                             </Link>
                         </div>
                     </div>
@@ -203,16 +203,16 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </h3>
                         <div className="space-y-1">
                             <Link
-                                to="/admin/logs/access"
-                                className={linkClass("/admin/logs/access")}
-                                style={linkStyle("/admin/logs/access")}
+                                to="/admin_dashboard/logs/access"
+                                className={linkClass("/admin_dashboard/logs/access")}
+                                style={linkStyle("/admin_dashboard/logs/access")}
                             >
                                 접속 이력
                             </Link>
                             <Link
-                                to="/admin/logs/changes"
-                                className={linkClass("/admin/logs/changes")}
-                                style={linkStyle("/admin/logs/changes")}
+                                to="/admin_dashboard/logs/changes"
+                                className={linkClass("/admin_dashboard/logs/changes")}
+                                style={linkStyle("/admin_dashboard/logs/changes")}
                             >
                                 변경 기록
                             </Link>

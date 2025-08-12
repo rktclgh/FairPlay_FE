@@ -47,7 +47,7 @@ export const getUserRoleFromToken = (): string | null => {
 
 // 권한별 리다이렉션 경로
 export const getRedirectPathByRole = (role: string): string => {
-  if (role === USER_ROLES.ADMIN) return "/admin/dashboard";
+  if (role === USER_ROLES.ADMIN) return "/admin_dashboard";
   if (hasHostPermission(role)) return "/host/dashboard";
   return "/";
 };

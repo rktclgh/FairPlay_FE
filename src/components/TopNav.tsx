@@ -167,7 +167,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                     const role = await getRoleCode();
                                     if (!role) { navigate('/login'); return; }
                                     if (role === 'ADMIN') {
-                                        navigate('/admin/dashboard');
+                                        navigate('/admin_dashboard');
                                     } else if (hasHostPermission(role)) {
                                         navigate('/host/dashboard');
                                     } else {
