@@ -16,15 +16,21 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
         return null;
     }
 
-    const linkClass = (path: string) =>
-        `block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === path
-            ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-            : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+    const linkClass = (path: string, isParentPath: boolean = false) =>
+        `block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${isParentPath
+            ? location.pathname.startsWith(path)
+                ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+            : location.pathname === path
+                ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
         }`;
 
-    const linkStyle = (path: string) => ({
+    const linkStyle = (path: string, isParentPath: boolean = false) => ({
         textDecoration: "none",
-        color: location.pathname === path ? "black" : "#00000080",
+        color: isParentPath
+            ? location.pathname.startsWith(path) ? "black" : "#00000080"
+            : location.pathname === path ? "black" : "#00000080",
     } as React.CSSProperties);
 
     return (
@@ -73,8 +79,8 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                             </Link>
                             <Link
                                 to="/admin_dashboard/event-approvals"
-                                className={linkClass("/admin_dashboard/event-approvals")}
-                                style={linkStyle("/admin_dashboard/event-approvals")}
+                                className={linkClass("/admin_dashboard/event-approvals", true)}
+                                style={linkStyle("/admin_dashboard/event-approvals", true)}
                             >
                                 행사 등록 승인
                             </Link>
