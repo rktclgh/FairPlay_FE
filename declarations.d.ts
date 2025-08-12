@@ -19,3 +19,31 @@ interface ImportMetaEnv {
 interface ImportMeta {
     readonly env: ImportMetaEnv;
 }
+
+// Kakao Map API 타입 정의
+interface Window {
+    kakao: {
+        maps: {
+            load: (callback: () => void) => void;
+            Map: new (container: HTMLElement, options: any) => any;
+            LatLng: new (lat: number, lng: number) => any;
+            CustomOverlay: new (options: any) => any;
+            MapTypeControl: new () => any;
+            ZoomControl: new () => any;
+            LatLngBounds: new () => any;
+            MapTypeId: {
+                ROADMAP: string;
+            };
+            ControlPosition: {
+                TOPRIGHT: string;
+                RIGHT: string;
+            };
+            services: {
+                Geocoder: new () => any;
+                Status: {
+                    OK: string;
+                };
+            };
+        };
+    };
+}
