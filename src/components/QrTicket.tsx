@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import {
     getQrTicketForMypage,
-    reissueQrTicket
 } from "../services/qrTicket"
+import type {
+    QrTicketRequestDto
+} from "../services/types/qrTicketType"
 import { QRCodeCanvas } from 'qrcode.react';
 import type { QrTicketResponseDto } from "@/services/types/qrTicketType";
 
@@ -67,17 +69,19 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
 
         // 모달이 열릴 때 초기 QR 코드 생성
         if (isOpen && !qrCode) {
+            console.log("qr티켓 조회시작")
 
             const fetchQrTicket = async () => {
                 // 임시 데이터
-                const QrTicketRequestDto = {
-                    attendeeId: null, // 테스트 위한 항목. 삭제 예정. 
+                const qrTicketRequestDto : QrTicketRequestDto = {
+                    attendeeId: null,
                     eventId: 1,
                     ticketId: 1,
                     reservationId: 1
                 };
+                
 
-                const res = await getQrTicketForMypage(QrTicketRequestDto);
+                const res = await getQrTicketForMypage(qrTicketRequestDto);
                 console.log(res.ticketNo + "가 발급됨");
                 setCurrentTicketNumber(res.ticketNo);
                 setQrCode(res.qrCode);

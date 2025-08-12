@@ -1,3 +1,6 @@
+
+/* ===== 티켓 조회 ===== */
+
 // 마이페이지 QR 티켓 조회 요청
 export interface QrTicketRequestDto{
     attendeeId: number | null,
@@ -23,15 +26,17 @@ export interface QrTicketResponseDto{
     reservationDate: string // 예매일
 }
 
-// QR 화면 새로고침 버튼 이용한 재발급 요청 
-export interface QrTicketUpdateRequestDto{
+/* ===== 티켓 재발급 ===== */
+
+// QR 화면 새로고침 버튼 이용한 재발급 요청  - 비회원 
+export interface QrTicketReissueGuestRequestDto{
     qrUrlToken: string // qr 화면 url 맨 뒤 token 값
 }
 
-// QR 화면 새로고침 버튼 이용한 재발급 응답 
-export interface QrTicketUpdateResponseDto{
-    qrCode: string, // 이미지 코드
-    manualCode: string // 수동코드
+// QR 화면 새로고침 버튼 이용한 재발급 요청  - 회원 
+export interface QrTicketReissueMemberRequestDto{
+    reservationId: number,
+    qrTicketId: number
 }
 
 //  회원이 마이페이지에서 QR 링크 조회 안될 때 관리자 강제 QR 티켓 리셋 요청
@@ -47,28 +52,21 @@ export interface QrTicketReissueResponseDto{
     email: string
 }
 
-// 회원 + QR 체크인/체크아웃
-export interface MemberQrCheckRequestDto{
-    reservationId: number,
+// QR 화면 새로고침 버튼 이용한 재발급 응답 
+export interface QrTicketUpdateResponseDto{
+    qrCode: string, // 이미지 코드
+    manualCode: string // 수동코드
+}
+
+
+/* ===== 티켓 체크인, 체크아웃 ===== */
+
+export interface QrCheckRequestDto{
     qrCode: string
 }
 
-// 회원 + 수동코드 체크인/체크아웃
-export interface MemberManualCheckRequestDto{
-    reservationId: number,
+export interface ManualCheckRequestDto{
     manualCode: string
-}
-
-// 비회원 + QR 체크인/체크아웃
-export interface GuestQrCheckRequestDto{
-    qrLinkToken: string,
-    qrCode: string    
-}
-
-// 비회원 + 수동코드 체크인/체크아웃
-export interface GuestManualCheckRequestDto{
-    qrLinkToken: string,
-    manualCode: string    
 }
 
 // 체크인/체크아웃 응답
