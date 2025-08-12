@@ -43,7 +43,8 @@ import { AdminRouteGuard } from "./components/AdminRouteGuard";
 import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
 import EventComparison from "./pages/admin_dashboard/EventComparison";
 import EventList from "./pages/admin_event/EventList";
-import EventApprovals from "./pages/admin_event/EventApprovals";
+import EventApproval from "./pages/admin_event/EventApproval";
+import EventApprovalDetail from "./pages/admin_event/EventApprovalDetail";
 import EventEditRequests from "./pages/admin_event/EventEditRequests";
 import AccountIssue from "./pages/admin_account/AccountIssue";
 import AccountRoles from "./pages/admin_account/AccountRoles";
@@ -209,7 +210,8 @@ function AppContent() {
 
         {/* 행사 관리 */}
         <Route path="/admin_dashboard/events" element={<AdminRouteGuard><EventList /></AdminRouteGuard>} />
-        <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApprovals /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApproval /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-approvals/:id" element={<AdminRouteGuard><EventApprovalDetail /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
 
         {/* 계정 관리 */}
