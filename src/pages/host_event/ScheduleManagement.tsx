@@ -1,17 +1,36 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
 import { ScheduleModal } from "../../components/schedule/ScheduleModal";
 import { ScheduleTicketModal } from "../../components/schedule/ScheduleTicketModal";
+import authManager from "../../utils/auth";
 
 export const ScheduleManagement = () => {
+    const [eventId, setEventId] = useState<number | null>(null);
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [editRound, setEditRound] = useState(null);
-    const [isTicketSetupModalOpen, setIsTicketSetupModalOpen] = useState(false);
-    const [selectedRound, setSelectedRound] = useState(null);
+    const [editSchedule, setEditSchedule] = useState(null);
+    const [isScheduleTicketModalOpen, setIsScheduleTicketModalOpen] = useState(false);
+    const [selectedSchedule, setSelectedSchedule] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // 사용자의 담당 eventId 조회
+    useEffect(() => {
+        const fetchUserEventId = async () => {
+            const response = await authManager.authenticatedFetch('/api/events/manager/event');
+
+            if (!response.ok) {
+                throw new Error('행사 관리 권한이 없습니다.');
+            }
+
+            const data = await response.json();
+            setEventId(data);
+        };
+        fetchUserEventId();
+    }, []);
 
     // 요일을 구하는 함수
     const getDayOfWeek = (dateString: string) => {
@@ -26,46 +45,96 @@ export const ScheduleManagement = () => {
     };
 
     // 회차 번호를 자동으로 재할당하는 함수
-    const reassignRoundNumbers = (rounds: any[]) => {
-        const roundsByDate = rounds.reduce((acc, round) => {
-            if (!acc[round.viewingDate]) {
-                acc[round.viewingDate] = [];
+    const reassignScheduleNumbers = (dataList: any[]) => {
+        const scheduleByDate = dataList.reduce((acc, scehdule) => {
+            if (!acc[scehdule.date]) {
+                acc[scehdule.date] = [];
             }
-            acc[round.viewingDate].push(round);
+            acc[scehdule.date].push(scehdule);
             return acc;
         }, {} as Record<string, any[]>);
 
-        const updatedRounds: any[] = [];
+        const updatedSchedules: any[] = [];
 
-        Object.keys(roundsByDate).forEach(date => {
+        Object.keys(scheduleByDate).forEach(date => {
             // 각 날짜별로 시작 시간 순으로 정렬
-            const sortedRounds = roundsByDate[date].sort((a, b) => {
+            const sortedSchedules = scheduleByDate[date].sort((a, b) => {
                 return a.startTime.localeCompare(b.startTime);
             });
 
             // 회차 번호 재할당 (1회차, 2회차, 3회차...)
-            sortedRounds.forEach((round, index) => {
-                updatedRounds.push({
-                    ...round,
+            sortedSchedules.forEach((sortedSchdule, index) => {
+                updatedSchedules.push({
+                    ...sortedSchdule,
                     roundNumber: `${index + 1}회차`
                 });
             });
         });
 
-        return updatedRounds;
+        return updatedSchedules;
     };
 
     // 티켓 설정 모달 열기
     const handleTicketSetup = (round: any) => {
-        setSelectedRound(round);
-        setIsTicketSetupModalOpen(true);
+        setSelectedSchedule(round);
+        setIsScheduleTicketModalOpen(true);
     };
+
+    // 회차 목록 조회 함수
+    const fetchSchedules = async () => {
+        if (!eventId) {
+            return;
+        }
+        
+        setLoading(true);
+        setError(null);
+        
+        try {
+            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule`);
+            
+            if (!response.ok) {
+                throw new Error('회차 목록 조회에 실패했습니다.');
+            }
+            
+            const schedules = await response.json();
+
+            // 서버 응답을 UI 형식에 맞게 변환
+            const formattedSchedules = schedules.map((schedule: any, index: number) => ({
+                scheduleId: schedule.scheduleId,
+                eventId: schedule.eventId,
+                date: schedule.date,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                weekday: schedule.weekday,
+                roundNumber: "", // 재할당됨
+                status: "티켓 설정 대기", // UI 상태
+                statusColor: "bg-yellow-100",
+                textColor: "text-yellow-800"
+            }));
+            
+            // 회차 번호 재할당
+            setScheduleData(reassignScheduleNumbers(formattedSchedules));
+            
+        } catch (err) {
+            setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+            console.error('회차 조회 실패:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 컴포넌트 마운트 시 회차 목록 조회
+    React.useEffect(() => {
+        if (eventId) {
+            fetchSchedules();
+        }
+    }, [eventId]);
 
     // 티켓 설정 완료 처리 함수
     const handleTicketSetupComplete = () => {
-        if (selectedRound) {
-            setRoundData(prev => prev.map(round =>
-                round.id === selectedRound.id
+        if (selectedSchedule) {
+            setScheduleData(prev => prev.map(round =>
+                round.scheduleId === selectedSchedule.scheduleId
                     ? {
                         ...round,
                         status: "티켓 설정 완료",
@@ -77,88 +146,7 @@ export const ScheduleManagement = () => {
         }
     };
 
-    const [roundData, setRoundData] = useState([
-        {
-            id: 1,
-            roundNumber: "1회차",
-            viewingDate: "2025-08-01",
-            startTime: "14:00",
-            endTime: "16:00",
-            status: "티켓 설정 완료",
-            statusColor: "bg-green-100",
-            textColor: "text-green-800"
-        },
-        {
-            id: 2,
-            roundNumber: "2회차",
-            viewingDate: "2025-08-01",
-            startTime: "19:00",
-            endTime: "21:00",
-            status: "티켓 설정 완료",
-            statusColor: "bg-green-100",
-            textColor: "text-green-800"
-        },
-        {
-            id: 3,
-            roundNumber: "3회차",
-            viewingDate: "2025-08-01",
-            startTime: "21:30",
-            endTime: "23:30",
-            status: "티켓 설정 대기",
-            statusColor: "bg-yellow-100",
-            textColor: "text-yellow-800"
-        },
-        {
-            id: 4,
-            roundNumber: "1회차",
-            viewingDate: "2025-08-02",
-            startTime: "14:00",
-            endTime: "16:00",
-            status: "티켓 설정 완료",
-            statusColor: "bg-green-100",
-            textColor: "text-green-800"
-        },
-        {
-            id: 5,
-            roundNumber: "2회차",
-            viewingDate: "2025-08-02",
-            startTime: "19:00",
-            endTime: "21:00",
-            status: "티켓 설정 대기",
-            statusColor: "bg-yellow-100",
-            textColor: "text-yellow-800"
-        },
-        {
-            id: 6,
-            roundNumber: "1회차",
-            viewingDate: "2025-08-03",
-            startTime: "15:00",
-            endTime: "17:00",
-            status: "티켓 설정 완료",
-            statusColor: "bg-green-100",
-            textColor: "text-green-800"
-        },
-        {
-            id: 7,
-            roundNumber: "2회차",
-            viewingDate: "2025-08-03",
-            startTime: "19:30",
-            endTime: "21:30",
-            status: "티켓 설정 완료",
-            statusColor: "bg-green-100",
-            textColor: "text-green-800"
-        },
-        {
-            id: 8,
-            roundNumber: "1회차",
-            viewingDate: "2025-08-05",
-            startTime: "16:00",
-            endTime: "18:00",
-            status: "티켓 설정 대기",
-            statusColor: "bg-yellow-100",
-            textColor: "text-yellow-800"
-        }
-    ]);
+    const [scheduleData, setScheduleData] = useState([]);
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -178,7 +166,7 @@ export const ScheduleManagement = () => {
                     {/* 검색 및 필터 섹션 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-8">
+                            <div className="flex items-center gap-6">
                                 {/* 시작 날짜 */}
                                 <div className="flex flex-col">
                                     <label className="text-sm font-bold text-gray-700 mb-2">시작 날짜</label>
@@ -186,7 +174,7 @@ export const ScheduleManagement = () => {
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-48 h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                        className="w-40 h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                     />
                                 </div>
 
@@ -197,8 +185,25 @@ export const ScheduleManagement = () => {
                                         type="date"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-48 h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                        className="w-40 h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                     />
+                                </div>
+
+                                {/* 초기화 버튼 */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-gray-700 mb-2 opacity-0">초기화</label>
+                                    <button
+                                        onClick={() => {
+                                            setStartDate("");
+                                            setEndDate("");
+                                        }}
+                                        className="h-11 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-[10px] text-sm font-medium transition-colors focus:outline-none flex items-center gap-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        초기화
+                                    </button>
                                 </div>
                             </div>
 
@@ -208,7 +213,7 @@ export const ScheduleManagement = () => {
                                 <button
                                     onClick={() => {
                                         setIsEditMode(false);
-                                        setEditRound(null);
+                                        setEditSchedule(null);
                                         setIsModalOpen(true);
                                     }}
                                     className="h-11 px-6 bg-white/80 backdrop-blur-sm border border-gray-300/50 text-gray-700 rounded-[10px] text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md hover:bg-white/90 flex items-center gap-2 focus:outline-none"
@@ -239,37 +244,84 @@ export const ScheduleManagement = () => {
 
                         {/* 테이블 바디 */}
                         <div className="bg-white">
-                            {roundData
-                                .filter(round => {
-                                    // 날짜 필터링
-                                    const startMatch = !startDate || round.viewingDate >= startDate;
-                                    const endMatch = !endDate || round.viewingDate <= endDate;
-                                    return startMatch && endMatch;
-                                })
-                                .map((round, index, filteredArray) => {
+                            {loading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                        <span className="text-gray-600">회차 목록을 불러오고 있습니다...</span>
+                                    </div>
+                                </div>
+                            ) : error ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center">
+                                    <div className="text-red-600 mb-4">
+                                        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">오류가 발생했습니다</h3>
+                                    <p className="text-gray-600 mb-4">{error}</p>
+                                    <button
+                                        onClick={() => fetchSchedules()}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none"
+                                    >
+                                        다시 시도
+                                    </button>
+                                </div>
+                            ) : scheduleData.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center">
+                                    <div className="text-gray-400 mb-4">
+                                        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">등록된 회차가 없습니다</h3>
+                                    <p className="text-gray-600 mb-4">첫 번째 회차를 추가해보세요.</p>
+                                    <button
+                                        onClick={() => {
+                                            setIsEditMode(false);
+                                            setEditSchedule(null);
+                                            setIsModalOpen(true);
+                                        }}
+                                        className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors focus:outline-none flex items-center gap-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        회차 추가
+                                    </button>
+                                </div>
+                            ) : (
+                                scheduleData
+                                    .filter(schedule => {
+                                        // 날짜 필터링
+                                        const startMatch = !startDate || schedule.date >= startDate;
+                                        const endMatch = !endDate || schedule.date <= endDate;
+                                        return startMatch && endMatch;
+                                    })
+                                    .map((schedule, index, filteredArray) => {
                                     // 이전 행과 같은 날짜인지 확인
-                                    const showDate = index === 0 || filteredArray[index - 1].viewingDate !== round.viewingDate;
+                                    const showDate = index === 0 || filteredArray[index - 1].date !== schedule.date;
 
                                     return (
                                         <div
-                                            key={round.id}
+                                            key={schedule.scheduleId}
                                             className={`grid grid-cols-7 gap-3 py-5 px-6 text-sm items-center ${index !== filteredArray.length - 1 ? "border-b border-gray-200" : ""
                                                 }`}
                                         >
                                             <div className="text-gray-600 text-center min-w-[110px] truncate">
-                                                {showDate ? formatDateWithDay(round.viewingDate) : ""}
+                                                {showDate ? formatDateWithDay(schedule.date) : ""}
                                             </div>
-                                            <div className="font-medium text-gray-900 text-center min-w-[60px]">{round.roundNumber}</div>
-                                            <div className="text-center text-gray-600 min-w-[70px]">{round.startTime}</div>
-                                            <div className="text-center text-gray-600 min-w-[70px]">{round.endTime}</div>
+                                            <div className="font-medium text-gray-900 text-center min-w-[60px]">{schedule.scheduleId}</div>
+                                            <div className="text-center text-gray-600 min-w-[70px]">{schedule.startTime}</div>
+                                            <div className="text-center text-gray-600 min-w-[70px]">{schedule.endTime}</div>
                                             <div className="text-center min-w-[100px]">
-                                                <span className={`inline-block px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${round.statusColor} ${round.textColor}`}>
-                                                    {round.status}
+                                                <span className={`inline-block px-2 py-1 rounded text-xs font-medium whitespace-nowrap`}>
+                                                    {schedule.scheduleId}
                                                 </span>
                                             </div>
                                             <div className="text-center min-w-[80px]">
                                                 <button
-                                                    onClick={() => handleTicketSetup(round)}
+                                                    onClick={() => handleTicketSetup(schedule)}
                                                     className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-xs whitespace-nowrap"
                                                 >
                                                     티켓 설정
@@ -278,7 +330,7 @@ export const ScheduleManagement = () => {
                                             <div className="text-center flex justify-center gap-2 min-w-[100px]">
                                                 <button
                                                     onClick={() => {
-                                                        setEditRound(round);
+                                                        setEditSchedule(schedule);
                                                         setIsEditMode(true);
                                                         setIsModalOpen(true);
                                                     }}
@@ -288,10 +340,10 @@ export const ScheduleManagement = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => {
-                                                        if (window.confirm(`"${round.roundNumber}" 회차를 삭제하시겠습니까?`)) {
-                                                            setRoundData(prev => {
-                                                                const filteredRounds = prev.filter(r => r.id !== round.id);
-                                                                return reassignRoundNumbers(filteredRounds);
+                                                        if (window.confirm(`"${schedule.scheduleId}" 회차를 삭제하시겠습니까?`)) {
+                                                            setScheduleData(prev => {
+                                                                const filteredRounds = prev.filter(r => r.scheduleId !== schedule.scheduleId);
+                                                                return reassignScheduleNumbers(filteredRounds);
                                                             });
                                                         }
                                                     }}
@@ -302,20 +354,23 @@ export const ScheduleManagement = () => {
                                             </div>
                                         </div>
                                     );
-                                })}
+                                })
+                            )}
                         </div>
                     </div>
 
                     {/* 하단 정보 */}
-                    <div className="mt-6 text-sm text-gray-600">
-                        총 <span className="font-bold text-black">
-                            {roundData.filter(round => {
-                                const startMatch = !startDate || round.viewingDate >= startDate;
-                                const endMatch = !endDate || round.viewingDate <= endDate;
-                                return startMatch && endMatch;
-                            }).length}
-                        </span>개의 회차
-                    </div>
+                    {!loading && !error && (
+                        <div className="mt-6 text-sm text-gray-600">
+                            총 <span className="font-bold text-black">
+                                {scheduleData.filter(round => {
+                                    const startMatch = !startDate || round.date >= startDate;
+                                    const endMatch = !endDate || round.date <= endDate;
+                                    return startMatch && endMatch;
+                                }).length}
+                            </span>개의 회차
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -325,34 +380,29 @@ export const ScheduleManagement = () => {
                 onClose={() => {
                     setIsModalOpen(false);
                     setIsEditMode(false);
-                    setEditRound(null);
+                    setEditSchedule(null);
                 }}
-                onAddRound={(newRound) => {
-                    setRoundData(prev => {
-                        const updatedRounds = [...prev, newRound];
-                        return reassignRoundNumbers(updatedRounds);
-                    });
+                onAddSchedule={(newRound) => {
+                    // 새 회차 생성 후 목록 다시 조회
+                    fetchSchedules();
                 }}
-                onUpdateRound={(updatedRound) => {
-                    setRoundData(prev => {
-                        const updatedRounds = prev.map(round =>
-                            round.id === updatedRound.id ? updatedRound : round
-                        );
-                        return reassignRoundNumbers(updatedRounds);
-                    });
+                onUpdateSchedule={(updatedRound) => {
+                    // 회차 수정 후 목록 다시 조회
+                    fetchSchedules();
                 }}
-                editRound={editRound}
+                editRound={editSchedule}
                 isEditMode={isEditMode}
+                eventId={eventId}
             />
 
             {/* 티켓 설정 모달 */}
             <ScheduleTicketModal
-                isOpen={isTicketSetupModalOpen}
+                isOpen={isScheduleTicketModalOpen}
                 onClose={() => {
-                    setIsTicketSetupModalOpen(false);
-                    setSelectedRound(null);
+                    setIsScheduleTicketModalOpen(false);
+                    setSelectedSchedule(null);
                 }}
-                round={selectedRound}
+                round={selectedSchedule}
                 onComplete={handleTicketSetupComplete}
             />
         </div>

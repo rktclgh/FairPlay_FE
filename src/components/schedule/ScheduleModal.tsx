@@ -1,36 +1,50 @@
 import React, { useState } from "react";
+import authManager from "../../utils/auth";
 
 interface ScheduleModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddRound: (round: any) => void;
-    onUpdateRound?: (round: any) => void;
+    onAddSchedule: (round: any) => void;
+    onUpdateSchedule?: (round: any) => void;
     editRound?: any;
     isEditMode?: boolean;
+    eventId: number;
 }
 
 export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     isOpen, 
-    onClose, 
-    onAddRound, 
-    onUpdateRound, 
+    onClose,
+    onAddSchedule,
+    onUpdateSchedule,
     editRound, 
-    isEditMode = false 
+    isEditMode = false,
+    eventId
 }) => {
     const [formData, setFormData] = useState({
-        viewingDate: "",
+        date: "",
         startTime: "",
-        endTime: ""
+        endTime: "",
+        weekday: 0
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
+        
+        let updatedData = {
+            ...formData,
             [name]: value
-        }));
+        };
+
+        // 날짜가 변경되면 weekday 자동 계산
+        if (name === 'date' && value) {
+            const dateObj = new Date(value);
+            updatedData.weekday = dateObj.getDay();
+        }
+        
+        setFormData(updatedData);
     };
 
+    // 시작/종료 시각 => 00 : 00 ~ 23 : 50 분 까지 10분 간격으로 설정
     const generateTimeOptions = () => {
         const options = [];
         for (let hour = 0; hour < 24; hour++) {
@@ -44,43 +58,129 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     React.useEffect(() => {
         if (isEditMode && editRound) {
+            console.log('수정 모드 데이터:', editRound);
+            
+            // 시간 형식 변환 (HH:MM:SS -> HH:MM)
+            const formatTime = (time: string) => {
+                if (!time) return "";
+                return time.substring(0, 5); // "02:40:00" -> "02:40"
+            };
+            
             setFormData({
-                viewingDate: editRound.viewingDate,
-                startTime: editRound.startTime,
-                endTime: editRound.endTime
+                date: editRound.date || "",
+                startTime: formatTime(editRound.startTime),
+                endTime: formatTime(editRound.endTime),
+                weekday: editRound.weekday || 0
             });
         } else {
             setFormData({
-                viewingDate: "",
+                date: "",
                 startTime: "",
-                endTime: ""
+                endTime: "",
+                weekday: 0
             });
         }
     }, [isEditMode, editRound]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(isEditMode ? "회차 수정:" : "새 회차 추가:", formData);
-
-        const roundData = {
-            id: isEditMode ? editRound.id : Date.now(),
-            viewingDate: formData.viewingDate,
-            startTime: formData.startTime,
-            endTime: formData.endTime,
-            status: isEditMode ? editRound.status : "티켓 설정 대기",
-            statusColor: isEditMode && editRound.status === "티켓 설정 완료" ? "bg-green-100" : "bg-yellow-100",
-            textColor: isEditMode && editRound.status === "티켓 설정 완료" ? "text-green-800" : "text-yellow-800"
-        };
-
-        if (isEditMode && onUpdateRound) {
-            onUpdateRound(roundData);
-            alert("회차가 수정되었습니다.");
-        } else {
-            onAddRound(roundData);
-            alert("회차가 추가되었습니다.");
+        
+        // 필수 필드 검증
+        if (!formData.date || !formData.startTime || !formData.endTime) {
+            alert("모든 필드를 입력해주세요.");
+            return;
         }
 
-        onClose();
+        try {
+            if (isEditMode) {
+                // 수정 모드 - 서버 API 호출
+                const updateScheduleRequest = {
+                    date: formData.date,
+                    startTime: formData.startTime,
+                    endTime: formData.endTime
+                };
+
+                const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule/${editRound.scheduleId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateScheduleRequest)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '회차 수정에 실패했습니다.');
+                }
+
+                const updatedSchedule = await response.json();
+                
+                // 성공시 UI 업데이트를 위한 데이터 구조 변환
+                const scheduleData = {
+                    scheduleId: updatedSchedule.scheduleId,
+                    eventId: updatedSchedule.eventId,
+                    date: updatedSchedule.date,
+                    startTime: updatedSchedule.startTime,
+                    endTime: updatedSchedule.endTime,
+                    weekday: updatedSchedule.weekday,
+                    status: editRound.status, // UI 상태 유지
+                    statusColor: editRound.statusColor,
+                    textColor: editRound.textColor,
+                    roundNumber: editRound.roundNumber // UI 상태 유지
+                };
+
+                if (onUpdateSchedule) {
+                    onUpdateSchedule(scheduleData);
+                    alert("회차가 성공적으로 수정되었습니다.");
+                }
+            } else {
+                console.log(1);
+                // 새로 생성 - 서버 API 호출
+                const createScheduleRequest = {
+                    date: formData.date,
+                    startTime: formData.startTime,
+                    endTime: formData.endTime
+                };
+
+                const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(createScheduleRequest),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '회차 생성에 실패했습니다.');
+                }
+
+                const createdSchedule = await response.json();
+                console.log(3);
+                
+                // 성공시 UI 업데이트를 위한 데이터 구조 변환
+                const scheduleData = {
+                    scheduleId: createdSchedule.scheduleId,
+                    eventId: createdSchedule.eventId,
+                    date: createdSchedule.date,
+                    startTime: createdSchedule.startTime,
+                    endTime: createdSchedule.endTime,
+                    weekday: createdSchedule.weekday,
+                    status: "티켓 설정 대기",
+                    statusColor: "bg-yellow-100",
+                    textColor: "text-yellow-800",
+                    roundNumber: "" // 부모 컴포넌트에서 재할당됨
+                };
+
+                onAddSchedule(scheduleData);
+                alert("회차가 성공적으로 추가되었습니다.");
+            }
+
+            onClose();
+        } catch (error) {
+            console.error('스케줄 저장 실패:', error);
+            alert(error instanceof Error ? error.message : '회차 저장에 실패했습니다.');
+        }
     };
 
     if (!isOpen) return null;
@@ -99,8 +199,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                         </label>
                         <input
                             type="date"
-                            name="viewingDate"
-                            value={formData.viewingDate}
+                            name="date"
+                            value={formData.date}
                             onChange={handleInputChange}
                             className="w-full h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                             required

@@ -13,17 +13,17 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
     round, 
     onComplete 
 }) => {
-    const formatRoundInfo = (round: any) => {
-        if (!round) return "";
-        const date = new Date(round.viewingDate);
+    const formatScheduleInfo = (schedule: any) => {
+        if (!schedule) return "";
+        const date = new Date(schedule.date);
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         const dayOfWeek = days[date.getDay()];
-        return `${round.viewingDate}(${dayOfWeek}) ${round.startTime} ~ ${round.endTime}`;
+        return `${schedule.date}(${dayOfWeek}) ${schedule.startTime} ~ ${schedule.endTime}`;
     };
 
     const [availableTickets] = useState([
         {
-            id: 1,
+            ticketId: 1,
             name: "VIP 티켓",
             seatGrade: "VIP석",
             type: "성인",
@@ -34,7 +34,7 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
             textColor: "text-green-800"
         },
         {
-            id: 2,
+            ticketId: 2,
             name: "얼리버드 티켓",
             seatGrade: "A석",
             type: "성인",
@@ -45,7 +45,7 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
             textColor: "text-green-800"
         },
         {
-            id: 3,
+            ticketId: 3,
             name: "일반 티켓",
             seatGrade: "B석",
             type: "성인",
@@ -60,18 +60,56 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
     const [ticketSettings, setTicketSettings] = useState(
         availableTickets.map(ticket => ({
             ...ticket,
-            saleQuantity: "",
-            saleStartDate: "",
-            saleStartTime: "",
-            saleEndDate: "",
-            saleEndTime: ""
+            scheduleId: round?.scheduleId || "",
+            remainingStock: "",
+            salesStartAt: "",
+            salesEndAt: "",
+            visible: false,
+            types: "EVENT"
         }))
     );
 
-    const handleInputChange = (ticketId: number, field: string, value: string) => {
+    const handleInputChange = (ticketId: number, field: string, value: string | boolean) => {
         setTicketSettings(prev => prev.map(ticket =>
-            ticket.id === ticketId ? { ...ticket, [field]: value } : ticket
+            ticket.ticketId === ticketId ? { ...ticket, [field]: value } : ticket
         ));
+    };
+
+    // 날짜와 시간을 합쳐서 DATETIME 형식으로 변환하는 함수
+    const combineDateAndTime = (date: string, time: string) => {
+        if (!date || !time) return "";
+        return `${date}T${time}:00`;
+    };
+
+    // 폼 데이터를 서버 형식에 맞게 처리하는 함수
+    const handleDateTimeChange = (ticketId: number, dateField: string, timeField: string, dateValue: string, timeValue: string) => {
+        const currentTicket = ticketSettings.find(t => t.ticketId === ticketId);
+        if (!currentTicket) return;
+
+        let newDateValue = dateValue;
+        let newTimeValue = timeValue;
+
+        // 현재 저장된 값이 있다면 사용
+        if (dateField === 'salesStartDate') {
+            const existingDateTime = currentTicket.salesStartAt;
+            if (existingDateTime) {
+                const [existingDate, existingTime] = existingDateTime.split('T');
+                newDateValue = dateValue || existingDate;
+                newTimeValue = timeValue || existingTime?.substring(0, 5);
+            }
+        } else if (dateField === 'salesEndDate') {
+            const existingDateTime = currentTicket.salesEndAt;
+            if (existingDateTime) {
+                const [existingDate, existingTime] = existingDateTime.split('T');
+                newDateValue = dateValue || existingDate;
+                newTimeValue = timeValue || existingTime?.substring(0, 5);
+            }
+        }
+
+        const dateTimeValue = combineDateAndTime(newDateValue, newTimeValue);
+        const targetField = dateField === 'salesStartDate' ? 'salesStartAt' : 'salesEndAt';
+        
+        handleInputChange(ticketId, targetField, dateTimeValue);
     };
 
     const handleComplete = () => {
@@ -104,7 +142,7 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
                     <div className="bg-gray-50 rounded-lg p-4">
                         <h3 className="text-lg font-bold text-gray-900 mb-3">회차 정보</h3>
                         <div className="text-base text-gray-900">
-                            {formatRoundInfo(round)}
+                            {formatScheduleInfo(round)}
                         </div>
                     </div>
 
@@ -126,7 +164,7 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
                                 </thead>
                                 <tbody>
                                     {ticketSettings.map((ticket, index) => (
-                                        <tr key={ticket.id} className={index !== ticketSettings.length - 1 ? "border-b border-gray-200" : ""}>
+                                        <tr key={ticket.ticketId} className={index !== ticketSettings.length - 1 ? "border-b border-gray-200" : ""}>
                                             <td className="px-2 py-3 font-medium text-gray-900 min-w-[100px] whitespace-nowrap truncate">{ticket.name}</td>
                                             <td className="px-2 py-3 text-center text-gray-600 min-w-[70px] whitespace-nowrap">{ticket.seatGrade}</td>
                                             <td className="px-2 py-3 text-center min-w-[60px]">
@@ -139,8 +177,8 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
                                             <td className="px-2 py-3 text-center min-w-[80px]">
                                                 <input
                                                     type="number"
-                                                    value={ticket.saleQuantity}
-                                                    onChange={(e) => handleInputChange(ticket.id, 'saleQuantity', e.target.value)}
+                                                    value={ticket.remainingStock}
+                                                    onChange={(e) => handleInputChange(ticket.ticketId, 'remainingStock', e.target.value)}
                                                     placeholder="수량"
                                                     min="0"
                                                     className="w-16 px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -150,13 +188,13 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
                                                 <div className="space-y-1">
                                                     <input
                                                         type="date"
-                                                        value={ticket.saleStartDate}
-                                                        onChange={(e) => handleInputChange(ticket.id, 'saleStartDate', e.target.value)}
+                                                        value={ticket.salesStartAt ? ticket.salesStartAt.split('T')[0] : ''}
+                                                        onChange={(e) => handleDateTimeChange(ticket.ticketId, 'salesStartDate', 'salesStartTime', e.target.value, '')}
                                                         className="w-28 px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     />
                                                     <select
-                                                        value={ticket.saleStartTime}
-                                                        onChange={(e) => handleInputChange(ticket.id, 'saleStartTime', e.target.value)}
+                                                        value={ticket.salesStartAt ? ticket.salesStartAt.split('T')[1]?.substring(0, 5) : ''}
+                                                        onChange={(e) => handleDateTimeChange(ticket.ticketId, 'salesStartDate', 'salesStartTime', '', e.target.value)}
                                                         className="w-28 px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     >
                                                         <option value="">시간 선택</option>
@@ -170,13 +208,13 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
                                                 <div className="space-y-1">
                                                     <input
                                                         type="date"
-                                                        value={ticket.saleEndDate}
-                                                        onChange={(e) => handleInputChange(ticket.id, 'saleEndDate', e.target.value)}
+                                                        value={ticket.salesEndAt ? ticket.salesEndAt.split('T')[0] : ''}
+                                                        onChange={(e) => handleDateTimeChange(ticket.ticketId, 'salesEndDate', 'salesEndTime', e.target.value, '')}
                                                         className="w-28 px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     />
                                                     <select
-                                                        value={ticket.saleEndTime}
-                                                        onChange={(e) => handleInputChange(ticket.id, 'saleEndTime', e.target.value)}
+                                                        value={ticket.salesEndAt ? ticket.salesEndAt.split('T')[1]?.substring(0, 5) : ''}
+                                                        onChange={(e) => handleDateTimeChange(ticket.ticketId, 'salesEndDate', 'salesEndTime', '', e.target.value)}
                                                         className="w-28 px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     >
                                                         <option value="">시간 선택</option>
