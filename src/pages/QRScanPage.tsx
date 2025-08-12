@@ -11,10 +11,11 @@ import {
 } from "../services/qrTicket";
 import type {
     ManualCheckRequestDto,
-    QrCheckRequestDto
+    QrCheckRequestDto,
 } from "../services/types/qrTicketType"
 
 const QRScanPage: React.FC = () => {
+    const [checkType, setCheckType] = useState("checkIn");
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [manualCode, setManualCode] = useState('');
     const [scanResult, setScanResult] = useState<string | null>(null);
@@ -96,22 +97,21 @@ const QRScanPage: React.FC = () => {
             return;
         }
 
-        // // QR 코드 형식 검증 (AB12-C3F4 형식)
-        // const codePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-        // if (!codePattern.test(manualCode.trim())) {
-        //     alert('올바른 코드 형식을 입력해주세요. (예: AB12-C3F4)');
-        //     return;
-        // }
+        // QR 코드 형식 검증 (AB12-C3F4 형식)
+        const codePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+        if (!codePattern.test(manualCode.trim())) {
+            alert('올바른 코드 형식을 입력해주세요. (예: AB12-C3F4)');
+            return;
+        }
 
         const manualCheckRequestDto: ManualCheckRequestDto = {
             manualCode: input
         }
+        
+        const res = checkType.match('checkIn') ? await checkInManual(manualCheckRequestDto)
+            : await checkOutManual(manualCheckRequestDto);
 
-        const res = await checkInManual(manualCheckRequestDto);
-
-        // 여기에 실제 검색 로직을 구현할 수 있습니다
         setScanResult(res.message);
-        console.log('수동 코드 검색:', manualCode);
     };
 
     // QR 코드 스캔 처리 (실제 구현에서는 QR 코드 라이브러리 사용)
@@ -130,19 +130,21 @@ const QRScanPage: React.FC = () => {
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
 
+
         if (qrCode) {
             console.log("QR 코드 내용:", qrCode.data);
 
             const qrCheckRequestDto: QrCheckRequestDto = {
                 qrCode: qrCode.data
             }
-            const res = await checkInQr(qrCheckRequestDto);        
+
+            const res = checkType.match('checkIn') ? await checkInQr(qrCheckRequestDto)
+                : await checkOutQr(qrCheckRequestDto);
+            
             setScanResult(res.message);
         } else {
             alert("QR 코드를 인식하지 못했습니다.");
         }
-        
-        console.log('QR 코드 스캔됨');
     };
 
     // 컴포넌트 언마운트 시 카메라 정리
@@ -157,10 +159,35 @@ const QRScanPage: React.FC = () => {
             <div className="bg-white w-[1256px] min-h-screen relative">
                 <TopNav />
 
-                {/* 페이지 제목 */}
-                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    QR 체크인
+                {/* 페이지 제목 + 체크인/체크아웃 타입 */}
+                <div className="top-[137px] left-64 absolute flex items-center  gap-6">
+                    <span className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+                        QR 체크인
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCheckType("checkIn")}
+                            className={`px-4 py-2 rounded-[10px] font-medium text-sm hover:bg-blue-600 hover:text-white
+                                ${checkType === "checkIn" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}
+                            `}
+                        >
+                            체크인
+                        </button>
+                        <button
+                            onClick={() => setCheckType("checkOut")}
+                            className={`px-4 py-2 rounded-[10px] font-medium text-sm 
+                                hover:text-white hover:bg-red-600 hover:border-red-600 
+                                active:border-red-600 focus:border-red-600 focus:outline-none
+                                ${checkType === "checkOut" ? "bg-red-500 text-white bg-red-500" : "bg-gray-200 text-gray-700"}
+                            `}
+                        >
+                            체크아웃
+                        </button>
+                    </div>
+
                 </div>
+                
 
                 {/* 사이드바 */}
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
@@ -175,7 +202,7 @@ const QRScanPage: React.FC = () => {
                             </h3>
 
                             {/* 스캔 영역 */}
-                            <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-8 mb-6 flex flex-col items-center justify-center min-h-[300px]">
+                            <div className="bg-gray-50 border-2 border-gray-200 rounded-[10px] p-8 mb-6 flex flex-col items-center justify-center min-h-[300px]">
                                 {isCameraActive ? (
                                     <div className="w-full flex flex-col items-center">
                                         <div className="relative w-full max-w-md h-64 bg-black rounded-lg overflow-hidden mb-4">
@@ -242,7 +269,7 @@ const QRScanPage: React.FC = () => {
                                     value={manualCode}
                                     onChange={(e) => setManualCode(e.target.value)}
                                     placeholder="수동 코드를 입력하세요"
-                                    className="flex-1 h-10 border-2 border-gray-300 rounded-lg px-3 text-sm bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-gray-400"
+                                    className="flex-1 h-10 border-2 border-gray-300 rounded-[10px] px-3 text-sm bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-gray-400"
                                     onKeyPress={(e) => e.key === 'Enter' && handleManualSearch(manualCode)}
                                 />
                                 <button
