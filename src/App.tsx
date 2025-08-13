@@ -47,6 +47,7 @@ import EventList from "./pages/admin_event/EventList";
 import EventApproval from "./pages/admin_event/EventApproval";
 import EventApprovalDetail from "./pages/admin_event/EventApprovalDetail";
 import EventEditRequests from "./pages/admin_event/EventEditRequests";
+import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 import AccountIssue from "./pages/admin_account/AccountIssue";
 import AccountRoles from "./pages/admin_account/AccountRoles";
 import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
@@ -142,6 +143,7 @@ function AppContent() {
         <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApproval /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-approvals/:id" element={<AdminRouteGuard><EventApprovalDetail /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-edit-requests/:id" element={<AdminRouteGuard><EventEditRequestDetail /></AdminRouteGuard>} />
 
         {/* 계정 관리 */}
         <Route path="/admin_dashboard/accounts/issue" element={<AdminRouteGuard><AccountIssue /></AdminRouteGuard>} />
