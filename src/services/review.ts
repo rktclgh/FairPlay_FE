@@ -2,12 +2,14 @@ import api from "../api/axios";
 import type {
     ReviewSaveRequestDto,
     ReviewSaveResponseDto,
+    ReviewForEventResponseDto,
+    ReviewWithOwnerDto,
     ReviewResponseDto,
     ReviewUpdateRequestDto,
     ReviewUpdateResponseDto,
     ReviewDeleteResponseDto,
-    PageableRequest,
-    Page
+    Page,
+    PageableRequest
 } from "./types/reviewType";
 
 // 리뷰 저장 
@@ -17,8 +19,8 @@ export const saveReview = async (data: ReviewSaveRequestDto): Promise<ReviewSave
 }
 
 // 리뷰 조회 - 행사 상세 페이지
-export const getReviewsByEvent = async (eventId: number, params?: PageableRequest): Promise<Page<ReviewResponseDto>> => {
-    const res = await api.get<Page<ReviewResponseDto>>(`/api/reviews/${eventId}`, {params});
+export const getReviewsByEvent = async (eventId: number, params?: PageableRequest): Promise<ReviewForEventResponseDto> => {
+    const res = await api.get<Page<ReviewForEventResponseDto>>(`/api/reviews/${eventId}`, {params});
     return res.data;
 }
 
