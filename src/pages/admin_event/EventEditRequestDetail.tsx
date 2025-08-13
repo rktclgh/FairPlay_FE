@@ -981,3 +981,5 @@ export const EventEditRequestDetail: React.FC = () => {
         </>
     );
 };
+
+export default EventEditRequestDetail;
