@@ -4,9 +4,9 @@ import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
 
 // 임시 데이터 타입 정의
-interface EventEditRequest {
+interface EventApproval {
     id: number;
-    requestDate: string;
+    applicationDate: string;
     eventName: string;
     eventPeriod: {
         startDate: string;
@@ -17,7 +17,9 @@ interface EventEditRequest {
     status: '대기' | '승인' | '반려';
 }
 
-export const EventEditRequests: React.FC = () => {
+
+
+export const EventApproval: React.FC = () => {
     const navigate = useNavigate();
 
     // 상태 관리
@@ -27,10 +29,10 @@ export const EventEditRequests: React.FC = () => {
     const [totalPages, setTotalPages] = useState<number>(0);
 
     // 임시 더미 데이터
-    const [eventData] = useState<EventEditRequest[]>([
+    const [eventData] = useState<EventApproval[]>([
         {
             id: 1,
-            requestDate: '2025-01-15',
+            applicationDate: '2025-01-15',
             eventName: '2025 서울 국제 박람회',
             eventPeriod: { startDate: '2025-03-15', endDate: '2025-03-20' },
             manager: '김철수',
@@ -39,7 +41,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 2,
-            requestDate: '2025-01-14',
+            applicationDate: '2025-01-14',
             eventName: 'AI 기술 컨퍼런스 2025',
             eventPeriod: { startDate: '2025-04-10', endDate: '2025-04-12' },
             manager: '이영희',
@@ -48,7 +50,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 3,
-            requestDate: '2025-01-13',
+            applicationDate: '2025-01-13',
             eventName: '부산 해양 축제',
             eventPeriod: { startDate: '2025-07-20', endDate: '2025-07-25' },
             manager: '박민수',
@@ -57,7 +59,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 4,
-            requestDate: '2025-01-12',
+            applicationDate: '2025-01-12',
             eventName: '전시회: 미래 도시',
             eventPeriod: { startDate: '2025-05-01', endDate: '2025-05-10' },
             manager: '최지영',
@@ -66,7 +68,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 5,
-            requestDate: '2025-01-11',
+            applicationDate: '2025-01-11',
             eventName: '클래식 음악 페스티벌',
             eventPeriod: { startDate: '2025-06-15', endDate: '2025-06-20' },
             manager: '정수민',
@@ -75,7 +77,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 6,
-            requestDate: '2025-01-10',
+            applicationDate: '2025-01-10',
             eventName: '스타트업 데모데이',
             eventPeriod: { startDate: '2025-08-05', endDate: '2025-08-07' },
             manager: '한동훈',
@@ -84,7 +86,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 7,
-            requestDate: '2025-01-09',
+            applicationDate: '2025-01-09',
             eventName: '환경 보호 세미나',
             eventPeriod: { startDate: '2025-09-10', endDate: '2025-09-12' },
             manager: '윤서연',
@@ -93,7 +95,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 8,
-            requestDate: '2025-01-08',
+            applicationDate: '2025-01-08',
             eventName: '게임 개발자 컨퍼런스',
             eventPeriod: { startDate: '2025-10-20', endDate: '2025-10-22' },
             manager: '강현우',
@@ -102,7 +104,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 9,
-            requestDate: '2025-01-07',
+            applicationDate: '2025-01-07',
             eventName: '요리 챔피언십',
             eventPeriod: { startDate: '2025-11-15', endDate: '2025-11-17' },
             manager: '임하나',
@@ -111,7 +113,7 @@ export const EventEditRequests: React.FC = () => {
         },
         {
             id: 10,
-            requestDate: '2025-01-06',
+            applicationDate: '2025-01-06',
             eventName: '디자인 워크샵',
             eventPeriod: { startDate: '2025-12-01', endDate: '2025-12-05' },
             manager: '송태호',
@@ -142,7 +144,7 @@ export const EventEditRequests: React.FC = () => {
 
     // 상세보기 클릭
     const handleDetailClick = (eventId: number) => {
-        navigate(`/admin_dashboard/event-edit-requests/${eventId}`);
+        navigate(`/admin_dashboard/event-approvals/${eventId}`);
     };
 
     // 상태별 색상
@@ -166,7 +168,7 @@ export const EventEditRequests: React.FC = () => {
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    행사 수정 요청
+                    행사 등록 승인
                 </div>
 
                 {/* 사이드바 */}
@@ -174,7 +176,7 @@ export const EventEditRequests: React.FC = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20 space-y-6">
-                    {/* 행사 수정 요청 목록 테이블 */}
+                    {/* 행사 등록 신청 목록 테이블 */}
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* 테이블 헤더 */}
                         <div className="bg-gray-50 border-b border-gray-200 py-4 px-6">
@@ -198,7 +200,7 @@ export const EventEditRequests: React.FC = () => {
                                 </div>
                             ) : currentData.length === 0 ? (
                                 <div className="py-8 text-center text-gray-500">
-                                    수정 요청 대기 중인 행사가 없습니다.
+                                    승인 대기 중인 행사가 없습니다.
                                 </div>
                             ) : (
                                 currentData.map((event, index) => (
@@ -208,7 +210,7 @@ export const EventEditRequests: React.FC = () => {
                                         style={{ gridTemplateColumns: '1fr 2fr 1.5fr 1fr 1.5fr 1fr 1fr' }}
                                     >
                                         <div className="text-gray-600 text-center">
-                                            {new Date(event.requestDate).toLocaleDateString('ko-KR')}
+                                            {new Date(event.applicationDate).toLocaleDateString('ko-KR')}
                                         </div>
                                         <div className="text-gray-900 text-center font-bold truncate">
                                             {event.eventName}
@@ -246,7 +248,7 @@ export const EventEditRequests: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-700">
-                                    총 <span className="font-bold text-black">{totalElements}</span>개의 요청
+                                    총 <span className="font-bold text-black">{totalElements}</span>개의 신청
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <button
@@ -282,9 +284,11 @@ export const EventEditRequests: React.FC = () => {
                         </div>
                     )}
                 </div>
+
+
             </div>
         </div>
     );
 };
 
-export default EventEditRequests;
+export default EventApproval;

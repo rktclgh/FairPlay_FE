@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
 import authManager from "./utils/auth";
 import tokenValidator from "./utils/tokenValidator";
+import presenceManager from "./utils/presenceManager";
 import { Main } from "./pages/MainPage";
 import { MyPageInfo } from "./pages/user_mypage/Info";
 import { MyPageAccount } from "./pages/user_mypage/Account";
@@ -43,7 +44,8 @@ import { AdminRouteGuard } from "./components/AdminRouteGuard";
 import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
 import EventComparison from "./pages/admin_dashboard/EventComparison";
 import EventList from "./pages/admin_event/EventList";
-import EventApprovals from "./pages/admin_event/EventApprovals";
+import EventApproval from "./pages/admin_event/EventApproval";
+import EventApprovalDetail from "./pages/admin_event/EventApprovalDetail";
 import EventEditRequests from "./pages/admin_event/EventEditRequests";
 import AccountIssue from "./pages/admin_account/AccountIssue";
 import AccountRoles from "./pages/admin_account/AccountRoles";
@@ -80,88 +82,16 @@ function AppContent() {
     tokenValidator.startPeriodicValidation();
   }, []);
 
-  // 사용자 접속 상태 관리
+  // 사용자 온라인 상태 관리 (PresenceManager 사용)
   useEffect(() => {
     if (!isTokenValidated) return;
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
 
-    // 페이지 로드 시 사용자 온라인 상태로 설정
-    const setUserOnline = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          console.log('🚫 토큰이 없어서 온라인 상태 설정 건너뜀');
-          return;
-        }
-
-        console.log('🟢 사용자 온라인 상태 설정 시도 시작');
-        const response = await authManager.authenticatedFetch('/api/chat/presence/connect', {
-          method: 'POST',
-        });
-
-        if (response.ok) {
-          console.log('✅ 사용자 온라인 상태로 설정 성공');
-        } else {
-          const errorText = await response.text();
-          console.error('❌ 온라인 상태 설정 실패:', response.status, response.statusText, errorText);
-        }
-      } catch (error) {
-        console.error('❌ 온라인 상태 설정 오류:', error);
-      }
-    };
-
-    // 페이지를 벗어날 때 사용자 오프라인 상태로 설정
-    const setUserOffline = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          console.log('🚫 토큰이 없어서 오프라인 상태 설정 건너뜀');
-          return;
-        }
-
-        console.log('🔴 사용자 오프라인 상태 설정 시도 시작');
-        const response = await authManager.authenticatedFetch('/api/chat/presence/disconnect', {
-          method: 'POST',
-        });
-
-        if (response.ok) {
-          console.log('✅ 사용자 오프라인 상태로 설정 성공');
-        } else {
-          const errorText = await response.text();
-          console.error('❌ 오프라인 상태 설정 실패:', response.status, response.statusText, errorText);
-        }
-      } catch (error) {
-        console.error('❌ 오프라인 상태 설정 오류:', error);
-      }
-    };
-
-    // 온라인 상태로 설정
-    setUserOnline();
-
-    // 페이지 언로드 시 오프라인 상태로 설정
-    const handleBeforeUnload = () => {
-      // sendBeacon은 헤더를 직접 설정할 수 없으므로, 간단한 방법으로 처리
-      setUserOffline().catch(console.error);
-    };
-
-    // 페이지 가시성 변경 시 온라인/오프라인 상태 관리
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        setUserOffline();
-      } else {
-        setUserOnline();
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // PresenceManager 초기화
+    presenceManager.initialize();
 
     // 정리
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      setUserOffline();
+      presenceManager.cleanup();
     };
   }, [isTokenValidated]);
 
@@ -209,7 +139,8 @@ function AppContent() {
 
         {/* 행사 관리 */}
         <Route path="/admin_dashboard/events" element={<AdminRouteGuard><EventList /></AdminRouteGuard>} />
-        <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApprovals /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApproval /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-approvals/:id" element={<AdminRouteGuard><EventApprovalDetail /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
 
         {/* 계정 관리 */}
