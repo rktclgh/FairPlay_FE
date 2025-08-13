@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { MapPin } from "lucide-react";
 import { FaHeart } from "react-icons/fa";
@@ -25,7 +25,19 @@ import {
 } from "../../services/review";
 type WishlistResponseDto = { eventId: number };
 
+import authManager from "../../utils/auth";
+import { toast } from 'react-toastify';
 
+// 회차 정보 인터페이스
+interface EventSchedule {
+    scheduleId: number;
+    date: string; // LocalDate (YYYY-MM-DD)
+    startTime: string; // LocalTime (HH:mm)
+    endTime: string; // LocalTime (HH:mm)
+    weekday: number; // 0 (일) ~ 6 (토)
+    hasActiveTickets: boolean;
+    soldTicketCount: number;
+}
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
@@ -42,8 +54,13 @@ const EventDetail = (): JSX.Element => {
 
     const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(2025);
     const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(7);
-    const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
+    const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
     const [activeTab, setActiveTab] = useState<string>("detail");
+    const [eventDates, setEventDates] = useState<string[]>([]); // 이벤트 날짜 목록
+    const [availableSchedules, setAvailableSchedules] = useState<EventSchedule[]>([]); // 선택된 날짜의 회차 목록
+    const [allSchedules, setAllSchedules] = useState<EventSchedule[]>([]); // 전체 회차 목록
+    const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null); // 선택된 회차 ID
+    const [ticketPrices, setTicketPrices] = useState<{name: string, price: number}[]>([]); // 티켓 가격 목록
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
     const [reviews, setReviews] = useState<ReviewForEventResponseDto | null>(null)
     const [currentPage, setCurrentPage] = useState(0);
@@ -540,8 +557,7 @@ const EventDetail = (): JSX.Element => {
         const loadEventData = async () => {
             try {
                 setLoading(true);
-                // 실제로는 API 호출: const data = await eventApi.getEventById(eventId);
-                // 지금은 임시 데이터 사용
+                // 이벤트 상세 정보 로드
                 const data = await eventAPI.getEventDetail(Number(eventId));
 
                 const params: PageableRequest = {
@@ -554,6 +570,41 @@ const EventDetail = (): JSX.Element => {
                 setTimeout(() => {
                     setEventData(data);
                     setReviews(reviewData);
+                setEventData(data);
+
+                // 이벤트 날짜 범위에서 날짜 목록 생성
+                if (data.startDate && data.endDate) {
+                    const startDate = new Date(data.startDate);
+                    const endDate = new Date(data.endDate);
+                    const dateList: string[] = [];
+
+                    const currentDate = new Date(startDate);
+                    while (currentDate <= endDate) {
+                        dateList.push(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD 형식
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    setEventDates(dateList);
+
+                    // 달력을 이벤트 시작 월로 설정
+                    setCurrentCalendarYear(startDate.getFullYear());
+                    setCurrentCalendarMonth(startDate.getMonth() + 1); // getMonth()는 0부터 시작하므로 +1
+
+                    // 전체 회차 데이터 로드
+                    await loadAllSchedules();
+
+                    // 티켓 가격 정보 로드
+                    await loadTicketPrices();
+
+                    // 첫 번째 날짜를 기본 선택
+                    if (dateList.length > 0) {
+                        setSelectedDate(dateList[0]);
+                        // loadSchedulesForDate 대신 전체 데이터에서 필터링
+                        filterSchedulesForDate(dateList[0]);
+                    }
+                }
+
+                setTimeout(() => {
                     setLoading(false);
                 }, 500);
             } catch (error) {
@@ -566,6 +617,279 @@ const EventDetail = (): JSX.Element => {
             loadEventData();
         }
     }, [eventId]);
+
+    // 전체 회차 데이터 로드 함수
+    const loadAllSchedules = async () => {
+        try {
+            console.log('전체 회차 조회 시도...');
+            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule`);
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    console.warn('회차 조회 권한이 없습니다. 목업 데이터를 사용합니다.');
+                    // 권한이 없을 때 전체 날짜에 대한 목업 데이터 생성
+                    const mockAllSchedules = generateMockSchedulesForAllDates();
+                    setAllSchedules(mockAllSchedules);
+                    return;
+                }
+                throw new Error(`회차 목록 조회 실패: ${response.status}`);
+            }
+
+            const scheduleList = await response.json();
+            console.log('API로부터 받은 전체 회차 목록:', scheduleList);
+
+            // 전체 회차 데이터 포맷팅
+            const formattedSchedules = scheduleList.map((schedule: any) => ({
+                scheduleId: schedule.scheduleId,
+                date: schedule.date,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                weekday: schedule.weekday,
+                hasActiveTickets: schedule.hasActiveTickets || false,
+                soldTicketCount: schedule.soldTicketCount || 0
+            }));
+
+            setAllSchedules(formattedSchedules);
+            console.log('전체 회차 데이터 저장 완료:', formattedSchedules);
+
+        } catch (error) {
+            console.error('전체 회차 로드 실패:', error);
+            // 에러 발생 시에도 목업 데이터로 폴백
+            const mockAllSchedules = generateMockSchedulesForAllDates();
+            setAllSchedules(mockAllSchedules);
+            console.log('목업 전체 회차 데이터 사용:', mockAllSchedules);
+        }
+    };
+
+    // 선택된 날짜의 회차만 필터링하는 함수
+    const filterSchedulesForDate = (date: string) => {
+        const dateSchedules = allSchedules.filter(schedule => schedule.date === date);
+        setAvailableSchedules(dateSchedules);
+
+        // 첫 번째 회차를 기본 선택
+        if (dateSchedules.length > 0) {
+            setSelectedScheduleId(dateSchedules[0].scheduleId);
+        } else {
+            setSelectedScheduleId(null);
+        }
+
+        console.log(`${date} 날짜의 회차:`, dateSchedules);
+    };
+
+    // 목업 회차 데이터 생성 함수 (단일 날짜)
+    const generateMockSchedules = (date: string) => {
+        const schedules = [];
+        const times = [
+            { start: '14:00', end: '16:00' },
+            { start: '19:00', end: '21:00' }
+        ];
+
+        times.forEach((time, index) => {
+            schedules.push({
+                scheduleId: index + 1,
+                date: date,
+                startTime: time.start,
+                endTime: time.end,
+                weekday: new Date(date + 'T00:00:00').getDay(),
+                hasActiveTickets: true,
+                soldTicketCount: Math.floor(Math.random() * 50)
+            });
+        });
+
+        return schedules;
+    };
+
+    // 전체 날짜에 대한 목업 회차 데이터 생성 함수
+    const generateMockSchedulesForAllDates = () => {
+        const allSchedules: EventSchedule[] = [];
+        let scheduleIdCounter = 1;
+
+        eventDates.forEach(date => {
+            const times = [
+                { start: '14:00', end: '16:00' },
+                { start: '19:00', end: '21:00' }
+            ];
+
+            // 날짜에 따라 회차 수와 예매 가능 여부 결정
+            const dateHash = date.split('-').reduce((sum, part) => sum + parseInt(part), 0);
+            const hasSchedules = dateHash % 4 !== 0; // 75% 확률로 회차 존재
+
+            if (hasSchedules) {
+                times.forEach((time, index) => {
+                    const hasActiveTickets = (dateHash + index) % 3 !== 0; // 약 66% 확률로 예매 가능
+                    allSchedules.push({
+                        scheduleId: scheduleIdCounter++,
+                        date: date,
+                        startTime: time.start,
+                        endTime: time.end,
+                        weekday: new Date(date + 'T00:00:00').getDay(),
+                        hasActiveTickets: hasActiveTickets,
+                        soldTicketCount: Math.floor(Math.random() * 50)
+                    });
+                });
+            }
+        });
+
+        return allSchedules;
+    };
+
+    // 티켓 가격 정보 로드 함수
+    const loadTicketPrices = async () => {
+        try {
+            console.log('이벤트 티켓 정보 조회 시도...', { eventId });
+
+            // 이벤트에 등록된 티켓 목록 조회 (Ticket 테이블 + event_ticket 테이블)
+            // TicketController의 @GetMapping 엔드포인트 사용
+            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/tickets`);
+
+            if (!response.ok) {
+                console.error('티켓 조회 API 응답 실패:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                });
+
+                if (response.status === 403) {
+                    console.warn('티켓 조회 권한이 없습니다.');
+                    setTicketPrices([]); // 빈 배열로 설정하여 등록되지 않음 메시지 표시
+                    return;
+                }
+                if (response.status === 404) {
+                    console.log('해당 이벤트에 등록된 티켓이 없습니다.');
+                    setTicketPrices([]); // 빈 배열로 설정
+                    return;
+                }
+
+                // 에러 응답 내용 확인
+                try {
+                    const errorText = await response.text();
+                    console.error('에러 응답 내용:', errorText);
+                } catch (e) {
+                    console.error('에러 응답 읽기 실패:', e);
+                }
+
+                throw new Error(`티켓 조회 실패: ${response.status} ${response.statusText}`);
+            }
+
+            const ticketList = await response.json();
+            console.log('API로부터 받은 이벤트 티켓 목록:', ticketList);
+
+            if (!ticketList || ticketList.length === 0) {
+                console.log('조회된 티켓이 없습니다.');
+                setTicketPrices([]); // 빈 배열로 설정
+                return;
+            }
+
+            // 티켓 가격 목록 생성
+            const priceList = ticketList.map((ticket: any) => {
+                console.log('개별 티켓 데이터:', ticket);
+                return {
+                    name: ticket.name || ticket.ticketName || ticket.title || '이름 없음',
+                    price: ticket.price || 0
+                };
+            }).sort((a, b) => b.price - a.price); // 가격 높은 순으로 정렬
+
+            setTicketPrices(priceList);
+            console.log('이벤트 티켓 가격 목록:', priceList);
+
+        } catch (error) {
+            console.error('티켓 가격 로드 실패:', error);
+            console.error('에러 상세 정보:', {
+                message: error instanceof Error ? error.message : error,
+                stack: error instanceof Error ? error.stack : undefined,
+                eventId
+            });
+            // 에러 발생 시에도 빈 배열로 설정 (목업 데이터 사용하지 않음)
+            setTicketPrices([]);
+        }
+    };
+
+    // 달력 날짜 생성 함수
+    const generateCalendarDays = () => {
+        const year = currentCalendarYear;
+        const month = currentCalendarMonth;
+
+        // 해당 월의 첫째 날과 마지막 날
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+
+        // 첫째 날의 요일 (0: 일요일, 6: 토요일)
+        const firstDayOfWeek = firstDay.getDay();
+
+        // 마지막 날의 날짜
+        const lastDate = lastDay.getDate();
+
+        // 이전 달의 마지막 날들
+        const prevMonth = new Date(year, month - 2, 0);
+        const prevLastDate = prevMonth.getDate();
+
+        const days = [];
+
+        // 이전 달의 날짜들 (회색으로 표시)
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const date = prevLastDate - i;
+            const dateString = `${year}-${String(month - 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        // 현재 달의 날짜들
+        for (let date = 1; date <= lastDate; date++) {
+            const dateString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: true
+            });
+        }
+
+        // 다음 달의 날짜들 (달력을 6주로 맞추기 위해)
+        const remainingDays = 42 - days.length; // 6주 * 7일 = 42일
+        for (let date = 1; date <= remainingDays; date++) {
+            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        return days;
+    };
+
+    // 날짜 선택 핸들러
+    const handleDateSelect = (date: string) => {
+        setSelectedDate(date);
+        setSelectedScheduleId(null); // 기존 회차 선택 초기화
+        filterSchedulesForDate(date);
+    };
+
+    // 회차 선택 핸들러
+    const handleScheduleSelect = (scheduleId: number) => {
+        setSelectedScheduleId(scheduleId);
+    };
+
+    // 선택된 회차 정보 가져오기
+    const getSelectedSchedule = () => {
+        return availableSchedules.find(schedule => schedule.scheduleId === selectedScheduleId);
+    };
+
+    // 특정 날짜의 예매 가능 여부 확인
+    const isDateBookable = (date: string) => {
+        // 전체 회차 데이터에서 해당 날짜의 회차들을 찾아서 예매 가능 여부 확인
+        const dateSchedules = allSchedules.filter(schedule => schedule.date === date);
+
+        // 회차가 없으면 예매 불가능
+        if (dateSchedules.length === 0) {
+            return false;
+        }
+
+        // 하나라도 예매 가능한 회차가 있으면 예매 가능
+        return dateSchedules.some(schedule => schedule.hasActiveTickets);
+    };
 
     if (loading) {
         return (
@@ -661,27 +985,33 @@ const EventDetail = (): JSX.Element => {
 
                             <div className="flex items-start">
                                 <span className="text-base text-[#00000099] font-semibold w-20">가격</span>
-                                <div className="grid grid-cols-2 gap-x-4">
-                                    {/* TODO: 티켓 및 회차 연결 */}
-                                    <p>티켓 및 회차 연결</p>
-                                    {/*<div className="space-y-1">*/}
-                                    {/*    {eventData.pricingTiers.map((tier: any, index: number) => (*/}
-                                    {/*        <p key={index} className="text-base">*/}
-                                    {/*            {tier.tier}*/}
-                                    {/*        </p>*/}
-                                    {/*    ))}*/}
-                                    {/*</div>*/}
-                                    {/*<div className="space-y-1 font-semibold">*/}
-                                    {/*    {eventData.pricingTiers.map((tier: any, index: number) => (*/}
-                                    {/*        <p key={index} className="text-base">*/}
-                                    {/*            {tier.price}*/}
-                                    {/*        </p>*/}
-                                    {/*    ))}*/}
-                                    {/*</div>*/}
+                                <div className="flex-1">
+                                    {ticketPrices.length > 0 ? (
+                                        <div className="grid grid-cols-2 gap-x-4">
+                                            <div className="space-y-1">
+                                                {ticketPrices.map((ticket, index) => (
+                                                    <p key={index} className="text-base">
+                                                        {ticket.name}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                            <div className="space-y-1 font-semibold">
+                                                {ticketPrices.map((ticket, index) => (
+                                                    <p key={index} className="text-base">
+                                                        {ticket.price === 0 ? '무료' : `${ticket.price.toLocaleString()}원`}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-500 text-base">
+                                            티켓이 등록되지 않았습니다
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={handleInquiry}
-                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm"
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm ml-4"
                                 >
                                     담당자에게 문의하기
                                 </button>
@@ -692,71 +1022,258 @@ const EventDetail = (): JSX.Element => {
 
                 {/* Date and Time Selection */}
                 <div className="mt-16 mb-8 border border-gray-200 rounded-lg">
-                    <div className="p-0 flex">
-                        <div className="flex-1 p-6">
-                            <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">
-                                날짜 선택
-                            </h3>
-                            <p>회차 연결</p>
-                            {/*    <div className="space-y-3">*/}
-                            {/*        {eventData.schedules?.filter((schedule: any) => {*/}
-                            {/*            // 선택된 날짜와 일치하는 회차만 필터링*/}
-                            {/*            const scheduleDate = schedule.date.split(' ')[0]; // "2025.07.26" 부분만 추출*/}
-                            {/*            const selectedDateStr = `${currentCalendarYear}.${String(currentCalendarMonth).padStart(2, '0')}.${String(selectedDate).padStart(2, '0')}`;*/}
-                            {/*            return scheduleDate === selectedDateStr;*/}
-                            {/*        }).map((schedule: any, index: number) => (*/}
-                            {/*            <div*/}
-                            {/*                key={index}*/}
-                            {/*                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedSchedule === schedule*/}
-                            {/*                    ? 'border-blue-500 bg-blue-50'*/}
-                            {/*                    : 'border-gray-200 hover:bg-gray-50'*/}
-                            {/*                    }`}*/}
-                            {/*                onClick={() => setSelectedSchedule(schedule)}*/}
-                            {/*            >*/}
-                            {/*                <div className="flex items-center gap-3">*/}
-                            {/*                    <span className="text-sm font-medium text-gray-600">*/}
-                            {/*                        {index + 1}회차*/}
-                            {/*                    </span>*/}
-                            {/*                    <span className="text-base font-semibold text-[#212121]">*/}
-                            {/*                        {schedule.time}*/}
-                            {/*                    </span>*/}
-                            {/*                </div>*/}
-                            {/*            </div>*/}
-                            {/*        ))}*/}
-                            {/*    </div>*/}
-                            {/*</div>*/}
+                    <div className="p-6">
+                        <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">
+                            날짜 및 회차 선택
+                        </h3>
 
-                            {/*/!* Seat Availability *!/*/}
-                            {/*<div className="w-[361px] bg-[#e7eaff] rounded-r-[10px]">*/}
-                            {/*    <div className="p-6">*/}
-                            {/*        <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">*/}
-                            {/*            예매 가능한 좌석*/}
-                            {/*        </h3>*/}
-                            {/*        <div className="space-y-4">*/}
-                            {/*            {selectedSchedule ? (*/}
-                            {/*                // 선택된 회차가 있을 때 해당 회차의 좌석 정보 표시*/}
-                            {/*                <div className="space-y-3">*/}
-                            {/*                    {eventData.seatAvailability.map((seat: any, index: number) => (*/}
-                            {/*                        <div*/}
-                            {/*                            key={index}*/}
-                            {/*                            className="flex justify-between items-center"*/}
-                            {/*                        >*/}
-                            {/*                            <span className="text-base font-semibold text-[#00000080]">*/}
-                            {/*                                {seat.type}*/}
-                            {/*                            </span>*/}
-                            {/*                            <span className="text-base font-semibold text-right">*/}
-                            {/*                                {seat.status}*/}
-                            {/*                            </span>*/}
-                            {/*                        </div>*/}
-                            {/*                    ))}*/}
-                            {/*                </div>*/}
-                            {/*            ) : (*/}
-                            {/*                // 선택된 회차가 없을 때 안내 메시지*/}
-                            {/*                <div className="text-center text-gray-500 py-8">*/}
-                            {/*                    시간을 선택해주세요*/}
-                            {/*                </div>*/}
-                            {/*            )}*/}
-                            {/*        </div>*/}
+                        <div className="flex gap-6">
+                            {/* 좌측: 달력 - 30% */}
+                            <div className="w-[30%]">
+                                <h4 className="text-base font-medium text-gray-900 mb-4">날짜 선택</h4>
+
+                                {/* 달력 헤더 */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <h5 className="text-sm font-medium text-gray-900">
+                                        {currentCalendarYear}년 {currentCalendarMonth}월
+                                    </h5>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => {
+                                                if (currentCalendarMonth === 1) {
+                                                    setCurrentCalendarMonth(12);
+                                                    setCurrentCalendarYear(currentCalendarYear - 1);
+                                                } else {
+                                                    setCurrentCalendarMonth(currentCalendarMonth - 1);
+                                                }
+                                            }}
+                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                        >
+                                            ◀
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (currentCalendarMonth === 12) {
+                                                    setCurrentCalendarMonth(1);
+                                                    setCurrentCalendarYear(currentCalendarYear + 1);
+                                                } else {
+                                                    setCurrentCalendarMonth(currentCalendarMonth + 1);
+                                                }
+                                            }}
+                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                        >
+                                            ▶
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 요일 헤더 */}
+                                <div className="grid grid-cols-7 gap-1 mb-1">
+                                    {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+                                        <div key={day} className={`p-1 text-xs font-medium text-center ${
+                                            index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                                        }`}>
+                                            {day}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* 달력 날짜 그리드 */}
+                                <div className="grid grid-cols-7 gap-1">
+                                    {generateCalendarDays().map((day, index) => {
+                                        const isEventDate = eventDates.includes(day.dateString);
+                                        const isSelected = selectedDate === day.dateString;
+                                        const isCurrentMonth = day.isCurrentMonth;
+                                        const isBookable = isEventDate && isDateBookable(day.dateString);
+
+                                        return (
+                                            <button
+                                                key={index}
+                                                onClick={() => isEventDate ? handleDateSelect(day.dateString) : null}
+                                                disabled={!isEventDate || !isCurrentMonth}
+                                                className={`p-1.5 text-xs rounded transition-colors relative h-8 ${
+                                                    !isCurrentMonth 
+                                                        ? 'text-gray-300 cursor-not-allowed'
+                                                        : isSelected && isEventDate
+                                                            ? 'bg-blue-600 text-white'
+                                                            : isEventDate && isBookable
+                                                                ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'
+                                                                : isEventDate && !isBookable
+                                                                    ? 'bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer'
+                                                                    : 'text-gray-400 cursor-not-allowed'
+                                                }`}
+                                            >
+                                                {day.date}
+                                                {isEventDate && isCurrentMonth && (
+                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                                                        isBookable ? 'bg-green-600' : 'bg-pink-600'
+                                                    }`}></div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* 중앙: 회차 목록 - 40% */}
+                            <div className="w-[40%]">
+                                <h4 className="text-base font-medium text-gray-900 mb-4">
+                                    회차 선택 {selectedDate && `(${selectedDate})`}
+                                </h4>
+
+                                <div className="space-y-2 max-h-80 overflow-y-auto">
+                                    {availableSchedules.length > 0 ? (
+                                        availableSchedules.map((schedule) => (
+                                            <div
+                                                key={schedule.scheduleId}
+                                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                                                    selectedScheduleId === schedule.scheduleId
+                                                        ? 'border-blue-500 bg-blue-50'
+                                                        : 'border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                                onClick={() => setSelectedScheduleId(schedule.scheduleId)}
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold text-[#212121]">
+                                                        {schedule.startTime} - {schedule.endTime}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        판매: {schedule.soldTicketCount}매
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {schedule.hasActiveTickets ? (
+                                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                            예매가능
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                                            매진
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center text-gray-500 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                                            {selectedDate ? (
+                                                <div>
+                                                    <p className="text-sm mb-1">회차가 없습니다</p>
+                                                    <p className="text-xs text-gray-400">다른 날짜를 선택해주세요</p>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="text-sm mb-1">날짜를 선택해주세요</p>
+                                                    <p className="text-xs text-gray-400">달력에서 날짜를 클릭하세요</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 우측: 예매 가능 여부 정보 - 30% */}
+                            <div className="w-[30%]">
+                                <h4 className="text-base font-medium text-gray-900 mb-4">행사 일별 예매 현황</h4>
+
+                                <div className="space-y-3">
+                                    {/* 범례 */}
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <h5 className="text-sm font-medium text-gray-900 mb-2">상태 표시</h5>
+                                        <div className="flex flex-wrap gap-4 text-xs">
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-green-100 rounded border border-green-300"></div>
+                                                <span>예매 가능</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-pink-100 rounded border border-pink-300"></div>
+                                                <span>예매 불가능</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                                                <span>선택된 날짜</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 행사 일별 예매 현황 목록 */}
+                                    <div className="bg-white border rounded-lg">
+                                        <div className="p-3 border-b bg-gray-50">
+                                            <h5 className="text-sm font-medium text-gray-900">전체 행사일 현황</h5>
+                                        </div>
+                                        <div className="max-h-60 overflow-y-auto">
+                                            {eventDates.map((date) => {
+                                                const isBookable = isDateBookable(date);
+                                                const isSelected = selectedDate === date;
+                                                const dateObj = new Date(date + 'T00:00:00');
+                                                const dayName = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
+
+                                                return (
+                                                    <div
+                                                        key={date}
+                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
+                                                            isSelected ? 'bg-blue-50' : ''
+                                                        }`}
+                                                        onClick={() => handleDateSelect(date)}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-3 h-3 rounded ${
+                                                                isSelected 
+                                                                    ? 'bg-blue-600' 
+                                                                    : isBookable 
+                                                                        ? 'bg-green-100 border border-green-300' 
+                                                                        : 'bg-pink-100 border border-pink-300'
+                                                            }`}></div>
+                                                            <div>
+                                                                <span className="text-sm font-medium">{date}</span>
+                                                                <span className="text-xs text-gray-500 ml-2">({dayName})</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {isBookable ? (
+                                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                                                    예매가능
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">
+                                                                    예매불가
+                                                                </span>
+                                                            )}
+                                                            {isSelected && (
+                                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                                                    선택됨
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 요약 정보 */}
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <div className="grid grid-cols-3 gap-3 text-center">
+                                            <div>
+                                                <div className="text-lg font-bold text-gray-900">{eventDates.length}</div>
+                                                <div className="text-xs text-gray-600">총 행사일</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-lg font-bold text-green-600">
+                                                    {eventDates.filter(date => isDateBookable(date)).length}
+                                                </div>
+                                                <div className="text-xs text-gray-600">예매가능일</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-lg font-bold text-pink-600">
+                                                    {eventDates.filter(date => !isDateBookable(date)).length}
+                                                </div>
+                                                <div className="text-xs text-gray-600">예매불가일</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -766,18 +1283,24 @@ const EventDetail = (): JSX.Element => {
                     <button
                         onClick={() => {
                             if (eventData.mainCategory !== "공연") {
-                                // 콘서트가 아닌 경우 BookingPage로 이동
-                                navigate(`/booking/${eventId}`);
+                                // 회차가 선택되지 않았으면 경고
+                                if (!selectedScheduleId) {
+                                    toast.error('회차를 선택해주세요.');
+                                    return;
+                                }
+                                // 티켓 예매 페이지로 scheduleId와 함께 이동
+                                navigate(`/ticket-reservation/${eventId}?scheduleId=${selectedScheduleId}`);
                             } else {
                                 // 공연의 경우 외부 예매 링크 모달
                                 setIsExternalBookingOpen(true);
                             }
                         }}
-                    // disabled={!selectedDate || !selectedSchedule}
-                    // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
-                    //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                    //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    //     }`}
+                        disabled={eventData.mainCategory !== "공연" && !selectedScheduleId}
+                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${
+                            eventData.mainCategory === "공연" || selectedScheduleId
+                                ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
                     >
                         예매하기
                     </button>
