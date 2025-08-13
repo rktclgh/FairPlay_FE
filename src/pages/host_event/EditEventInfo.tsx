@@ -1,9 +1,14 @@
-import React, {useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {TopNav} from "../../components/TopNav";
 import {HostSideNav} from "../../components/HostSideNav";
 import {loadKakaoMap} from "../../lib/loadKakaoMap";
-import ReactQuill from "react-quill";
+import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import {useFileUpload} from "../../hooks/useFileUpload";
+import type {EventDetailResponseDto, EventDetailModificationRequestDto} from "../../services/types/eventType";
+import { dashboardAPI } from "../../services/dashboard";
+import {toast} from "react-toastify";
+import {eventAPI} from "../../services/event";
 
 // 커스텀 체크박스 스타일
 const customCheckboxStyles = `
@@ -86,10 +91,139 @@ interface ExternalLink {
 export const EditEventInfo = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [eventData, setEventData] = useState<EventDetailResponseDto | null>(
-        null
+    const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
+    const detailRef = useRef<ReactQuill | null>(null);
+    const policyRef = useRef<ReactQuill | null>(null);
+    const inquiryRef = useRef<ReactQuill | null>(null);
+
+    // CDN URL 생성 유틸
+    const toCdnUrl = (path: string) => {
+        const base = import.meta.env.VITE_CDN_BASE_URL || "";
+        if (/^https?:\/\//.test(path)) return path;
+        const clean = path.startsWith("/") ? path.slice(1) : path;
+        return `${base}/${clean}`;
+    };
+
+    // 파일 선택
+    const pickImageFile = () =>
+        new Promise<File | null>((resolve) => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.onchange = () => resolve(input.files?.[0] ?? null);
+            input.click();
+        });
+
+    // 에디터에 이미지 삽입
+    const insertImage = (ref: React.RefObject<ReactQuill>, url: string) => {
+        const quill = ref.current?.getEditor();
+        if (!quill) return;
+        const range = quill.getSelection(true) ?? { index: quill.getLength(), length: 0 };
+        quill.insertEmbed(range.index, "image", url, "user");
+        quill.setSelection(range.index + 1, 0, "user");
+    };
+
+    // 서버 업로드 → CDN URL
+    const uploadEditorImageAndGetUrl = async (file: File) => {
+        try {
+            const uploaded: any = await uploadFile(file, "editor_image"); // tempFiles에 쌓임
+            const key: string | undefined =
+                uploaded?.key ??
+                uploaded?.data?.key ??
+                (Array.isArray(uploadedFiles) ? uploadedFiles[uploadedFiles.length - 1]?.key : undefined);
+            if (!key) throw new Error("No key");
+            return toCdnUrl(key);
+        } catch {
+            toast.error("이미지 업로드에 실패했습니다.");
+            return null;
+        }
+    };
+
+    // 이미지 버튼 핸들러가 포함된 모듈(메모이즈)
+    const createModules = (ref: React.RefObject<ReactQuill>) =>
+        ({
+            toolbar: {
+                container: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline"],
+                    // 리스트/링크/이미지 버튼
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    ["link", "image"],
+                    ["clean"],
+                ],
+                handlers: {
+                    image: async () => {
+                        const file = await pickImageFile();
+                        if (!file) return;
+                        const url = await uploadEditorImageAndGetUrl(file);
+                        if (url) insertImage(ref, url);
+                    },
+                },
+            },
+            clipboard: { matchVisual: false },
+            history: { delay: 1000, maxStack: 100, userOnly: true },
+        }) as const;
+
+    // modules는 렌더마다 바뀌지 않게 고정
+    const detailModules = useMemo(() => createModules(detailRef), []);
+    const policyModules = useMemo(() => createModules(policyRef), []);
+    const inquiryModules = useMemo(() => createModules(inquiryRef), []);
+
+    const quillFormats = useMemo(
+        () => ["header", "bold", "italic", "underline", "list", "bullet", "link", "image"],
+        []
     );
+
+    // 붙여넣기/드롭 이미지 업로드
+    useEffect(() => {
+        const bind = (ref: React.RefObject<ReactQuill>) => {
+            const quill = ref.current?.getEditor();
+            if (!quill) return () => {};
+            const root = quill.root;
+
+            const onPaste = async (e: ClipboardEvent) => {
+                const items = Array.from(e.clipboardData?.items || []);
+                const imgs = items.filter((i) => i.type.startsWith("image/"));
+                if (imgs.length === 0) return;
+                e.preventDefault();
+                for (const it of imgs) {
+                    const f = it.getAsFile();
+                    if (!f) continue;
+                    const url = await uploadEditorImageAndGetUrl(f);
+                    if (url) insertImage(ref, url);
+                }
+            };
+
+            const onDrop = async (e: DragEvent) => {
+                const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith("image/"));
+                if (files.length === 0) return;
+                e.preventDefault();
+                for (const f of files) {
+                    const url = await uploadEditorImageAndGetUrl(f);
+                    if (url) insertImage(ref, url);
+                }
+            };
+
+            const onDragOver = (e: DragEvent) => e.preventDefault();
+
+            root.addEventListener("paste", onPaste as any);
+            root.addEventListener("drop", onDrop as any);
+            root.addEventListener("dragover", onDragOver as any);
+            return () => {
+                root.removeEventListener("paste", onPaste as any);
+                root.removeEventListener("drop", onDrop as any);
+                root.removeEventListener("dragover", onDragOver as any);
+            };
+        };
+
+        const unbinders = [bind(detailRef), bind(policyRef), bind(inquiryRef)];
+        return () => unbinders.forEach((u) => u && u());
+        // 의도적으로 빈 deps: ref.current가 바뀌면 다음 렌더에서 다시 바인딩됨
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const [formData, setFormData] = useState({
+        eventId: null as number,
         eventNameKr: "",
         eventNameEn: "",
         startDate: "",
@@ -102,8 +236,6 @@ export const EditEventInfo = () => {
         viewingGrade: "",
         mainCategory: "",
         subCategory: "",
-        bannerImageVertical: null as File | null,
-        bannerImageHorizontal: null as File | null,
         businessNumber: "",
         managerName: "",
         phone: "",
@@ -120,8 +252,13 @@ export const EditEventInfo = () => {
         inquiryDetails: "",
         reentryAllowed: false,
         exitScanRequired: false,
-        longitude: null as number | null,
+        checkInRequired: false,
+        // 카카오맵에서 받은 장소 정보
+        placeName: "",
         latitude: null as number | null,
+        longitude: null as number | null,
+        placeUrl: "",
+        organizerBusinessNumber: "",
     });
     const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([
         {name: "", url: ""},
@@ -140,6 +277,16 @@ export const EditEventInfo = () => {
         getFileUploadDtos,
     } = useFileUpload();
 
+    const [uploading, setUploading] = useState<'vertical' | 'horizontal' | null>(null);
+
+    const handleBannerUpload = async (file: File, usage: 'banner_vertical') => {
+        if (!file) return;
+        const type = 'vertical';
+        setUploading(type);
+        await uploadFile(file, usage);
+        setUploading(null);
+    };
+
     // Quill 에디터 설정
     const quillModules = {
         toolbar: [
@@ -151,12 +298,12 @@ export const EditEventInfo = () => {
         ],
     };
 
-    const quillFormats = [
-        'header',
-        'bold', 'italic', 'underline',
-        'list', 'bullet',
-        'link', 'image'
-    ];
+    // const quillFormats = [
+    //     'header',
+    //     'bold', 'italic', 'underline',
+    //     'list', 'bullet',
+    //     'link', 'image'
+    // ];
 
     // 이벤트 데이터 로드
     useEffect(() => {
@@ -170,12 +317,11 @@ export const EditEventInfo = () => {
             if (myEvent) {
                 setEventData(myEvent);
                 setFormData({
+                    eventId: myEvent.eventId,
                     eventNameKr: myEvent.titleKr || "",
                     eventNameEn: myEvent.titleEng || "",
                     startDate: myEvent.startDate ? myEvent.startDate.split("T")[0] : "",
                     endDate: myEvent.endDate ? myEvent.endDate.split("T")[0] : "",
-                    address: myEvent.address || "",
-                    detailAddress: myEvent.locationDetail || "",
                     eventOutline: myEvent.bio || "",
                     eventDetail: myEvent.content || "",
                     viewingTime: myEvent.eventTime?.toString() || "",
@@ -186,9 +332,12 @@ export const EditEventInfo = () => {
                     managerName: myEvent.managerName || "",
                     phone: myEvent.managerPhone || "",
                     email: myEvent.managerEmail || "",
+                    registerId: "",
+                    externalTicketName: "",
+                    externalTicketUrl: "",
+                    organizerName: "",
                     representativeName: myEvent.hostName || "",
                     organizerContact: myEvent.contactInfo || "",
-                    organizerBusinessNumber: myEvent.managerBusinessNumber || "",
                     organizerWebsite: myEvent.officialUrl
                         ? typeof myEvent.officialUrl === "string" &&
                         !myEvent.officialUrl.startsWith("[")
@@ -197,10 +346,17 @@ export const EditEventInfo = () => {
                         : "",
                     hostCompany: myEvent.hostCompany || "",
                     policy: myEvent.policy || "",
+                    inquiryDetails: "",
                     reentryAllowed: myEvent.reentryAllowed ?? false,
                     exitScanRequired: myEvent.checkOutAllowed ?? false,
+                    checkInRequired: myEvent.checkInAllowed ?? false,
+                    address: myEvent.address || "",
+                    detailAddress: myEvent.locationDetail || "",
+                    placeUrl: myEvent.placeUrl,
+                    placeName: myEvent.placeName || "",
                     longitude: myEvent.longitude || null,
                     latitude: myEvent.latitude || null,
+                    organizerBusinessNumber: myEvent.managerBusinessNumber || ""
                 });
 
                 if (myEvent.officialUrl) {
@@ -327,9 +483,11 @@ export const EditEventInfo = () => {
         setFormData((prev) => ({
             ...prev,
             address: preferredAddress,
+            placeName: place.place_name,
             detailAddress: "",
             longitude: place.x ? parseFloat(place.x) : null,
             latitude: place.y ? parseFloat(place.y) : null,
+            placeUrl: `https://place.map.kakao.com/${place.id}`, // 카카오맵 장소 URL
         }));
         setSearchKeyword(place.place_name);
         setShowSearchResults(false);
@@ -420,23 +578,28 @@ export const EditEventInfo = () => {
                 formData.subCategory
             );
 
-            const modificationRequest = {
-                locationId: null,
-                locationDetail: formData.detailAddress,
-                hostName: formData.representativeName,
-                hostCompany: formData.hostCompany,
-                contactInfo: formData.organizerContact,
-                bio: formData.eventOutline,
-                content: formData.eventDetail,
-                policy: formData.policy,
-                officialUrl: JSON.stringify(externalLinks.filter((l) => l.url)), // URL이 있는 항목만 유지
-                eventTime: formData.viewingTime,
-                startDate: formData.startDate,
-                endDate: formData.endDate,
-                mainCategoryId: categoryIds.mainCategoryId,
-                subCategoryId: categoryIds.subCategoryId,
-                regionCodeId: null,
+            const modificationRequest: EventDetailModificationRequestDto = {
+                titleKr: formData.eventNameKr || undefined,
+                titleEng: formData.eventNameEn || undefined,
+                address: formData.address || undefined,
+                placeName: searchKeyword || undefined,
+                latitude: formData.latitude || undefined,
+                longitude: formData.longitude || undefined,
+                locationDetail: formData.detailAddress || undefined,
+                hostName: formData.representativeName || undefined,
+                hostCompany: formData.hostCompany || undefined,
+                contactInfo: formData.organizerContact || undefined,
+                bio: formData.eventOutline || undefined,
+                content: formData.eventDetail || undefined,
+                policy: formData.policy || undefined,
+                officialUrl: externalLinks.some(l => l.url) ? JSON.stringify(externalLinks.filter((l) => l.url)) : undefined,
+                eventTime: formData.viewingTime ? parseInt(formData.viewingTime) : undefined,
+                startDate: formData.startDate || undefined,
+                endDate: formData.endDate || undefined,
+                mainCategoryId: categoryIds.mainCategoryId || undefined,
+                subCategoryId: categoryIds.subCategoryId || undefined,
                 reentryAllowed: formData.reentryAllowed,
+                checkInAllowed: formData.checkInRequired,
                 checkOutAllowed: formData.exitScanRequired,
                 age: formData.viewingGrade === "청소년불가",
                 tempFiles: getFileUploadDtos(),
@@ -734,193 +897,83 @@ export const EditEventInfo = () => {
                                     {/* 행사 배너 이미지 */}
                                     {/* 세로형 배너 */}
                                     <div>
-                                        <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            행사 배너 이미지 (세로형)
+                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            행사 배너 (세로형)
                                         </label>
                                         <div
                                             className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative"
-                                            onDragOver={(e) => {
-                                                e.preventDefault();
-                                                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-                                            }}
-                                            onDragLeave={(e) => {
+                                            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50'); }}
+                                            onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50'); }}
+                                            onDrop={async (e) => {
                                                 e.preventDefault();
                                                 e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                                            }}
-                                            onDrop={(e) => {
-                                                e.preventDefault();
-                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                                                const files = e.dataTransfer.files;
-                                                if (files && files[0] && files[0].type.startsWith('image/')) {
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        bannerImageVertical: files[0]
-                                                    }));
+                                                const file = e.dataTransfer.files?.[0];
+                                                if (file) {
+                                                    await handleBannerUpload(file, 'banner_vertical');
                                                 }
                                             }}
                                         >
-                                            {formData.bannerImageVertical ? (
+                                            {isUploading && uploading === 'vertical' && <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><div className="text-lg">업로드 중...</div></div>}
+                                            {getFileByUsage('banner_vertical') ? (
                                                 <div className="space-y-2">
                                                     <img
-                                                        src={URL.createObjectURL(formData.bannerImageVertical)}
+                                                        src={`${import.meta.env.VITE_CDN_BASE_URL}/${getFileByUsage('banner_vertical')?.key}`}
                                                         alt="세로형 배너 미리보기"
                                                         className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                     />
-                                                    <p className="text-xs text-green-600">✓ {formData.bannerImageHorizontal.name}</p>
-                                                    <div className="text-sm text-gray-600">
-                                                        <label htmlFor="banner-vertical-upload"
-                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                    <div className="text-sm text-gray-600 space-x-2">
+                                                        <label htmlFor="banner-vertical-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
                                                             <span>이미지 변경</span>
-                                                            <input
-                                                                id="banner-vertical-upload"
-                                                                name="bannerImageVertical"
-                                                                type="file"
-                                                                accept="image/*"
-                                                                className="sr-only"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files?.[0];
-                                                                    if (file) {
-                                                                        setFormData(prev => ({
-                                                                            ...prev,
-                                                                            bannerImageVertical: file
-                                                                        }));
-                                                                    }
-                                                                }}
+                                                            <input id="banner-vertical-upload" type="file" accept="image/*" className="sr-only"
+                                                                   onChange={async (e) => {
+                                                                       const file = e.target.files?.[0];
+                                                                       if (file) await handleBannerUpload(file, 'banner_vertical');
+                                                                   }}
                                                             />
                                                         </label>
+                                                        <button type="button" onClick={() => removeFile('banner_vertical')} className="font-medium text-red-600 hover:text-red-500">
+                                                            삭제
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            ) : (
+                                            ) : eventData?.thumbnailUrl ? (
                                                 <div className="space-y-2">
-                                                    <svg className="mx-auto h-12 w-12 text-gray-400"
-                                                         stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                                        <path
-                                                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                                            strokeWidth="2" strokeLinecap="round"
-                                                            strokeLinejoin="round"/>
-                                                    </svg>
-                                                    <div className="text-sm text-gray-600">
-                                                        <label htmlFor="banner-vertical-upload"
-                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                            <span>이미지 업로드</span>
-                                                            <input
-                                                                id="banner-vertical-upload"
-                                                                name="bannerImageVertical"
-                                                                type="file"
-                                                                accept="image/*"
-                                                                className="sr-only"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files?.[0];
-                                                                    if (file) {
-                                                                        setFormData(prev => ({
-                                                                            ...prev,
-                                                                            bannerImageVertical: file
-                                                                        }));
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </label>
-                                                        <p className="pl-1">또는 드래그 앤 드롭</p>
-                                                    </div>
-                                                    <p className="text-xs text-gray-500">PNG, JPG, GIF 최대 10MB</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* 가로형 배너 */}
-                                    <div>
-                                        <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            행사 배너 이미지 (가로형)
-                                        </label>
-                                        <div
-                                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative"
-                                            onDragOver={(e) => {
-                                                e.preventDefault();
-                                                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-                                            }}
-                                            onDragLeave={(e) => {
-                                                e.preventDefault();
-                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                                            }}
-                                            onDrop={(e) => {
-                                                e.preventDefault();
-                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                                                const files = e.dataTransfer.files;
-                                                if (files && files[0] && files[0].type.startsWith('image/')) {
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        bannerImageHorizontal: files[0]
-                                                    }));
-                                                }
-                                            }}
-                                        >
-                                            {formData.bannerImageHorizontal ? (
-                                                <div className="space-y-2">
+                                                    <p className="text-sm text-gray-500">현재 등록된 이미지</p>
                                                     <img
-                                                        src={URL.createObjectURL(formData.bannerImageHorizontal)}
-                                                        alt="가로형 배너 미리보기"
+                                                        src={eventData.thumbnailUrl}
+                                                        alt="현재 세로형 배너"
                                                         className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                     />
-                                                    <p className="text-xs text-green-600">✓ {formData.bannerImageVertical.name}</p>
                                                     <div className="text-sm text-gray-600">
-                                                        <label htmlFor="banner-horizontal-upload"
-                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                        <label htmlFor="banner-vertical-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
                                                             <span>이미지 변경</span>
-                                                            <input
-                                                                id="banner-horizontal-upload"
-                                                                name="bannerImageHorizontal"
-                                                                type="file"
-                                                                accept="image/*"
-                                                                className="sr-only"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files?.[0];
-                                                                    if (file) {
-                                                                        setFormData(prev => ({
-                                                                            ...prev,
-                                                                            bannerImageHorizontal: file
-                                                                        }));
-                                                                    }
-                                                                }}
+                                                            <input id="banner-vertical-upload" type="file" accept="image/*" className="sr-only"
+                                                                   onChange={async (e) => {
+                                                                       const file = e.target.files?.[0];
+                                                                       if (file) await handleBannerUpload(file, 'banner_vertical');
+                                                                   }}
                                                             />
                                                         </label>
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div className="space-y-2">
-                                                    <svg className="mx-auto h-12 w-12 text-gray-400"
-                                                         stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                                        <path
-                                                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                                            strokeWidth="2" strokeLinecap="round"
-                                                            strokeLinejoin="round"/>
+                                                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                                     </svg>
                                                     <div className="text-sm text-gray-600">
-                                                        <label htmlFor="banner-horizontal-upload"
-                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                        <label htmlFor="banner-vertical-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
                                                             <span>이미지 업로드</span>
-                                                            <input
-                                                                id="banner-horizontal-upload"
-                                                                name="bannerImageHorizontal"
-                                                                type="file"
-                                                                accept="image/*"
-                                                                className="sr-only"
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files?.[0];
-                                                                    if (file) {
-                                                                        setFormData(prev => ({
-                                                                            ...prev,
-                                                                            bannerImageHorizontal: file
-                                                                        }));
-                                                                    }
-                                                                }}
+                                                            <input id="banner-vertical-upload" type="file" accept="image/*" className="sr-only"
+                                                                   onChange={async (e) => {
+                                                                       const file = e.target.files?.[0];
+                                                                       if (file) await handleBannerUpload(file, 'banner_vertical');
+                                                                   }}
                                                             />
                                                         </label>
                                                         <p className="pl-1">또는 드래그 앤 드롭</p>
                                                     </div>
-                                                    <p className="text-xs text-gray-500">PNG, JPG, GIF 최대 10MB</p>
+                                                    <p className="text-xs text-gray-500">PNG, JPG, GIF 최대 5MB</p>
                                                 </div>
                                             )}
                                         </div>
@@ -956,16 +1009,14 @@ export const EditEventInfo = () => {
                                         </label>
                                         <div>
                                             <ReactQuill
+                                                ref={detailRef}
                                                 theme="snow"
                                                 value={formData.eventDetail || ""}
-                                                onChange={(content) => setFormData(prev => ({
-                                                    ...prev,
-                                                    eventDetail: content
-                                                }))}
-                                                modules={quillModules}
+                                                onChange={(html) => setFormData((p)=> ({ ...p, eventDetail: html || "" }))}
+                                                modules={detailModules}
                                                 formats={quillFormats}
                                                 placeholder="행사 상세 정보를 입력하세요"
-                                                style={{height: '150px'}}
+                                                style={{height: '400px'}}
                                             />
                                         </div>
                                     </div>
@@ -1004,306 +1055,311 @@ export const EditEventInfo = () => {
                                                     className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.viewingGrade ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                                 >
                                                     <option value="">관람등급을 선택하세요</option>
-                                                    <option value="전체관람가">전체관람가</option>
-                                                    <option value="12세이상관람가">12세이상관람가</option>
-                                                    <option value="15세이상관람가">15세이상관람가</option>
-                                                    <option value="18세이상관람가">18세이상관람가</option>
+                                                    <option value="전체이용가">전체이용가</option>
+                                                    <option value="청소년불가">청소년불가</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            관람등급
-                                        </label>
-                                        <select
-                                            name="viewingGrade"
-                                            value={formData.viewingGrade || ""}
-                                            onChange={handleInputChange}
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.viewingGrade
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
-                                        >
-                                            <option value="">관람등급을 선택하세요</option>
-                                            <option value="전체이용가">전체이용가</option>
-                                            <option value="청소년불가">청소년불가</option>
-                                        </select>
+
+                                    {/* 입장/재입장/퇴장 스캔 설정 */}
+                                    <div className="col-span-2">
+                                        <div className="grid grid-cols-3 gap-6">
+                                            {/* 체크인 허용 여부 */}
+                                            <div>
+                                                <label
+                                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                                    체크인 허용 여부
+                                                </label>
+                                                <div className="flex items-center h-[54px]">
+                                                    <label className="custom-checkbox">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="checkInRequired"
+                                                            checked={formData.checkInRequired}
+                                                            onChange={handleInputChange}
+                                                        />
+                                                        <span className="checkmark"></span>
+                                                    </label>
+                                                    <span className="ml-3 text-sm font-medium text-gray-700">
+                                                        체크인 허용
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* 재입장 허용 여부 */}
+                                            <div>
+                                                <label
+                                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                                    재입장 허용 여부
+                                                </label>
+                                                <div className="flex items-center h-[54px]">
+                                                    <label className="custom-checkbox">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="reentryAllowed"
+                                                            checked={formData.reentryAllowed}
+                                                            onChange={handleInputChange}
+                                                        />
+                                                        <span className="checkmark"></span>
+                                                    </label>
+                                                    <span className="ml-3 text-sm font-medium text-gray-700">
+                                                        재입장 허용
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* 퇴장 스캔 여부 */}
+                                            <div>
+                                                <label
+                                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                                    퇴장 스캔 여부
+                                                </label>
+                                                <div className="flex items-center h-[54px]">
+                                                    <label className="custom-checkbox">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="exitScanRequired"
+                                                            checked={formData.exitScanRequired}
+                                                            onChange={handleInputChange}
+                                                        />
+                                                        <span className="checkmark"></span>
+                                                    </label>
+                                                    <span className="ml-3 text-sm font-medium text-gray-700">
+                                                        퇴장 시 스캔 필수
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* 재입장 허용 여부와 퇴장 스캔 여부 */}
-                            <div className="col-span-2">
+                        {/* 정책 섹션 */}
+                        <div className="mb-8">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <div className="col-span-2 mb-12">
+                                    <label
+                                        className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        예매/취소/환불 정책
+                                    </label>
+                                    <div>
+                                        <ReactQuill
+                                            ref={policyRef}
+                                            theme="snow"
+                                            value={formData.policy || ""}
+                                            onChange={(html) => setFormData((p) => ({ ...p, policy: html || "" }))}
+                                            modules={policyModules}
+                                            formats={quillFormats}
+                                            placeholder="예매, 취소, 환불 정책을 입력하세요"
+                                            style={{height: "150px"}}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 외부 링크 섹션 */}
+                        <div className="mb-8">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">외부 링크</h2>
+                                <button
+                                    type="button"
+                                    onClick={addLink}
+                                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-semibold mb-4"
+                                >
+                                    링크 추가
+                                </button>
+                                <div className="space-y-4">
+                                    {externalLinks.map((link, index) => (
+                                        <div key={index} className="grid grid-cols-2 gap-8">
+                                            <div>
+                                                <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트명</label>
+                                                <input
+                                                    type="text"
+                                                    name="externalTicketName"
+                                                    value={link.name}
+                                                    onChange={(e) => handleLinkChange(index, "name", e.target.value)}
+                                                    placeholder="예: 인터파크 티켓"
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${link.name ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                />
+                                            </div>
+                                            <div className="flex items-center">
+                                                <div className="flex-grow">
+                                                    <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트 URL</label>
+                                                    <input
+                                                        type="text"
+                                                        value={link.url}
+                                                        onChange={(e) => handleLinkChange(index, "url", e.target.value)}
+                                                        placeholder="https://example.com"
+                                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${link.url ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeLink(index)}
+                                                    className="ml-4 text-red-500 hover:text-red-700 transition-colors"
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 주최자 정보 섹션 */}
+                        <div className="mb-8">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">주최자 정보</h2>
                                 <div className="grid grid-cols-2 gap-8">
-                                    {/* 재입장 허용 여부 */}
                                     <div>
-                                        <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            재입장 허용 여부
-                                        </label>
-                                        <div className="flex items-center h-[54px]">
-                                            <label className="custom-checkbox">
-                                                <input
-                                                    type="checkbox"
-                                                    name="reentryAllowed"
-                                                    checked={formData.reentryAllowed}
-                                                    onChange={handleInputChange}
-                                                />
-                                                <span className="checkmark"></span>
-                                            </label>
-                                            <span className="ml-3 text-sm font-medium text-gray-700">
-                                                            재입장 허용
-                                                        </span>
-                                        </div>
+                                        <label className="block text-[15px] font-bold mb-1">주최자명</label>
+                                        <input
+                                            type="text"
+                                            name="representativeName"
+                                            value={formData.representativeName}
+                                            onChange={handleInputChange}
+                                            placeholder="대표자명을 입력하세요"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.representativeName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
                                     </div>
-
-                                    {/* 퇴장 스캔 여부 */}
                                     <div>
-                                        <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            퇴장 스캔 여부
-                                        </label>
-                                        <div className="flex items-center h-[54px]">
-                                            <label className="custom-checkbox">
-                                                <input
-                                                    type="checkbox"
-                                                    name="exitScanRequired"
-                                                    checked={formData.exitScanRequired}
-                                                    onChange={handleInputChange}
-                                                />
-                                                <span className="checkmark"></span>
-                                            </label>
-                                            <span className="ml-3 text-sm font-medium text-gray-700">
-                                                            퇴장 시 스캔 필수
-                                                        </span>
-                                        </div>
+                                        <label className="block text-[15px] font-bold mb-1">사업자 등록번호</label>
+                                        <input
+                                            type="text"
+                                            name="organizerBusinessNumber"
+                                            value={formData.organizerBusinessNumber}
+                                            onChange={handleInputChange}
+                                            placeholder="000-00-00000"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerBusinessNumber ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
                                     </div>
                                 </div>
-                            </div>
-                            <div className="col-span-2 mb-12">
-                                <label
-                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                    예매/취소/환불 정책
-                                </label>
-                                <div>
-                                    <ReactQuill
-                                        ref={policyQuillRef}
-                                        theme="better-table-snow"
-                                        value={formData.policy}
-                                        onChange={(content) =>
-                                            setFormData((prev) => ({...prev, policy: content}))
-                                        }
-                                        modules={policyModules}
-                                        formats={quillFormats}
-                                        placeholder="예매, 취소, 환불 정책을 입력하세요"
-                                        style={{height: "150px"}}
+                                <div className="mt-6">
+                                    <label className="block text-[15px] font-bold mb-1">주최/기획사</label>
+                                    <input
+                                        type="text"
+                                        name="hostCompany"
+                                        value={formData.hostCompany}
+                                        onChange={handleInputChange}
+                                        placeholder="주최/기획사명을 입력하세요"
+                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                            formData.hostCompany
+                                                ? "text-black font-medium"
+                                                : "text-[#0000004c]"
+                                        }`}
+                                    />
+                                </div>
+                                <div className="mt-6">
+                                    <label className="block text-[15px] font-bold mb-1">공식 웹사이트 URL</label>
+                                    <input
+                                        type="text"
+                                        name="organizerWebsite"
+                                        value={formData.organizerWebsite}
+                                        onChange={handleInputChange}
+                                        placeholder="https://example.com"
+                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerWebsite ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                     />
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                {/* 외부 링크 섹션 */}
-                <div className="mb-8">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h2 className="font-bold text-black text-lg leading-[30px] mb-6">외부 링크</h2>
-                        <button
-                            type="button"
-                            onClick={addLink}
-                            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-semibold"
-                        >
-                            링크 추가
-                        </button>
-                        <div className="space-y-4">
-                            {externalLinks.map((link, index) => (
-                                <div key={index} className="grid grid-cols-2 gap-8">
+
+                        {/* 담당자 정보 섹션 */}
+                        <div className="mb-8">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">담당자 정보</h2>
+                                <div className="grid grid-cols-2 gap-8">
                                     <div>
-                                        <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트명</label>
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자명</label>
                                         <input
                                             type="text"
-                                            name="externalTicketName"
-                                            value={link.name}
-                                            onChange={(e) => handleLinkChange(index, "name", e.target.value)}
-                                            placeholder="예: 인터파크 티켓"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${link.name ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            name="managerName"
+                                            value={formData.managerName}
+                                            onChange={handleInputChange}
+                                            placeholder="담당자명을 입력하세요"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.managerName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                         />
                                     </div>
-                                    <div className="flex items-center">
-                                        <div className="flex-grow">
-                                            <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트 URL</label>
-                                            <input
-                                                type="text"
-                                                value={link.url}
-                                                onChange={(e) => handleLinkChange(index, "url", e.target.value)}
-                                                placeholder="https://example.com"
-                                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${link.url ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                            />
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeLink(index)}
-                                            className="ml-4 text-red-500 hover:text-red-700 transition-colors"
-                                        >
-                                            삭제
-                                        </button>
+                                    <div>
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">연락처</label>
+                                        <input
+                                            type="text"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleInputChange}
+                                            placeholder="010-0000-0000"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.phone ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">이메일</label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            placeholder="담당자 이메일을 입력하세요"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.email ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-                {/* 판매자 정보 섹션 */}
-                <div className="mb-8">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h2 className="font-bold text-black text-lg leading-[30px] mb-6">주최자 정보</h2>
-                        <div className="grid grid-cols-2 gap-8">
-                            <div>
-                                <label className="block text-[15px] font-bold mb-1">주최자명</label>
-                                <input
-                                    type="text"
-                                    name="representativeName"
-                                    value={formData.representativeName}
-                                    onChange={handleInputChange}
-                                    placeholder="대표자명을 입력하세요"
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.representativeName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[15px] font-bold mb-1">사업자 등록번호</label>
-                                <input
-                                    type="text"
-                                    name="organizerBusinessNumber"
-                                    value={formData.organizerBusinessNumber}
-                                    onChange={handleInputChange}
-                                    placeholder="000-00-00000"
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerBusinessNumber ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                />
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-[15px] font-bold mb-1">주최/기획사</label>
-                            <input
-                                type="text"
-                                name="hostCompany"
-                                value={formData.hostCompany}
-                                onChange={handleInputChange}
-                                placeholder="주최/기획사명을 입력하세요"
-                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                    formData.hostCompany
-                                        ? "text-black font-medium"
-                                        : "text-[#0000004c]"
-                                }`}
-                            />
-                        </div>
-                        <div className="mt-6">
-                            <label className="block text-[15px] font-bold mb-1">공식 웹사이트 URL</label>
-                            <input
-                                type="text"
-                                name="organizerWebsite"
-                                value={formData.organizerWebsite}
-                                onChange={handleInputChange}
-                                placeholder="https://example.com"
-                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerWebsite ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                            />
-                        </div>
-                    </div>
-                </div>
-                {/* 담당자 정보 섹션 */}
-                <div className="mb-8">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">담당자
-                            정보</h2>
-                        <div className="grid grid-cols-2 gap-8">
-                            <div>
-                                <label
-                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자
-                                    담당자명</label>
-                                <input
-                                    type="text"
-                                    name="managerName"
-                                    value={formData.managerName}
-                                    onChange={handleInputChange}
-                                    placeholder="담당자명을 입력하세요"
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.managerName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                />
-                            </div>
-                            <div>
-                                <label
-                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">연락처</label>
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    placeholder="010-0000-0000"
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.phone ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                />
-                            </div>
-                            <div>
-                                <label
-                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">이메일</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    placeholder="담당자 이메일을 입력하세요"
-                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.email ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                />
+
+                        {/* 문의처 섹션 */}
+                        <div className="mb-8">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">문의처</h2>
+                                <div className="mb-12">
+                                    <label
+                                        className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        상세정보
+                                    </label>
+                                    <div>
+                                        <ReactQuill
+                                            ref={inquiryRef}
+                                            theme="snow"
+                                            value={formData.inquiryDetails || ""}
+                                            onChange={(html) => setFormData((p) => ({ ...p, inquiryDetails: html || "" }))}
+                                            modules={inquiryModules}
+                                            formats={quillFormats}
+                                            placeholder="문의처 상세정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
+                                            style={{height: "150px"}}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                {/* 문의처 섹션 */}
-                <div className="mb-8">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h2 className="font-bold text-black text-lg leading-[30px] mb-6">문의처</h2>
-                        <div className="mb-12">
-                            <label
-                                className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                상세정보
-                            </label>
-                            <div>
-                                <ReactQuill
-                                    ref={inquiryQuillRef}
-                                    theme="snow"
-                                    value={formData.inquiryDetails}
-                                    onChange={(content) =>
-                                        setFormData((prev) => ({...prev, inquiryDetails: content}))
-                                    }
-                                    modules={inquiryModules}
-                                    formats={quillFormats}
-                                    placeholder="문의처 상세정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
-                                    style={{height: "150px"}}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {/* 폼 컨테이너 끝 */}
-                <div className="flex flex-col items-center space-y-4 mt-8">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={saving || !formData.eventNameKr || !formData.eventNameEn}
-                        className={`px-6 py-2 rounded-[10px] transition-colors text-sm 
+
+                        {/* 폼 컨테이너 끝 */}
+                        <div className="flex flex-col items-center space-y-4 mt-8">
+                            <button
+                                onClick={handleSubmit}
+                                disabled={saving || !formData.eventNameKr || !formData.eventNameEn}
+                                className={`px-6 py-2 rounded-[10px] transition-colors text-sm 
                     ${saving
-                            ? "bg-gray-400 text-white cursor-not-allowed"
-                            : formData.eventNameKr && formData.eventNameEn
-                                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                : 'bg-gray-400 text-white cursor-not-allowed'
-                        }`}
-                    >
-                        {saving ? "저장 중..." : "행사 상세 정보 수정"}
-                    </button>
-                    <p className="text-sm text-gray-500 text-center">
-                        수정 요청 후 관리자 승인이 완료되면 변경사항이 반영됩니다.
-                    </p>
+                                ? "bg-gray-400 text-white cursor-not-allowed"
+                                : formData.eventNameKr && formData.eventNameEn
+                                    ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                    : 'bg-gray-400 text-white cursor-not-allowed'
+                            }`}
+                            >
+                                {saving ? "저장 중..." : "행사 상세 정보 수정"}
+                            </button>
+                            <p className="text-sm text-gray-500 text-center">
+                                수정 요청 후 관리자 승인이 완료되면 변경사항이 반영됩니다.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        </div>
+        </>
     );
 };

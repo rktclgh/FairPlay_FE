@@ -4,6 +4,7 @@ import type {
     EventResponseDto,
     EventDetailRequestDto,
     EventDetailResponseDto,
+    EventDetailModificationRequestDto,
     ExternalLinkRequestDto,
     EventSummaryResponseDto,
     EventApplyRequestDto,
@@ -110,11 +111,11 @@ export const eventAPI = {
 
     /**
      * [CREATE] 행사 상세 정보 수정 요청
-     * @param {number} eventId - 행사 ID
+     * @param {string} eventId - 행사 ID
      * @param {Object} modificationData - EventDetailModificationRequestDto 형식
      * @returns 생성된 수정 요청 정보
      */
-    createEventModificationRequest: async (eventId: number, data: any): Promise<any> => {
+    createEventModificationRequest: async (eventId: number, data: EventDetailModificationRequestDto): Promise<any> => {
         const res = await api.post(`/api/events/${eventId}/modification-request`, data);
         return res.data;
     },
