@@ -68,7 +68,7 @@ import AdminEventApproval from "./pages/admin/admin_event_apply";
 import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
 import ModificationRequestList from "./pages/admin/ModificationRequestList";
 import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
-import Spinner from "./components/Spinner";
+import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 
 function AppContent() {
   useScrollToTop();
@@ -147,6 +147,7 @@ function AppContent() {
         <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApproval /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-approvals/:id" element={<AdminRouteGuard><EventApprovalDetail /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-edit-requests/:id" element={<AdminRouteGuard><EventEditRequestDetail /></AdminRouteGuard>} />
 
         {/* 계정 관리 */}
         <Route path="/admin_dashboard/accounts/issue" element={<AdminRouteGuard><AccountIssue /></AdminRouteGuard>} />

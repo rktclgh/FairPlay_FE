@@ -52,13 +52,13 @@ export const getModificationRequests = async (params?: {
     page?: number;
     size?: number;
 }): Promise<PageResponse<ModificationRequestListItem>> => {
-    const response = await api.get('/events/modification-requests', { params });
+    const response = await api.get('/api/events/modification-requests', { params });
     return response.data;
 };
 
 // 수정 요청 상세 조회
 export const getModificationRequestDetail = async (requestId: number): Promise<ModificationRequestDetail> => {
-    const response = await api.get(`/events/modification-requests/${requestId}`);
+    const response = await api.get(`/api/events/modification-requests/${requestId}`);
     return response.data;
 };
 
@@ -67,7 +67,7 @@ export const processModificationRequest = async (
     requestId: number, 
     data: ModificationApprovalRequest
 ): Promise<string> => {
-    const response = await api.put(`/events/modification-requests/${requestId}`, data);
+    const response = await api.put(`/api/events/modification-requests/${requestId}`, data);
     return response.data;
 };
 

@@ -105,6 +105,13 @@ export interface EventDetailUpdateRequestDto {
 
 // EventDetailModificationRequestDto: 행사 상세 수정 요청
 export interface EventDetailModificationRequestDto {
+    titleKr?: string;
+    titleEng?: string;
+    address?: string;
+    placeName?: string;
+    latitude?: number;
+    longitude?: number;
+    placeUrl?: string;
     locationId?: number;
     locationDetail?: string;
     hostName?: string;
@@ -114,7 +121,7 @@ export interface EventDetailModificationRequestDto {
     content?: string;
     policy?: string;
     officialUrl?: string;
-    eventTime?: string;
+    eventTime?: number;  // 백엔드에서 Integer로 받음 (분 단위)
     thumbnailUrl?: string;
     bannerUrl?: string;
     startDate?: string;
@@ -122,10 +129,13 @@ export interface EventDetailModificationRequestDto {
     mainCategoryId?: number;
     subCategoryId?: number;
     regionCodeId?: number;
+    externalLinks?: ExternalLinkRequestDto[];
     reentryAllowed?: boolean;
+    checkInAllowed?: boolean;
     checkOutAllowed?: boolean;
     age?: boolean;
     tempFiles?: FileUploadDto[];
+    deletedFileIds?: number[];  // 삭제할 파일 ID 목록
 }
 
 // ExternalLinkRequestDto: 외부 링크 등록 요청
@@ -143,6 +153,7 @@ export interface ExternalLinkResponseDto {
 // EventDetailResponseDto
 export interface EventDetailResponseDto {
     message?: string;
+    eventId: number;
 
     // 관리자 전용
     managerId?: number;
@@ -189,6 +200,7 @@ export interface EventDetailResponseDto {
     policy: string;
     eventTime: number;
 
+    checkInAllowed: boolean;
     checkOutAllowed: boolean;
     reentryAllowed: boolean;
     age?: boolean;
