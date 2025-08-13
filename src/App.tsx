@@ -23,9 +23,9 @@ import { RegisterEvent } from "./pages/RegisterEvent";
 import { EventRegistrationIntro } from "./pages/EventRegistrationIntro";
 import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
+import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import TicketManagement from "./pages/host_event/TicketManagement";
 import RoundManagement from "./pages/host_event/RoundManagement";
-import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
@@ -40,7 +40,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
-import ChatFloatingModal from "./components/chat/ChatFloatingModal"; // ← 위치 반드시 확인
+import ChatFloatingModal from "./components/chat/ChatFloatingModal";
+import AdminEventApproval from "./pages/admin/admin_event_apply";
+import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
+import ModificationRequestList from "./pages/admin/ModificationRequestList";
+import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
+import Spinner from "./components/Spinner";
 
 function AppContent() {
   useScrollToTop();
@@ -180,6 +185,10 @@ function AppContent() {
         <Route path="/host/revenue-summary" element={<RevenueSummary />} />
         <Route path="/host/time-analysis" element={<TimeAnalysis />} />
         <Route path="/host/qr-scan" element={<QRScanPage />} />
+        <Route path="/admin/event-applications" element={<AdminEventApproval />} />
+        <Route path="/admin/event-applications/:id" element={<AdminEventApprovalDetail />} />
+        <Route path="/admin/modification-requests" element={<ModificationRequestList />} />
+        <Route path="/admin/modification-requests/:requestId" element={<ModificationRequestDetailPage />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer

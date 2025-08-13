@@ -103,6 +103,31 @@ export interface EventDetailUpdateRequestDto {
     externalLinks?: ExternalLinkRequestDto[];
 }
 
+// EventDetailModificationRequestDto: 행사 상세 수정 요청
+export interface EventDetailModificationRequestDto {
+    locationId?: number;
+    locationDetail?: string;
+    hostName?: string;
+    hostCompany?: string;
+    contactInfo?: string;
+    bio?: string;
+    content?: string;
+    policy?: string;
+    officialUrl?: string;
+    eventTime?: string;
+    thumbnailUrl?: string;
+    bannerUrl?: string;
+    startDate?: string;
+    endDate?: string;
+    mainCategoryId?: number;
+    subCategoryId?: number;
+    regionCodeId?: number;
+    reentryAllowed?: boolean;
+    checkOutAllowed?: boolean;
+    age?: boolean;
+    tempFiles?: FileUploadDto[];
+}
+
 // ExternalLinkRequestDto: 외부 링크 등록 요청
 export interface ExternalLinkRequestDto {
     url: string;
@@ -150,8 +175,14 @@ export interface EventDetailResponseDto {
     thumbnailUrl: string;
 
     hostName: string;
+    hostCompany?: string;
     contactInfo: string;
     officialUrl: string;
+
+    managerName?: string;
+    managerPhone?: string;
+    managerEmail?: string;
+    managerBusinessNumber?: string;
 
     bio: string;
     content: string;
@@ -160,6 +191,7 @@ export interface EventDetailResponseDto {
 
     checkOutAllowed: boolean;
     reentryAllowed: boolean;
+    age?: boolean;
 
     externalLinks: ExternalLinkResponseDto[];
 }
@@ -171,4 +203,125 @@ export interface Page<T> {
     totalElements: number;
     number: number; // 현재 페이지 번호
     size: number;   // 페이지당 항목 수
+}
+
+// 행사 등록 신청 관련 타입
+export interface FileUploadDto {
+    s3Key: string;
+    originalFileName: string;
+    fileType: string;
+    fileSize: number;
+    usage: string; // "application_file", "banner", "thumbnail" 등
+}
+
+export interface EventApplyRequestDto {
+    eventEmail: string;
+    businessNumber: string;
+    businessName: string;
+    businessDate: string; // YYYY-MM-DD 형식으로 백엔드 LocalDate와 매칭
+    verified: boolean;
+    managerName: string;
+    email: string;
+    contactNumber: string;
+    titleKr: string;
+    titleEng: string;
+    
+    // 파일 업로드 정보
+    tempFiles: FileUploadDto[];
+    
+    // EventDetail과 비슷한 정보들
+    locationId?: number | null;
+    locationDetail?: string;
+    
+    // 새로운 장소 정보 (카카오맵에서 받은 데이터)
+    address?: string;
+    placeName?: string;
+    latitude?: number;
+    longitude?: number;
+    placeUrl?: string;
+    
+    startDate: string; // YYYY-MM-DD 형식으로 백엔드 LocalDate와 매칭
+    endDate: string; // YYYY-MM-DD 형식으로 백엔드 LocalDate와 매칭
+    mainCategoryId?: number | null;
+    subCategoryId?: number | null;
+    
+    // 이미지 파일들은 tempFiles에서 처리
+    bannerUrl?: string;
+    thumbnailUrl?: string;
+}
+
+export interface EventApplyResponseDto {
+    id: number;
+    eventEmail: string;
+    businessNumber: string;
+    businessName?: string;
+    businessDate?: string;
+    verified?: boolean;
+    managerName: string;
+    email: string;
+    contactNumber: string;
+    titleKr: string;
+    titleEng: string;
+    status: string;
+    locationId?: number;
+    locationDetail?: string;
+    startDate: string;
+    endDate: string;
+    mainCategoryId?: number;
+    subCategoryId?: number;
+    bannerUrl?: string;
+    thumbnailUrl?: string;
+    createdAt: string;
+    updatedAt?: string;
+}
+
+// 목록 조회용 아이템
+export interface EventApplyListItem {
+    eventApplyId: number;
+    applyAt: string;        // 신청일 (yyyy-MM-dd or yyyy.MM.dd)
+    titleKr: string;
+    startDate: string;
+    endDate: string;
+    managerName: string;
+    contactNumber: string;
+    statusCode: "PENDING" | "APPROVED" | "REJECTED";
+}
+
+export interface PageResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number; // 현재 페이지 index (0-based)
+}
+
+export interface EventApplyDetail {
+    eventApplyId: number;
+    statusCode: "PENDING" | "APPROVED" | "REJECTED";
+    statusName: "대기" | "승인" | "거부";
+    eventEmail: string;
+    businessNumber: string;
+    businessName: string;
+    businessDate: string;
+    verified: boolean;
+    managerName: string;
+    email: string;
+    contactNumber: string;
+    titleKr: string;
+    titleEng: string;
+    fileUrl: string;
+    appliedAt: string;
+    adminComment: string;
+    statusUpdatedAt: string;
+    locationId: number;
+    address: string;
+    locationName: string;
+    locationDetail?: string;
+    startDate: string;
+    endDate: string;
+    mainCategoryName: string;
+    subCategoryName: string;
+    bannerUrl: string;
+    thumbnailUrl: string;
+    updatedAt: string;
 }

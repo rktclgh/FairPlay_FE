@@ -1,13 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
-import ReactQuill from "react-quill";
+import { eventAPI } from "../../services/event";
+import { dashboardAPI } from "../../services/dashboard";
+import type { EventDetailResponseDto } from "../../services/types/eventType";
+import { toast } from "react-toastify";
+
+import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
+import { useFileUpload } from "../../hooks/useFileUpload";
+
+// ✅ 그리드 픽커 모듈 & CSS (picker용 CSS가 맞습니다!)
+import QuillBetterTablePicker from "quill-better-table-picker";
+import "quill-better-table-picker/dist/quill-better-table-picker.css";
+
+// 전역 등록(HMR/SSR 안전) + 중복 등록 방지
 declare global {
     interface Window {
         kakao: any;
+        Quill: any;
+        isQuillTableRegistered?: boolean;
+    }
+}
+if (typeof window !== "undefined") {
+    (window as any).Quill = Quill;
+    if (!window.isQuillTableRegistered) {
+        Quill.register(
+            {
+                "modules/better-table":
+                    (QuillBetterTablePicker as any).default || QuillBetterTablePicker,
+            },
+            true
+        );
+        window.isQuillTableRegistered = true;
     }
 }
 
@@ -15,17 +42,28 @@ interface KakaoPlace {
     id: string;
     place_name: string;
     address_name: string;
+    road_address_name?: string;
     phone?: string;
-    x?: string;
-    y?: string;
+    x?: string; // longitude
+    y?: string; // latitude
+}
+
+interface ExternalLink {
+    name: string;
+    url: string;
 }
 
 export const EditEventInfo = () => {
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [eventData, setEventData] = useState<EventDetailResponseDto | null>(
+        null
+    );
     const [formData, setFormData] = useState({
-        eventNameKr: "2025 테크 컨퍼런스",
-        eventNameEn: "2025 Tech Conference",
-        startDate: "2024-12-15",
-        endDate: "2024-12-17",
+        eventNameKr: "",
+        eventNameEn: "",
+        startDate: "",
+        endDate: "",
         address: "",
         detailAddress: "",
         eventOutline: "",
@@ -34,103 +72,291 @@ export const EditEventInfo = () => {
         viewingGrade: "",
         mainCategory: "",
         subCategory: "",
-        bannerImage: null as File | null,
-        businessNumber: "123-45-67890",
-        managerName: "김행사",
-        phone: "010-1234-5678",
-        email: "event@techconference.com",
-        registerId: "techconference2025",
-        externalTicketName: "",
-        externalTicketUrl: "",
-        organizerName: "",
+        businessNumber: "",
+        managerName: "",
+        phone: "",
+        email: "",
+        representativeName: "",
         organizerContact: "",
+        organizerBusinessNumber: "",
         organizerWebsite: "",
+        hostCompany: "",
         policy: "",
+        inquiryDetails: "",
         reentryAllowed: false,
-        exitScanRequired: false
+        exitScanRequired: false,
+        longitude: null as number | null,
+        latitude: null as number | null,
     });
+    const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([
+        { name: "", url: "" },
+    ]);
 
     const [searchKeyword, setSearchKeyword] = useState("");
     const [searchResults, setSearchResults] = useState<KakaoPlace[]>([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
 
-    // Quill 에디터 설정
-    const quillModules = {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline'],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            ['link', 'image'],
-            ['clean']
-        ],
+    const {
+        uploadedFiles,
+        isUploading,
+        uploadFile,
+        removeFile,
+        getFileByUsage,
+        getFileUploadDtos,
+    } = useFileUpload();
+
+    // Quill ref (이미지 삽입 시 커서 제어)
+    const detailQuillRef = useRef<ReactQuill | null>(null);
+    const policyQuillRef = useRef<ReactQuill | null>(null);
+    const inquiryQuillRef = useRef<ReactQuill | null>(null);
+
+    // 이벤트 데이터 로드
+    useEffect(() => {
+        fetchEventData();
+    }, []);
+
+    const fetchEventData = async () => {
+        try {
+            setLoading(true);
+            const myEvent = await dashboardAPI.getMyEventWithDetails();
+            if (myEvent) {
+                setEventData(myEvent);
+                setFormData({
+                    eventNameKr: myEvent.titleKr || "",
+                    eventNameEn: myEvent.titleEng || "",
+                    startDate: myEvent.startDate ? myEvent.startDate.split("T")[0] : "",
+                    endDate: myEvent.endDate ? myEvent.endDate.split("T")[0] : "",
+                    address: myEvent.address || "",
+                    detailAddress: myEvent.locationDetail || "",
+                    eventOutline: myEvent.bio || "",
+                    eventDetail: myEvent.content || "",
+                    viewingTime: myEvent.eventTime?.toString() || "",
+                    viewingGrade: myEvent.age ? "청소년불가" : "전체이용가",
+                    mainCategory: myEvent.mainCategory || "",
+                    subCategory: myEvent.subCategory || "",
+                    businessNumber: myEvent.managerBusinessNumber || "",
+                    managerName: myEvent.managerName || "",
+                    phone: myEvent.managerPhone || "",
+                    email: myEvent.managerEmail || "",
+                    representativeName: myEvent.hostName || "",
+                    organizerContact: myEvent.contactInfo || "",
+                    organizerBusinessNumber: myEvent.managerBusinessNumber || "",
+                    organizerWebsite: myEvent.officialUrl
+                        ? typeof myEvent.officialUrl === "string" &&
+                        !myEvent.officialUrl.startsWith("[")
+                            ? myEvent.officialUrl
+                            : ""
+                        : "",
+                    hostCompany: myEvent.hostCompany || "",
+                    policy: myEvent.policy || "",
+                    reentryAllowed: myEvent.reentryAllowed ?? false,
+                    exitScanRequired: myEvent.checkOutAllowed ?? false,
+                    longitude: myEvent.longitude || null,
+                    latitude: myEvent.latitude || null,
+                });
+
+                if (myEvent.officialUrl) {
+                    try {
+                        const parsedLinks = JSON.parse(myEvent.officialUrl);
+                        if (Array.isArray(parsedLinks) && parsedLinks.length > 0) {
+                            setExternalLinks(parsedLinks);
+                        }
+                    } catch (e) {
+                        setExternalLinks([{ name: "공식 웹사이트", url: myEvent.officialUrl }]);
+                    }
+                }
+
+                if (myEvent.placeName) setSearchKeyword(myEvent.placeName);
+            }
+        } catch (error) {
+            console.error("이벤트 데이터 로드 실패:", error);
+            toast.error("이벤트 정보를 불러올 수 없습니다.");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const quillFormats = [
-        'header',
-        'bold', 'italic', 'underline',
-        'list', 'bullet',
-        'link', 'image'
-    ];
+    // Quill modules (공통) - image 핸들러 포함
+    const makeQuillModules = (targetRef: React.RefObject<ReactQuill>) =>
+        ({
+            toolbar: {
+                container: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    ["link", "image", { "better-table": [] }], // ← grid picker 버튼
+                    ["blockquote", "code-block"],
+                    [{ align: [] }],
+                    [{ color: [] }, { background: [] }],
+                    [{ size: ["small", false, "large", "huge"] }],
+                    [{ indent: "-1" }, { indent: "+1" }],
+                    ["clean"],
+                ],
+                handlers: {
+                    image: () => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = "image/*";
+                        input.onchange = async () => {
+                            const file = input.files?.[0];
+                            if (!file) return;
+                            try {
+                                await uploadFile(file, "content"); // 본문 이미지 용도
+                                const uploaded = getFileByUsage("content");
+                                if (!uploaded?.url) {
+                                    toast.error("이미지 URL을 불러올 수 없습니다.");
+                                    return;
+                                }
+                                const quill = targetRef.current?.getEditor?.();
+                                if (!quill) return;
+                                const range = quill.getSelection(true);
+                                quill.insertEmbed(range ? range.index : 0, "image", uploaded.url, "user");
+                                quill.setSelection((range ? range.index : 0) + 1, 0, "user");
+                            } catch (err) {
+                                console.error(err);
+                                toast.error("이미지 업로드에 실패했습니다.");
+                            }
+                        };
+                        input.click();
+                    },
+                },
+            },
+            "better-table": true,
+            history: { delay: 1000, maxStack: 100, userOnly: true },
+        } as const);
 
-    // 서브카테고리 매핑 (EventOverview.tsx와 동일)
+    const detailModules = useMemo(() => makeQuillModules(detailQuillRef), []);
+    const policyModules = useMemo(() => makeQuillModules(policyQuillRef), []);
+    const inquiryModules = useMemo(() => makeQuillModules(inquiryQuillRef), []);
+
+    const quillFormats = useMemo(
+        () => [
+            "header",
+            "bold",
+            "italic",
+            "underline",
+            "list",
+            "bullet",
+            "link",
+            "image",
+            "blockquote",
+            "code-block",
+            "align",
+            "color",
+            "background",
+            "size",
+            "indent",
+            // 테이블 관련
+            "table",
+            "table-row",
+            "table-cell",
+        ],
+        []
+    );
+
+    // 서브카테고리 매핑
     const getSubCategories = (mainCategory: string) => {
         const subCategories: Record<string, string[]> = {
-            "박람회": [
-                "취업/채용", "산업/기술", "유학/이민/해외취업", "프랜차이즈/창업",
-                "뷰티/패션", "식품/음료", "반려동물", "교육/도서", "IT/전자", "스포츠/레저", "기타(박람회)"
+            박람회: [
+                "취업/채용",
+                "산업/기술",
+                "유학/이민/해외취업",
+                "프랜차이즈/창업",
+                "뷰티/패션",
+                "식품/음료",
+                "반려동물",
+                "교육/도서",
+                "IT/전자",
+                "스포츠/레저",
+                "기타(박람회)",
             ],
             "강연/세미나": [
-                "취업/진로", "창업/스타트업", "과학/기술", "자기계발/라이프스타일",
-                "인문/문화/예술", "건강/의학", "기타(세미나)"
+                "취업/진로",
+                "창업/스타트업",
+                "과학/기술",
+                "자기계발/라이프스타일",
+                "인문/문화/예술",
+                "건강/의학",
+                "기타(세미나)",
             ],
             "전시/행사": [
-                "미술/디자인", "사진/영상", "공예/수공예", "패션/주얼리", "역사/문화",
-                "체험 전시", "아동/가족", "행사/축제", "브랜드 프로모션", "기타(전시/행사)"
+                "미술/디자인",
+                "사진/영상",
+                "공예/수공예",
+                "패션/주얼리",
+                "역사/문화",
+                "체험 전시",
+                "아동/가족",
+                "행사/축제",
+                "브랜드 프로모션",
+                "기타(전시/행사)",
             ],
-            "공연": [
-                "콘서트", "연극/뮤지컬", "클래식/무용", "아동/가족(공연)", "기타(공연)"
+            공연: ["콘서트", "연극/뮤지컬", "클래식/무용", "아동/가족(공연)", "기타(공연)"],
+            축제: [
+                "음악 축제",
+                "영화 축제",
+                "문화 축제",
+                "음식 축제",
+                "전통 축제",
+                "지역 축제",
+                "기타(축제)",
             ],
-            "축제": [
-                "음악 축제", "영화 축제", "문화 축제", "음식 축제", "전통 축제", "지역 축제", "기타(축제)"
-            ]
         };
         return subCategories[mainCategory] || [];
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
 
-        // 메인카테고리가 변경되면 서브카테고리 초기화
         if (name === "mainCategory") {
-            setFormData(prev => ({
+            setFormData((prev) => ({
                 ...prev,
                 [name]: value,
-                subCategory: "" // 서브카테고리 초기화
+                subCategory: "",
             }));
         } else if (type === "checkbox") {
-            setFormData(prev => ({
+            setFormData((prev) => ({
                 ...prev,
-                [name]: checked
+                [name]: checked,
             }));
         } else {
-            setFormData(prev => ({
+            setFormData((prev) => ({
                 ...prev,
-                [name]: value
+                [name]: value,
             }));
+        }
+    };
+
+    const handleLinkChange = (index: number, field: "name" | "url", value: string) => {
+        const newLinks = [...externalLinks];
+        newLinks[index][field] = value;
+        setExternalLinks(newLinks);
+    };
+
+    const addLink = () => setExternalLinks([...externalLinks, { name: "", url: "" }]);
+
+    const removeLink = (index: number) => {
+        if (externalLinks.length > 1) {
+            const newLinks = externalLinks.filter((_, i) => i !== index);
+            setExternalLinks(newLinks);
+        } else {
+            toast.warn("최소 하나 이상의 링크가 필요합니다.");
         }
     };
 
     // 카카오맵 장소 검색
     const searchPlaces = () => {
         if (!searchKeyword.trim()) {
-            alert('장소명을 입력해주세요!');
+            alert("장소명을 입력해주세요!");
             return;
         }
 
         loadKakaoMap(() => {
             if (!window.kakao?.maps?.services) {
-                alert('카카오맵 서비스를 불러올 수 없습니다.');
+                alert("카카오맵 서비스를 불러올 수 없습니다.");
                 return;
             }
 
@@ -140,11 +366,11 @@ export const EditEventInfo = () => {
                     setSearchResults(data);
                     setShowSearchResults(true);
                 } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
-                    alert('검색 결과가 없습니다.');
+                    alert("검색 결과가 없습니다.");
                     setSearchResults([]);
                     setShowSearchResults(false);
                 } else {
-                    alert('검색 중 오류가 발생했습니다.');
+                    alert("검색 중 오류가 발생했습니다.");
                     setSearchResults([]);
                     setShowSearchResults(false);
                 }
@@ -154,26 +380,172 @@ export const EditEventInfo = () => {
 
     // 장소 선택
     const selectPlace = (place: KakaoPlace) => {
-        setFormData(prev => ({
+        const preferredAddress = place.road_address_name || place.address_name;
+        setFormData((prev) => ({
             ...prev,
-            address: place.address_name,
-            detailAddress: ""
+            address: preferredAddress,
+            detailAddress: "",
+            longitude: place.x ? parseFloat(place.x) : null,
+            latitude: place.y ? parseFloat(place.y) : null,
         }));
         setSearchKeyword(place.place_name);
         setShowSearchResults(false);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("행사 정보 수정:", formData);
-        // TODO: API 호출 로직 추가
-        alert("행사 정보가 수정되었습니다.");
+
+        if (!eventData) {
+            toast.error("이벤트 정보를 찾을 수 없습니다.");
+            return;
+        }
+
+        // 카테고리 ID 매핑
+        const getCategoryIds = (mainCategory: string, subCategory: string) => {
+            const mainCategoryMap: Record<string, number> = {
+                박람회: 1,
+                "강연/세미나": 2,
+                "전시/행사": 3,
+                공연: 4,
+                축제: 5,
+            };
+
+            const subCategoryMap: Record<string, Record<string, number>> = {
+                박람회: {
+                    "취업/채용": 101,
+                    "산업/기술": 102,
+                    "유학/이민/해외취업": 103,
+                    "프랜차이즈/창업": 104,
+                    "뷰티/패션": 105,
+                    "식품/음료": 106,
+                    반려동물: 107,
+                    "교육/도서": 108,
+                    "IT/전자": 109,
+                    "스포츠/레저": 110,
+                    "기타(박람회)": 111,
+                },
+                "강연/세미나": {
+                    "취업/진로": 201,
+                    "창업/스타트업": 202,
+                    "과학/기술": 203,
+                    "자기계발/라이프스타일": 204,
+                    "인문/문화/예술": 205,
+                    "건강/의학": 206,
+                    "기타(세미나)": 207,
+                },
+                "전시/행사": {
+                    "미술/디자인": 301,
+                    "사진/영상": 302,
+                    "공예/수공예": 303,
+                    "패션/주얼리": 304,
+                    "역사/문화": 305,
+                    "체험 전시": 306,
+                    "아동/가족": 307,
+                    "행사/축제": 308,
+                    "브랜드 프로모션": 309,
+                    "기타(전시/행사)": 310,
+                },
+                공연: {
+                    콘서트: 401,
+                    "연극/뮤지컬": 402,
+                    "클래식/무용": 403,
+                    "아동/가족(공연)": 404,
+                    "기타(공연)": 405,
+                },
+                축제: {
+                    "음악 축제": 501,
+                    "영화 축제": 502,
+                    "문화 축제": 503,
+                    "음식 축제": 504,
+                    "전통 축제": 505,
+                    "지역 축제": 506,
+                    "기타(축제)": 507,
+                },
+        };
+
+            return {
+                mainCategoryId: mainCategoryMap[mainCategory] || null,
+                subCategoryId: subCategoryMap[mainCategory]?.[subCategory] || null,
+            };
+        };
+
+        try {
+            setSaving(true);
+
+            const categoryIds = getCategoryIds(
+                formData.mainCategory,
+                formData.subCategory
+            );
+
+            const modificationRequest = {
+                locationId: null,
+                locationDetail: formData.detailAddress,
+                hostName: formData.representativeName,
+                hostCompany: formData.hostCompany,
+                contactInfo: formData.organizerContact,
+                bio: formData.eventOutline,
+                content: formData.eventDetail,
+                policy: formData.policy,
+                officialUrl: JSON.stringify(externalLinks.filter((l) => l.url)), // URL이 있는 항목만 유지
+                eventTime: formData.viewingTime,
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                mainCategoryId: categoryIds.mainCategoryId,
+                subCategoryId: categoryIds.subCategoryId,
+                regionCodeId: null,
+                reentryAllowed: formData.reentryAllowed,
+                checkOutAllowed: formData.exitScanRequired,
+                age: formData.viewingGrade === "청소년불가",
+                tempFiles: getFileUploadDtos(),
+            };
+
+            await eventAPI.createEventModificationRequest(
+                eventData.eventId,
+                modificationRequest
+            );
+
+            toast.success("행사 상세 정보 수정 요청이 제출되었습니다.");
+            toast.info("관리자 승인 후 변경사항이 반영됩니다.");
+        } catch (error) {
+            console.error("이벤트 수정 요청 실패:", error);
+            toast.error("수정 요청 제출에 실패했습니다.");
+        } finally {
+            setSaving(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="bg-white flex flex-row justify-center w-full">
+                <div className="bg-white w-[1256px] min-h-screen relative">
+                    <TopNav />
+                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
+                        <div className="text-lg text-gray-500">데이터를 불러오는 중...</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!eventData) {
+        return (
+            <div className="bg-white flex flex-row justify-center w-full">
+                <div className="bg-white w-[1256px] min-h-screen relative">
+                    <TopNav />
+                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
+                        <div className="text-lg text-gray-500">담당하는 이벤트가 없습니다.</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
-            <TopNav />
+                <TopNav />
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
@@ -185,8 +557,6 @@ export const EditEventInfo = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20">
-
-                    {/* 폼 컨테이너 시작 */}
                     <div className="bg-white">
                         {/* 행사 정보 섹션 */}
                         <div className="mb-8">
@@ -206,7 +576,11 @@ export const EditEventInfo = () => {
                                             value={formData.eventNameKr}
                                             onChange={handleInputChange}
                                             placeholder="국문 행사명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameKr ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.eventNameKr
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
                                     {/* 행사명(영문) */}
@@ -220,7 +594,11 @@ export const EditEventInfo = () => {
                                             value={formData.eventNameEn}
                                             onChange={handleInputChange}
                                             placeholder="영문 행사명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameEn ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.eventNameEn
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
                                     {/* 시작일 */}
@@ -233,7 +611,11 @@ export const EditEventInfo = () => {
                                             name="startDate"
                                             value={formData.startDate}
                                             onChange={handleInputChange}
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.startDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.startDate
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
                                     {/* 종료일 */}
@@ -246,9 +628,14 @@ export const EditEventInfo = () => {
                                             name="endDate"
                                             value={formData.endDate}
                                             onChange={handleInputChange}
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.endDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.endDate
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
+
                                     {/* 행사 장소 */}
                                     <div className="col-span-2">
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
@@ -266,7 +653,7 @@ export const EditEventInfo = () => {
                                                         placeholder="장소명을 입력하세요"
                                                         className="w-full h-[40px] border border-gray-300 rounded-full px-4 pr-12 font-normal text-base outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                                         onKeyPress={(e) => {
-                                                            if (e.key === 'Enter') {
+                                                            if (e.key === "Enter") {
                                                                 e.preventDefault();
                                                                 searchPlaces();
                                                             }
@@ -277,8 +664,18 @@ export const EditEventInfo = () => {
                                                         onClick={searchPlaces}
                                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black hover:text-gray-600 transition-colors w-16 h-12 flex items-center justify-center bg-transparent"
                                                     >
-                                                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                        <svg
+                                                            className="w-10 h-10"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                                            />
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -292,10 +689,22 @@ export const EditEventInfo = () => {
                                                                 className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                                                                 onClick={() => selectPlace(place)}
                                                             >
-                                                                <div className="font-semibold text-gray-900">{place.place_name}</div>
-                                                                <div className="text-sm text-gray-600 mt-1">{place.address_name}</div>
+                                                                <div className="font-semibold text-gray-900">
+                                                                    {place.place_name}
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 mt-1">
+                                                                    {place.road_address_name || place.address_name}
+                                                                </div>
+                                                                {place.road_address_name &&
+                                                                    place.address_name !== place.road_address_name && (
+                                                                        <div className="text-xs text-gray-400 mt-1">
+                                                                            (지번: {place.address_name})
+                                                                        </div>
+                                                                    )}
                                                                 {place.phone && (
-                                                                    <div className="text-sm text-green-600 mt-1">{place.phone}</div>
+                                                                    <div className="text-sm text-green-600 mt-1">
+                                                                        {place.phone}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         ))}
@@ -310,9 +719,13 @@ export const EditEventInfo = () => {
                                                     name="address"
                                                     value={formData.address}
                                                     onChange={handleInputChange}
-                                                    placeholder="기본 주소"
+                                                    placeholder="기본 주소 (도로명 주소)"
                                                     readOnly
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.address ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-gray-100 outline-none text-left ${
+                                                        formData.address
+                                                            ? "text-black font-medium"
+                                                            : "text-[#0000004c]"
+                                                    }`}
                                                 />
                                             </div>
 
@@ -324,7 +737,11 @@ export const EditEventInfo = () => {
                                                     value={formData.detailAddress}
                                                     onChange={handleInputChange}
                                                     placeholder="상세 주소"
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.detailAddress ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                        formData.detailAddress
+                                                            ? "text-black font-medium"
+                                                            : "text-[#0000004c]"
+                                                    }`}
                                                 />
                                             </div>
                                         </div>
@@ -342,7 +759,11 @@ export const EditEventInfo = () => {
                                                     name="mainCategory"
                                                     value={formData.mainCategory || ""}
                                                     onChange={handleInputChange}
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.mainCategory ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                        formData.mainCategory
+                                                            ? "text-black font-medium"
+                                                            : "text-[#0000004c]"
+                                                    }`}
                                                 >
                                                     <option value="">메인카테고리를 선택하세요</option>
                                                     <option value="박람회">박람회</option>
@@ -363,24 +784,27 @@ export const EditEventInfo = () => {
                                                     value={formData.subCategory || ""}
                                                     onChange={handleInputChange}
                                                     disabled={!formData.mainCategory}
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${!formData.mainCategory
-                                                        ? 'text-gray-400 cursor-not-allowed'
-                                                        : formData.subCategory
-                                                            ? 'text-black font-medium'
-                                                            : 'text-[#0000004c]'
-                                                        }`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                        !formData.mainCategory
+                                                            ? "text-gray-400 cursor-not-allowed"
+                                                            : formData.subCategory
+                                                                ? "text-black font-medium"
+                                                                : "text-[#0000004c]"
+                                                    }`}
                                                 >
                                                     <option value="">
                                                         {!formData.mainCategory
                                                             ? "메인카테고리를 먼저 선택하세요"
-                                                            : "서브카테고리를 선택하세요"
-                                                        }
+                                                            : "서브카테고리를 선택하세요"}
                                                     </option>
-                                                    {formData.mainCategory && getSubCategories(formData.mainCategory).map((subCategory: string, index: number) => (
-                                                        <option key={index} value={subCategory}>
-                                                            {subCategory}
-                                                        </option>
-                                                    ))}
+                                                    {formData.mainCategory &&
+                                                        getSubCategories(formData.mainCategory).map(
+                                                            (subCategory: string, index: number) => (
+                                                                <option key={index} value={subCategory}>
+                                                                    {subCategory}
+                                                                </option>
+                                                            )
+                                                        )}
                                                 </select>
                                             </div>
                                         </div>
@@ -389,16 +813,71 @@ export const EditEventInfo = () => {
                                     {/* 행사 배너 이미지 */}
                                     <div className="col-span-2">
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            행사 배너 이미지
+                                            행사 배너 이미지 (현재 썸네일)
                                         </label>
-                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+
+                                        {/* 현재 이미지 표시 */}
+                                        {getFileByUsage("thumbnail") ? (
+                                            <div className="mb-4 p-4 border border-gray-200 rounded-lg">
+                                                <p className="text-sm text-gray-600 mb-2">새로 업로드된 이미지:</p>
+                                                <img
+                                                    src={getFileByUsage("thumbnail")?.url}
+                                                    alt="새 썸네일"
+                                                    className="max-w-xs max-h-32 object-cover rounded border"
+                                                />
+                                            </div>
+                                        ) : (
+                                            eventData?.thumbnailUrl && (
+                                                <div className="mb-4 p-4 border border-gray-200 rounded-lg">
+                                                    <p className="text-sm text-gray-600 mb-2">현재 설정된 이미지:</p>
+                                                    <img
+                                                        src={eventData.thumbnailUrl}
+                                                        alt="현재 썸네일"
+                                                        className="max-w-xs max-h-32 object-cover rounded border"
+                                                    />
+                                                </div>
+                                            )
+                                        )}
+
+                                        <div
+                                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.add("border-blue-400", "bg-blue-50");
+                                            }}
+                                            onDragLeave={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.remove("border-blue-400", "bg-blue-50");
+                                            }}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.remove("border-blue-400", "bg-blue-50");
+                                                const files = e.dataTransfer.files;
+                                                if (files && files[0] && files[0].type.startsWith("image/")) {
+                                                    uploadFile(files[0], "thumbnail");
+                                                }
+                                            }}
+                                        >
                                             <div className="space-y-2">
-                                                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                <svg
+                                                    className="mx-auto h-12 w-12 text-gray-400"
+                                                    stroke="currentColor"
+                                                    fill="none"
+                                                    viewBox="0 0 48 48"
+                                                >
+                                                    <path
+                                                        d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    />
                                                 </svg>
                                                 <div className="text-sm text-gray-600">
-                                                    <label htmlFor="banner-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                        <span>이미지 업로드</span>
+                                                    <label
+                                                        htmlFor="banner-upload"
+                                                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                                                    >
+                                                        <span>새 이미지 업로드</span>
                                                         <input
                                                             id="banner-upload"
                                                             name="bannerImage"
@@ -407,12 +886,7 @@ export const EditEventInfo = () => {
                                                             className="sr-only"
                                                             onChange={(e) => {
                                                                 const file = e.target.files?.[0];
-                                                                if (file) {
-                                                                    setFormData(prev => ({
-                                                                        ...prev,
-                                                                        bannerImage: file
-                                                                    }));
-                                                                }
+                                                                if (file) uploadFile(file, "thumbnail");
                                                             }}
                                                         />
                                                     </label>
@@ -436,7 +910,11 @@ export const EditEventInfo = () => {
                                                 onChange={handleInputChange}
                                                 placeholder="행사 개요를 입력하세요"
                                                 maxLength={80}
-                                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventOutline ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                    formData.eventOutline
+                                                        ? "text-black font-medium"
+                                                        : "text-[#0000004c]"
+                                                }`}
                                             />
                                             <div className="absolute right-0 bottom-1 text-xs text-gray-500">
                                                 {(formData.eventOutline?.length || 0)}/80
@@ -444,28 +922,30 @@ export const EditEventInfo = () => {
                                         </div>
                                     </div>
 
-                                    {/* 상세 정보 */}
+                                    {/* 상세 정보 (테이블/이미지 지원) */}
                                     <div className="col-span-2 mb-12">
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             상세 정보
                                         </label>
                                         <div>
                                             <ReactQuill
-                                                theme="snow"
+                                                ref={detailQuillRef}
+                                                theme="better-table-snow"
                                                 value={formData.eventDetail || ""}
-                                                onChange={(content) => setFormData(prev => ({ ...prev, eventDetail: content }))}
-                                                modules={quillModules}
+                                                onChange={(content) =>
+                                                    setFormData((prev) => ({ ...prev, eventDetail: content }))
+                                                }
+                                                modules={detailModules}
                                                 formats={quillFormats}
                                                 placeholder="행사 상세 정보를 입력하세요"
-                                                style={{ height: '150px' }}
+                                                style={{ height: "150px" }}
                                             />
                                         </div>
                                     </div>
 
-                                    {/* 관람시간과 관람등급 */}
+                                    {/* 관람시간/등급 */}
                                     <div className="col-span-2">
                                         <div className="grid grid-cols-2 gap-8">
-                                            {/* 관람시간(분) */}
                                             <div>
                                                 <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     관람시간(분)
@@ -476,13 +956,16 @@ export const EditEventInfo = () => {
                                                     value={formData.viewingTime || ""}
                                                     onChange={handleInputChange}
                                                     placeholder="관람시간을 입력하세요"
-                                                    min="30"
-                                                    step="10"
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.viewingTime ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                    min={30}
+                                                    step={10}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                        formData.viewingTime
+                                                            ? "text-black font-medium"
+                                                            : "text-[#0000004c]"
+                                                    }`}
                                                 />
                                             </div>
 
-                                            {/* 관람등급 */}
                                             <div>
                                                 <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     관람등급
@@ -491,22 +974,23 @@ export const EditEventInfo = () => {
                                                     name="viewingGrade"
                                                     value={formData.viewingGrade || ""}
                                                     onChange={handleInputChange}
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.viewingGrade ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                        formData.viewingGrade
+                                                            ? "text-black font-medium"
+                                                            : "text-[#0000004c]"
+                                                    }`}
                                                 >
                                                     <option value="">관람등급을 선택하세요</option>
-                                                    <option value="전체관람가">전체관람가</option>
-                                                    <option value="12세이상관람가">12세이상관람가</option>
-                                                    <option value="15세이상관람가">15세이상관람가</option>
-                                                    <option value="18세이상관람가">18세이상관람가</option>
+                                                    <option value="전체이용가">전체이용가</option>
+                                                    <option value="청소년불가">청소년불가</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* 재입장 허용 여부와 퇴장 스캔 여부 */}
+                                    {/* 재입장/퇴장 스캔 */}
                                     <div className="col-span-2">
                                         <div className="grid grid-cols-2 gap-8">
-                                            {/* 재입장 허용 여부 */}
                                             <div>
                                                 <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     재입장 허용 여부
@@ -525,7 +1009,6 @@ export const EditEventInfo = () => {
                                                 </div>
                                             </div>
 
-                                            {/* 퇴장 스캔 여부 */}
                                             <div>
                                                 <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     퇴장 스캔 여부
@@ -545,90 +1028,155 @@ export const EditEventInfo = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* 정책 (테이블/이미지 지원) */}
+                                    <div className="col-span-2 mb-12">
+                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            예매/취소/환불 정책
+                                        </label>
+                                        <div>
+                                            <ReactQuill
+                                                ref={policyQuillRef}
+                                                theme="better-table-snow"
+                                                value={formData.policy}
+                                                onChange={(content) =>
+                                                    setFormData((prev) => ({ ...prev, policy: content }))
+                                                }
+                                                modules={policyModules}
+                                                formats={quillFormats}
+                                                placeholder="예매, 취소, 환불 정책을 입력하세요"
+                                                style={{ height: "150px" }}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
                         {/* 외부 링크 섹션 */}
                         <div className="mb-8">
                             <div className="bg-white rounded-lg shadow-md p-6">
-                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">외부 링크</h2>
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트명</label>
-                                        <input
-                                            type="text"
-                                            name="externalTicketName"
-                                            value={formData.externalTicketName}
-                                            onChange={handleInputChange}
-                                            placeholder="예: 인터파크 티켓"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.externalTicketName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트 URL</label>
-                                        <input
-                                            type="text"
-                                            name="externalTicketUrl"
-                                            value={formData.externalTicketUrl}
-                                            onChange={handleInputChange}
-                                            placeholder="https://example.com"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.externalTicketUrl ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                        />
-                                    </div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="font-bold text-black text-lg leading-[30px]">외부 링크</h2>
+                                    <button
+                                        type="button"
+                                        onClick={addLink}
+                                        className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-semibold"
+                                    >
+                                        링크 추가
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    {externalLinks.map((link, index) => (
+                                        <div key={index} className="grid grid-cols-2 gap-8 items-center">
+                                            <div>
+                                                <label className="block text-[15px] font-bold mb-1">링크명</label>
+                                                <input
+                                                    type="text"
+                                                    value={link.name}
+                                                    onChange={(e) => handleLinkChange(index, "name", e.target.value)}
+                                                    placeholder="예: 공식 홈페이지"
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                        link.name ? "text-black font-medium" : "text-[#0000004c]"
+                                                    }`}
+                                                />
+                                            </div>
+                                            <div className="flex items-center">
+                                                <div className="flex-grow">
+                                                    <label className="block text-[15px] font-bold mb-1">URL</label>
+                                                    <input
+                                                        type="text"
+                                                        value={link.url}
+                                                        onChange={(e) => handleLinkChange(index, "url", e.target.value)}
+                                                        placeholder="https://example.com"
+                                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                            link.url ? "text-black font-medium" : "text-[#0000004c]"
+                                                        }`}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeLink(index)}
+                                                    className="ml-4 text-red-500 hover:text-red-700 transition-colors"
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
-                        {/* 주최자 정보 섹션 */}
+
+                        {/* 판매자 정보 섹션 */}
                         <div className="mb-8">
                             <div className="bg-white rounded-lg shadow-md p-6">
-                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">주최자 정보</h2>
+                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">판매자 정보</h2>
                                 <div className="grid grid-cols-2 gap-8">
                                     <div>
-                                        <label className="block text-[15px] font-bold mb-1">주최자명</label>
+                                        <label className="block text-[15px] font-bold mb-1">대표자명</label>
                                         <input
                                             type="text"
-                                            name="organizerName"
-                                            value={formData.organizerName}
+                                            name="representativeName"
+                                            value={formData.representativeName}
                                             onChange={handleInputChange}
-                                            placeholder="주최자명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            placeholder="대표자명을 입력하세요"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.representativeName
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[15px] font-bold mb-1">연락처</label>
+                                        <label className="block text-[15px] font-bold mb-1">사업자 등록번호</label>
                                         <input
                                             type="text"
-                                            name="organizerContact"
-                                            value={formData.organizerContact}
+                                            name="organizerBusinessNumber"
+                                            value={formData.organizerBusinessNumber}
                                             onChange={handleInputChange}
-                                            placeholder="010-0000-0000"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerContact ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            placeholder="000-00-00000"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.organizerBusinessNumber
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
-                                </div>
-                                <div className="mt-6">
-                                    <label className="block text-[15px] font-bold mb-1">공식 웹사이트 URL</label>
-                                    <input
-                                        type="text"
-                                        name="organizerWebsite"
-                                        value={formData.organizerWebsite}
-                                        onChange={handleInputChange}
-                                        placeholder="https://example.com"
-                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerWebsite ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                    />
-                                </div>
-                                <div className="mt-6">
-                                    <label className="block text-[15px] font-bold mb-1">예매 / 취소 / 환불 정책</label>
-                                    <textarea
-                                        name="policy"
-                                        value={formData.policy}
-                                        onChange={handleInputChange}
-                                        placeholder="예매, 취소, 환불 정책을 입력하세요"
-                                        className={`w-full h-[100px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left resize-none ${formData.policy ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                    />
+                                    <div>
+                                        <label className="block text-[15px] font-bold mb-1">주최/기획사</label>
+                                        <input
+                                            type="text"
+                                            name="hostCompany"
+                                            value={formData.hostCompany}
+                                            onChange={handleInputChange}
+                                            placeholder="주최/기획사명을 입력하세요"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.hostCompany
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[15px] font-bold mb-1">공식 홈페이지 주소</label>
+                                        <input
+                                            type="text"
+                                            name="organizerWebsite"
+                                            value={formData.organizerWebsite}
+                                            onChange={handleInputChange}
+                                            placeholder="https://example.com"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.organizerWebsite
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
                         {/* 담당자 정보 섹션 */}
                         <div className="mb-8">
                             <div className="bg-white rounded-lg shadow-md p-6">
@@ -642,7 +1190,11 @@ export const EditEventInfo = () => {
                                             value={formData.managerName}
                                             onChange={handleInputChange}
                                             placeholder="담당자명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.managerName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.managerName
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
                                     <div>
@@ -653,18 +1205,9 @@ export const EditEventInfo = () => {
                                             value={formData.phone}
                                             onChange={handleInputChange}
                                             placeholder="010-0000-0000"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.phone ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">사업자등록번호</label>
-                                        <input
-                                            type="text"
-                                            name="businessNumber"
-                                            value={formData.businessNumber}
-                                            onChange={handleInputChange}
-                                            placeholder="사업자등록번호를 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.businessNumber ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.phone ? "text-black font-medium" : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
                                     <div>
@@ -674,37 +1217,60 @@ export const EditEventInfo = () => {
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
-                                            placeholder="이메일을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.email ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            placeholder="example@example.com"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.email ? "text-black font-medium" : "text-[#0000004c]"
+                                            }`}
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 문의처 섹션 (테이블 가능하지만 theme은 snow로 유지) */}
+                        <div className="mb-8">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">문의처</h2>
+                                <div className="mb-12">
+                                    <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        상세정보
+                                    </label>
                                     <div>
-                                        <label className="block text-[15px] font-bold mb-1">등록된 아이디</label>
-                                        <div className={`flex items-center w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.registerId ? 'text-black font-medium' : 'text-[#0000004c]'}`}>
-                                            <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span className="text-gray-600 font-medium">{formData.registerId}</span>
-                                        </div>
+                                        <ReactQuill
+                                            ref={inquiryQuillRef}
+                                            theme="snow"
+                                            value={formData.inquiryDetails}
+                                            onChange={(content) =>
+                                                setFormData((prev) => ({ ...prev, inquiryDetails: content }))
+                                            }
+                                            modules={inquiryModules}
+                                            formats={quillFormats}
+                                            placeholder="문의처 상세정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
+                                            style={{ height: "150px" }}
+                                        />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {/* 폼 컨테이너 끝 */}
+
+                    {/* 제출 버튼 */}
                     <div className="flex flex-col items-center space-y-4 mt-8">
                         <button
                             onClick={handleSubmit}
-                            disabled={!formData.eventNameKr || !formData.eventNameEn || !formData.startDate || !formData.endDate || !formData.businessNumber || !formData.managerName || !formData.phone || !formData.email || !formData.registerId}
-                            className={`px-6 py-2 rounded-[10px] transition-colors text-sm ${formData.eventNameKr && formData.eventNameEn && formData.startDate && formData.endDate && formData.businessNumber && formData.managerName && formData.phone && formData.email && formData.registerId
-                                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                : 'bg-gray-400 text-white cursor-not-allowed'
-                                }`}
+                            disabled={saving || !formData.eventNameKr || !formData.eventNameEn}
+                            className={`px-6 py-2 rounded-[10px] transition-colors text-sm ${
+                                saving
+                                    ? "bg-gray-400 text-white cursor-not-allowed"
+                                    : formData.eventNameKr && formData.eventNameEn
+                                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                                        : "bg-gray-400 text-white cursor-not-allowed"
+                            }`}
                         >
-                            행사 상세 정보 수정
+                            {saving ? "저장 중..." : "행사 상세 정보 수정"}
                         </button>
                         <p className="text-sm text-gray-500 text-center">
-                            수정된 정보는 즉시 반영됩니다.
+                            수정 요청 후 관리자 승인이 완료되면 변경사항이 반영됩니다.
                         </p>
                     </div>
                 </div>
