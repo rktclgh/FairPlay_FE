@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import authManager from "../../utils/auth";
+import {toast} from "react-toastify";
 
 interface ScheduleModalProps {
     isOpen: boolean;
@@ -58,7 +59,6 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     React.useEffect(() => {
         if (isEditMode && editRound) {
-            console.log('수정 모드 데이터:', editRound);
             
             // 시간 형식 변환 (HH:MM:SS -> HH:MM)
             const formatTime = (time: string) => {
@@ -87,7 +87,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         
         // 필수 필드 검증
         if (!formData.date || !formData.startTime || !formData.endTime) {
-            alert("모든 필드를 입력해주세요.");
+            toast("모든 필드를 입력해주세요.");
             return;
         }
 
@@ -131,10 +131,9 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
                 if (onUpdateSchedule) {
                     onUpdateSchedule(scheduleData);
-                    alert("회차가 성공적으로 수정되었습니다.");
+                    toast.success("회차가 성공적으로 수정되었습니다.");
                 }
             } else {
-                console.log(1);
                 // 새로 생성 - 서버 API 호출
                 const createScheduleRequest = {
                     date: formData.date,
@@ -156,7 +155,6 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 }
 
                 const createdSchedule = await response.json();
-                console.log(3);
                 
                 // 성공시 UI 업데이트를 위한 데이터 구조 변환
                 const scheduleData = {
@@ -173,13 +171,12 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 };
 
                 onAddSchedule(scheduleData);
-                alert("회차가 성공적으로 추가되었습니다.");
+                toast.success("회차가 성공적으로 추가되었습니다.");
             }
 
             onClose();
         } catch (error) {
-            console.error('스케줄 저장 실패:', error);
-            alert(error instanceof Error ? error.message : '회차 저장에 실패했습니다.');
+            toast.error(error instanceof Error ? error.message : '회차 저장에 실패했습니다.');
         }
     };
 

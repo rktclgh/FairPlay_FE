@@ -4,6 +4,7 @@ import { HostSideNav } from "../../components/HostSideNav";
 import { ScheduleModal } from "../../components/schedule/ScheduleModal";
 import { ScheduleTicketModal } from "../../components/schedule/ScheduleTicketModal";
 import authManager from "../../utils/auth";
+import {toast} from "react-toastify";
 
 export const ScheduleManagement = () => {
     const [eventId, setEventId] = useState<number | null>(null);
@@ -56,7 +57,12 @@ export const ScheduleManagement = () => {
 
         const updatedSchedules: any[] = [];
 
-        Object.keys(scheduleByDate).forEach(date => {
+        // 날짜 키를 최신순으로 정렬
+        const sortedDates = Object.keys(scheduleByDate).sort((a, b) => {
+            return b.localeCompare(a); // 내림차순 (최신순)
+        });
+
+        sortedDates.forEach(date => {
             // 각 날짜별로 시작 시간 순으로 정렬
             const sortedSchedules = scheduleByDate[date].sort((a, b) => {
                 return a.startTime.localeCompare(b.startTime);
@@ -78,6 +84,30 @@ export const ScheduleManagement = () => {
     const handleTicketSetup = (round: any) => {
         setSelectedSchedule(round);
         setIsScheduleTicketModalOpen(true);
+    };
+
+    // 회차 삭제 함수
+    const handleDeleteSchedule = async (schedule: any) => {
+        if (!window.confirm(`"${schedule.scheduleId}" 회차를 삭제하시겠습니까?`)) {
+            return;
+        }
+
+        try {
+            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule/${schedule.scheduleId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || '회차 삭제에 실패했습니다.');
+            }
+
+            // 삭제 성공 시 목록 다시 조회
+            await fetchSchedules();
+            toast("회차가 성공적으로 삭제되었습니다.");
+        } catch (error) {
+            toast(error instanceof Error ? error.message : '회차 삭제에 실패했습니다.');
+        }
     };
 
     // 회차 목록 조회 함수
@@ -107,9 +137,11 @@ export const ScheduleManagement = () => {
                 endTime: schedule.endTime,
                 weekday: schedule.weekday,
                 roundNumber: "", // 재할당됨
-                status: "티켓 설정 대기", // UI 상태
-                statusColor: "bg-yellow-100",
-                textColor: "text-yellow-800"
+                hasActiveTickets: schedule.hasActiveTickets,
+                soldTicketCount: schedule.soldTicketCount || 0,
+                status: schedule.hasActiveTickets ? "티켓 설정 완료" : "티켓 설정 대기",
+                statusColor: schedule.hasActiveTickets ? "bg-green-100" : "bg-yellow-100",
+                textColor: schedule.hasActiveTickets ? "text-green-800" : "text-yellow-800"
             }));
             
             // 회차 번호 재할당
@@ -132,18 +164,8 @@ export const ScheduleManagement = () => {
 
     // 티켓 설정 완료 처리 함수
     const handleTicketSetupComplete = () => {
-        if (selectedSchedule) {
-            setScheduleData(prev => prev.map(round =>
-                round.scheduleId === selectedSchedule.scheduleId
-                    ? {
-                        ...round,
-                        status: "티켓 설정 완료",
-                        statusColor: "bg-green-100",
-                        textColor: "text-green-800"
-                    }
-                    : round
-            ));
-        }
+        // 티켓 설정 완료 후 목록 다시 조회하여 최신 상태 반영
+        fetchSchedules();
     };
 
     const [scheduleData, setScheduleData] = useState([]);
@@ -311,12 +333,12 @@ export const ScheduleManagement = () => {
                                             <div className="text-gray-600 text-center min-w-[110px] truncate">
                                                 {showDate ? formatDateWithDay(schedule.date) : ""}
                                             </div>
-                                            <div className="font-medium text-gray-900 text-center min-w-[60px]">{schedule.scheduleId}</div>
+                                            <div className="font-medium text-gray-900 text-center min-w-[60px]">{schedule.roundNumber}</div>
                                             <div className="text-center text-gray-600 min-w-[70px]">{schedule.startTime}</div>
                                             <div className="text-center text-gray-600 min-w-[70px]">{schedule.endTime}</div>
                                             <div className="text-center min-w-[100px]">
-                                                <span className={`inline-block px-2 py-1 rounded text-xs font-medium whitespace-nowrap`}>
-                                                    {schedule.scheduleId}
+                                                <span className={`inline-block px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${schedule.statusColor} ${schedule.textColor}`}>
+                                                    {schedule.status}
                                                 </span>
                                             </div>
                                             <div className="text-center min-w-[80px]">
@@ -330,24 +352,37 @@ export const ScheduleManagement = () => {
                                             <div className="text-center flex justify-center gap-2 min-w-[100px]">
                                                 <button
                                                     onClick={() => {
+                                                        if (schedule.soldTicketCount > 0) {
+                                                            alert("판매된 티켓이 있는 회차는 수정할 수 없습니다.");
+                                                            return;
+                                                        }
                                                         setEditSchedule(schedule);
                                                         setIsEditMode(true);
                                                         setIsModalOpen(true);
                                                     }}
-                                                    className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-xs whitespace-nowrap"
+                                                    disabled={schedule.soldTicketCount > 0}
+                                                    className={`font-medium transition-colors text-xs whitespace-nowrap ${
+                                                        schedule.soldTicketCount > 0 
+                                                            ? "text-gray-400 cursor-not-allowed" 
+                                                            : "text-blue-600 hover:text-blue-800"
+                                                    }`}
                                                 >
                                                     수정
                                                 </button>
                                                 <button
                                                     onClick={() => {
-                                                        if (window.confirm(`"${schedule.scheduleId}" 회차를 삭제하시겠습니까?`)) {
-                                                            setScheduleData(prev => {
-                                                                const filteredRounds = prev.filter(r => r.scheduleId !== schedule.scheduleId);
-                                                                return reassignScheduleNumbers(filteredRounds);
-                                                            });
+                                                        if (schedule.soldTicketCount > 0) {
+                                                            alert("판매된 티켓이 있는 회차는 삭제할 수 없습니다.");
+                                                            return;
                                                         }
+                                                        handleDeleteSchedule(schedule);
                                                     }}
-                                                    className="text-red-600 hover:text-red-800 font-medium transition-colors text-xs whitespace-nowrap"
+                                                    disabled={schedule.soldTicketCount > 0}
+                                                    className={`font-medium transition-colors text-xs whitespace-nowrap ${
+                                                        schedule.soldTicketCount > 0 
+                                                            ? "text-gray-400 cursor-not-allowed" 
+                                                            : "text-red-600 hover:text-red-800"
+                                                    }`}
                                                 >
                                                     삭제
                                                 </button>
@@ -404,6 +439,7 @@ export const ScheduleManagement = () => {
                 }}
                 round={selectedSchedule}
                 onComplete={handleTicketSetupComplete}
+                eventId={eventId}
             />
         </div>
     );
