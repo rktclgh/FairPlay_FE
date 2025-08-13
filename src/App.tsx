@@ -68,7 +68,7 @@ import AdminEventApproval from "./pages/admin/admin_event_apply";
 import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
 import ModificationRequestList from "./pages/admin/ModificationRequestList";
 import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
-import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
+// import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 
 function AppContent() {
   useScrollToTop();
@@ -173,7 +173,7 @@ function AppContent() {
         <Route path="/host/dashboard" element={<HostDashboard />} />
         <Route path="/host/edit-event-info" element={<EditEventInfo />} />
         <Route path="/host/ticket-management" element={<TicketManagement />} />
-        <Route path="/host/round-management" element={<RoundManagement />} />
+        {/*<Route path="/host/round-management" element={<RoundManagement />} />*/}
         <Route path="/host/status-management" element={<EventStatusBanner />} />
         <Route path="/host/reservation-list" element={<ReservationList />} />
         <Route path="/host/reservation-stats" element={<ReservationStats />} />
