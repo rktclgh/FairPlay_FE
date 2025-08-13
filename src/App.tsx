@@ -68,7 +68,7 @@ import AdminEventApproval from "./pages/admin/admin_event_apply";
 import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
 import ModificationRequestList from "./pages/admin/ModificationRequestList";
 import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
-import Spinner from "./components/Spinner";
+import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 
 function AppContent() {
   useScrollToTop();
