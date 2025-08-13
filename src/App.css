@@ -5,6 +5,43 @@
   text-align: left;
 }
 
+/* Quill 테이블 버튼 스타일 */
+.ql-toolbar .ql-table:before {
+  content: "⊞";
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.ql-toolbar .ql-table {
+  width: 28px;
+  height: 24px;
+}
+
+/* Quill 에디터 내 표 스타일링 */
+.ql-editor table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+}
+
+.ql-editor table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  min-width: 50px;
+}
+
+.ql-editor table tr:first-child td {
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+/* 표 편집 시 선택 표시 */
+.ql-editor table td:hover {
+  background-color: #e6f3ff;
+}
+
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -39,4 +76,40 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Hotpick coverflow visual tweaks */
+.hotpick-swiper .swiper-slide {
+  width: 260px;
+  transition:
+    transform 300ms ease,
+    opacity 300ms ease;
+  opacity: 0.55;
+}
+
+.hotpick-swiper .swiper-slide-active {
+  transform: scale(1.03);
+  opacity: 1;
+}
+
+.hotpick-swiper .swiper-slide-prev,
+.hotpick-swiper .swiper-slide-next {
+  transform: scale(0.9);
+  opacity: 0.85;
+}
+
+/* simple fade up for captions */
+.anim-fadeInUp {
+  animation: fadeInUp 500ms ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

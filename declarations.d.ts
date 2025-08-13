@@ -48,4 +48,12 @@ interface Window {
       };
     };
   };
+  // Swiper instance for hero section thumbnail hover control
+  heroSwiper?: import("swiper").Swiper;
 }
+
+// Allow importing Swiper CSS in TS
+declare module "swiper/css";
+declare module "swiper/css/effect-fade";
+declare module "swiper/css/navigation";
+declare module "swiper/css/effect-coverflow";

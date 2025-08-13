@@ -24,12 +24,12 @@ import { RegisterEvent } from "./pages/RegisterEvent";
 import { EventRegistrationIntro } from "./pages/EventRegistrationIntro";
 import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
+import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import TicketManagement from "./pages/host_event/TicketManagement";
-import RoundManagement from "./pages/host_event/RoundManagement";
+import ScheduleManagement from "./pages/host_event/ScheduleManagement";
 import EventVersionManagement from "./pages/host_event/EventVersionManagement";
 import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
 import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
-import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
@@ -47,7 +47,7 @@ import EventList from "./pages/admin_event/EventList";
 import EventApproval from "./pages/admin_event/EventApproval";
 import EventApprovalDetail from "./pages/admin_event/EventApprovalDetail";
 import EventEditRequests from "./pages/admin_event/EventEditRequests";
-import AccountIssue from "./pages/admin_account/AccountIssue";
+import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 import AccountRoles from "./pages/admin_account/AccountRoles";
 import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
 import SettlementManagement from "./pages/admin_settlement/SettlementManagement";
@@ -63,7 +63,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
-import ChatFloatingModal from "./components/chat/ChatFloatingModal"; // ← 위치 반드시 확인
+import ChatFloatingModal from "./components/chat/ChatFloatingModal";
+import AdminEventApproval from "./pages/admin/admin_event_apply";
+import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
+import ModificationRequestList from "./pages/admin/ModificationRequestList";
+import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
+import Spinner from "./components/Spinner";
 
 function AppContent() {
   useScrollToTop();
@@ -120,7 +125,7 @@ function AppContent() {
         <Route path="/host/dashboard" element={<HostRouteGuard><HostDashboard /></HostRouteGuard>} />
         <Route path="/host/edit-event-info" element={<HostRouteGuard><EditEventInfo /></HostRouteGuard>} />
         <Route path="/host/ticket-management" element={<HostRouteGuard><TicketManagement /></HostRouteGuard>} />
-        <Route path="/host/round-management" element={<HostRouteGuard><RoundManagement /></HostRouteGuard>} />
+        <Route path="/host/round-management" element={<HostRouteGuard><ScheduleManagement /></HostRouteGuard>} />
         <Route path="/host/status-management" element={<HostRouteGuard><EventStatusBanner /></HostRouteGuard>} />
         <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
         <Route path="/host/event-version/:versionId" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
@@ -142,9 +147,9 @@ function AppContent() {
         <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApproval /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-approvals/:id" element={<AdminRouteGuard><EventApprovalDetail /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
+        <Route path="/admin_dashboard/event-edit-requests/:id" element={<AdminRouteGuard><EventEditRequestDetail /></AdminRouteGuard>} />
 
         {/* 계정 관리 */}
-        <Route path="/admin_dashboard/accounts/issue" element={<AdminRouteGuard><AccountIssue /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/accounts/roles" element={<AdminRouteGuard><AccountRoles /></AdminRouteGuard>} />
 
         {/* VIP 배너 광고 */}
@@ -165,6 +170,24 @@ function AppContent() {
         {/* 로그/보안 */}
         <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
+        <Route path="/host/dashboard" element={<HostDashboard />} />
+        <Route path="/host/edit-event-info" element={<EditEventInfo />} />
+        <Route path="/host/ticket-management" element={<TicketManagement />} />
+        <Route path="/host/round-management" element={<RoundManagement />} />
+        <Route path="/host/status-management" element={<EventStatusBanner />} />
+        <Route path="/host/reservation-list" element={<ReservationList />} />
+        <Route path="/host/reservation-stats" element={<ReservationStats />} />
+        <Route path="/host/booth-type" element={<BoothTypeManagement />} />
+        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
+        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
+        <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
+        <Route path="/host/revenue-summary" element={<RevenueSummary />} />
+        <Route path="/host/time-analysis" element={<TimeAnalysis />} />
+        <Route path="/host/qr-scan" element={<QRScanPage />} />
+        <Route path="/admin/event-applications" element={<AdminEventApproval />} />
+        <Route path="/admin/event-applications/:id" element={<AdminEventApprovalDetail />} />
+        <Route path="/admin/modification-requests" element={<ModificationRequestList />} />
+        <Route path="/admin/modification-requests/:requestId" element={<ModificationRequestDetailPage />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer
