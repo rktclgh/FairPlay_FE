@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { TopNav } from "../../components/TopNav";
-import { MapPin } from "lucide-react";
-import { FaHeart } from "react-icons/fa";
-import { requireAuth } from "../../utils/authGuard";
-import { VenueInfo } from "./VenueInfo";
-import { CancelPolicy } from "./CancelPolicy";
-import { Reviews } from "./Reviews";
-import { Expectations } from "./Expectations";
+import React, {useState, useEffect} from "react";
+import {useParams, useNavigate} from "react-router-dom";
+import {TopNav} from "../../components/TopNav";
+import {MapPin} from "lucide-react";
+import {FaHeart} from "react-icons/fa";
+import {requireAuth} from "../../utils/authGuard";
+import {VenueInfo} from "./VenueInfo";
+import {CancelPolicy} from "./CancelPolicy";
+import {Reviews} from "./Reviews";
+import {Expectations} from "./Expectations";
 import ExternalLink from "./ExternalLink";
-import { eventAPI } from "../../services/event";
-import type { EventDetailResponseDto } from "../../services/types/eventType";
+import {eventAPI} from "../../services/event";
+import type {EventDetailResponseDto} from "../../services/types/eventType";
 import api from "../../api/axios";
-import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
-import type { WishlistResponseDto } from "../../services/types/wishlist";
+import {openChatRoomGlobal} from "../../components/chat/ChatFloatingModal";
+import type {WishlistResponseDto} from "../../services/types/wishlist";
 
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
-    return t ? { Authorization: `Bearer ${t}` } : {};
+    return t ? {Authorization: `Bearer ${t}`} : {};
 };
 
 const EventDetail = (): JSX.Element => {
-    const { eventId } = useParams();
+    const {eventId} = useParams();
     const navigate = useNavigate();
     const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ const EventDetail = (): JSX.Element => {
         if (!id) return;
         (async () => {
             try {
-                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+                const {data} = await api.get<WishlistResponseDto[]>("/api/wishlist", {
                     headers: authHeaders(),
                 });
                 if (!requireAuth(navigate, '관심 등록')) {
@@ -82,10 +82,10 @@ const EventDetail = (): JSX.Element => {
 
         try {
             if (was) {
-                await api.delete(`/api/wishlist/${id}`, { headers: authHeaders() });
+                await api.delete(`/api/wishlist/${id}`, {headers: authHeaders()});
             } else {
                 await api.post(`/api/wishlist`, null, {
-                    params: { eventId: id },
+                    params: {eventId: id},
                     headers: authHeaders(),
                 });
             }
@@ -548,7 +548,7 @@ const EventDetail = (): JSX.Element => {
 
     return (
         <div className="min-h-screen bg-white">
-            <TopNav />
+            <TopNav/>
 
             {/* Event Content */}
             <section className="pt-10">
@@ -579,9 +579,9 @@ const EventDetail = (): JSX.Element => {
                                     className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none
               ${isLiked ? "bg-[#EF6156] text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}
               ${pending ? "opacity-70 cursor-wait" : ""}`}
-                                    style={{ outline: "none", border: "none" }}
+                                    style={{outline: "none", border: "none"}}
                                 >
-                                    <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`} />
+                                    <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`}/>
                                     <span className="font-bold text-sm">{isLiked ? "관심" : "관심"}</span>
                                 </button>
 
@@ -591,7 +591,7 @@ const EventDetail = (): JSX.Element => {
                             </p>
                         </div>
 
-                        <hr className="h-[3px] my-6 bg-black" />
+                        <hr className="h-[3px] my-6 bg-black"/>
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-32">
@@ -600,7 +600,7 @@ const EventDetail = (): JSX.Element => {
                                     <span className="text-base inline-block">
                                         {eventData.placeName}
                                     </span>
-                                    <MapPin className="w-3 h-3 ml-1" />
+                                    <MapPin className="w-3 h-3 ml-1"/>
                                 </div>
                                 {/*<div className="flex items-center">*/}
                                 {/*    <span className="text-base text-[#00000099] font-semibold w-20">관람등급</span>*/}
@@ -615,11 +615,11 @@ const EventDetail = (): JSX.Element => {
                                 <span className="text-base">{eventData.startDate} ~ {eventData.endDate}</span>
                             </div>
 
-                            <hr className="my-2 bg-gray-300" />
+                            <hr className="my-2 bg-gray-300"/>
 
                             <div className="flex items-start">
                                 <span className="text-base text-[#00000099] font-semibold w-20">행사 소개</span>
-                                <div className="text-base" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
+                                <div className="text-base" dangerouslySetInnerHTML={{__html: eventData.bio}}/>
                             </div>
 
                             <div className="flex items-start">
@@ -736,11 +736,11 @@ const EventDetail = (): JSX.Element => {
                                 setIsExternalBookingOpen(true);
                             }
                         }}
-                    // disabled={!selectedDate || !selectedSchedule}
-                    // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
-                    //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                    //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    //     }`}
+                        // disabled={!selectedDate || !selectedSchedule}
+                        // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
+                        //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                        //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        //     }`}
                     >
                         예매하기
                     </button>
@@ -748,14 +748,15 @@ const EventDetail = (): JSX.Element => {
 
                 {/* Event Details Tabs */}
                 <div className="mb-12">
-                    <nav className="h-[40px] border-b border-neutral-200 relative" style={{ borderBottom: '1px solid #e5e5e5', marginBottom: '-1px' }}>
+                    <nav className="h-[40px] border-b border-neutral-200 relative"
+                         style={{borderBottom: '1px solid #e5e5e5', marginBottom: '-1px'}}>
                         <ul className="flex items-center h-full pl-0">
                             {[
-                                { id: "detail", name: "상세정보" },
-                                { id: "location", name: "장소정보" },
-                                { id: "booking", name: "예매/취소안내" },
-                                { id: "review", name: "관람평" },
-                                { id: "expectation", name: "기대평" }
+                                {id: "detail", name: "상세정보"},
+                                {id: "location", name: "장소정보"},
+                                {id: "booking", name: "예매/취소안내"},
+                                {id: "review", name: "관람평"},
+                                {id: "expectation", name: "기대평"}
                             ].map((tab) => (
                                 <li
                                     key={tab.id}
@@ -781,16 +782,17 @@ const EventDetail = (): JSX.Element => {
                                 <h3 className="text-lg font-semibold text-[#212121] mb-4">
                                     {eventData.mainCategory === "공연" ? "공연 소개" : "행사 소개"}
                                 </h3>
-                                <div className="text-base mb-4" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
+                                <div className="text-base mb-4" dangerouslySetInnerHTML={{__html: eventData.bio}}/>
 
                                 {eventData.content && (
-                                    <div className="text-base mb-6" dangerouslySetInnerHTML={{ __html: eventData.content }} />
+                                    <div className="text-base mb-6"
+                                         dangerouslySetInnerHTML={{__html: eventData.content}}/>
                                 )}
 
-                                <div className="bg-[#e7eaff] rounded-lg mt-8 p-4">
-                                    <h4 className="text-base font-semibold text-[#212121] mb-4">
-                                        주요 안내사항
-                                    </h4>
+                                {/*<div className="bg-[#e7eaff] rounded-lg mt-8 p-4">*/}
+                                {/*    <h4 className="text-base font-semibold text-[#212121] mb-4">*/}
+                                {/*        주요 안내사항*/}
+                                {/*    </h4>*/}
                                     {/*<ul className="space-y-2">*/}
                                     {/*    {eventData.policy.map((notice: string, index: number) => (*/}
                                     {/*        <li key={index} className="text-sm">*/}
@@ -798,7 +800,7 @@ const EventDetail = (): JSX.Element => {
                                     {/*        </li>*/}
                                     {/*    ))}*/}
                                     {/*</ul>*/}
-                                </div>
+                                {/*</div>*/}
                             </>
                         )}
 
@@ -813,9 +815,14 @@ const EventDetail = (): JSX.Element => {
                             />
                         )}
 
-                        {/*{activeTab === "booking" && (*/}
-                        {/*    <CancelPolicy bookingInfo={eventData.bookingInfo} />*/}
-                        {/*)}*/}
+                        {activeTab === "booking" && (
+                            <>
+                                {eventData.policy && (
+                                    <div className="text-base mb-6"
+                                         dangerouslySetInnerHTML={{__html: eventData.policy}}/>
+                                )}
+                            </>
+                        )}
 
                         {activeTab === "review" && (
                             eventData.mainCategory === "박람회" ? (
@@ -826,8 +833,9 @@ const EventDetail = (): JSX.Element => {
                                         </h3>
                                         <div className="flex items-center gap-2">
                                             <div className="flex gap-1">
-                                                {Array.from({ length: 5 }, (_, index) => (
-                                                    <span key={index} className="text-xl leading-6 text-[#ffd700]">★</span>
+                                                {Array.from({length: 5}, (_, index) => (
+                                                    <span key={index}
+                                                          className="text-xl leading-6 text-[#ffd700]">★</span>
                                                 ))}
                                             </div>
                                             <span className="text-lg font-medium text-[#212121]">
@@ -844,8 +852,9 @@ const EventDetail = (): JSX.Element => {
                                                         김웨딩
                                                     </span>
                                                     <div className="flex gap-1">
-                                                        {Array.from({ length: 5 }, (_, index) => (
-                                                            <span key={index} className="text-base leading-6 text-[#ffd700]">★</span>
+                                                        {Array.from({length: 5}, (_, index) => (
+                                                            <span key={index}
+                                                                  className="text-base leading-6 text-[#ffd700]">★</span>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -855,18 +864,21 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                             <div className="mb-4">
                                                 <p className="text-base text-black font-normal leading-6">
-                                                    정말 유익한 박람회였어요! 예식장부터 스튜디오, 드레스까지 모든 웨딩 관련 업체를 한자리에서 만날 수 있어서 너무 편리했습니다. 특히 현장 계약 시 제공되는 혜택들이 정말 좋았고, 웨딩 키트도 퀄리티가 높았어요.
+                                                    정말 유익한 박람회였어요! 예식장부터 스튜디오, 드레스까지 모든 웨딩 관련 업체를 한자리에서 만날 수 있어서 너무
+                                                    편리했습니다. 특히 현장 계약 시 제공되는 혜택들이 정말 좋았고, 웨딩 키트도 퀄리티가 높았어요.
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <button className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
+                                                    <button
+                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
                                                         <span className="text-lg">🤍</span>
                                                         <span>좋아요</span>
                                                         <span>24</span>
                                                     </button>
                                                 </div>
-                                                <button className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
+                                                <button
+                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
                                                     신고
                                                 </button>
                                             </div>
@@ -879,8 +891,9 @@ const EventDetail = (): JSX.Element => {
                                                         박신랑
                                                     </span>
                                                     <div className="flex gap-1">
-                                                        {Array.from({ length: 4 }, (_, index) => (
-                                                            <span key={index} className="text-base leading-6 text-[#ffd700]">★</span>
+                                                        {Array.from({length: 4}, (_, index) => (
+                                                            <span key={index}
+                                                                  className="text-base leading-6 text-[#ffd700]">★</span>
                                                         ))}
                                                         <span className="text-base leading-6 text-[#dddddd]">★</span>
                                                     </div>
@@ -891,18 +904,21 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                             <div className="mb-4">
                                                 <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비에 대한 모든 정보를 얻을 수 있어서 정말 도움이 되었습니다. 각 업체들의 상담도 전문적이고 친절했어요. 다만 사람이 너무 많아서 일부 부스는 대기 시간이 길었던 점이 아쉬웠습니다.
+                                                    웨딩 준비에 대한 모든 정보를 얻을 수 있어서 정말 도움이 되었습니다. 각 업체들의 상담도 전문적이고 친절했어요. 다만
+                                                    사람이 너무 많아서 일부 부스는 대기 시간이 길었던 점이 아쉬웠습니다.
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <button className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
+                                                    <button
+                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
                                                         <span className="text-lg">🤍</span>
                                                         <span>좋아요</span>
                                                         <span>18</span>
                                                     </button>
                                                 </div>
-                                                <button className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
+                                                <button
+                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
                                                     신고
                                                 </button>
                                             </div>
@@ -915,8 +931,9 @@ const EventDetail = (): JSX.Element => {
                                                         이예비부부
                                                     </span>
                                                     <div className="flex gap-1">
-                                                        {Array.from({ length: 5 }, (_, index) => (
-                                                            <span key={index} className="text-base leading-6 text-[#ffd700]">★</span>
+                                                        {Array.from({length: 5}, (_, index) => (
+                                                            <span key={index}
+                                                                  className="text-base leading-6 text-[#ffd700]">★</span>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -926,18 +943,21 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                             <div className="mb-4">
                                                 <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비의 모든 과정을 체계적으로 알 수 있어서 정말 만족스러웠어요. 특히 허니문 패키지와 한복 관련 정보가 정말 유용했습니다. 현장에서 계약한 업체들의 서비스도 훌륭했고, 웨딩 키트도 예상보다 퀄리티가 높았어요!
+                                                    웨딩 준비의 모든 과정을 체계적으로 알 수 있어서 정말 만족스러웠어요. 특히 허니문 패키지와 한복 관련 정보가 정말
+                                                    유용했습니다. 현장에서 계약한 업체들의 서비스도 훌륭했고, 웨딩 키트도 예상보다 퀄리티가 높았어요!
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <button className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
+                                                    <button
+                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
                                                         <span className="text-lg">🤍</span>
                                                         <span>좋아요</span>
                                                         <span>31</span>
                                                     </button>
                                                 </div>
-                                                <button className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
+                                                <button
+                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
                                                     신고
                                                 </button>
                                             </div>
@@ -965,7 +985,7 @@ const EventDetail = (): JSX.Element => {
                                     </div>
                                 </div>
                             ) : (
-                                <Reviews />
+                                <Reviews/>
                             )
                         )}
 
@@ -989,7 +1009,8 @@ const EventDetail = (): JSX.Element => {
                                         </div>
 
                                         <div className="flex justify-end">
-                                            <button className="bg-black hover:bg-gray-800 text-white font-medium text-base px-6 py-3 rounded-[10px] transition-colors">
+                                            <button
+                                                className="bg-black hover:bg-gray-800 text-white font-medium text-base px-6 py-3 rounded-[10px] transition-colors">
                                                 등록
                                             </button>
                                         </div>
@@ -1009,18 +1030,21 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                             <div className="mb-4">
                                                 <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비를 시작하는데 정말 많은 정보가 필요해서 이번 박람회가 기대됩니다! 예식장부터 스튜디오, 드레스까지 모든 업체를 한자리에서 만날 수 있다니 정말 편리할 것 같아요. 특히 현장 계약 시 제공되는 혜택들도 기대됩니다.
+                                                    웨딩 준비를 시작하는데 정말 많은 정보가 필요해서 이번 박람회가 기대됩니다! 예식장부터 스튜디오, 드레스까지 모든 업체를
+                                                    한자리에서 만날 수 있다니 정말 편리할 것 같아요. 특히 현장 계약 시 제공되는 혜택들도 기대됩니다.
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <button className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
+                                                    <button
+                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
                                                         <span className="text-lg">🤍</span>
                                                         <span>좋아요</span>
                                                         <span>15</span>
                                                     </button>
                                                 </div>
-                                                <button className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
+                                                <button
+                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
                                                     신고
                                                 </button>
                                             </div>
@@ -1039,18 +1063,21 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                             <div className="mb-4">
                                                 <p className="text-base text-black font-normal leading-6">
-                                                    작년에도 참관했는데 정말 유익했어서 올해도 꼭 가려고 해요! 올해는 한복 관련 업체들도 더 많이 참가한다고 해서 기대됩니다. 웨딩 키트도 작년보다 더 좋아졌다고 하니 정말 기대돼요.
+                                                    작년에도 참관했는데 정말 유익했어서 올해도 꼭 가려고 해요! 올해는 한복 관련 업체들도 더 많이 참가한다고 해서
+                                                    기대됩니다. 웨딩 키트도 작년보다 더 좋아졌다고 하니 정말 기대돼요.
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <button className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
+                                                    <button
+                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
                                                         <span className="text-lg">🤍</span>
                                                         <span>좋아요</span>
                                                         <span>22</span>
                                                     </button>
                                                 </div>
-                                                <button className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
+                                                <button
+                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
                                                     신고
                                                 </button>
                                             </div>
@@ -1069,18 +1096,21 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                             <div className="mb-4">
                                                 <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비에 대해 아는 게 없어서 이번 박람회를 통해 많은 정보를 얻고 싶어요. 각 업체들의 상담도 받아보고, 현장에서 계약할 수 있는 혜택들도 확인해보려고 합니다. 특히 허니문 패키지가 궁금해요!
+                                                    웨딩 준비에 대해 아는 게 없어서 이번 박람회를 통해 많은 정보를 얻고 싶어요. 각 업체들의 상담도 받아보고, 현장에서
+                                                    계약할 수 있는 혜택들도 확인해보려고 합니다. 특히 허니문 패키지가 궁금해요!
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <button className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
+                                                    <button
+                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
                                                         <span className="text-lg">🤍</span>
                                                         <span>좋아요</span>
                                                         <span>18</span>
                                                     </button>
                                                 </div>
-                                                <button className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
+                                                <button
+                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
                                                     신고
                                                 </button>
                                             </div>
@@ -1108,7 +1138,7 @@ const EventDetail = (): JSX.Element => {
                                     </div>
                                 </div>
                             ) : (
-                                <Expectations />
+                                <Expectations/>
                             )
                         )}
                     </div>

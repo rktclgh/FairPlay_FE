@@ -5,6 +5,43 @@
   text-align: left;
 }
 
+/* Quill 테이블 버튼 스타일 */
+.ql-toolbar .ql-table:before {
+  content: "⊞";
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.ql-toolbar .ql-table {
+  width: 28px;
+  height: 24px;
+}
+
+/* Quill 에디터 내 표 스타일링 */
+.ql-editor table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+}
+
+.ql-editor table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  min-width: 50px;
+}
+
+.ql-editor table tr:first-child td {
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+/* 표 편집 시 선택 표시 */
+.ql-editor table td:hover {
+  background-color: #e6f3ff;
+}
+
+
 .logo {
   height: 6em;
   padding: 1.5em;

@@ -24,12 +24,12 @@ import { RegisterEvent } from "./pages/RegisterEvent";
 import { EventRegistrationIntro } from "./pages/EventRegistrationIntro";
 import { HostDashboard } from "./pages/HostDashboard";
 import { EditEventInfo } from "./pages/host_event/EditEventInfo";
+import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import TicketManagement from "./pages/host_event/TicketManagement";
 import ScheduleManagement from "./pages/host_event/ScheduleManagement";
 import EventVersionManagement from "./pages/host_event/EventVersionManagement";
 import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
 import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
-import { EventStatusBanner } from "./pages/host_event/EventStatusBanner";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
@@ -63,7 +63,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
-import ChatFloatingModal from "./components/chat/ChatFloatingModal"; // ← 위치 반드시 확인
+import ChatFloatingModal from "./components/chat/ChatFloatingModal";
+import AdminEventApproval from "./pages/admin/admin_event_apply";
+import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
+import ModificationRequestList from "./pages/admin/ModificationRequestList";
+import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
+import Spinner from "./components/Spinner";
 
 function AppContent() {
   useScrollToTop();
@@ -165,6 +170,24 @@ function AppContent() {
         {/* 로그/보안 */}
         <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
+        <Route path="/host/dashboard" element={<HostDashboard />} />
+        <Route path="/host/edit-event-info" element={<EditEventInfo />} />
+        <Route path="/host/ticket-management" element={<TicketManagement />} />
+        <Route path="/host/round-management" element={<RoundManagement />} />
+        <Route path="/host/status-management" element={<EventStatusBanner />} />
+        <Route path="/host/reservation-list" element={<ReservationList />} />
+        <Route path="/host/reservation-stats" element={<ReservationStats />} />
+        <Route path="/host/booth-type" element={<BoothTypeManagement />} />
+        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
+        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
+        <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
+        <Route path="/host/revenue-summary" element={<RevenueSummary />} />
+        <Route path="/host/time-analysis" element={<TimeAnalysis />} />
+        <Route path="/host/qr-scan" element={<QRScanPage />} />
+        <Route path="/admin/event-applications" element={<AdminEventApproval />} />
+        <Route path="/admin/event-applications/:id" element={<AdminEventApprovalDetail />} />
+        <Route path="/admin/modification-requests" element={<ModificationRequestList />} />
+        <Route path="/admin/modification-requests/:requestId" element={<ModificationRequestDetailPage />} />
         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
       </Routes>
       <ToastContainer
