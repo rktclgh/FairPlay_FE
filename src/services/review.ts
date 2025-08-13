@@ -8,6 +8,7 @@ import type {
     ReviewUpdateRequestDto,
     ReviewUpdateResponseDto,
     ReviewDeleteResponseDto,
+    PossibleReviewResponseDto,
     Page,
     PageableRequest
 } from "./types/reviewType";
@@ -20,13 +21,19 @@ export const saveReview = async (data: ReviewSaveRequestDto): Promise<ReviewSave
 
 // 리뷰 조회 - 행사 상세 페이지
 export const getReviewsByEvent = async (eventId: number, params?: PageableRequest): Promise<ReviewForEventResponseDto> => {
-    const res = await api.get<Page<ReviewForEventResponseDto>>(`/api/reviews/${eventId}`, {params});
+    const res = await api.get<ReviewForEventResponseDto>(`/api/reviews/${eventId}`, {params});
     return res.data;
 }
 
 // 리뷰 조회 - 마이페이지
-export const getReviewsByMember = async (params?: PageableRequest): Promise<Page<ReviewResponseDto>> => {
-    const res = await api.get<Page<ReviewResponseDto>>(`/api/reviews`, {params});
+export const getReviewsByMember = async (page: number): Promise<Page<ReviewResponseDto>> => {
+    const res = await api.get<Page<ReviewResponseDto>>(`/api/reviews?page=${page}`);
+    return res.data;
+}
+
+// 작성 가능한 행사 목록 조회 - 마이페이지
+export const getPossibleSaveReview = async (page: number): Promise<Page<PossibleReviewResponseDto>> => {
+    const res = await api.get<Page<PossibleReviewResponseDto>>(`/api/reviews/mypage?page=${page}`);
     return res.data;
 }
 

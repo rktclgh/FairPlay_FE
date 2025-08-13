@@ -8,16 +8,16 @@ import type {
     PageableRequest
 } from "../../services/types/reviewType";
 
-interface Review {
-  id: number; // 리뷰ID
-  author: string; // 작성자
-  rating: number; // 별점
-  date: string; // 날짜
-  content: string; // 내용
-  likeCount: number; // 좋아요 갯수
-  isHidden?: boolean; // 비공개 여부
-  isLiked?: boolean; // 내가 좋아요한 리뷰인지
-}
+// interface Review {
+//   id: number; // 리뷰ID
+//   author: string; // 작성자
+//   rating: number; // 별점
+//   date: string; // 날짜
+//   content: string; // 내용
+//   likeCount: number; // 좋아요 갯수
+//   isHidden?: boolean; // 비공개 여부
+//   isLiked?: boolean; // 내가 좋아요한 리뷰인지
+// }
 
 
 interface ReviewsProps {
