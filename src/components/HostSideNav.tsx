@@ -1,5 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { hasEventManagerPermission } from "../utils/permissions";
+import { getCachedRoleCode } from "../utils/role";
 
 interface HostSideNavProps {
     className?: string;
@@ -7,6 +9,7 @@ interface HostSideNavProps {
 
 export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
     const location = useLocation();
+    const userRole = getCachedRoleCode();
 
     return (
         <div className={`w-[240px] h-[800px] bg-white ${className}`}>
@@ -81,6 +84,25 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                 }}
                             >
                                 행사 노출 상태
+                            </Link>
+                            <Link
+                                to="/host/event-version"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/event-version"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/host/event-version" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/event-version" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/event-version" ? "black" : "#00000080";
+                                }}
+                            >
+                                행사 버전 관리
                             </Link>
                             <Link
                                 to="/host/ticket-management"
@@ -169,50 +191,52 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                         </div>
                     </div>
 
-                    {/* 부스 관리 카테고리 */}
-                    <div className="mb-4 space-y-0">
-                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">부스 관리</h3>
-                        <div className="space-y-1">
-                            <Link
-                                to="/host/booth-type"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-type"
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname === "/host/booth-type" ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/booth-type" ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/booth-type" ? "black" : "#00000080";
-                                }}
-                            >
-                                부스 타입 관리
-                            </Link>
-                            <Link
-                                to="/host/booth-applications"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-applications"
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname === "/host/booth-applications" ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
-                                }}
-                            >
-                                부스 신청 목록
-                            </Link>
+                    {/* 부스 관리 카테고리 - EVENT_MANAGER 권한 필요 */}
+                    {hasEventManagerPermission(userRole || '') && (
+                        <div className="mb-4 space-y-0">
+                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">부스 관리</h3>
+                            <div className="space-y-1">
+                                <Link
+                                    to="/host/booth-type"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-type"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booth-type" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-type" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-type" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    부스 타입 관리
+                                </Link>
+                                <Link
+                                    to="/host/booth-applications"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-applications"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booth-applications" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    부스 신청 목록
+                                </Link>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* 체크인 카테고리 */}
                     <div className="mb-4 space-y-0">
@@ -240,69 +264,71 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                         </div>
                     </div>
 
-                    {/* 통계 리포트 카테고리 */}
-                    <div className="mb-4 space-y-0">
-                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">통계 리포트</h3>
-                        <div className="space-y-1">
-                            <Link
-                                to="/host/booking-analysis"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booking-analysis"
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname === "/host/booking-analysis" ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/booking-analysis" ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/booking-analysis" ? "black" : "#00000080";
-                                }}
-                            >
-                                예매율 분석
-                            </Link>
-                            <Link
-                                to="/host/revenue-summary"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/revenue-summary"
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname === "/host/revenue-summary" ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/revenue-summary" ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/revenue-summary" ? "black" : "#00000080";
-                                }}
-                            >
-                                매출 요약
-                            </Link>
-                            <Link
-                                to="/host/time-analysis"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/time-analysis"
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname === "/host/time-analysis" ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/time-analysis" ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname === "/host/time-analysis" ? "black" : "#00000080";
-                                }}
-                            >
-                                시간대별 분석
-                            </Link>
+                    {/* 통계 리포트 카테고리 - EVENT_MANAGER 권한 필요 */}
+                    {hasEventManagerPermission(userRole || '') && (
+                        <div className="mb-4 space-y-0">
+                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">통계 리포트</h3>
+                            <div className="space-y-1">
+                                <Link
+                                    to="/host/booking-analysis"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booking-analysis"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booking-analysis" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booking-analysis" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booking-analysis" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    예매율 분석
+                                </Link>
+                                <Link
+                                    to="/host/revenue-summary"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/revenue-summary"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/revenue-summary" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/revenue-summary" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/revenue-summary" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    매출 요약
+                                </Link>
+                                <Link
+                                    to="/host/time-analysis"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/time-analysis"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/time-analysis" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/time-analysis" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/time-analysis" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    시간대별 분석
+                                </Link>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </nav>
             </div>
         </div>

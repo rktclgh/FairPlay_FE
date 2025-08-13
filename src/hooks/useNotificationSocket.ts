@@ -66,12 +66,16 @@ export function useNotificationSocket() {
     console.log("Connecting to notification WebSocket...");
     isConnectedRef.current = true;
 
-    const wsUrl =
-      window.location.hostname === "localhost"
-        ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/notifications`
-        : `${window.location.protocol}//${window.location.host}/ws/notifications`;
-
-    const sock = new SockJS(wsUrl);
+    const token = localStorage.getItem("accessToken");
+    
+    // SockJS fallback 엔드포인트 사용
+    const sockjsUrl = window.location.hostname === "localhost"
+      ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/notifications-sockjs`
+      : `${window.location.protocol}//${window.location.host}/ws/notifications-sockjs`;
+    
+    console.log(`SockJS connecting to: ${sockjsUrl}`);
+    
+    const sock = new SockJS(token ? `${sockjsUrl}?token=${token}` : sockjsUrl);
     const stomp = Stomp.over(sock);
 
     stomp.heartbeat.outgoing = 25000;
@@ -79,11 +83,14 @@ export function useNotificationSocket() {
     stomp.debug = () => {};
     clientRef.current = stomp;
 
-    const token = localStorage.getItem("accessToken");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    // STOMP CONNECT 헤더에 토큰 추가
+    const connectHeaders: any = {};
+    if (token) {
+      connectHeaders['Authorization'] = `Bearer ${token}`;
+    }
 
     stomp.connect(
-      headers,
+      connectHeaders,
       () => {
         console.log("Connected to notification WebSocket");
         reconnectAttempts.current = 0;

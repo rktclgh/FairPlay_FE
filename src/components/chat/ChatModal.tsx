@@ -12,6 +12,7 @@ type ChatRoomInfo = {
     userName?: string;
     otherUserId?: number;
     isAdminInquiry?: boolean; // FairPlay 운영자 문의 채팅방 여부
+    isAiChat?: boolean; // AI 채팅방 여부
 };
 
 type Props = {
@@ -77,6 +78,31 @@ export default function ChatModal({
         }
     };
 
+    // AI 채팅 문의하기
+    const handleAiInquiry = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.post('/api/chat/ai-inquiry', {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            });
+
+            const roomData = response.data;
+            setSelectedRoomId(roomData.chatRoomId);
+            setSelectedRoomInfo({
+                roomId: roomData.chatRoomId,
+                eventTitle: roomData.eventTitle,
+                userName: undefined,
+                isAdminInquiry: false,
+                isAiChat: true
+            });
+        } catch (error) {
+            console.error('AI 채팅 생성 실패:', error);
+            alert('AI 채팅방 생성에 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // 모달이 열릴 때마다 관리자 상태 확인
     useEffect(() => {
         if (open) {
@@ -137,6 +163,31 @@ export default function ChatModal({
                     {/* 방 선택 전 → 방 목록 / 방 선택 → 채팅방 */}
                     {selectedRoomId === null ? (
                         <div className="flex flex-col h-full min-h-0">
+                            {/* AI 챗봇 문의하기 */}
+                            <div className="p-4 border-b hover:bg-blue-50 cursor-pointer transition-colors" onClick={handleAiInquiry}>
+                                <div className="flex items-start gap-3">
+                                    {/* AI 아이콘 */}
+                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center">
+                                        <img 
+                                            src="/images/ai-assistant-icon.svg" 
+                                            alt="AI 챗봇" 
+                                            className="w-6 h-6"
+                                        />
+                                    </div>
+                                    
+                                    {/* 채팅 정보 */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <h3 className="font-semibold text-blue-900">AI 챗봇</h3>
+                                            <span className="text-xs text-blue-500">24시간 상담</span>
+                                        </div>
+                                        <p className="text-sm text-blue-600 line-clamp-2">
+                                            {loading ? "연결중..." : "안녕하세요! FairPlay AI 챗봇입니다."}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* FairPlay 운영자 문의하기 */}
                             <div className="p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors" onClick={handleAdminInquiry}>
                                 <div className="flex items-start gap-3">
@@ -161,9 +212,9 @@ export default function ChatModal({
                                     </div>
                                 </div>
                             </div>
-                            <ChatRoomList onSelect={(roomId, eventTitle, userName, otherUserId) => {
+                            <ChatRoomList onSelect={(roomId, eventTitle, userName, otherUserId, isAiChat) => {
                                 setSelectedRoomId(roomId);
-                                setSelectedRoomInfo({ roomId, eventTitle, userName, otherUserId });
+                                setSelectedRoomInfo({ roomId, eventTitle, userName, otherUserId, isAiChat });
                             }} />
                         </div>
                     ) : (
@@ -177,6 +228,7 @@ export default function ChatModal({
                             userName={selectedRoomInfo?.userName}
                             otherUserId={selectedRoomInfo?.otherUserId}
                             isAdminInquiry={selectedRoomInfo?.isAdminInquiry}
+                            isAiChat={selectedRoomInfo?.isAiChat}
                         />
                     )}
                 </Dialog.Content>

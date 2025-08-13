@@ -6,6 +6,8 @@ import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket, Notification } from '../hooks/useNotificationSocket';
 import { requireAuth, isAuthenticated } from '../utils/authGuard';
+import { hasHostPermission } from '../utils/permissions';
+import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 
 
 interface TopNavProps {
@@ -56,6 +58,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
             e.preventDefault();
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
+            clearCachedRoleCode();
             setIsLoggedIn(false);
             disconnect(); // 로그아웃 시 웹소켓 연결 해제
             navigate('/');
@@ -160,21 +163,17 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                     return;
                                 }
 
-                                // 토큰에서 사용자 역할 확인
-                                const accessToken = localStorage.getItem('accessToken');
-                                try {
-                                    const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken!.split('.')[1]))));
-                                    const userRole = payload.role;
-
-                                    if (userRole === 'HOST' || userRole === 'ADMIN' || userRole.includes('행사') || userRole.includes('관리자')) {
+                                (async () => {
+                                    const role = await getRoleCode();
+                                    if (!role) { navigate('/login'); return; }
+                                    if (role === 'ADMIN') {
+                                        navigate('/admin_dashboard');
+                                    } else if (hasHostPermission(role)) {
                                         navigate('/host/dashboard');
                                     } else {
                                         navigate('/mypage/info');
                                     }
-                                } catch (error) {
-                                    console.error('토큰 파싱 실패:', error);
-                                    navigate('/mypage/info');
-                                }
+                                })();
                             }} />
                             <HiOutlineGlobeAlt className="w-5 h-5 text-black cursor-pointer" />
                         </div>

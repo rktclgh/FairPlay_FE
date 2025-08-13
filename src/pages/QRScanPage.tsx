@@ -1,7 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
+import jsQR from "jsqr";
 import { TopNav } from '../components/TopNav';
 import { HostSideNav } from '../components/HostSideNav';
 import { HiCamera, HiSearch } from 'react-icons/hi';
+import {
+    checkInManual,
+    checkInQr,
+    checkOutManual,
+    checkOutQr
+} from "../services/qrTicket";
+import type {
+    ManualCheckRequestDto,
+    QrCheckRequestDto
+} from "../services/types/qrTicketType"
 
 const QRScanPage: React.FC = () => {
     const [isCameraActive, setIsCameraActive] = useState(false);
@@ -17,34 +28,54 @@ const QRScanPage: React.FC = () => {
                 video: {
                     facingMode: 'environment',
                     width: { ideal: 640 },
-                    height: { ideal: 480 }
-                }
+                    height: { ideal: 480 },
+                },
+                audio: false,
             });
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                streamRef.current = stream;
-                setIsCameraActive(true);
-
-                // 비디오 로드 완료 후 상태 확인
-                videoRef.current.onloadedmetadata = () => {
-                    console.log('비디오 메타데이터 로드 완료');
-                    console.log('비디오 크기:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
-                };
-
-                videoRef.current.onplay = () => {
-                    console.log('비디오 재생 시작');
-                };
-
-                videoRef.current.onerror = (e) => {
-                    console.error('비디오 에러:', e);
-                };
-            }
+            // 먼저 스트림을 저장하고, 비디오가 렌더되도록 상태를 변경
+            streamRef.current = stream;
+            setIsCameraActive(true);
         } catch (error) {
             console.error('카메라를 시작할 수 없습니다:', error);
             alert('카메라 접근 권한이 필요합니다.');
         }
     };
+
+    // 비디오 엘리먼트가 렌더된 뒤 스트림을 연결
+    useEffect(() => {
+        const video = videoRef.current;
+        const stream = streamRef.current;
+
+        if (!isCameraActive || !video || !stream) {
+            return;
+        }
+
+        try {
+            (video as HTMLVideoElement).srcObject = stream;
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch((err) => {
+                    console.error('비디오 재생 실패:', err);
+                });
+            }
+        } catch (err) {
+            console.error('비디오 소스 연결 실패:', err);
+        }
+
+        video.onloadedmetadata = () => {
+            console.log('비디오 메타데이터 로드 완료');
+            console.log('비디오 크기:', video.videoWidth, 'x', video.videoHeight);
+        };
+
+        video.onplay = () => {
+            console.log('비디오 재생 시작');
+        };
+
+        video.onerror = (e) => {
+            console.error('비디오 에러:', e);
+        };
+    }, [isCameraActive]);
 
     // 카메라 중지
     const stopCamera = () => {
@@ -59,28 +90,58 @@ const QRScanPage: React.FC = () => {
     };
 
     // 수동 코드 검색
-    const handleManualSearch = () => {
-        if (!manualCode.trim()) {
+    const handleManualSearch = async (input: string) => {
+        if (!input.trim()) {
             alert('수동 코드를 입력해주세요.');
             return;
         }
 
-        // QR 코드 형식 검증 (AB12-C3F4 형식)
-        const codePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-        if (!codePattern.test(manualCode.trim())) {
-            alert('올바른 코드 형식을 입력해주세요. (예: AB12-C3F4)');
-            return;
+        // // QR 코드 형식 검증 (AB12-C3F4 형식)
+        // const codePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+        // if (!codePattern.test(manualCode.trim())) {
+        //     alert('올바른 코드 형식을 입력해주세요. (예: AB12-C3F4)');
+        //     return;
+        // }
+
+        const manualCheckRequestDto: ManualCheckRequestDto = {
+            manualCode: input
         }
 
+        const res = await checkInManual(manualCheckRequestDto);
+
         // 여기에 실제 검색 로직을 구현할 수 있습니다
-        setScanResult(`수동 코드 "${manualCode}" 검색 완료`);
+        setScanResult(res.message);
         console.log('수동 코드 검색:', manualCode);
     };
 
     // QR 코드 스캔 처리 (실제 구현에서는 QR 코드 라이브러리 사용)
-    const handleQRScan = () => {
-        // 실제 구현에서는 QR 코드 인식 라이브러리를 사용하여 스캔 결과를 처리합니다
-        setScanResult('QR 코드 스캔 완료');
+    const handleQRScan = async () => {
+        if (!videoRef.current) return;
+        
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        // 현재 비디오 프레임 캡처
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+
+        if (qrCode) {
+            console.log("QR 코드 내용:", qrCode.data);
+
+            const qrCheckRequestDto: QrCheckRequestDto = {
+                qrCode: qrCode.data
+            }
+            const res = await checkInQr(qrCheckRequestDto);        
+            setScanResult(res.message);
+        } else {
+            alert("QR 코드를 인식하지 못했습니다.");
+        }
+        
         console.log('QR 코드 스캔됨');
     };
 
@@ -182,10 +243,10 @@ const QRScanPage: React.FC = () => {
                                     onChange={(e) => setManualCode(e.target.value)}
                                     placeholder="수동 코드를 입력하세요"
                                     className="flex-1 h-10 border-2 border-gray-300 rounded-lg px-3 text-sm bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-gray-400"
-                                    onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleManualSearch(manualCode)}
                                 />
                                 <button
-                                    onClick={handleManualSearch}
+                                    onClick={() => handleManualSearch(manualCode)}
                                     className="px-6 py-2 rounded-[10px] transition-colors text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
                                 >
                                     <HiSearch className="w-4 h-4" />

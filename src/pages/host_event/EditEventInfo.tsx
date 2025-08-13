@@ -1,40 +1,70 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { TopNav } from "../../components/TopNav";
-import { HostSideNav } from "../../components/HostSideNav";
-import { loadKakaoMap } from "../../lib/loadKakaoMap";
-import { eventAPI } from "../../services/event";
-import { dashboardAPI } from "../../services/dashboard";
-import type { EventDetailResponseDto } from "../../services/types/eventType";
-import { toast } from "react-toastify";
-
-import ReactQuill, { Quill } from "react-quill";
+import React, {useState} from "react";
+import {TopNav} from "../../components/TopNav";
+import {HostSideNav} from "../../components/HostSideNav";
+import {loadKakaoMap} from "../../lib/loadKakaoMap";
+import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
-import { useFileUpload } from "../../hooks/useFileUpload";
+// 커스텀 체크박스 스타일
+const customCheckboxStyles = `
+.custom-checkbox {
+  position: relative;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
 
-// ✅ 그리드 픽커 모듈 & CSS (picker용 CSS가 맞습니다!)
-import QuillBetterTablePicker from "quill-better-table-picker";
-import "quill-better-table-picker/dist/quill-better-table-picker.css";
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
 
-// 전역 등록(HMR/SSR 안전) + 중복 등록 방지
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #fff;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.custom-checkbox:hover .checkmark {
+  border-color: #3b82f6;
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.custom-checkbox input:checked ~ .checkmark:after {
+  display: block;
+}
+`;
+
 declare global {
     interface Window {
         kakao: any;
-        Quill: any;
-        isQuillTableRegistered?: boolean;
-    }
-}
-if (typeof window !== "undefined") {
-    (window as any).Quill = Quill;
-    if (!window.isQuillTableRegistered) {
-        Quill.register(
-            {
-                "modules/better-table":
-                    (QuillBetterTablePicker as any).default || QuillBetterTablePicker,
-            },
-            true
-        );
-        window.isQuillTableRegistered = true;
     }
 }
 
@@ -72,13 +102,18 @@ export const EditEventInfo = () => {
         viewingGrade: "",
         mainCategory: "",
         subCategory: "",
+        bannerImageVertical: null as File | null,
+        bannerImageHorizontal: null as File | null,
         businessNumber: "",
         managerName: "",
         phone: "",
         email: "",
+        registerId: "",
+        externalTicketName: "",
+        externalTicketUrl: "",
+        organizerName: "",
         representativeName: "",
         organizerContact: "",
-        organizerBusinessNumber: "",
         organizerWebsite: "",
         hostCompany: "",
         policy: "",
@@ -89,7 +124,7 @@ export const EditEventInfo = () => {
         latitude: null as number | null,
     });
     const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([
-        { name: "", url: "" },
+        {name: "", url: ""},
     ]);
 
     const [searchKeyword, setSearchKeyword] = useState("");
@@ -105,10 +140,23 @@ export const EditEventInfo = () => {
         getFileUploadDtos,
     } = useFileUpload();
 
-    // Quill ref (이미지 삽입 시 커서 제어)
-    const detailQuillRef = useRef<ReactQuill | null>(null);
-    const policyQuillRef = useRef<ReactQuill | null>(null);
-    const inquiryQuillRef = useRef<ReactQuill | null>(null);
+    // Quill 에디터 설정
+    const quillModules = {
+        toolbar: [
+            [{'header': [1, 2, 3, false]}],
+            ['bold', 'italic', 'underline'],
+            [{'list': 'ordered'}, {'list': 'bullet'}],
+            ['link', 'image'],
+            ['clean']
+        ],
+    };
+
+    const quillFormats = [
+        'header',
+        'bold', 'italic', 'underline',
+        'list', 'bullet',
+        'link', 'image'
+    ];
 
     // 이벤트 데이터 로드
     useEffect(() => {
@@ -162,7 +210,7 @@ export const EditEventInfo = () => {
                             setExternalLinks(parsedLinks);
                         }
                     } catch (e) {
-                        setExternalLinks([{ name: "공식 웹사이트", url: myEvent.officialUrl }]);
+                        setExternalLinks([{name: "공식 웹사이트", url: myEvent.officialUrl}]);
                     }
                 }
 
@@ -176,156 +224,51 @@ export const EditEventInfo = () => {
         }
     };
 
-    // Quill modules (공통) - image 핸들러 포함
-    const makeQuillModules = (targetRef: React.RefObject<ReactQuill>) =>
-        ({
-            toolbar: {
-                container: [
-                    [{ header: [1, 2, 3, false] }],
-                    ["bold", "italic", "underline"],
-                    [{ list: "ordered" }, { list: "bullet" }],
-                    ["link", "image", { "better-table": [] }], // ← grid picker 버튼
-                    ["blockquote", "code-block"],
-                    [{ align: [] }],
-                    [{ color: [] }, { background: [] }],
-                    [{ size: ["small", false, "large", "huge"] }],
-                    [{ indent: "-1" }, { indent: "+1" }],
-                    ["clean"],
-                ],
-                handlers: {
-                    image: () => {
-                        const input = document.createElement("input");
-                        input.type = "file";
-                        input.accept = "image/*";
-                        input.onchange = async () => {
-                            const file = input.files?.[0];
-                            if (!file) return;
-                            try {
-                                await uploadFile(file, "content"); // 본문 이미지 용도
-                                const uploaded = getFileByUsage("content");
-                                if (!uploaded?.url) {
-                                    toast.error("이미지 URL을 불러올 수 없습니다.");
-                                    return;
-                                }
-                                const quill = targetRef.current?.getEditor?.();
-                                if (!quill) return;
-                                const range = quill.getSelection(true);
-                                quill.insertEmbed(range ? range.index : 0, "image", uploaded.url, "user");
-                                quill.setSelection((range ? range.index : 0) + 1, 0, "user");
-                            } catch (err) {
-                                console.error(err);
-                                toast.error("이미지 업로드에 실패했습니다.");
-                            }
-                        };
-                        input.click();
-                    },
-                },
-            },
-            "better-table": true,
-            history: { delay: 1000, maxStack: 100, userOnly: true },
-        } as const);
-
-    const detailModules = useMemo(() => makeQuillModules(detailQuillRef), []);
-    const policyModules = useMemo(() => makeQuillModules(policyQuillRef), []);
-    const inquiryModules = useMemo(() => makeQuillModules(inquiryQuillRef), []);
-
-    const quillFormats = useMemo(
-        () => [
-            "header",
-            "bold",
-            "italic",
-            "underline",
-            "list",
-            "bullet",
-            "link",
-            "image",
-            "blockquote",
-            "code-block",
-            "align",
-            "color",
-            "background",
-            "size",
-            "indent",
-            // 테이블 관련
-            "table",
-            "table-row",
-            "table-cell",
-        ],
-        []
-    );
-
-    // 서브카테고리 매핑
+    // 서브카테고리 매핑 (EventOverview.tsx와 동일)
     const getSubCategories = (mainCategory: string) => {
         const subCategories: Record<string, string[]> = {
-            박람회: [
-                "취업/채용",
-                "산업/기술",
-                "유학/이민/해외취업",
-                "프랜차이즈/창업",
-                "뷰티/패션",
-                "식품/음료",
-                "반려동물",
-                "교육/도서",
-                "IT/전자",
-                "스포츠/레저",
-                "기타(박람회)",
+            "박람회": [
+                "취업/채용", "산업/기술", "유학/이민/해외취업", "프랜차이즈/창업",
+                "뷰티/패션", "식품/음료", "반려동물", "교육/도서", "IT/전자", "스포츠/레저", "기타(박람회)"
             ],
             "강연/세미나": [
-                "취업/진로",
-                "창업/스타트업",
-                "과학/기술",
-                "자기계발/라이프스타일",
-                "인문/문화/예술",
-                "건강/의학",
-                "기타(세미나)",
+                "취업/진로", "창업/스타트업", "과학/기술", "자기계발/라이프스타일",
+                "인문/문화/예술", "건강/의학", "기타(세미나)"
             ],
             "전시/행사": [
-                "미술/디자인",
-                "사진/영상",
-                "공예/수공예",
-                "패션/주얼리",
-                "역사/문화",
-                "체험 전시",
-                "아동/가족",
-                "행사/축제",
-                "브랜드 프로모션",
-                "기타(전시/행사)",
+                "미술/디자인", "사진/영상", "공예/수공예", "패션/주얼리", "역사/문화",
+                "체험 전시", "아동/가족", "행사/축제", "브랜드 프로모션", "기타(전시/행사)"
             ],
-            공연: ["콘서트", "연극/뮤지컬", "클래식/무용", "아동/가족(공연)", "기타(공연)"],
-            축제: [
-                "음악 축제",
-                "영화 축제",
-                "문화 축제",
-                "음식 축제",
-                "전통 축제",
-                "지역 축제",
-                "기타(축제)",
+            "공연": [
+                "콘서트", "연극/뮤지컬", "클래식/무용", "아동/가족(공연)", "기타(공연)"
             ],
+            "축제": [
+                "음악 축제", "영화 축제", "문화 축제", "음식 축제", "전통 축제", "지역 축제", "기타(축제)"
+            ]
         };
         return subCategories[mainCategory] || [];
     };
 
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-    ) => {
-        const { name, value, type } = e.target;
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const {name, value, type} = e.target;
         const checked = (e.target as HTMLInputElement).checked;
 
+        // 메인카테고리가 변경되면 서브카테고리 초기화
         if (name === "mainCategory") {
-            setFormData((prev) => ({
+            setFormData(prev => ({
                 ...prev,
                 [name]: value,
-                subCategory: "",
+                subCategory: "" // 서브카테고리 초기화
             }));
         } else if (type === "checkbox") {
-            setFormData((prev) => ({
+            setFormData(prev => ({
                 ...prev,
-                [name]: checked,
+                [name]: checked
             }));
         } else {
-            setFormData((prev) => ({
+            setFormData(prev => ({
                 ...prev,
-                [name]: value,
+                [name]: value
             }));
         }
     };
@@ -336,7 +279,7 @@ export const EditEventInfo = () => {
         setExternalLinks(newLinks);
     };
 
-    const addLink = () => setExternalLinks([...externalLinks, { name: "", url: "" }]);
+    const addLink = () => setExternalLinks([...externalLinks, {name: "", url: ""}]);
 
     const removeLink = (index: number) => {
         if (externalLinks.length > 1) {
@@ -350,13 +293,13 @@ export const EditEventInfo = () => {
     // 카카오맵 장소 검색
     const searchPlaces = () => {
         if (!searchKeyword.trim()) {
-            alert("장소명을 입력해주세요!");
+            alert('장소명을 입력해주세요!');
             return;
         }
 
         loadKakaoMap(() => {
             if (!window.kakao?.maps?.services) {
-                alert("카카오맵 서비스를 불러올 수 없습니다.");
+                alert('카카오맵 서비스를 불러올 수 없습니다.');
                 return;
             }
 
@@ -366,11 +309,11 @@ export const EditEventInfo = () => {
                     setSearchResults(data);
                     setShowSearchResults(true);
                 } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
-                    alert("검색 결과가 없습니다.");
+                    alert('검색 결과가 없습니다.');
                     setSearchResults([]);
                     setShowSearchResults(false);
                 } else {
-                    alert("검색 중 오류가 발생했습니다.");
+                    alert('검색 중 오류가 발생했습니다.');
                     setSearchResults([]);
                     setShowSearchResults(false);
                 }
@@ -461,7 +404,7 @@ export const EditEventInfo = () => {
                     "지역 축제": 506,
                     "기타(축제)": 507,
                 },
-        };
+            };
 
             return {
                 mainCategoryId: mainCategoryMap[mainCategory] || null,
@@ -518,8 +461,8 @@ export const EditEventInfo = () => {
         return (
             <div className="bg-white flex flex-row justify-center w-full">
                 <div className="bg-white w-[1256px] min-h-screen relative">
-                    <TopNav />
-                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <TopNav/>
+                    <HostSideNav className="!absolute !left-0 !top-[117px]"/>
                     <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
                         <div className="text-lg text-gray-500">데이터를 불러오는 중...</div>
                     </div>
@@ -532,8 +475,8 @@ export const EditEventInfo = () => {
         return (
             <div className="bg-white flex flex-row justify-center w-full">
                 <div className="bg-white w-[1256px] min-h-screen relative">
-                    <TopNav />
-                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <TopNav/>
+                    <HostSideNav className="!absolute !left-0 !top-[117px]"/>
                     <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
                         <div className="text-lg text-gray-500">담당하는 이벤트가 없습니다.</div>
                     </div>
@@ -543,20 +486,25 @@ export const EditEventInfo = () => {
     }
 
     return (
+        <>
+        <style>{customCheckboxStyles}</style>
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
-                <TopNav />
+                <TopNav/>
 
                 {/* 페이지 제목 */}
-                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
+                <div
+                    className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                     행사 상세 정보
                 </div>
 
                 {/* 사이드바 */}
-                <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                <HostSideNav className="!absolute !left-0 !top-[117px]"/>
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20">
+
+                    {/* 폼 컨테이너 시작 */}
                     <div className="bg-white">
                         {/* 행사 정보 섹션 */}
                         <div className="mb-8">
@@ -567,7 +515,8 @@ export const EditEventInfo = () => {
                                 <div className="grid grid-cols-2 gap-8">
                                     {/* 행사명(국문) */}
                                     <div>
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             행사명(국문)
                                         </label>
                                         <input
@@ -576,16 +525,13 @@ export const EditEventInfo = () => {
                                             value={formData.eventNameKr}
                                             onChange={handleInputChange}
                                             placeholder="국문 행사명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.eventNameKr
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameKr ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                         />
                                     </div>
                                     {/* 행사명(영문) */}
                                     <div>
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             행사명(영문)
                                         </label>
                                         <input
@@ -594,16 +540,13 @@ export const EditEventInfo = () => {
                                             value={formData.eventNameEn}
                                             onChange={handleInputChange}
                                             placeholder="영문 행사명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.eventNameEn
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameEn ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                         />
                                     </div>
                                     {/* 시작일 */}
                                     <div>
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             시작일
                                         </label>
                                         <input
@@ -611,16 +554,13 @@ export const EditEventInfo = () => {
                                             name="startDate"
                                             value={formData.startDate}
                                             onChange={handleInputChange}
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.startDate
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.startDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                         />
                                     </div>
                                     {/* 종료일 */}
                                     <div>
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             종료일
                                         </label>
                                         <input
@@ -628,17 +568,13 @@ export const EditEventInfo = () => {
                                             name="endDate"
                                             value={formData.endDate}
                                             onChange={handleInputChange}
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.endDate
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.endDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                         />
                                     </div>
-
                                     {/* 행사 장소 */}
                                     <div className="col-span-2">
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             행사 장소
                                         </label>
 
@@ -653,7 +589,7 @@ export const EditEventInfo = () => {
                                                         placeholder="장소명을 입력하세요"
                                                         className="w-full h-[40px] border border-gray-300 rounded-full px-4 pr-12 font-normal text-base outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                                         onKeyPress={(e) => {
-                                                            if (e.key === "Enter") {
+                                                            if (e.key === 'Enter') {
                                                                 e.preventDefault();
                                                                 searchPlaces();
                                                             }
@@ -664,25 +600,19 @@ export const EditEventInfo = () => {
                                                         onClick={searchPlaces}
                                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black hover:text-gray-600 transition-colors w-16 h-12 flex items-center justify-center bg-transparent"
                                                     >
-                                                        <svg
-                                                            className="w-10 h-10"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                strokeWidth={2}
-                                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                                            />
+                                                        <svg className="w-10 h-10" fill="none" stroke="currentColor"
+                                                             viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round"
+                                                                  strokeWidth={2}
+                                                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                         </svg>
                                                     </button>
                                                 </div>
 
                                                 {/* 검색 결과 */}
                                                 {showSearchResults && searchResults.length > 0 && (
-                                                    <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto mt-2">
+                                                    <div
+                                                        className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto mt-2">
                                                         {searchResults.map((place, index) => (
                                                             <div
                                                                 key={index}
@@ -737,11 +667,7 @@ export const EditEventInfo = () => {
                                                     value={formData.detailAddress}
                                                     onChange={handleInputChange}
                                                     placeholder="상세 주소"
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                        formData.detailAddress
-                                                            ? "text-black font-medium"
-                                                            : "text-[#0000004c]"
-                                                    }`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.detailAddress ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                                 />
                                             </div>
                                         </div>
@@ -752,18 +678,15 @@ export const EditEventInfo = () => {
                                         <div className="grid grid-cols-2 gap-8">
                                             {/* 메인카테고리 */}
                                             <div>
-                                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                                <label
+                                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     메인카테고리
                                                 </label>
                                                 <select
                                                     name="mainCategory"
                                                     value={formData.mainCategory || ""}
                                                     onChange={handleInputChange}
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                        formData.mainCategory
-                                                            ? "text-black font-medium"
-                                                            : "text-[#0000004c]"
-                                                    }`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.mainCategory ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                                 >
                                                     <option value="">메인카테고리를 선택하세요</option>
                                                     <option value="박람회">박람회</option>
@@ -776,7 +699,8 @@ export const EditEventInfo = () => {
 
                                             {/* 서브카테고리 */}
                                             <div>
-                                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                                <label
+                                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     서브카테고리
                                                 </label>
                                                 <select
@@ -784,122 +708,228 @@ export const EditEventInfo = () => {
                                                     value={formData.subCategory || ""}
                                                     onChange={handleInputChange}
                                                     disabled={!formData.mainCategory}
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                        !formData.mainCategory
-                                                            ? "text-gray-400 cursor-not-allowed"
-                                                            : formData.subCategory
-                                                                ? "text-black font-medium"
-                                                                : "text-[#0000004c]"
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${!formData.mainCategory
+                                                        ? 'text-gray-400 cursor-not-allowed'
+                                                        : formData.subCategory
+                                                            ? 'text-black font-medium'
+                                                            : 'text-[#0000004c]'
                                                     }`}
                                                 >
                                                     <option value="">
                                                         {!formData.mainCategory
                                                             ? "메인카테고리를 먼저 선택하세요"
-                                                            : "서브카테고리를 선택하세요"}
+                                                            : "서브카테고리를 선택하세요"
+                                                        }
                                                     </option>
-                                                    {formData.mainCategory &&
-                                                        getSubCategories(formData.mainCategory).map(
-                                                            (subCategory: string, index: number) => (
-                                                                <option key={index} value={subCategory}>
-                                                                    {subCategory}
-                                                                </option>
-                                                            )
-                                                        )}
+                                                    {formData.mainCategory && getSubCategories(formData.mainCategory).map((subCategory: string, index: number) => (
+                                                        <option key={index} value={subCategory}>
+                                                            {subCategory}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* 행사 배너 이미지 */}
-                                    <div className="col-span-2">
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            행사 배너 이미지 (현재 썸네일)
+                                    {/* 세로형 배너 */}
+                                    <div>
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            행사 배너 이미지 (세로형)
                                         </label>
-
-                                        {/* 현재 이미지 표시 */}
-                                        {getFileByUsage("thumbnail") ? (
-                                            <div className="mb-4 p-4 border border-gray-200 rounded-lg">
-                                                <p className="text-sm text-gray-600 mb-2">새로 업로드된 이미지:</p>
-                                                <img
-                                                    src={getFileByUsage("thumbnail")?.url}
-                                                    alt="새 썸네일"
-                                                    className="max-w-xs max-h-32 object-cover rounded border"
-                                                />
-                                            </div>
-                                        ) : (
-                                            eventData?.thumbnailUrl && (
-                                                <div className="mb-4 p-4 border border-gray-200 rounded-lg">
-                                                    <p className="text-sm text-gray-600 mb-2">현재 설정된 이미지:</p>
-                                                    <img
-                                                        src={eventData.thumbnailUrl}
-                                                        alt="현재 썸네일"
-                                                        className="max-w-xs max-h-32 object-cover rounded border"
-                                                    />
-                                                </div>
-                                            )
-                                        )}
-
                                         <div
-                                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative"
                                             onDragOver={(e) => {
                                                 e.preventDefault();
-                                                e.currentTarget.classList.add("border-blue-400", "bg-blue-50");
+                                                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
                                             }}
                                             onDragLeave={(e) => {
                                                 e.preventDefault();
-                                                e.currentTarget.classList.remove("border-blue-400", "bg-blue-50");
+                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
                                             }}
                                             onDrop={(e) => {
                                                 e.preventDefault();
-                                                e.currentTarget.classList.remove("border-blue-400", "bg-blue-50");
+                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
                                                 const files = e.dataTransfer.files;
-                                                if (files && files[0] && files[0].type.startsWith("image/")) {
-                                                    uploadFile(files[0], "thumbnail");
+                                                if (files && files[0] && files[0].type.startsWith('image/')) {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        bannerImageVertical: files[0]
+                                                    }));
                                                 }
                                             }}
                                         >
-                                            <div className="space-y-2">
-                                                <svg
-                                                    className="mx-auto h-12 w-12 text-gray-400"
-                                                    stroke="currentColor"
-                                                    fill="none"
-                                                    viewBox="0 0 48 48"
-                                                >
-                                                    <path
-                                                        d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                                        strokeWidth="2"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
+                                            {formData.bannerImageVertical ? (
+                                                <div className="space-y-2">
+                                                    <img
+                                                        src={URL.createObjectURL(formData.bannerImageVertical)}
+                                                        alt="세로형 배너 미리보기"
+                                                        className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                     />
-                                                </svg>
-                                                <div className="text-sm text-gray-600">
-                                                    <label
-                                                        htmlFor="banner-upload"
-                                                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                                                    >
-                                                        <span>새 이미지 업로드</span>
-                                                        <input
-                                                            id="banner-upload"
-                                                            name="bannerImage"
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="sr-only"
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file) uploadFile(file, "thumbnail");
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    <p className="pl-1">또는 드래그 앤 드롭</p>
+                                                    <p className="text-xs text-green-600">✓ {formData.bannerImageHorizontal.name}</p>
+                                                    <div className="text-sm text-gray-600">
+                                                        <label htmlFor="banner-vertical-upload"
+                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                            <span>이미지 변경</span>
+                                                            <input
+                                                                id="banner-vertical-upload"
+                                                                name="bannerImageVertical"
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="sr-only"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        setFormData(prev => ({
+                                                                            ...prev,
+                                                                            bannerImageVertical: file
+                                                                        }));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                                <p className="text-xs text-gray-500">PNG, JPG, GIF 최대 10MB</p>
-                                            </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <svg className="mx-auto h-12 w-12 text-gray-400"
+                                                         stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                        <path
+                                                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                                            strokeWidth="2" strokeLinecap="round"
+                                                            strokeLinejoin="round"/>
+                                                    </svg>
+                                                    <div className="text-sm text-gray-600">
+                                                        <label htmlFor="banner-vertical-upload"
+                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                            <span>이미지 업로드</span>
+                                                            <input
+                                                                id="banner-vertical-upload"
+                                                                name="bannerImageVertical"
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="sr-only"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        setFormData(prev => ({
+                                                                            ...prev,
+                                                                            bannerImageVertical: file
+                                                                        }));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                        <p className="pl-1">또는 드래그 앤 드롭</p>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500">PNG, JPG, GIF 최대 10MB</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* 가로형 배너 */}
+                                    <div>
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            행사 배너 이미지 (가로형)
+                                        </label>
+                                        <div
+                                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative"
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                                            }}
+                                            onDragLeave={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                                            }}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                                                const files = e.dataTransfer.files;
+                                                if (files && files[0] && files[0].type.startsWith('image/')) {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        bannerImageHorizontal: files[0]
+                                                    }));
+                                                }
+                                            }}
+                                        >
+                                            {formData.bannerImageHorizontal ? (
+                                                <div className="space-y-2">
+                                                    <img
+                                                        src={URL.createObjectURL(formData.bannerImageHorizontal)}
+                                                        alt="가로형 배너 미리보기"
+                                                        className="mx-auto max-h-48 max-w-full object-contain rounded"
+                                                    />
+                                                    <p className="text-xs text-green-600">✓ {formData.bannerImageVertical.name}</p>
+                                                    <div className="text-sm text-gray-600">
+                                                        <label htmlFor="banner-horizontal-upload"
+                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                            <span>이미지 변경</span>
+                                                            <input
+                                                                id="banner-horizontal-upload"
+                                                                name="bannerImageHorizontal"
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="sr-only"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        setFormData(prev => ({
+                                                                            ...prev,
+                                                                            bannerImageHorizontal: file
+                                                                        }));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <svg className="mx-auto h-12 w-12 text-gray-400"
+                                                         stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                        <path
+                                                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                                            strokeWidth="2" strokeLinecap="round"
+                                                            strokeLinejoin="round"/>
+                                                    </svg>
+                                                    <div className="text-sm text-gray-600">
+                                                        <label htmlFor="banner-horizontal-upload"
+                                                               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                            <span>이미지 업로드</span>
+                                                            <input
+                                                                id="banner-horizontal-upload"
+                                                                name="bannerImageHorizontal"
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="sr-only"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        setFormData(prev => ({
+                                                                            ...prev,
+                                                                            bannerImageHorizontal: file
+                                                                        }));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </label>
+                                                        <p className="pl-1">또는 드래그 앤 드롭</p>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500">PNG, JPG, GIF 최대 10MB</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     {/* 행사 개요 */}
                                     <div className="col-span-2">
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             행사 개요 (최대 80자)
                                         </label>
                                         <div className="relative">
@@ -910,11 +940,7 @@ export const EditEventInfo = () => {
                                                 onChange={handleInputChange}
                                                 placeholder="행사 개요를 입력하세요"
                                                 maxLength={80}
-                                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                    formData.eventOutline
-                                                        ? "text-black font-medium"
-                                                        : "text-[#0000004c]"
-                                                }`}
+                                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventOutline ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                             />
                                             <div className="absolute right-0 bottom-1 text-xs text-gray-500">
                                                 {(formData.eventOutline?.length || 0)}/80
@@ -922,32 +948,35 @@ export const EditEventInfo = () => {
                                         </div>
                                     </div>
 
-                                    {/* 상세 정보 (테이블/이미지 지원) */}
+                                    {/* 상세 정보 */}
                                     <div className="col-span-2 mb-12">
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             상세 정보
                                         </label>
                                         <div>
                                             <ReactQuill
-                                                ref={detailQuillRef}
-                                                theme="better-table-snow"
+                                                theme="snow"
                                                 value={formData.eventDetail || ""}
-                                                onChange={(content) =>
-                                                    setFormData((prev) => ({ ...prev, eventDetail: content }))
-                                                }
-                                                modules={detailModules}
+                                                onChange={(content) => setFormData(prev => ({
+                                                    ...prev,
+                                                    eventDetail: content
+                                                }))}
+                                                modules={quillModules}
                                                 formats={quillFormats}
                                                 placeholder="행사 상세 정보를 입력하세요"
-                                                style={{ height: "150px" }}
+                                                style={{height: '150px'}}
                                             />
                                         </div>
                                     </div>
 
-                                    {/* 관람시간/등급 */}
+                                    {/* 관람시간과 관람등급 */}
                                     <div className="col-span-2">
                                         <div className="grid grid-cols-2 gap-8">
+                                            {/* 관람시간(분) */}
                                             <div>
-                                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                                <label
+                                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     관람시간(분)
                                                 </label>
                                                 <input
@@ -956,325 +985,325 @@ export const EditEventInfo = () => {
                                                     value={formData.viewingTime || ""}
                                                     onChange={handleInputChange}
                                                     placeholder="관람시간을 입력하세요"
-                                                    min={30}
-                                                    step={10}
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                        formData.viewingTime
-                                                            ? "text-black font-medium"
-                                                            : "text-[#0000004c]"
-                                                    }`}
+                                                    min="30"
+                                                    step="10"
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.viewingTime ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                                 />
                                             </div>
 
+                                            {/* 관람등급 */}
                                             <div>
-                                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                                <label
+                                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                                     관람등급
                                                 </label>
                                                 <select
                                                     name="viewingGrade"
                                                     value={formData.viewingGrade || ""}
                                                     onChange={handleInputChange}
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                        formData.viewingGrade
-                                                            ? "text-black font-medium"
-                                                            : "text-[#0000004c]"
-                                                    }`}
+                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.viewingGrade ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                                 >
                                                     <option value="">관람등급을 선택하세요</option>
-                                                    <option value="전체이용가">전체이용가</option>
-                                                    <option value="청소년불가">청소년불가</option>
+                                                    <option value="전체관람가">전체관람가</option>
+                                                    <option value="12세이상관람가">12세이상관람가</option>
+                                                    <option value="15세이상관람가">15세이상관람가</option>
+                                                    <option value="18세이상관람가">18세이상관람가</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* 재입장/퇴장 스캔 */}
-                                    <div className="col-span-2">
-                                        <div className="grid grid-cols-2 gap-8">
-                                            <div>
-                                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                                    재입장 허용 여부
-                                                </label>
-                                                <div className="flex items-center h-[54px]">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="reentryAllowed"
-                                                        checked={formData.reentryAllowed}
-                                                        onChange={handleInputChange}
-                                                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                                                    />
-                                                    <label className="ml-3 text-sm font-medium text-gray-700">
-                                                        재입장 허용
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                                    퇴장 스캔 여부
-                                                </label>
-                                                <div className="flex items-center h-[54px]">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="exitScanRequired"
-                                                        checked={formData.exitScanRequired}
-                                                        onChange={handleInputChange}
-                                                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                                                    />
-                                                    <label className="ml-3 text-sm font-medium text-gray-700">
-                                                        퇴장 시 스캔 필수
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 정책 (테이블/이미지 지원) */}
-                                    <div className="col-span-2 mb-12">
-                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            예매/취소/환불 정책
+                                    <div>
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            관람등급
                                         </label>
-                                        <div>
-                                            <ReactQuill
-                                                ref={policyQuillRef}
-                                                theme="better-table-snow"
-                                                value={formData.policy}
-                                                onChange={(content) =>
-                                                    setFormData((prev) => ({ ...prev, policy: content }))
-                                                }
-                                                modules={policyModules}
-                                                formats={quillFormats}
-                                                placeholder="예매, 취소, 환불 정책을 입력하세요"
-                                                style={{ height: "150px" }}
-                                            />
-                                        </div>
+                                        <select
+                                            name="viewingGrade"
+                                            value={formData.viewingGrade || ""}
+                                            onChange={handleInputChange}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                                formData.viewingGrade
+                                                    ? "text-black font-medium"
+                                                    : "text-[#0000004c]"
+                                            }`}
+                                        >
+                                            <option value="">관람등급을 선택하세요</option>
+                                            <option value="전체이용가">전체이용가</option>
+                                            <option value="청소년불가">청소년불가</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* 외부 링크 섹션 */}
-                        <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="font-bold text-black text-lg leading-[30px]">외부 링크</h2>
-                                    <button
-                                        type="button"
-                                        onClick={addLink}
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-semibold"
-                                    >
-                                        링크 추가
-                                    </button>
-                                </div>
-                                <div className="space-y-4">
-                                    {externalLinks.map((link, index) => (
-                                        <div key={index} className="grid grid-cols-2 gap-8 items-center">
-                                            <div>
-                                                <label className="block text-[15px] font-bold mb-1">링크명</label>
+                            {/* 재입장 허용 여부와 퇴장 스캔 여부 */}
+                            <div className="col-span-2">
+                                <div className="grid grid-cols-2 gap-8">
+                                    {/* 재입장 허용 여부 */}
+                                    <div>
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            재입장 허용 여부
+                                        </label>
+                                        <div className="flex items-center h-[54px]">
+                                            <label className="custom-checkbox">
                                                 <input
-                                                    type="text"
-                                                    value={link.name}
-                                                    onChange={(e) => handleLinkChange(index, "name", e.target.value)}
-                                                    placeholder="예: 공식 홈페이지"
-                                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                        link.name ? "text-black font-medium" : "text-[#0000004c]"
-                                                    }`}
+                                                    type="checkbox"
+                                                    name="reentryAllowed"
+                                                    checked={formData.reentryAllowed}
+                                                    onChange={handleInputChange}
                                                 />
-                                            </div>
-                                            <div className="flex items-center">
-                                                <div className="flex-grow">
-                                                    <label className="block text-[15px] font-bold mb-1">URL</label>
-                                                    <input
-                                                        type="text"
-                                                        value={link.url}
-                                                        onChange={(e) => handleLinkChange(index, "url", e.target.value)}
-                                                        placeholder="https://example.com"
-                                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                            link.url ? "text-black font-medium" : "text-[#0000004c]"
-                                                        }`}
-                                                    />
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeLink(index)}
-                                                    className="ml-4 text-red-500 hover:text-red-700 transition-colors"
-                                                >
-                                                    삭제
-                                                </button>
-                                            </div>
+                                                <span className="checkmark"></span>
+                                            </label>
+                                            <span className="ml-3 text-sm font-medium text-gray-700">
+                                                            재입장 허용
+                                                        </span>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                                    </div>
 
-                        {/* 판매자 정보 섹션 */}
-                        <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">판매자 정보</h2>
-                                <div className="grid grid-cols-2 gap-8">
+                                    {/* 퇴장 스캔 여부 */}
                                     <div>
-                                        <label className="block text-[15px] font-bold mb-1">대표자명</label>
-                                        <input
-                                            type="text"
-                                            name="representativeName"
-                                            value={formData.representativeName}
-                                            onChange={handleInputChange}
-                                            placeholder="대표자명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.representativeName
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">사업자 등록번호</label>
-                                        <input
-                                            type="text"
-                                            name="organizerBusinessNumber"
-                                            value={formData.organizerBusinessNumber}
-                                            onChange={handleInputChange}
-                                            placeholder="000-00-00000"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.organizerBusinessNumber
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">주최/기획사</label>
-                                        <input
-                                            type="text"
-                                            name="hostCompany"
-                                            value={formData.hostCompany}
-                                            onChange={handleInputChange}
-                                            placeholder="주최/기획사명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.hostCompany
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">공식 홈페이지 주소</label>
-                                        <input
-                                            type="text"
-                                            name="organizerWebsite"
-                                            value={formData.organizerWebsite}
-                                            onChange={handleInputChange}
-                                            placeholder="https://example.com"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.organizerWebsite
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
-                                        />
+                                        <label
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            퇴장 스캔 여부
+                                        </label>
+                                        <div className="flex items-center h-[54px]">
+                                            <label className="custom-checkbox">
+                                                <input
+                                                    type="checkbox"
+                                                    name="exitScanRequired"
+                                                    checked={formData.exitScanRequired}
+                                                    onChange={handleInputChange}
+                                                />
+                                                <span className="checkmark"></span>
+                                            </label>
+                                            <span className="ml-3 text-sm font-medium text-gray-700">
+                                                            퇴장 시 스캔 필수
+                                                        </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* 담당자 정보 섹션 */}
-                        <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">담당자 정보</h2>
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">담당자명</label>
-                                        <input
-                                            type="text"
-                                            name="managerName"
-                                            value={formData.managerName}
-                                            onChange={handleInputChange}
-                                            placeholder="담당자명을 입력하세요"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.managerName
-                                                    ? "text-black font-medium"
-                                                    : "text-[#0000004c]"
-                                            }`}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">연락처</label>
-                                        <input
-                                            type="text"
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleInputChange}
-                                            placeholder="010-0000-0000"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.phone ? "text-black font-medium" : "text-[#0000004c]"
-                                            }`}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[15px] font-bold mb-1">이메일</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            placeholder="example@example.com"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
-                                                formData.email ? "text-black font-medium" : "text-[#0000004c]"
-                                            }`}
-                                        />
-                                    </div>
+                            <div className="col-span-2 mb-12">
+                                <label
+                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                    예매/취소/환불 정책
+                                </label>
+                                <div>
+                                    <ReactQuill
+                                        ref={policyQuillRef}
+                                        theme="better-table-snow"
+                                        value={formData.policy}
+                                        onChange={(content) =>
+                                            setFormData((prev) => ({...prev, policy: content}))
+                                        }
+                                        modules={policyModules}
+                                        formats={quillFormats}
+                                        placeholder="예매, 취소, 환불 정책을 입력하세요"
+                                        style={{height: "150px"}}
+                                    />
                                 </div>
                             </div>
                         </div>
-
-                        {/* 문의처 섹션 (테이블 가능하지만 theme은 snow로 유지) */}
-                        <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <h2 className="font-bold text-black text-lg leading-[30px] mb-6">문의처</h2>
-                                <div className="mb-12">
-                                    <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                        상세정보
-                                    </label>
-                                    <div>
-                                        <ReactQuill
-                                            ref={inquiryQuillRef}
-                                            theme="snow"
-                                            value={formData.inquiryDetails}
-                                            onChange={(content) =>
-                                                setFormData((prev) => ({ ...prev, inquiryDetails: content }))
-                                            }
-                                            modules={inquiryModules}
-                                            formats={quillFormats}
-                                            placeholder="문의처 상세정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
-                                            style={{ height: "150px" }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 제출 버튼 */}
-                    <div className="flex flex-col items-center space-y-4 mt-8">
-                        <button
-                            onClick={handleSubmit}
-                            disabled={saving || !formData.eventNameKr || !formData.eventNameEn}
-                            className={`px-6 py-2 rounded-[10px] transition-colors text-sm ${
-                                saving
-                                    ? "bg-gray-400 text-white cursor-not-allowed"
-                                    : formData.eventNameKr && formData.eventNameEn
-                                        ? "bg-blue-500 text-white hover:bg-blue-600"
-                                        : "bg-gray-400 text-white cursor-not-allowed"
-                            }`}
-                        >
-                            {saving ? "저장 중..." : "행사 상세 정보 수정"}
-                        </button>
-                        <p className="text-sm text-gray-500 text-center">
-                            수정 요청 후 관리자 승인이 완료되면 변경사항이 반영됩니다.
-                        </p>
                     </div>
                 </div>
+                {/* 외부 링크 섹션 */}
+                <div className="mb-8">
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="font-bold text-black text-lg leading-[30px] mb-6">외부 링크</h2>
+                        <button
+                            type="button"
+                            onClick={addLink}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-semibold"
+                        >
+                            링크 추가
+                        </button>
+                        <div className="space-y-4">
+                            {externalLinks.map((link, index) => (
+                                <div key={index} className="grid grid-cols-2 gap-8">
+                                    <div>
+                                        <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트명</label>
+                                        <input
+                                            type="text"
+                                            name="externalTicketName"
+                                            value={link.name}
+                                            onChange={(e) => handleLinkChange(index, "name", e.target.value)}
+                                            placeholder="예: 인터파크 티켓"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${link.name ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="flex-grow">
+                                            <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트 URL</label>
+                                            <input
+                                                type="text"
+                                                value={link.url}
+                                                onChange={(e) => handleLinkChange(index, "url", e.target.value)}
+                                                placeholder="https://example.com"
+                                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${link.url ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeLink(index)}
+                                            className="ml-4 text-red-500 hover:text-red-700 transition-colors"
+                                        >
+                                            삭제
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                {/* 판매자 정보 섹션 */}
+                <div className="mb-8">
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="font-bold text-black text-lg leading-[30px] mb-6">주최자 정보</h2>
+                        <div className="grid grid-cols-2 gap-8">
+                            <div>
+                                <label className="block text-[15px] font-bold mb-1">주최자명</label>
+                                <input
+                                    type="text"
+                                    name="representativeName"
+                                    value={formData.representativeName}
+                                    onChange={handleInputChange}
+                                    placeholder="대표자명을 입력하세요"
+                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.representativeName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[15px] font-bold mb-1">사업자 등록번호</label>
+                                <input
+                                    type="text"
+                                    name="organizerBusinessNumber"
+                                    value={formData.organizerBusinessNumber}
+                                    onChange={handleInputChange}
+                                    placeholder="000-00-00000"
+                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerBusinessNumber ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[15px] font-bold mb-1">주최/기획사</label>
+                            <input
+                                type="text"
+                                name="hostCompany"
+                                value={formData.hostCompany}
+                                onChange={handleInputChange}
+                                placeholder="주최/기획사명을 입력하세요"
+                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${
+                                    formData.hostCompany
+                                        ? "text-black font-medium"
+                                        : "text-[#0000004c]"
+                                }`}
+                            />
+                        </div>
+                        <div className="mt-6">
+                            <label className="block text-[15px] font-bold mb-1">공식 웹사이트 URL</label>
+                            <input
+                                type="text"
+                                name="organizerWebsite"
+                                value={formData.organizerWebsite}
+                                onChange={handleInputChange}
+                                placeholder="https://example.com"
+                                className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerWebsite ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                            />
+                        </div>
+                    </div>
+                </div>
+                {/* 담당자 정보 섹션 */}
+                <div className="mb-8">
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">담당자
+                            정보</h2>
+                        <div className="grid grid-cols-2 gap-8">
+                            <div>
+                                <label
+                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자
+                                    담당자명</label>
+                                <input
+                                    type="text"
+                                    name="managerName"
+                                    value={formData.managerName}
+                                    onChange={handleInputChange}
+                                    placeholder="담당자명을 입력하세요"
+                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.managerName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">연락처</label>
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleInputChange}
+                                    placeholder="010-0000-0000"
+                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.phone ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">이메일</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    placeholder="담당자 이메일을 입력하세요"
+                                    className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.email ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {/* 문의처 섹션 */}
+                <div className="mb-8">
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="font-bold text-black text-lg leading-[30px] mb-6">문의처</h2>
+                        <div className="mb-12">
+                            <label
+                                className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                상세정보
+                            </label>
+                            <div>
+                                <ReactQuill
+                                    ref={inquiryQuillRef}
+                                    theme="snow"
+                                    value={formData.inquiryDetails}
+                                    onChange={(content) =>
+                                        setFormData((prev) => ({...prev, inquiryDetails: content}))
+                                    }
+                                    modules={inquiryModules}
+                                    formats={quillFormats}
+                                    placeholder="문의처 상세정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
+                                    style={{height: "150px"}}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {/* 폼 컨테이너 끝 */}
+                <div className="flex flex-col items-center space-y-4 mt-8">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={saving || !formData.eventNameKr || !formData.eventNameEn}
+                        className={`px-6 py-2 rounded-[10px] transition-colors text-sm 
+                    ${saving
+                            ? "bg-gray-400 text-white cursor-not-allowed"
+                            : formData.eventNameKr && formData.eventNameEn
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-gray-400 text-white cursor-not-allowed'
+                        }`}
+                    >
+                        {saving ? "저장 중..." : "행사 상세 정보 수정"}
+                    </button>
+                    <p className="text-sm text-gray-500 text-center">
+                        수정 요청 후 관리자 승인이 완료되면 변경사항이 반영됩니다.
+                    </p>
+                </div>
             </div>
+        </div>
         </div>
     );
 };

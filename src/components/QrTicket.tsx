@@ -6,6 +6,14 @@ import {
     User,
     AlertCircle,
 } from "lucide-react";
+import {
+    getQrTicketForMypage,
+} from "../services/qrTicket"
+import type {
+    QrTicketRequestDto
+} from "../services/types/qrTicketType"
+import { QRCodeCanvas } from 'qrcode.react';
+import type { QrTicketResponseDto } from "@/services/types/qrTicketType";
 
 // 스크롤바 숨기기 CSS
 const scrollbarHideStyles = `
@@ -36,6 +44,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
     const [qrCode, setQrCode] = useState(""); // QR 코드 상태
     const [currentTicketNumber, setCurrentTicketNumber] = useState(""); // 현재 티켓 번호
+    const [resData, setResData] = useState<QrTicketResponseDto>();
 
     const defaultTicketData = {
         eventName: "G-DRAGON 콘서트: WORLD TOUR",
@@ -60,8 +69,25 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
 
         // 모달이 열릴 때 초기 QR 코드 생성
         if (isOpen && !qrCode) {
-            setCurrentTicketNumber(data.ticketNumber);
-            setQrCode(generateQRCode());
+            console.log("qr티켓 조회시작")
+
+            const fetchQrTicket = async () => {
+                // 임시 데이터
+                const qrTicketRequestDto : QrTicketRequestDto = {
+                    attendeeId: null,
+                    eventId: 1,
+                    ticketId: 1,
+                    reservationId: 1
+                };
+                
+
+                const res = await getQrTicketForMypage(qrTicketRequestDto);
+                console.log(res.ticketNo + "가 발급됨");
+                setCurrentTicketNumber(res.ticketNo);
+                setQrCode(res.qrCode);
+                setResData(res);
+            };
+            fetchQrTicket();
         }
 
         const timer = setInterval(() => {
@@ -125,14 +151,14 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                             <Calendar className="w-3 h-3 sm:w-4 md:w-5 sm:h-4 md:h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-sm sm:text-base md:text-lg font-bold leading-tight mb-1">{data.eventName}</h2>
-                            <p className="text-xs sm:text-sm opacity-90">{data.eventDate}</p>
+                            <h2 className="text-sm sm:text-base md:text-lg font-bold leading-tight mb-1">{resData?.title}</h2>
+                            <p className="text-xs sm:text-sm opacity-90">{resData?.viewingScheduleInfo.date} ({resData?.viewingScheduleInfo.dayOfWeek}) {resData?.viewingScheduleInfo.startTime}</p>
                         </div>
                     </div>
 
                     <div className="flex items-center space-x-2 text-xs sm:text-sm">
                         <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span>{data.venue}</span>
+                        <span>{resData?.buildingName}</span>
                     </div>
                 </div>
 
@@ -140,12 +166,15 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                 <div className="p-2 sm:p-3 md:p-4">
                     <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-center mb-2">
-                            <div className="w-24 h-24 sm:w-28 md:w-36 sm:h-24 md:h-36 bg-white rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center">
+                            <div className="w-24 h-24 sm:w-28 md:w-36 sm:h-24 md:h-36 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
                                 <div className="text-center text-gray-500">
-                                    <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg mb-2 flex items-center justify-center">
-                                        <span className="text-xs">{qrCode || "QR Code"}</span>
+                                    <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
+                                        <QRCodeCanvas
+                                            value={qrCode}
+                                            size={124}
+                                            fgColor={'#000'}
+                                        />
                                     </div>
-                                    <p className="text-xs">스캔하여 입장</p>
                                 </div>
                             </div>
                         </div>
@@ -172,11 +201,11 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                     <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-between items-center py-1 sm:py-2 border-b border-gray-100">
                             <span className="text-xs sm:text-sm text-gray-600">예매일</span>
-                            <span className="text-xs sm:text-sm font-medium">{data.bookingDate}</span>
+                            <span className="text-xs sm:text-sm font-medium">{resData?.reservationDate}</span>
                         </div>
                         <div className="flex justify-between items-center py-1 sm:py-2 border-b border-gray-100">
-                            <span className="text-xs sm:text-sm text-gray-600">입장 시간</span>
-                            <span className="text-xs sm:text-sm font-medium">{data.entryTime}</span>
+                            <span className="text-xs sm:text-sm text-gray-600">관람 시간</span>
+                            <span className="text-xs sm:text-sm font-medium">{resData?.viewingScheduleInfo.startTime}</span>
                         </div>
                         <div className="flex justify-between items-center py-1 sm:py-2">
                             <span className="text-xs sm:text-sm text-gray-600">유효시간</span>

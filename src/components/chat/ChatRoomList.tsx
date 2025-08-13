@@ -20,7 +20,7 @@ type ChatRoomDto = {
 };
 
 type Props = {
-    onSelect: (roomId: number, eventTitle?: string, userName?: string, otherUserId?: number) => void;
+    onSelect: (roomId: number, eventTitle?: string, userName?: string, otherUserId?: number, isAiChat?: boolean) => void;
 };
 
 export default function ChatRoomList({ onSelect }: Props) {
@@ -45,31 +45,11 @@ export default function ChatRoomList({ onSelect }: Props) {
             const allRooms = response.data;
             console.log("백엔드에서 반환된 채팅방 수:", allRooms.length);
 
-            // 각 채팅방의 최신 메시지 시간을 가져와서 저장
-            const messageTimesPromises = allRooms.map(async (room: ChatRoomDto) => {
-                try {
-                    const messagesResponse = await axios.get(`/api/chat/messages?chatRoomId=${room.chatRoomId}`, {
-                        headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-                    });
-                    const messages = messagesResponse.data;
-                    return {
-                        roomId: room.chatRoomId,
-                        lastMessageTime: messages.length > 0 ? messages[messages.length - 1].sentAt : room.createdAt
-                    };
-                } catch (error) {
-                    return {
-                        roomId: room.chatRoomId,
-                        lastMessageTime: room.createdAt
-                    };
-                }
-            });
-
-            const messageTimes = await Promise.all(messageTimesPromises);
+            // 채팅방 생성 시간을 기본으로 사용 (메시지 조회하지 않음)
             const messageTimesMap: Record<number, string> = {};
-            messageTimes.forEach(({ roomId, lastMessageTime }) => {
-                messageTimesMap[roomId] = lastMessageTime;
+            allRooms.forEach((room: ChatRoomDto) => {
+                messageTimesMap[room.chatRoomId] = room.createdAt;
             });
-
             setLastMessageTimes(messageTimesMap);
             setRooms(allRooms);
         } catch (error) {
@@ -168,22 +148,30 @@ export default function ChatRoomList({ onSelect }: Props) {
                 <div
                     key={room.chatRoomId}
                     className="group flex items-center w-full px-4 py-3 border-b hover:bg-neutral-50 cursor-pointer transition-colors bg-white"
-                    onClick={() => onSelect(room.chatRoomId, room.eventTitle, room.userName, room.userId)}
+                    onClick={() => onSelect(room.chatRoomId, room.eventTitle, room.userName, room.userId, room.targetType === 'AI')}
                 >
                     <div className="relative mr-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                            {getInitials(room.userName)}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm ${
+                            room.targetType === 'AI' 
+                                ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+                                : 'bg-gradient-to-br from-blue-600 to-indigo-600'
+                        }`}>
+                            {room.targetType === 'AI' ? 'AI' : getInitials(room.userName)}
                         </div>
                         {/* 온라인 상태 표시 */}
                         <div className="absolute -bottom-0.5 -right-0.5">
-                            <UserOnlineStatus userId={room.userId} />
+                            {room.targetType === 'AI' ? (
+                                <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            ) : (
+                                <UserOnlineStatus userId={room.userId} />
+                            )}
                         </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                             <span className="font-medium text-neutral-900 truncate">
-                                {room.userName || room.eventTitle || "문의"}
+                                {room.targetType === 'AI' ? 'AI 챗봇' : (room.userName || room.eventTitle || "문의")}
                             </span>
                             <div className="flex items-center gap-2">
                                 {(room.unreadCount || 0) > 0 && (
@@ -195,7 +183,7 @@ export default function ChatRoomList({ onSelect }: Props) {
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-neutral-600 truncate">
-                                {room.eventTitle || (room.eventId ? `행사 문의 (${room.eventId})` : "운영자 문의")}
+                                {room.targetType === 'AI' ? '24시간 상담 가능' : (room.eventTitle || (room.eventId ? `행사 문의 (${room.eventId})` : "운영자 문의"))}
                             </span>
                             <span className="text-xs text-neutral-400 ml-2 whitespace-nowrap">
                                 {new Date(room.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
