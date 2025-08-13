@@ -48,7 +48,6 @@ import EventApproval from "./pages/admin_event/EventApproval";
 import EventApprovalDetail from "./pages/admin_event/EventApprovalDetail";
 import EventEditRequests from "./pages/admin_event/EventEditRequests";
 import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
-import AccountIssue from "./pages/admin_account/AccountIssue";
 import AccountRoles from "./pages/admin_account/AccountRoles";
 import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
 import SettlementManagement from "./pages/admin_settlement/SettlementManagement";
@@ -146,7 +145,6 @@ function AppContent() {
         <Route path="/admin_dashboard/event-edit-requests/:id" element={<AdminRouteGuard><EventEditRequestDetail /></AdminRouteGuard>} />
 
         {/* 계정 관리 */}
-        <Route path="/admin_dashboard/accounts/issue" element={<AdminRouteGuard><AccountIssue /></AdminRouteGuard>} />
         <Route path="/admin_dashboard/accounts/roles" element={<AdminRouteGuard><AccountRoles /></AdminRouteGuard>} />
 
         {/* VIP 배너 광고 */}
