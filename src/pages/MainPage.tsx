@@ -10,7 +10,7 @@ import { TopNav } from "../components/TopNav";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade, Navigation } from "swiper/modules";
+import { Autoplay, EffectFade, Navigation, EffectCoverflow } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/navigation";
@@ -385,19 +385,19 @@ export const Main: React.FC = () => {
         },
         {
             id: 9,
-            title: "서울 국제 영화제",
-            date: "2025-09-05 ~ 2025-09-15",
-            location: "여의도 한강공원",
-            category: "축제",
-            image: "/images/NoImage.png",
+            title: "2025 JOYURI FAN-CON",
+            date: "추후 공개",
+            location: "추후 공개",
+            category: "공연",
+            image: "/images/joyuri.jpg",
         },
         {
             id: 10,
-            title: "서울 라이트 페스티벌",
-            date: "2025-09-20 ~ 2025-09-25",
-            location: "남산타워",
-            category: "축제",
-            image: "/images/NoImage.png",
+            title: "IU HEREH WORLD TOUR CONCERT",
+            date: "추후 공개",
+            location: "추후 공개",
+            category: "공연",
+            image: "/images/iu.jpg",
         },
     ];
 
@@ -466,29 +466,26 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* Hot Picks 섹션 */}
+            {/* 핫픽스 섹션 (3D 커버플로우) */}
             <div className="py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">Hot Picks</h2>
+                        <h2 className="text-3xl font-bold text-black">HOT PICKS</h2>
                     </div>
 
                     <Swiper
-                        modules={[Navigation, Autoplay]}
+                        modules={[Navigation, Autoplay, EffectCoverflow]}
                         navigation
-                        autoplay={{ delay: 3500, disableOnInteraction: false }}
-                        loop={true}
-                        spaceBetween={16}
+                        effect="coverflow"
+                        coverflowEffect={{ rotate: 0, stretch: -30, depth: 220, modifier: 1, slideShadows: false }}
+                        slidesPerView="auto"
                         centeredSlides={true}
+                        loop={true}
+                        spaceBetween={0}
                         watchSlidesProgress={true}
-                        speed={2000}
-                        breakpoints={{
-                            0: { slidesPerView: 1 },
-                            640: { slidesPerView: 2 },
-                            1024: { slidesPerView: 4 },
-                            1280: { slidesPerView: 4 },
-                        }}
-                        className="w-full"
+                        speed={900}
+                        autoplay={{ delay: 3500, disableOnInteraction: false }}
+                        className="w-full hotpick-swiper"
                         onSwiper={(swiper) => {
                             setActiveHotPickIndex(swiper.realIndex % allHotPicks.length);
                         }}
@@ -497,7 +494,7 @@ export const Main: React.FC = () => {
                         }}
                     >
                         {allHotPicks.map((item, index) => (
-                            <SwiperSlide key={item.id}>
+                            <SwiperSlide key={item.id} className="hotpick-slide">
                                 <div className="group relative w-full rounded-[10px] overflow-hidden">
                                     <img
                                         src={item.image}
@@ -544,7 +541,7 @@ export const Main: React.FC = () => {
             <div className="py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">행사</h2>
+                        <h2 className="text-3xl font-bold text-black">EVENTS</h2>
                     </div>
 
                     {/* 필터 버튼들 */}

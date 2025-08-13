@@ -77,3 +77,39 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Hotpick coverflow visual tweaks */
+.hotpick-swiper .swiper-slide {
+  width: 260px;
+  transition:
+    transform 300ms ease,
+    opacity 300ms ease;
+  opacity: 0.55;
+}
+
+.hotpick-swiper .swiper-slide-active {
+  transform: scale(1.03);
+  opacity: 1;
+}
+
+.hotpick-swiper .swiper-slide-prev,
+.hotpick-swiper .swiper-slide-next {
+  transform: scale(0.9);
+  opacity: 0.85;
+}
+
+/* simple fade up for captions */
+.anim-fadeInUp {
+  animation: fadeInUp 500ms ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
