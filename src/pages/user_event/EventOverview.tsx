@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import {useNavigate, useLocation } from "react-router-dom";
-
+import axios from "axios"; 
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
@@ -166,24 +166,33 @@ export default function EventOverview() {
 
     // 캘린더 데이터 fetch (뷰/월 변경 시)
     React.useEffect(() => {
-        if (viewMode !== "calendar") return;
+        //  비로그인: API 호출하지 않음
+  if (!isAuthed()) {
+    setCalendarLoading(false);
+    setCalendarError(null);
+    setCalendarData(new Map());
+    return;
+  }
         (async () => {
-            setCalendarLoading(true);
-            setCalendarError(null);
-            try {
-                const { data } = await fetchCalendarGrouped(calendarYear, calendarMonth);
-                const map = new Map<string, string[]>();
-                data.forEach((d) => map.set(d.date, d.titles));
-                setCalendarData(map);
-            } catch (e) {
-                console.error(e);
-                setCalendarError(
-                    e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
-                );
-            } finally {
-                setCalendarLoading(false);
-            }
-        })();
+    setCalendarLoading(true);
+    setCalendarError(null);
+    try {
+      const { data } = await fetchCalendarGrouped(calendarYear, calendarMonth);
+      const map = new Map<string, string[]>();
+      data.forEach((d) => map.set(d.date, d.titles));
+      setCalendarData(map);
+    } catch (e: unknown) {
+        const st = axios.isAxiosError(e) ? e.response?.status : undefined;
+      if (st !== 401 && st !== 403) {
+        console.error(e);
+        setCalendarError(
+          e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
+        );
+      }
+    } finally {
+      setCalendarLoading(false);
+    }
+  })();
     }, [viewMode, calendarYear, calendarMonth]);
 
     // 헬퍼
@@ -1240,10 +1249,16 @@ export default function EventOverview() {
                                                             <div
                                                                 key={event.id}
                                                                 className="text-xs flex items-center space-x-1"
+                                                                
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    navigate(`/eventdetail/${event.id}`);
-                                                                }}
+                                                                        if (!isAuthed()) {
+                                                                            alert("로그인 후 이용할 수 있습니다.");
+                                                                            navigate("/login", { state: { from: location.pathname } });
+                                                                            return;
+                                                                            }
+                                                                        navigate(`/eventdetail/${event.id}`);
+                                                                        }}
                                                             >
                                                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.mainCategory === "박람회" ? "bg-blue-500" :
                                                                     event.mainCategory === "공연" ? "bg-red-500" :
