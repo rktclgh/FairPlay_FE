@@ -137,14 +137,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/settlements")}
                                 style={linkStyle("/admin_dashboard/settlements")}
                             >
-                                매출 정산
+                                매출 통계
                             </Link>
                             <Link
                                 to="/admin_dashboard/remittances"
                                 className={linkClass("/admin_dashboard/remittances")}
                                 style={linkStyle("/admin_dashboard/remittances")}
                             >
-                                송금 내역
+                                송금 정산
                             </Link>
                         </div>
                     </div>
