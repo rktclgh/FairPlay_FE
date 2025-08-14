@@ -33,6 +33,9 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         isAiChat ? "AI 챗봇" : (isAdminInquiry ? "FairPlay 운영자 문의" : (userName || eventTitle || "채팅방"))
     );
     const [detectedOtherUserId, setDetectedOtherUserId] = useState<number | null>(null);
+    const [isSending, setIsSending] = useState(false); // 전송 중 상태
+    const [pendingMessage, setPendingMessage] = useState<string | null>(null); // 대기 중인 메시지
+    const [lastAiMessageId, setLastAiMessageId] = useState<number | null>(null); // 마지막 AI 메시지 ID 추적
     const bottomRef = useRef<HTMLDivElement>(null);
 
     const getInitials = (name: string): string => {
@@ -62,6 +65,8 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     }, []);
 
     const { send } = useChatSocket(roomId, (msg: ChatMessageDto) => {
+        console.log("💬 메시지 수신:", { senderId: msg.senderId, content: msg.content.substring(0, 30) + "..." });
+        
         setMessages(prev => {
             // 중복 메시지 방지
             if (prev.some(existingMsg => existingMsg.chatMessageId === msg.chatMessageId)) {
@@ -71,6 +76,14 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
             const newMessages = [...prev, msg];
             return newMessages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
         });
+        
+        // AI 봇 메시지 감지 (ID: 999)
+        if (isAiChat && msg.senderId === 999) {
+            console.log("🤖 AI 봇 응답 도착! 전송 버튼 활성화");
+            setIsSending(false);
+            setPendingMessage(null);
+            setLastAiMessageId(msg.chatMessageId);
+        }
     });
 
     // 최초 진입 시 기존 메시지 내역 조회
@@ -138,9 +151,33 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     }, [messages]);
 
     const handleSend = () => {
-        if (!input.trim()) return;
+        if (!input.trim() || isSending) {
+            console.log("❌ 전송 차단:", { inputEmpty: !input.trim(), isSending });
+            return;
+        }
+        
         const message = input.trim();
         setInput(""); // 먼저 입력 필드를 클리어
+        
+        // AI 채팅일 경우 전송 중 상태로 설정
+        if (isAiChat) {
+            console.log("🚀 AI 메시지 전송 시작 - 버튼 비활성화!");
+            setIsSending(true);
+            setPendingMessage(message);
+            
+            // 사용자 메시지를 즉시 표시 (임시 ID 사용)
+            const tempMessage: ChatMessageDto = {
+                chatMessageId: Date.now(), // 임시 ID
+                chatRoomId: roomId,
+                senderId: myUserId,
+                content: message,
+                sentAt: new Date().toISOString(),
+                isRead: true
+            };
+            
+            setMessages(prev => [...prev, tempMessage]);
+        }
+        
         send(message);
     };
 
@@ -193,7 +230,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                                 </div>
                             )}
                             <div className={`max-w-[70%] ${isMyMessage ? "text-right" : "text-left"}`}>
-                                <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-5 inline-block align-top shadow-sm ${isMyMessage ? "bg-blue-600 text-white" : "bg-neutral-100 text-neutral-900 border border-neutral-200"
+                                <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-5 inline-block align-top shadow-sm whitespace-pre-wrap ${isMyMessage ? "bg-blue-600 text-white" : "bg-neutral-100 text-neutral-900 border border-neutral-200"
                                     }`}>
                                     {msg.content}
                                 </div>
@@ -220,13 +257,19 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                             handleSend();
                         }
                     }}
+                    disabled={isSending}
                 />
                 <button
                     onClick={handleSend}
-                    className="inline-flex items-center gap-2 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full px-4 py-2.5 text-[13px] font-medium shadow-sm hover:brightness-105 active:scale-95 transition"
+                    disabled={!input.trim() || isSending}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-medium shadow-sm transition ${
+                        !input.trim() || isSending 
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                            : "bg-gradient-to-br from-blue-600 to-indigo-600 text-white hover:brightness-105 active:scale-95"
+                    }`}
                 >
                     <Send className="w-4 h-4" />
-                    전송
+                    {isSending ? "응답 중..." : "전송"}
                 </button>
             </div>
         </div>

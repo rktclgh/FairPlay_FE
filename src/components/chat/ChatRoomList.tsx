@@ -68,16 +68,16 @@ export default function ChatRoomList({ onSelect }: Props) {
 
         fetchRooms();
 
-        // WebSocket 연결로 실시간 업데이트 (SockJS는 http/https 프로토콜 사용)
-        const wsUrl = window.location.hostname === 'localhost'
-            ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat`
-            : `${window.location.protocol}//${window.location.host}/ws/chat`;
-        const sock = new SockJS(wsUrl);
+        // WebSocket 연결로 실시간 업데이트 (SockJS fallback 엔드포인트 사용)
+        const token = localStorage.getItem("accessToken");
+        const sockjsUrl = window.location.hostname === 'localhost'
+            ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat-sockjs`
+            : `${window.location.protocol}//${window.location.host}/ws/chat-sockjs`;
+        const sock = new SockJS(token ? `${sockjsUrl}?token=${token}` : sockjsUrl);
         const stomp = Stomp.over(sock);
         stomp.debug = () => { };
         clientRef.current = stomp;
 
-        const token = localStorage.getItem("accessToken");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         stomp.connect(
