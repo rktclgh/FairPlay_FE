@@ -1,0 +1,18 @@
+name: notify-backend-on-fe-merge
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify BE repo via repository_dispatch
+        run: |
+          curl -L \
+            -X POST \
+            -H "Authorization: token ${{ secrets.CI_GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/Fairing-15th/FairPlay_BE/dispatches \
+            -d '{"event_type":"fe-updated","client_payload":{"fe_ref":"main"}}'
