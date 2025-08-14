@@ -77,7 +77,7 @@ export default function RegistrationSuccessModal({
                     {/* 확인 버튼 */}
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-xs"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-[10px] hover:bg-gray-50 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-xs"
                     >
                         확인
                     </button>
