@@ -453,9 +453,10 @@ export const Main: React.FC = () => {
                             key={ad.id}
                             className="w-16 h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
                             onMouseEnter={() => {
-                                const swiper = (window as unknown as Window).heroSwiper;
+                                const swiper = (window as unknown as Window & { heroSwiper?: any }).heroSwiper;
                                 if (swiper) {
-                                    swiper.slideTo(index);
+                                    // loop 모드에서는 slideToLoop를 사용해야 원본 인덱스와 정확히 매칭됩니다.
+                                    swiper.slideToLoop(index);
                                 }
                             }}
                         >
@@ -544,7 +545,18 @@ export const Main: React.FC = () => {
                     {/* 필터 버튼들 */}
                     <div className="flex space-x-4 mb-8">
                         {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
-                            <button key={index} onClick={() => handleCategoryChange(filter)} className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter ? 'bg-black text-white font-bold' : `${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'} font-semibold`}`}>
+                            <button
+                                key={index}
+                                onClick={() => handleCategoryChange(filter)}
+                                className={`px-4 py-2 rounded-full text-sm border theme-transition ${selectedCategory === filter
+                                    ? (isDark
+                                        ? 'dm-light font-bold border-gray-300'
+                                        : 'bg-black text-white font-bold border-gray-800')
+                                    : (isDark
+                                        ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
+                                        : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
+                                    }`}
+                            >
                                 {filter}
                             </button>
                         ))}

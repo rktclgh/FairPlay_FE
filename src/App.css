@@ -5,7 +5,7 @@
 
 /* Dark mode root override */
 body.dark-mode {
-  --bg-main: #0a0a0f;
+  --bg-main: #0d1117; /* 기존 #0a0a0f → GitHub Dark */
   color: #e5e7eb;
 }
 
@@ -32,14 +32,27 @@ body.dark-mode img[alt="FairPlay Logo"] {
   transition: filter 0.5s ease;
 }
 
+/* Dark-mode global surface override for legacy backgrounds */
+body.dark-mode .bg-white,
+body.dark-mode .bg-gray-50,
+body.dark-mode .bg-gray-100,
+body.dark-mode .bg-gray-200,
+body.dark-mode .bg-gray-300,
+body.dark-mode .bg-slate-50,
+body.dark-mode .bg-slate-100,
+body.dark-mode .bg-slate-200,
+body.dark-mode .bg-neutral-50,
+body.dark-mode .bg-neutral-100,
+body.dark-mode .bg-neutral-200,
+body.dark-mode [class*="bg-white/"] {
+  background-color: var(--bg-main) !important;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: left;
-  transition:
-    background-color 0.5s ease,
-    color 0.5s ease;
 }
 
 /* Quill 테이블 버튼 스타일 */
