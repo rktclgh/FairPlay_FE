@@ -25,7 +25,6 @@ export default function ParticipantList(): JSX.Element {
     useEffect(() => {
 
         const fetchParticipant = async () => {
-
             const res = await getAttendeesReservation(Number(reservationId));
             setParticipants(res.attendees);
         }
@@ -61,6 +60,12 @@ export default function ParticipantList(): JSX.Element {
         }
 
         const res = await updateAttendee(Number(updatedParticipant.attendeeId), data);
+
+        setParticipants(prev =>
+            prev.map(p =>
+                p.attendeeId === updatedParticipant.attendeeId ? updatedParticipant : p
+            )
+        );
         alert("참여자 정보가 수정되었습니다.");
     };
 
@@ -81,7 +86,7 @@ export default function ParticipantList(): JSX.Element {
                             <div className="flex items-center space-x-4">
                                 <button
                                     onClick={handleBack}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    className="p-2 hover:bg-gray-100 rounded-[10px] transition-colors"
                                 >
                                     <ArrowLeft className="w-5 h-5 text-gray-500" />
                                 </button>
@@ -152,7 +157,7 @@ export default function ParticipantList(): JSX.Element {
                                                         {!(index == 0) && (
                                                             <button
                                                                 onClick={() => handleEdit(participant)}
-                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-[10px] transition-colors"
                                                                 title="수정"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
