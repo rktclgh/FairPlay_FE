@@ -64,6 +64,122 @@ const statusChipClass = (status: SettlementItem["status"]) => {
     }
 };
 
+// 일/월별 추이 섹션 (간단 바차트 렌더링)
+const SalesTrendSection: React.FC<{ useDummy: boolean; startDate: string; endDate: string; }> = ({ useDummy, startDate, endDate }) => {
+    const [granularity, setGranularity] = useState<"daily" | "monthly">("daily");
+
+    if (!useDummy) {
+        return (
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">일별 / 월별 매출 추이</h3>
+                    <div className="flex gap-2">
+                        <button onClick={() => setGranularity("daily")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "daily" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>일별</button>
+                        <button onClick={() => setGranularity("monthly")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "monthly" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>월별</button>
+                    </div>
+                </div>
+                <div className="text-sm text-gray-500">서버 연동 대기</div>
+            </div>
+        );
+    }
+
+    const from = startDate ? dayjs(startDate) : dayjs(DUMMY_SETTLEMENTS[0]?.period.startDate);
+    const to = endDate ? dayjs(endDate) : dayjs(DUMMY_SETTLEMENTS[DUMMY_SETTLEMENTS.length - 1]?.period.endDate);
+    if (!from.isValid() || !to.isValid() || from.isAfter(to)) return null;
+
+    const rangeDays: string[] = [];
+    for (let d = from.clone(); !d.isAfter(to, "day"); d = d.add(1, "day")) {
+        rangeDays.push(d.format("YYYY-MM-DD"));
+    }
+
+    const dailyData = rangeDays.map(dateStr => {
+        const total = DUMMY_SETTLEMENTS
+            .filter(s => dayjs(dateStr).isSameOrAfter(dayjs(s.period.startDate), "day") && dayjs(dateStr).isSameOrBefore(dayjs(s.period.endDate), "day"))
+            .reduce((a, b) => a + b.netAmount, 0);
+        return { label: dayjs(dateStr).format("MM/DD"), value: total };
+    });
+
+    const monthlyGroups = new Map<string, number>();
+    dailyData.forEach(d => {
+        const key = dayjs(d.label, "MM/DD").format("YYYY-MM");
+        monthlyGroups.set(key, (monthlyGroups.get(key) || 0) + d.value);
+    });
+    const monthlyData = Array.from(monthlyGroups.entries()).map(([k, v]) => ({ label: k, value: v }));
+
+    const data = granularity === "daily" ? dailyData : monthlyData;
+    const maxVal = Math.max(1, ...data.map(d => d.value));
+
+    return (
+        <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">일별 / 월별 매출 추이</h3>
+                <div className="flex gap-2">
+                    <button onClick={() => setGranularity("daily")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "daily" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>일별</button>
+                    <button onClick={() => setGranularity("monthly")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "monthly" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>월별</button>
+                </div>
+            </div>
+            <div className="space-y-2">
+                {data.map((d, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                        <div className="w-16 text-[11px] text-gray-500 text-right">{d.label}</div>
+                        <div className="flex-1 h-4 bg-gray-100 rounded">
+                            <div className="h-4 rounded" style={{ width: `${(d.value / maxVal) * 100}%`, background: "linear-gradient(90deg,#2563eb,#16a34a)" }} />
+                        </div>
+                        <div className="w-28 text-right text-xs text-gray-700">{new Intl.NumberFormat("ko-KR").format(d.value)}원</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// 수익 출처별 매출 비교 섹션 (간단 바차트 렌더링)
+const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; endDate: string; }> = ({ useDummy, startDate, endDate }) => {
+    if (!useDummy) {
+        return (
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">수익 출처별 매출 비교</h3>
+                <div className="text-sm text-gray-500">서버 연동 대기</div>
+            </div>
+        );
+    }
+
+    const from = startDate ? dayjs(startDate) : dayjs(DUMMY_SETTLEMENTS[0]?.period.startDate);
+    const to = endDate ? dayjs(endDate) : dayjs(DUMMY_SETTLEMENTS[DUMMY_SETTLEMENTS.length - 1]?.period.endDate);
+    if (!from.isValid() || !to.isValid() || from.isAfter(to)) return null;
+
+    const inRange = DUMMY_SETTLEMENTS.filter(s => dayjs(s.period.endDate).isSameOrAfter(from, "day") && dayjs(s.period.startDate).isSameOrBefore(to, "day"));
+
+    // 더미 가중치: 예매 60%, 부스 30%, 광고 5%, 기타 5% (총매출 기준)
+    const totals = { "예매": 0, "부스": 0, "광고": 0, "기타": 0 } as Record<string, number>;
+    inRange.forEach(s => {
+        totals["예매"] += Math.round(s.grossSales * 0.6);
+        totals["부스"] += Math.round(s.grossSales * 0.3);
+        totals["광고"] += Math.round(s.grossSales * 0.05);
+        totals["기타"] += Math.round(s.grossSales * 0.05);
+    });
+
+    const data = Object.entries(totals).map(([label, value]) => ({ label, value }));
+    const maxVal = Math.max(1, ...data.map(d => d.value));
+
+    return (
+        <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">수익 출처별 매출 비교</h3>
+            <div className="space-y-3">
+                {data.map((d, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                        <div className="w-10 text-[12px] text-gray-700">{d.label}</div>
+                        <div className="flex-1 h-5 bg-gray-100 rounded">
+                            <div className="h-5 rounded" style={{ width: `${(d.value / maxVal) * 100}%`, background: i % 2 === 0 ? "#0ea5e9" : "#f59e0b" }} />
+                        </div>
+                        <div className="w-28 text-right text-xs text-gray-700">{new Intl.NumberFormat("ko-KR").format(d.value)}원</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const SettlementManagement: React.FC = () => {
     dayjs.extend(isSameOrAfter);
     dayjs.extend(isSameOrBefore);
@@ -228,7 +344,7 @@ export const SettlementManagement: React.FC = () => {
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    매출 정산
+                    매출 통계
                 </div>
 
                 {/* 사이드바 */}
@@ -304,10 +420,54 @@ export const SettlementManagement: React.FC = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                 />
                             </div>
+                            {/* 빠른 선택 */}
+                            <div className="flex items-end gap-2">
+                                <button
+                                    onClick={() => { const to = dayjs().format("YYYY-MM-DD"); const from = dayjs().subtract(6, "day").format("YYYY-MM-DD"); setStartDate(from); setEndDate(to); }}
+                                    className="px-2 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none"
+                                >최근 7일</button>
+                                <button
+                                    onClick={() => { const to = dayjs().format("YYYY-MM-DD"); const from = dayjs().subtract(29, "day").format("YYYY-MM-DD"); setStartDate(from); setEndDate(to); }}
+                                    className="px-2 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none"
+                                >최근 30일</button>
+                                <button
+                                    onClick={() => { const start = dayjs().startOf("month").format("YYYY-MM-DD"); const end = dayjs().endOf("month").format("YYYY-MM-DD"); setStartDate(start); setEndDate(end); }}
+                                    className="px-2 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none"
+                                >이번달</button>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 카드 2: 정산 목록 테이블 */}
+                    {summary && (
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="grid grid-cols-4 gap-6">
+                                <div>
+                                    <div className="text-xs text-gray-500">총 매출</div>
+                                    <div className="text-xl font-bold text-black">{formatCurrency(summary.totalGross)}</div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500">수수료</div>
+                                    <div className="text-xl font-bold text-black">{formatCurrency(summary.totalFee)}</div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500">정산 금액</div>
+                                    <div className="text-xl font-bold text-black">{formatCurrency(summary.totalNet)}</div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-500">정산 건수</div>
+                                    <div className="text-xl font-bold text-black">{totalElements}</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 카드 2: 일별 / 월별 매출 추이 */}
+                    <SalesTrendSection useDummy={USE_DUMMY_SETTLEMENT} startDate={startDate} endDate={endDate} />
+
+                    {/* 카드 2.5: 수익 출처별 매출 비교 */}
+                    <RevenueSourcesSection useDummy={USE_DUMMY_SETTLEMENT} startDate={startDate} endDate={endDate} />
+
+                    {/* 카드 3: 매출 상세 내역 리스트 (기존 테이블 유지) */}
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* 테이블 헤더 */}
                         <div className="bg-gray-50 border-b border-gray-200 py-4 px-6">
