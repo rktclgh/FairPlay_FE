@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
-
-interface Participant {
-    id: string;
-    name: string;
-    phone: string;
-    email: string;
-    registrationDate: string;
-    isOwner?: boolean;
-}
+import type {
+    AttendeeInfoResponseDto
+} from "../services/types/attendeeType";
 
 interface EditParticipantModalProps {
     isOpen: boolean;
     onClose: () => void;
-    participant: Participant | null;
-    onSave: (updatedParticipant: Participant) => void;
+    participant: AttendeeInfoResponseDto | null;
+    onSave: (updatedParticipant: AttendeeInfoResponseDto) => void;
 }
 
 export default function EditParticipantModal({
@@ -77,7 +71,7 @@ export default function EditParticipantModal({
 
         if (!participant) return;
 
-        const updatedParticipant: Participant = {
+        const updatedParticipant: AttendeeInfoResponseDto = {
             ...participant,
             name: formData.name,
             phone: formData.phone,

@@ -3,7 +3,7 @@ export interface AttendeeSaveRequestDto{
     name: string,
     email: string, 
     phone: string,
-    birth: Date
+    birth: Date | null
 }
 
 // 저장된 참석자 정보 응답
@@ -28,4 +28,10 @@ export interface AttendeeUpdateRequestDto{
     name: string,
     email: string, 
     phone: string
+}
+
+export interface ShareTicketInfoResponseDto{
+    formId: number,
+    eventId: number,
+    eventName: string
 }
