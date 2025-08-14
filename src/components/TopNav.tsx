@@ -4,10 +4,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eventApi } from '../services/api';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
-import { useNotificationSocket, Notification } from '../hooks/useNotificationSocket';
+import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { requireAuth, isAuthenticated } from '../utils/authGuard';
 import { hasHostPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
+import { useTheme } from '../context/ThemeContext';
 
 
 interface TopNavProps {
@@ -15,6 +16,7 @@ interface TopNavProps {
 }
 
 export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
+    const { isDark, toggleDark } = useTheme();
     const [activeMenu, setActiveMenu] = useState<string>('HOME');
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
@@ -122,17 +124,17 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
     return (
         <>
-            <div className={`bg-white/90 backdrop-blur w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
+            <div className={`theme-surface theme-transition w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
                 <div className="flex justify-end items-center px-6 py-0.5 gap-3">
                     <button
                         onClick={handleCustomerService}
-                        className="p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                        className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
                     >
                         고객센터
                     </button>
                     <button
                         onClick={toggleNotification}
-                        className="relative p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                        className={`relative p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
                     >
                         알림
                         {isLoggedIn && unreadCount > 0 && (
@@ -141,7 +143,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     </button>
                     <Link
                         to={isLoggedIn ? "#" : "/login"}
-                        className="p-0 text-xs text-gray-500 hover:text-black focus:outline-none focus:ring-0"
+                        className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} focus:outline-none focus:ring-0`}
                         onClick={handleAuthClick}
                     >
                         {isLoggedIn ? '로그아웃' : '로그인'}
@@ -152,13 +154,13 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
                     <div className="flex items-center space-x-6">
                         <nav className="hidden md:flex items-center space-x-6">
-                            <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
-                            <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
-                            <Link to="/event-registration-intro" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
+                            <Link to="/" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
+                            <Link to="/eventoverview" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
+                            <Link to="/event-registration-intro" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
                         </nav>
                         <div className="flex items-center space-x-6">
-                            <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
-                            <HiOutlineUser className="w-5 h-5 text-black cursor-pointer" onClick={() => {
+                            <HiOutlineSearch className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
+                            <HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={() => {
                                 if (!requireAuth(navigate, '마이페이지')) {
                                     return;
                                 }
@@ -175,7 +177,14 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                     }
                                 })();
                             }} />
-                            <HiOutlineGlobeAlt className="w-5 h-5 text-black cursor-pointer" />
+                            <HiOutlineGlobeAlt className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
+                            <button
+                                className="theme-btn"
+                                onClick={toggleDark}
+                                title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
+                            >
+                                {isDark ? '🌙' : '☀️'}
+                            </button>
                         </div>
                     </div>
                 </div>

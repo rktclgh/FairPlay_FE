@@ -7,6 +7,8 @@ import {
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
+import { Footer } from "../components/Footer";
+import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -43,6 +45,7 @@ interface HotPick {
 }
 
 export const Main: React.FC = () => {
+    const { isDark } = useTheme();
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
@@ -406,18 +409,18 @@ export const Main: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
                 <div className="text-xl">로딩 중...</div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
             <TopNav />
 
             {/* 히어로 섹션 */}
-            <div className="relative w-full h-[600px] bg-gray-100">
+            <div className={`relative w-full h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
@@ -450,9 +453,10 @@ export const Main: React.FC = () => {
                             key={ad.id}
                             className="w-16 h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
                             onMouseEnter={() => {
-                                const swiper = (window as unknown as Window).heroSwiper;
+                                const swiper = (window as unknown as Window & { heroSwiper?: any }).heroSwiper;
                                 if (swiper) {
-                                    swiper.slideTo(index);
+                                    // loop 모드에서는 slideToLoop를 사용해야 원본 인덱스와 정확히 매칭됩니다.
+                                    swiper.slideToLoop(index);
                                 }
                             }}
                         >
@@ -467,10 +471,10 @@ export const Main: React.FC = () => {
             </div>
 
             {/* 핫픽스 섹션 (3D 커버플로우) */}
-            <div className="py-16">
+            <div className="py-16 theme-surface theme-transition">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">HOT PICKS</h2>
+                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>HOT PICKS</h2>
                     </div>
 
                     <Swiper
@@ -510,23 +514,17 @@ export const Main: React.FC = () => {
 
                     {/* 중앙 캡션 (블루스퀘어 스타일) */}
                     <div className="mt-6 text-center">
-                        <div
-                            key={activeHotPickIndex}
-                            className="text-[28px] font-extrabold text-black leading-tight truncate anim-fadeInUp"
-                        >
+                        <div key={activeHotPickIndex} className={`text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
                             {allHotPicks[activeHotPickIndex]?.title}
                         </div>
-                        <div
-                            key={`meta-${activeHotPickIndex}`}
-                            className="mt-2 space-y-1 anim-fadeInUp"
-                        >
-                            <div className="text-sm text-gray-700 flex items-center justify-center gap-2">
+                        <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
+                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                 <HiOutlineCalendar className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate">
                                     {(allHotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
                                 </span>
                             </div>
-                            <div className="text-sm text-gray-700 flex items-center justify-center gap-2">
+                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                 <FaMapMarkerAlt className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate">
                                     {allHotPicks[activeHotPickIndex]?.location}
@@ -538,10 +536,10 @@ export const Main: React.FC = () => {
             </div>
 
             {/* 행사 섹션 */}
-            <div className="py-16">
+            <div className="py-16 theme-surface theme-transition">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">EVENTS</h2>
+                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>EVENTS</h2>
                     </div>
 
                     {/* 필터 버튼들 */}
@@ -550,9 +548,13 @@ export const Main: React.FC = () => {
                             <button
                                 key={index}
                                 onClick={() => handleCategoryChange(filter)}
-                                className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter
-                                    ? "bg-black text-white font-bold"
-                                    : "bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold"
+                                className={`px-4 py-2 rounded-full text-sm border theme-transition ${selectedCategory === filter
+                                    ? (isDark
+                                        ? 'dm-light font-bold border-gray-300'
+                                        : 'bg-black text-white font-bold border-gray-800')
+                                    : (isDark
+                                        ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
+                                        : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
                                     }`}
                             >
                                 {filter}
@@ -584,12 +586,11 @@ export const Main: React.FC = () => {
                                     </div>
                                     <div className="mt-4 text-left">
 
-                                        <span
-                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                        <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2`}>
                                             {event.mainCategory}
                                         </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
+                                        <h3 className={`font-bold text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{event.title}</h3>
+                                        <div className={`text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                         </div>
@@ -600,12 +601,10 @@ export const Main: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* 전체보기 버튼 */
-                    }
+                    {/* 전체보기 버튼 */}
                     <div className="text-center mt-12">
                         <Link to="/eventoverview">
-                            <button
-                                className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
+                            <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
                                 전체보기
                             </button>
                         </Link>
@@ -613,22 +612,8 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 푸터 */
-            }
-            <footer className="bg-white border-t border-gray-200 py-16">
-                <div className="max-w-7xl mx-auto px-8 text-center">
-                    <p className="text-gray-600 mb-8">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
-                    <div className="flex justify-center space-x-8">
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">이용약관</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">개인정보처리방침</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">고객센터</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">회사소개</a>
-                    </div>
-                </div>
-            </footer>
+            {/* 푸터 */}
+            <Footer />
         </div>
-    )
-        ;
+    );
 }; 
