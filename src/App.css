@@ -1,13 +1,35 @@
+/* Global background color variable */
+:root {
+  --bg-main: #ffffff;
+}
+
 /* Dark mode root override */
 body.dark-mode {
-  background-color: #000;
+  --bg-main: #0a0a0f;
   color: #e5e7eb;
 }
 
 body {
+  background-color: var(--bg-main);
   transition:
     background-color 0.5s ease,
     color 0.5s ease;
+}
+
+/* 단일 표면/전환 유틸 */
+.theme-surface {
+  background-color: var(--bg-main);
+}
+.theme-transition {
+  transition:
+    background-color 0.5s ease,
+    color 0.5s ease;
+}
+
+/* 다크모드일 때 로고를 흰색으로 변환 */
+body.dark-mode img[alt="FairPlay Logo"] {
+  filter: brightness(0) invert(1);
+  transition: filter 0.5s ease;
 }
 
 #root {
@@ -128,88 +150,31 @@ body {
   }
 }
 
-/* Dark Mode Toggle Switch - Simple and Working */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 32px;
+/* Dark Mode Button */
+.theme-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
   cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
 }
 
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+.theme-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
 }
 
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #20262c;
-  transition: 0.5s;
-  border-radius: 16px;
-  overflow: hidden;
+.theme-btn:active {
+  transform: scale(0.95);
 }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #20262c;
-  transition: 0.5s;
-  border-radius: 50%;
-  box-shadow:
-    inset 6px -4px 0px 0px #ececd9,
-    -2px 1px 2px 0px rgba(0, 0, 0, 0.3);
-}
-
-.decoration {
-  position: absolute;
-  content: "";
-  height: 3px;
-  width: 3px;
-  border-radius: 50%;
-  right: 15%;
-  top: 20%;
-  background: #e5f041;
-  transition: all 0.5s;
-  box-shadow:
-    -5px 8px 0 #e5f041,
-    5px 10px 0 #e5f041,
-    -10px 1px 0 #e5f041,
-    -12px 6px 0 #e5f041,
-    -4px 15px 0 #e5f041,
-    -9px 17px 0 #e5f041;
-}
-
-input:checked ~ .decoration {
-  transform: translateX(-15px);
-  width: 8px;
-  height: 8px;
-  background: white;
-  box-shadow:
-    -8px 0 0 white,
-    -4px 0 0 1px white,
-    3px 10px 0 1px white,
-    1px 12px 0 white,
-    6px 12px 0 white;
-}
-
-input:checked + .slider {
-  background-color: #5494de;
-}
-
-input:checked + .slider:before {
-  transform: translateX(26px) translateY(-50%);
-  background-color: #efdf2b;
-  box-shadow: inset 4px -2px 0px 0px #efdf2b;
+.theme-btn:focus {
+  outline: none;
+  box-shadow: none;
 }

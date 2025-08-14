@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
+import { Footer } from "../components/Footer";
 import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
@@ -408,18 +409,18 @@ export const Main: React.FC = () => {
 
     if (loading) {
         return (
-            <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'} flex items-center justify-center`}>
+            <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
                 <div className="text-xl">로딩 중...</div>
             </div>
         );
     }
 
     return (
-        <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'}`}>
+        <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
             <TopNav />
 
             {/* 히어로 섹션 */}
-            <div className={`relative w-full h-[600px] ${isDark ? 'bg-black' : 'bg-gray-100'}`}>
+            <div className={`relative w-full h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
@@ -469,7 +470,7 @@ export const Main: React.FC = () => {
             </div>
 
             {/* 핫픽스 섹션 (3D 커버플로우) */}
-            <div className="py-16">
+            <div className="py-16 theme-surface theme-transition">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>HOT PICKS</h2>
@@ -534,7 +535,7 @@ export const Main: React.FC = () => {
             </div>
 
             {/* 행사 섹션 */}
-            <div className="py-16">
+            <div className="py-16 theme-surface theme-transition">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>EVENTS</h2>
@@ -588,8 +589,7 @@ export const Main: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* 전체보기 버튼 */
-                    }
+                    {/* 전체보기 버튼 */}
                     <div className="text-center mt-12">
                         <Link to="/eventoverview">
                             <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
@@ -600,22 +600,8 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 푸터 */
-            }
-            <footer className={`${isDark ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} border-t py-16`}>
-                <div className="max-w-7xl mx-auto px-8 text-center">
-                    <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-8`}>
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
-                    <div className="flex justify-center space-x-8">
-                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>이용약관</a>
-                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>개인정보처리방침</a>
-                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>고객센터</a>
-                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>회사소개</a>
-                    </div>
-                </div>
-            </footer>
+            {/* 푸터 */}
+            <Footer />
         </div>
-    )
-        ;
+    );
 }; 

@@ -124,7 +124,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
     return (
         <>
-            <div className={`${isDark ? 'bg-black' : 'bg-white/90 backdrop-blur'} w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
+            <div className={`theme-surface theme-transition w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
                 <div className="flex justify-end items-center px-6 py-0.5 gap-3">
                     <button
                         onClick={handleCustomerService}
@@ -159,16 +159,6 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                             <Link to="/event-registration-intro" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
                         </nav>
                         <div className="flex items-center space-x-6">
-                            <label htmlFor="darkModeToggle" className="switch">
-                                <input
-                                    id="darkModeToggle"
-                                    type="checkbox"
-                                    checked={!isDark}
-                                    onChange={toggleDark}
-                                />
-                                <span className="slider"></span>
-                                <span className="decoration"></span>
-                            </label>
                             <HiOutlineSearch className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
                             <HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={() => {
                                 if (!requireAuth(navigate, '마이페이지')) {
@@ -188,6 +178,13 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                 })();
                             }} />
                             <HiOutlineGlobeAlt className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
+                            <button
+                                className="theme-btn"
+                                onClick={toggleDark}
+                                title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
+                            >
+                                {isDark ? '🌙' : '☀️'}
+                            </button>
                         </div>
                     </div>
                 </div>
