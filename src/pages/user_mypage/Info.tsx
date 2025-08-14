@@ -162,7 +162,7 @@ export const MyPageInfo = () => {
     if (isLoading) {
         return (
             <div className="bg-white flex flex-row justify-center w-full">
-                <div className="bg-white w-[1256px] h-[1207px] relative">
+                <div className="bg-white w-[1256px] min-h-screen relative">
                     <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
                     <TopNav className="!absolute !left-0 !top-0" />
                     <div className="absolute top-[400px] left-1/2 transform -translate-x-1/2">
@@ -178,14 +178,14 @@ export const MyPageInfo = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1207px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                     내 정보 조회
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
                 <TopNav />
-                <div className={`absolute w-[949px] left-64 ${showPasswordChange ? 'h-[500px]' : 'h-[213px]'} top-[195px]`}>
+                <div className={`absolute w-[949px] left-64 ${showPasswordChange ? 'h-[500px]' : 'h-[213px]'} top-[195px] pb-20`}>
                     <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
                         내 계정
                     </div>
@@ -292,17 +292,9 @@ export const MyPageInfo = () => {
                 </div>
 
                 {/* 개인 정보 섹션 - 비밀번호 변경 폼이 표시되면 아래로 이동 */}
-                <div className={`absolute w-[949px] h-[295px] left-64 ${showPasswordChange ? 'top-[600px]' : 'top-[455px]'}`}>
-                    <div className="flex justify-between items-center">
-                        <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                            개인 정보
-                        </div>
-                        <button
-                            onClick={() => setShowEditModal(true)}
-                            className="absolute top-0 right-0 px-4 py-2 border border-gray-300 rounded-[10px] text-gray-600 bg-white hover:bg-gray-50 transition-colors text-sm"
-                        >
-                            수정하기
-                        </button>
+                <div className={`absolute w-[949px] h-[335px] left-64 ${showPasswordChange ? 'top-[600px]' : 'top-[455px]'}`}>
+                    <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
+                        개인 정보
                     </div>
 
                     <div className="top-11 left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] absolute tracking-[0] leading-[54px] whitespace-nowrap">
@@ -334,9 +326,20 @@ export const MyPageInfo = () => {
                     </p>
 
                     <div className="w-[947px] h-[79px] top-[216px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
+
+                    {/* 개인정보 수정 버튼 - 휴대폰 번호 아래 오른쪽 정렬 */}
+                    <div className="absolute top-[305px] right-0">
+                        <button
+                            onClick={() => setShowEditModal(true)}
+                            className="px-4 py-2 border border-gray-300 rounded-[10px] text-gray-600 bg-white hover:bg-gray-50 transition-colors text-sm"
+                            style={{ outline: 'none' }}
+                        >
+                            수정
+                        </button>
+                    </div>
                 </div>
 
-                <div className={`absolute left-64 ${showPasswordChange ? 'top-[1139px]' : 'top-[839px]'}`}>
+                <div className={`absolute left-64 ${showPasswordChange ? 'top-[1179px]' : 'top-[879px]'}`}>
                     <div
                         className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap cursor-pointer hover:text-black underline"
                         onClick={() => navigate('/mypage/withdrawal')}

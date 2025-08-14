@@ -2,6 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .anim-fadeInUp {
+    animation: fadeInUp 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  /* Common poster aspect ratio */
+  .aspect-poster {
+    aspect-ratio: 3 / 4;
+  }
+  .aspect-poster-4-5 {
+    aspect-ratio: 4 / 5;
+  }
+}
+
+/* Hot Picks Panorama-like 3D track */
+.hotpicks-swiper {
+  perspective: 1400px;
+}
+.hotpicks-swiper .swiper-wrapper {
+  transform-style: preserve-3d;
+}
+.hotpicks-swiper .swiper-slide {
+  transform-style: preserve-3d;
+}
+.hotpicks-swiper .hp-card {
+  backface-visibility: hidden;
+  will-change: transform;
+  transform-origin: center center;
+  box-shadow:
+    0 22px 50px rgba(0, 0, 0, 0.35),
+    0 6px 16px rgba(0, 0, 0, 0.22);
+}
+
+/* 림라이트 느낌 오버레이 */
+.hp-rimlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 50% at 50% -10%,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.08) 36%,
+    rgba(255, 255, 255, 0) 62%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* 은은한 내부 그라데이션로 깊이감 추가 */
+.hp-innershadow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.22),
+    rgba(0, 0, 0, 0) 28%,
+    rgba(0, 0, 0, 0) 72%,
+    rgba(0, 0, 0, 0.25)
+  );
+  pointer-events: none;
+}
+
+/* 호버 카드 애니메이션 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 지도 핀 애니메이션 */
+@keyframes pinBounce {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.1) translateY(-3px);
+  }
+  100% {
+    transform: scale(1.2) translateY(-5px);
+  }
+}
+
+.map-pin-marker:hover {
+  animation: pinBounce 0.3s ease-out forwards;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -32,6 +145,36 @@ body {
   min-height: 100vh;
   background-color: #ffffff;
   color: #213547;
+  overflow-y: scroll;
+}
+
+/* Radix UI Dialog가 body에 overflow: hidden을 적용하는 것을 방지 */
+body[style*="overflow: hidden"] {
+  overflow-y: auto;
+}
+
+/* 채팅 모달 내부 스크롤 설정 */
+.chat-modal-content {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.chat-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-modal-content::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.chat-modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.chat-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
 }
 
 h1 {

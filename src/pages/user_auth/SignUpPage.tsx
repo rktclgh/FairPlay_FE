@@ -208,7 +208,7 @@ export const SignUpPage = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1442px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <TopNav />
 
                 {/* 콘텐츠 컨테이너 */}

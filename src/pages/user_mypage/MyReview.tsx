@@ -1,121 +1,163 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
 import { Star } from "lucide-react";
+import type {
+    ReviewSaveRequestDto,
+    PossibleReviewResponseDto,
+    EventDto,
+    ReviewDto,
+    ReviewResponseDto,
+    ReviewUpdateRequestDto
+} from "../../services/types/reviewType";
+import {
+    saveReview,
+    getPossibleSaveReview,
+    getReviewsByMember,
+    updateReview,
+    deleteReview
+} from "../../services/review";
 
-const reviewsData = [
-    {
-        id: 1,
-        title: "2025 AI & 로봇 박람회",
-        date: "2025.01.16 (목) 14:00",
-        location: "코엑스 전시장 A홀",
-        rating: 5,
-        reviewDate: "2025.01.17",
-        content: "정말 유익하고 재미있는 박람회였습니다. 최신 AI 기술과 로봇들을 직접 체험해볼 수 있어서 좋았고, 전시 구성도 체계적이었습니다. 특히 휴머노이드 로봇 시연이 인상적이었어요. 다음에도 꼭 참석하고 싶습니다.",
-        likes: 12,
-        isPublic: true,
-        createdAt: "2025.01.17"
-    },
-    {
-        id: 2,
-        title: "2024 스마트시티 엑스포",
-        date: "2024.12.10 (화) 10:00",
-        location: "킨텍스 제1전시장",
-        rating: 4,
-        reviewDate: "2024.12.11",
-        content: "스마트시티 관련 다양한 기술들을 한 번에 볼 수 있어서 좋았습니다. 다만 관람객이 너무 많아서 조금 복잡했어요.",
-        likes: 8,
-        isPublic: true,
-        createdAt: "2024.12.11"
-    },
-    {
-        id: 3,
-        title: "2024 푸드테크 페어",
-        date: "2024.11.20 (수) 13:00",
-        location: "삼성동 코엑스",
-        rating: 3,
-        reviewDate: "2024.11.21",
-        content: "음식 관련 기술들이 흥미로웠지만 체험 기회가 부족했습니다.",
-        likes: 3,
-        isPublic: false,
-        createdAt: "2024.11.21"
-    }
-];
+// const reviewsData = [
+//     {
+//         id: 1,
+//         title: "2025 AI & 로봇 박람회",
+//         date: "2025.01.16 (목) 14:00",
+//         location: "코엑스 전시장 A홀",
+//         rating: 5,
+//         reviewDate: "2025.01.17",
+//         content: "정말 유익하고 재미있는 박람회였습니다. 최신 AI 기술과 로봇들을 직접 체험해볼 수 있어서 좋았고, 전시 구성도 체계적이었습니다. 특히 휴머노이드 로봇 시연이 인상적이었어요. 다음에도 꼭 참석하고 싶습니다.",
+//         likes: 12,
+//         isPublic: true,
+//         createdAt: "2025.01.17"
+//     },
+//     {
+//         id: 2,
+//         title: "2024 스마트시티 엑스포",
+//         date: "2024.12.10 (화) 10:00",
+//         location: "킨텍스 제1전시장",
+//         rating: 4,
+//         reviewDate: "2024.12.11",
+//         content: "스마트시티 관련 다양한 기술들을 한 번에 볼 수 있어서 좋았습니다. 다만 관람객이 너무 많아서 조금 복잡했어요.",
+//         likes: 8,
+//         isPublic: true,
+//         createdAt: "2024.12.11"
+//     },
+//     {
+//         id: 3,
+//         title: "2024 푸드테크 페어",
+//         date: "2024.11.20 (수) 13:00",
+//         location: "삼성동 코엑스",
+//         rating: 3,
+//         reviewDate: "2024.11.21",
+//         content: "음식 관련 기술들이 흥미로웠지만 체험 기회가 부족했습니다.",
+//         likes: 3,
+//         isPublic: false,
+//         createdAt: "2024.11.21"
+//     }
+// ];
 
-const writeReviews = [
-    {
-        id: 1,
-        title: "2025 AI & 로봇 박람회",
-        dateRange: "2025.01.15 (수) ~ 2025.01.17 (금)",
-        viewDate: "2025.01.16 (목) 14:00",
-        location: "코엑스 전시장 A홀",
-        ticket: "일반 관람권 1매",
-        image: "/images/NoImage.png",
-        hasReview: false
-    },
-    {
-        id: 2,
-        title: "2024 스마트시티 엑스포",
-        dateRange: "2024.12.05 (목) ~ 2024.12.08 (일)",
-        viewDate: "2024.12.06 (금) 10:30",
-        location: "킨텍스 제1전시장",
-        ticket: "VIP 관람권 2매",
-        image: "/images/NoImage.png",
-        hasReview: true
-    },
-    {
-        id: 3,
-        title: "2024 푸드테크 페어",
-        dateRange: "2024.11.20 (수) ~ 2024.11.22 (금)",
-        viewDate: "2024.11.21 (목) 13:00",
-        location: "삼성동 코엑스",
-        ticket: "일반 관람권 1매",
-        image: "/images/NoImage.png",
-        hasReview: false
-    },
-    {
-        id: 4,
-        title: "2024 게임쇼 코리아",
-        dateRange: "2024.10.15 (화) ~ 2024.10.18 (금)",
-        viewDate: "2024.10.16 (수) 15:00",
-        location: "킨텍스 제2전시장",
-        ticket: "프리미엄 패스 1매",
-        image: "/images/NoImage.png",
-        hasReview: true
-    },
-    {
-        id: 5,
-        title: "2024 자동차 엑스포",
-        dateRange: "2024.09.25 (수) ~ 2024.09.28 (토)",
-        viewDate: "2024.09.26 (목) 11:00",
-        location: "킨텍스 제1전시장",
-        ticket: "일반 관람권 1매",
-        image: "/images/NoImage.png",
-        hasReview: false
-    },
-];
+// const writeReviews = [
+//     {
+//         id: 1,
+//         title: "2025 AI & 로봇 박람회",
+//         dateRange: "2025.01.15 (수) ~ 2025.01.17 (금)",
+//         viewDate: "2025.01.16 (목) 14:00",
+//         location: "코엑스 전시장 A홀",
+//         ticket: "일반 관람권 1매",
+//         image: "/images/NoImage.png",
+//         hasReview: false
+//     },
+//     {
+//         id: 2,
+//         title: "2024 스마트시티 엑스포",
+//         dateRange: "2024.12.05 (목) ~ 2024.12.08 (일)",
+//         viewDate: "2024.12.06 (금) 10:30",
+//         location: "킨텍스 제1전시장",
+//         ticket: "VIP 관람권 2매",
+//         image: "/images/NoImage.png",
+//         hasReview: true
+//     },
+//     {
+//         id: 3,
+//         title: "2024 푸드테크 페어",
+//         dateRange: "2024.11.20 (수) ~ 2024.11.22 (금)",
+//         viewDate: "2024.11.21 (목) 13:00",
+//         location: "삼성동 코엑스",
+//         ticket: "일반 관람권 1매",
+//         image: "/images/NoImage.png",
+//         hasReview: false
+//     },
+//     {
+//         id: 4,
+//         title: "2024 게임쇼 코리아",
+//         dateRange: "2024.10.15 (화) ~ 2024.10.18 (금)",
+//         viewDate: "2024.10.16 (수) 15:00",
+//         location: "킨텍스 제2전시장",
+//         ticket: "프리미엄 패스 1매",
+//         image: "/images/NoImage.png",
+//         hasReview: true
+//     },
+//     {
+//         id: 5,
+//         title: "2024 자동차 엑스포",
+//         dateRange: "2024.09.25 (수) ~ 2024.09.28 (토)",
+//         viewDate: "2024.09.26 (목) 11:00",
+//         location: "킨텍스 제1전시장",
+//         ticket: "일반 관람권 1매",
+//         image: "/images/NoImage.png",
+//         hasReview: false
+//     },
+// ];
 
 export const MyPageMyReview = () => {
-    const [activeTab, setActiveTab] = useState<'write' | 'my'>('write');
-    const [selectedReviews, setSelectedReviews] = useState<number[]>([]);
+    /** 초기 세팅 데이터 */
+    const [savedReview, setSavedReviews] = useState<ReviewResponseDto[] | null>(null); // 작성한 리뷰
+    const [writeReviewsState, setWriteReviewsState] = useState<PossibleReviewResponseDto[] | null>(null) // 리뷰 작성 가능한 이벤트 
+    
+    /** 선택 항목 */
     const [selectAll, setSelectAll] = useState(false);
-    const [reviews, setReviews] = useState(reviewsData);
-    const [selectedEvent, setSelectedEvent] = useState<any>(null);
-    const [rating, setRating] = useState(0);
-    const [reviewText, setReviewText] = useState("");
-    const [writeReviewsState, setWriteReviewsState] = useState(writeReviews);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedReviews, setSelectedReviews] = useState<number[]>([]); // 선택한 리뷰들
+    const [editingReview, setEditingReview] = useState<ReviewDto | null>(); // 수정하려는 리뷰 
+    const [selectReservationId, setSelectReservationId] = useState<number | null>(null);
+
+    const [selectedEvent, setSelectedEvent] = useState<EventDto | null>();// 선택한 이벤트
+
+    /** 리뷰 내용 */
+    const [rating, setRating] = useState(0); // 별점
+    const [reviewText, setReviewText] = useState(""); // 리뷰 내용
+    const [isPrivate, setIsPrivate] = useState(false); // 공개, 비공개 여부
+
+    const [activeTab, setActiveTab] = useState<'write' | 'my'>('write');
+    const [isEditMode, setIsEditMode] = useState(false); // 작성 또는 수정 모드 
+    const [showDeleteModal, setShowDeleteModal] = useState(false); // 삭제 모달
     const [deleteType, setDeleteType] = useState<'bulk' | 'single'>('bulk');
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [editingReview, setEditingReview] = useState<any>(null);
-    const [isPrivate, setIsPrivate] = useState(false);
+    const [currentPage, setCurrentPage] = useState(0); // 리뷰 현재 페이지
+    
+    // 초기 로딩
+    useEffect(() => {
+        // 작성 가능한 행사 조회
+        const fetchWriteReviews = async () => {
+            const res = await getPossibleSaveReview(currentPage);
+            setWriteReviewsState(res?.content ?? null);
+        }
+
+        // 작성한 리뷰 조회
+        const fetchUserReviews = async () => {
+            const res = await getReviewsByMember(currentPage);
+            setSavedReviews(res?.content ?? null);
+        }
+        fetchWriteReviews();
+        fetchUserReviews();
+    }, []);
+
 
     const handleSelectAll = (checked: boolean) => {
         setSelectAll(checked);
         if (checked) {
-            setSelectedReviews(reviewsData.map(review => review.id));
+            setSelectedReviews(savedReview?.map(data => data.review.reviewId) ?? []);
         } else {
             setSelectedReviews([]);
         }
@@ -147,22 +189,32 @@ export const MyPageMyReview = () => {
         setShowDeleteModal(true);
     };
 
-    const confirmDelete = () => {
-        if (deleteType === 'bulk') {
-            // 선택된 리뷰들을 제외한 나머지 리뷰들만 남김
-            setReviews(reviews.filter(review => !selectedReviews.includes(review.id)));
+    const confirmDelete = async () => {
+        // if (deleteType === 'bulk') {
+        //     // 선택된 리뷰들을 제외한 나머지 리뷰들만 남김
+        //     setReviews(reviews.filter(review => !selectedReviews.includes(review.id)));
 
-            // 선택 상태 초기화
-            setSelectedReviews([]);
-            setSelectAll(false);
+        //     // 선택 상태 초기화
+        //     setSelectedReviews([]);
+        //     setSelectAll(false);
 
-            console.log("일괄 삭제 완료:", selectedReviews.length + "개");
-        } else if (deleteType === 'single' && deleteTargetId) {
-            // 개별 삭제
-            setReviews(reviews.filter(review => review.id !== deleteTargetId));
-            console.log("개별 삭제 완료:", deleteTargetId);
+        //     console.log("일괄 삭제 완료:", selectedReviews.length + "개");
+        // } else if (deleteType === 'single' && deleteTargetId) {
+        //     // 개별 삭제
+        //     setReviews(reviews.filter(review => review.id !== deleteTargetId));
+        //     console.log("개별 삭제 완료:", deleteTargetId);
+        // }
+
+        // 개별 삭제
+
+        if (deleteTargetId == null) {
+            return;
         }
+        
+        const res = await deleteReview(deleteTargetId)
 
+        setSavedReviews((savedReview ?? []).filter(review => review.review.reviewId !== res.reviewId));
+        console.log(res.message);
         // 모달 닫기
         setShowDeleteModal(false);
         setDeleteTargetId(null);
@@ -173,8 +225,9 @@ export const MyPageMyReview = () => {
         setDeleteTargetId(null);
     };
 
-    const handleEventClick = (event: any) => {
+    const handleEventClick = (event: EventDto, reservationId:number) => {
         setSelectedEvent(event);
+        setSelectReservationId(reservationId)
         setRating(0);
         setReviewText("");
         setIsEditMode(false);
@@ -182,25 +235,38 @@ export const MyPageMyReview = () => {
         setIsPrivate(false);
     };
 
-    const handleEditReview = (review: any) => {
-        setEditingReview(review);
-        setSelectedEvent({
-            title: review.title,
-            dateRange: review.date,
-            viewDate: review.date,
-            location: review.location,
-            ticket: "일반 관람권 1매",
-            image: "/images/NoImage.png"
-        });
-        setRating(review.rating);
-        setReviewText(review.content);
-        setIsPrivate(!review.isPublic);
+    // 수정 버튼 선택
+    const handleEditReview = (data: ReviewResponseDto) => {
+        // 수정할 리뷰 설정
+        setEditingReview(data.review);
+        
+        // 수정할 리뷰의 이벤트
+        const reviewEvent: EventDto = {
+            title: data.event.title,
+            buildingName: data.event.buildingName,
+            address: data.event.address,
+            thumbnail: data.event.thumbnail,
+            eventScheduleInfo: data.event.eventScheduleInfo,
+            viewingScheduleInfo: data.event.viewingScheduleInfo
+        }
+            
+        // 이벤트 설정
+        setSelectedEvent(reviewEvent);
+
+        // 리뷰의 별점, 내용, 공개/비공개여부, 수정모드, 작성탭 설정
+        setRating(data.review.star);
+        setReviewText(data.review.comment);
+        setIsPrivate(!data.review.visible);
         setIsEditMode(true);
         setActiveTab('write');
     };
 
+    // 행사 목록으로 변경
     const handleBackToList = () => {
+        // 선택한 이벤트, 리뷰 초기화
         setSelectedEvent(null);
+        setSelectReservationId(null)
+        // 별점, 내용, 수정모드, 수정리뷰, 공개/비공개 여부 초기화
         setRating(0);
         setReviewText("");
         setIsEditMode(false);
@@ -215,65 +281,92 @@ export const MyPageMyReview = () => {
         }
     };
 
-    const handleSubmitReview = () => {
+    // 리뷰 저장 및 제출 
+    const handleSubmitReview = async () => {
+        
+        // 수정 모드 O 수정하려고 선택한 리뷰 정보
         if (isEditMode && editingReview) {
             // 수정 모드: 기존 리뷰 업데이트
-            const updatedReviews = reviews.map(review =>
-                review.id === editingReview.id
-                    ? {
-                        ...review,
-                        rating: rating,
-                        content: reviewText,
-                        isPublic: !isPrivate,
-                        reviewDate: new Date().toLocaleDateString('ko-KR', {
-                            year: 'numeric',
+            // const updatedReviews = savedReview?.map(data =>
+            //     data.review.reviewId === editingReview.id
+            //         ? {
+            //             ...review,
+            //             rating: rating,
+            //             content: reviewText,
+            //             isPublic: !isPrivate,
+            //             reviewDate: new Date().toLocaleDateString('ko-KR', {
+            //                 year: 'numeric',
+            //                 month: '2-digit',
+            //                 day: '2-digit'
+            //             }).replace(/\. /g, '.').replace('.', '')
+            //         }
+            //         : null;
+            // );
+
+            const reviewUpdateRequestDto: ReviewUpdateRequestDto = {
+                    star: rating,
+                    comment: reviewText,
+                    visible: isPrivate
+            }
+
+            const res = await updateReview(editingReview.reviewId, reviewUpdateRequestDto);
+            
+            setSavedReviews(prev =>
+                (prev ?? []).map(data =>
+                    data.review.reviewId === editingReview.reviewId
+                        ? { ...data, review: { ...data.review, ...res } }
+                        : data
+                )
+            );
+
+            console.log("리뷰 수정 완료:", res.reviewId);
+        } else {
+
+            if (selectReservationId == null) {
+                return;
+            }
+
+            if (selectedEvent == null) {
+                return;
+            }
+
+            const saveReviewRequest: ReviewSaveRequestDto = {
+                reservationId: selectReservationId,
+                star: rating,
+                visible: isPrivate,
+                comment: reviewText
+            };
+
+            const res = await saveReview(saveReviewRequest);
+
+            const reviewDto: ReviewDto = {
+                    reviewId: res.reviewId,
+                    star: res.star,
+                    reactions: 0,
+                    comment: res.comment,
+                    visible: res.visible,
+                    createdAt: res.createdAt.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
                             month: '2-digit',
                             day: '2-digit'
                         }).replace(/\. /g, '.').replace('.', '')
-                    }
-                    : review
-            );
-            setReviews(updatedReviews);
-            console.log("리뷰 수정 완료:", editingReview.id);
-        } else {
-            // 새로 작성 모드: 새로운 리뷰 객체 생성
-            const newReview = {
-                id: reviews.length + 1, // 임시 ID 생성 (실제로는 서버에서 생성)
-                title: selectedEvent.title,
-                date: selectedEvent.viewDate,
-                location: selectedEvent.location,
-                rating: rating,
-                reviewDate: new Date().toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }).replace(/\. /g, '.').replace('.', ''),
-                content: reviewText,
-                likes: 0,
-                isPublic: !isPrivate,
-                createdAt: new Date().toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }).replace(/\. /g, '.').replace('.', '')
-            };
+            }
 
-            // 내 관람평 목록에 추가
-            setReviews([newReview, ...reviews]);
+            const reviewResponse: ReviewResponseDto = {
+                reservationId: selectReservationId,
+                event: selectedEvent ?? null,
+                review: reviewDto,
+                owner: true
+            }
+            setSavedReviews([reviewResponse, ...(savedReview ?? [])]);
+
 
             // 선택된 행사의 리뷰 작성 상태 업데이트
-            setWriteReviewsState(prev => prev.map(event =>
-                event.id === selectedEvent.id
-                    ? { ...event, hasReview: true }
-                    : event
-            ));
-
-            console.log("리뷰 제출:", {
-                event: selectedEvent,
-                rating,
-                reviewText,
-                newReview
-            });
+            // setWriteReviewsState(prev => prev?.map(data =>
+            //     data. === selectedEvent.
+            //         ? { ...event, hasReview: true }
+            //         : event
+            // ));
         }
 
         // 제출 후 리스트로 돌아가기
@@ -301,7 +394,7 @@ export const MyPageMyReview = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] h-[1351px] relative">
+            <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="absolute w-[947px] h-[107px] top-[137px] left-64">
                     <div className="absolute top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl leading-[54px] tracking-[0] whitespace-nowrap">
                         관람평
@@ -348,24 +441,24 @@ export const MyPageMyReview = () => {
 
                 {/* Write Review Content */}
                 {activeTab === 'write' && (
-                    <div className="absolute top-[263px] left-64 right-0">
+                    <div className="absolute top-[263px] left-64 right-0 pb-20">
                         {!selectedEvent ? (
                             // 행사 리스트 표시
                             <div className="flex flex-col gap-8">
-                                {writeReviewsState.map((item) => (
+                                {writeReviewsState?.map((item) => (
                                     <div
-                                        key={item.id}
+                                        key={item.reservationId}
                                         className="flex gap-6 cursor-pointer p-4 rounded-lg"
-                                        onClick={() => handleEventClick(item)}
+                                        onClick={() => handleEventClick(item.event,item.reservationId)}
                                     >
                                         <img
-                                            src={item.image}
+                                            src={item.event.thumbnail}
                                             alt="preview"
                                             className="w-[158px] h-[190px] object-cover"
                                         />
                                         <div className="flex flex-col gap-2 relative">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-lg font-semibold">{item.title}</p>
+                                                <p className="text-lg font-semibold">{item.event.title}</p>
                                                 {/* 상태 배지 */}
                                                 <div className={`px-2 py-1 rounded-full text-xs font-medium ${item.hasReview
                                                     ? 'bg-green-100 text-green-700 border border-green-200'
@@ -390,19 +483,23 @@ export const MyPageMyReview = () => {
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">일시</div>
-                                                <div className="text-sm text-[#000000b2]">{item.dateRange}</div>
+                                                <div className="text-sm text-[#000000b2]">{item.event.eventScheduleInfo.startDate}</div>
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">장소</div>
-                                                <div className="text-sm text-[#000000b2]">{item.location}</div>
+                                                <div className="text-sm text-[#000000b2]">{item.event.buildingName}</div>
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">관람일</div>
-                                                <div className="text-sm text-[#000000b2]">{item.viewDate}</div>
+                                                <div className="text-sm text-[#000000b2]">
+                                                    {item.event.viewingScheduleInfo.date}
+                                                    ({item.event.viewingScheduleInfo.dayOfWeek})
+                                                    {item.event.viewingScheduleInfo.startTime}
+                                                </div>
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">티켓</div>
-                                                <div className="text-sm text-[#000000b2]">{item.ticket}</div>
+                                                <div className="text-sm text-[#000000b2]">{item.ticketContent}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -424,26 +521,24 @@ export const MyPageMyReview = () => {
                                     <img
                                         className="w-[158px] h-[190px] object-cover"
                                         alt="Event"
-                                        src={selectedEvent.image}
+                                        src={selectedEvent.thumbnail}
                                     />
 
                                     <div className="flex flex-col gap-2">
                                         <p className="text-lg font-semibold">{selectedEvent.title}</p>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">일시</div>
-                                            <div className="text-sm text-[#000000b2]">{selectedEvent.dateRange}</div>
+                                                <div className="text-sm text-[#000000b2]">{selectedEvent.eventScheduleInfo.startDate} ~ { selectedEvent.eventScheduleInfo.endDate}</div>
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">장소</div>
-                                            <div className="text-sm text-[#000000b2]">{selectedEvent.location}</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.buildingName}</div>
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">관람일</div>
-                                            <div className="text-sm text-[#000000b2]">{selectedEvent.viewDate}</div>
-                                        </div>
-                                        <div className="flex gap-4">
-                                            <div className="text-sm text-black font-semibold w-12">티켓</div>
-                                            <div className="text-sm text-[#000000b2]">{selectedEvent.ticket}</div>
+                                                <div className="text-sm text-[#000000b2]">
+                                                    {selectedEvent.viewingScheduleInfo.date} ({selectedEvent.viewingScheduleInfo.dayOfWeek}) {selectedEvent.viewingScheduleInfo.startTime}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -598,27 +693,27 @@ export const MyPageMyReview = () => {
                         </div>
 
                         {/* Review Cards */}
-                        <div className="absolute top-[334px] left-64 space-y-4">
-                            {reviews.map((review) => (
-                                <div key={review.id} className="w-[947px] rounded-lg border border-[#0000001f] bg-white p-5 relative">
+                        <div className="absolute top-[334px] left-64 space-y-4 pb-20">
+                            {savedReview?.map((data) => (
+                                <div key={data.review.reviewId} className="w-[947px] rounded-lg border border-[#0000001f] bg-white p-5 relative">
                                     {/* Checkbox */}
                                     <input
                                         type="checkbox"
-                                        checked={selectedReviews.includes(review.id)}
-                                        onChange={(e) => handleSelectReview(review.id, e.target.checked)}
+                                        checked={selectedReviews.includes(data.review.reviewId)}
+                                        onChange={(e) => handleSelectReview(data.review.reviewId, e.target.checked)}
                                         className="absolute top-[21px] left-[19px] w-[17px] h-[18px] bg-white border border-[#666666]"
                                     />
 
                                     {/* Action Buttons */}
                                     <div className="absolute top-[21px] right-[19px] flex gap-1">
                                         <button
-                                            onClick={() => handleEditReview(review)}
+                                            onClick={() => handleEditReview(data)}
                                             className="w-10 h-7 text-xs font-medium border border-[#0000001f] bg-white rounded flex items-center justify-center hover:bg-gray-50 whitespace-nowrap focus:outline-none"
                                         >
                                             수정
                                         </button>
                                         <button
-                                            onClick={(e) => handleSingleDelete(review.id, e)}
+                                            onClick={(e) => handleSingleDelete(data.review.reviewId, e)}
                                             className="w-10 h-7 text-xs font-medium bg-[#ff3838] text-white border border-[#ff3838] rounded flex items-center justify-center hover:bg-[#e62e2e] whitespace-nowrap focus:outline-none"
                                         >
                                             삭제
@@ -629,14 +724,14 @@ export const MyPageMyReview = () => {
                                     <div className="ml-[31px]">
                                         <div className="flex items-center gap-2 mb-1">
                                             <h3 className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black text-base leading-6">
-                                                {review.title}
+                                                {data.event.title}
                                             </h3>
                                             {/* 공개/비공개 배지 */}
-                                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${review.isPublic
+                                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${data.review.visible
                                                 ? 'bg-blue-100 text-blue-700 border border-blue-200'
                                                 : 'bg-gray-100 text-gray-600 border border-gray-200'
                                                 }`}>
-                                                {review.isPublic ? (
+                                                {data.review.visible ? (
                                                     <div className="flex items-center gap-1">
                                                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -657,24 +752,24 @@ export const MyPageMyReview = () => {
                                         </div>
                                         <div className="flex gap-4 mb-4">
                                             <span className="[font-family:'Roboto-Regular',Helvetica] text-[#000000b2] text-sm leading-[21px]">
-                                                {review.date}
+                                                {data.event.viewingScheduleInfo.date} ({ data.event.viewingScheduleInfo.dayOfWeek}) { data.event.viewingScheduleInfo.startTime}
                                             </span>
                                             <span className="[font-family:'Roboto-Regular',Helvetica] text-[#000000b2] text-sm leading-[21px]">
-                                                {review.location}
+                                                {data.event.buildingName}
                                             </span>
                                         </div>
 
                                         {/* Star Rating */}
                                         <div className="flex items-center gap-1 mb-4">
-                                            {renderStars(review.rating)}
-                                            <span className="ml-2 [font-family:'Roboto-Regular',Helvetica] text-[#00000099] text-sm">
-                                                {review.reviewDate}
-                                            </span>
+                                            {renderStars(data.review.star)}
+                                            {/* <span className="ml-2 [font-family:'Roboto-Regular',Helvetica] text-[#00000099] text-sm">
+                                                {data.review.createdAt}
+                                            </span> */}
                                         </div>
 
                                         {/* Review Content */}
                                         <p className="[font-family:'Roboto-Regular',Helvetica] text-black text-sm leading-[21px] mb-4 max-w-[888px]">
-                                            {review.content}
+                                            {data.review.comment}
                                         </p>
 
                                         {/* Like Count and Date */}
@@ -684,11 +779,11 @@ export const MyPageMyReview = () => {
                                                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                                 </svg>
                                                 <span className="[font-family:'Roboto-Regular',Helvetica] text-[#00000099] text-sm">
-                                                    좋아요 {review.likes}개
+                                                    좋아요 {data.review.reactions}개
                                                 </span>
                                             </div>
                                             <span className="[font-family:'Roboto-Regular',Helvetica] text-[#00000080] text-xs">
-                                                작성일: {review.createdAt}
+                                                작성일: {data.review.createdAt}
                                             </span>
                                         </div>
                                     </div>

@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
+import api from "../api/axios";
 import {
-    FaChevronLeft,
-    FaChevronRight,
-    FaChevronDown,
-    FaHeart
+    FaHeart,
+    FaMapMarkerAlt
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
 import { Link, useNavigate } from "react-router-dom";
+import { requireAuth, isAuthenticated } from "../utils/authGuard";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade } from "swiper/modules";
+import { Autoplay, EffectFade, Navigation, EffectCoverflow } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
+import "swiper/css/navigation";
 import { eventAPI } from "../services/event"
 import type {
     EventSummaryDto
@@ -31,25 +32,79 @@ interface PaidAdvertisement {
     priority: number; // 노출 순서
 }
 
+// Hot Pick 인터페이스
+interface HotPick {
+    id: number;
+    title: string;
+    date: string;
+    location: string;
+    category: string;
+    image: string;
+}
+
 export const Main: React.FC = () => {
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
     const [loading, setLoading] = useState(true);
 
-    const [selectedRegion, setSelectedRegion] = useState<string>("모든지역");
-    const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
-    const [selectedDateRange, setSelectedDateRange] = useState<string>("2025년 7월 ~ 8월");
-    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2025, 6, 1)); // 2025년 7월
-    const [startDate, setStartDate] = useState<Date | null>(null);
-    const [endDate, setEndDate] = useState<Date | null>(null);
-    const [selectedYear, setSelectedYear] = useState<number>(2025);
+
     const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
-    const [hotPicksSlideIndex, setHotPicksSlideIndex] = useState(0);
     const navigate = useNavigate();
 
-    const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+    // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+    const authHeaders = () => {
+        const t = localStorage.getItem("accessToken");
+        return t ? { Authorization: `Bearer ${t}` } : {};
+    };
+
+    const toggleWish = async (eventId: number) => {
+        // 인증 확인
+        if (!requireAuth(navigate, '관심 등록')) {
+            return;
+        }
+
+        const wasLiked = likedEvents.has(eventId);
+
+        // 낙관적 업데이트
+        setLikedEvents(prev => {
+            const next = new Set(prev);
+            if (wasLiked) {
+                next.delete(eventId);
+            } else {
+                next.add(eventId);
+            }
+            return next;
+        });
+
+        try {
+            if (wasLiked) {
+                // 찜 취소
+                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+            } else {
+                // 찜 등록 (@RequestParam Long eventId)
+                await api.post(`/api/wishlist`, null, {
+                    params: { eventId },            // ★ body 말고 params!
+                    headers: authHeaders(),
+                });
+            }
+        } catch (e) {
+            console.error("찜 토글 실패:", e);
+            // 실패 시 롤백
+            setLikedEvents(prev => {
+                const next = new Set(prev);
+                if (wasLiked) {
+                    next.add(eventId);
+                } else {
+                    next.delete(eventId);
+                }
+                return next;
+            });
+            // 필요하면 안내
+            // alert("로그인이 필요하거나 권한이 부족합니다.");
+        }
+    };
 
     const mapMainCategoryToId = (name: string): number | undefined => {
         switch (name) {
@@ -87,27 +142,21 @@ export const Main: React.FC = () => {
                 params.mainCategoryId = mapMainCategoryToId(selectedCategory);
             }
 
-            if (selectedRegion !== "모든지역") {
-                params.regionName = selectedRegion;
-            }
 
-            if (startDate) {
-                params.fromDate = formatDate(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
-            }
-            if (endDate) {
-                params.toDate = formatDate(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0));
-            }
 
             const response = await eventAPI.getEventList(params);
             setEvents(response.events ?? []);
         } catch (error) {
             console.error("행사 필터링 실패:", error);
+            // 오류 발생 시 빈 배열로 설정하여 UI가 깨지지 않도록 함
+            setEvents([]);
         }
     };
 
     useEffect(() => {
         fetchEvents();
-    }, [selectedCategory, selectedRegion, startDate, endDate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCategory]);
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
@@ -161,8 +210,8 @@ export const Main: React.FC = () => {
                 {
                     id: 4,
                     title: "Event 4",
-                    imageUrl: "/images/NoImage.png",
-                    thumbnailUrl: "/images/NoImage.png",
+                    imageUrl: "/images/therose2.png",
+                    thumbnailUrl: "/images/therose1.png",
                     linkUrl: "/event/4",
                     startDate: "2025-08-10",
                     endDate: "2025-08-10",
@@ -172,8 +221,8 @@ export const Main: React.FC = () => {
                 {
                     id: 5,
                     title: "Event 5",
-                    imageUrl: "/images/NoImage.png",
-                    thumbnailUrl: "/images/NoImage.png",
+                    imageUrl: "/images/eaj2.jpg",
+                    thumbnailUrl: "/images/eaj1.jpg",
                     linkUrl: "/event/5",
                     startDate: "2025-09-05",
                     endDate: "2025-09-05",
@@ -183,8 +232,8 @@ export const Main: React.FC = () => {
                 {
                     id: 6,
                     title: "Event 6",
-                    imageUrl: "/images/NoImage.png",
-                    thumbnailUrl: "/images/NoImage.png",
+                    imageUrl: "/images/cyber2.png",
+                    thumbnailUrl: "/images/cyber.png",
                     linkUrl: "/event/6",
                     startDate: "2025-10-15",
                     endDate: "2025-10-15",
@@ -204,6 +253,26 @@ export const Main: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        (async () => {
+            // 로그인한 사용자만 위시리스트 로드
+            if (!isAuthenticated()) {
+                return;
+            }
+
+            try {
+                const res = await api.get("/api/wishlist", { headers: authHeaders() });
+                const s = new Set<number>();
+                type WishlistItem = { eventId: number };
+                (res.data as WishlistItem[] | undefined)?.forEach((w) => s.add(w.eventId));
+                setLikedEvents(s);
+            } catch (e: unknown) {
+                console.error("위시리스트 로드 실패:", e);
+            }
+        })();
+    }, []);
+
+
     // 데이터 로드
     useEffect(() => {
         const loadData = async () => {
@@ -220,6 +289,8 @@ export const Main: React.FC = () => {
                 // setHotPicks(hotPicksData);
             } catch (error) {
                 console.error('데이터 로드 실패:', error);
+                // 오류 발생 시 빈 상태로 설정하여 UI가 깨지지 않도록 함
+                setEvents([]);
             } finally {
                 setLoading(false);
             }
@@ -240,17 +311,11 @@ export const Main: React.FC = () => {
     // };
 
 
-    // Hot Picks 슬라이드 함수들
-    const handleHotPicksPrev = () => {
-        setHotPicksSlideIndex(prev => Math.max(0, prev - 1));
-    };
-
-    const handleHotPicksNext = () => {
-        setHotPicksSlideIndex(prev => Math.min(5, prev + 1)); // 최대 5 (10개 이벤트, 5개씩 표시)
-    };
+    // Hot Picks는 Swiper로 전환하여 수동 인덱스 제어 제거
 
     // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
-    const [hotPicks, setHotPicks] = useState<HotPick[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
+    const [hotPicks] = useState<HotPick[]>([]);
+    const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
 
     // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
     const tempHotPicks: HotPick[] = [
@@ -268,71 +333,71 @@ export const Main: React.FC = () => {
             date: "2025.06.15",
             location: "인천문학경기장",
             category: "공연",
-            image: "/images/YE1.png",
+            image: "/images/YE3.png",
         },
         {
             id: 3,
-            title: "2025 AI & 로봇 박람회",
-            date: "2025-08-15 ~ 2025-08-17",
-            location: "코엑스 A홀",
+            title: "서울 티 페스티벌 2025",
+            date: "2025-10-05 ~ 2025-10-07",
+            location: "코엑스 C홀",
             category: "박람회",
-            image: "/images/NoImage.png",
+            image: "/images/tea.png",
         },
         {
             id: 4,
-            title: "현대미술 특별전",
-            date: "2025-09-05 ~ 2025-09-30",
-            location: "국립현대미술관",
-            category: "전시/행사",
-            image: "/images/NoImage.png",
+            title: "사이버 보안 컨퍼런스 2025",
+            date: "2025-09-10 ~ 2025-09-12",
+            location: "코엑스 D홀",
+            category: "강연/세미나",
+            image: "/images/cyber.png",
         },
         {
             id: 5,
-            title: "서울 국제 도서전",
-            date: "2025-08-22 ~ 2025-08-25",
-            location: "코엑스 B홀",
-            category: "박람회",
-            image: "/images/NoImage.png",
+            title: "THE ROSE 2025 LIVE IN SEOUL",
+            date: "2025.09.20",
+            location: "KSPO DOME",
+            category: "공연",
+            image: "/images/therose1.png",
         },
         {
             id: 6,
-            title: "블랙핑크 월드투어",
-            date: "2025-09-01 ~ 2025-09-03",
-            location: "고척스카이돔",
+            title: "eaJ LIVE IN SEOUL",
+            date: "2025.09.25",
+            location: "YES24 라이브홀",
             category: "공연",
-            image: "/images/NoImage.png",
+            image: "/images/eaj1.jpg",
         },
         {
             id: 7,
-            title: "스타트업 투자 세미나",
-            date: "2025-08-15",
-            location: "강남구 컨벤션센터",
-            category: "강연/세미나",
-            image: "/images/NoImage.png",
+            title: "COEX 아트페어 2025",
+            date: "2025-10-01 ~ 2025-10-05",
+            location: "COEX 컨벤션홀",
+            category: "전시/행사",
+            image: "/images/coex.png",
         },
         {
             id: 8,
-            title: "디자인 페어 서울",
-            date: "2025-09-10 ~ 2025-09-15",
-            location: "예술의전당",
-            category: "전시/행사",
-            image: "/images/NoImage.png",
+            title: "케이펫페어 2025",
+            date: "2025-11-08 ~ 2025-11-10",
+            location: "킨텍스 제1전시장",
+            category: "박람회",
+            image: "/images/pet.jpg",
         },
         {
             id: 9,
-            title: "서울 국제 영화제",
-            date: "2025-09-05 ~ 2025-09-15",
-            location: "여의도 한강공원",
-            category: "축제",
-            image: "/images/NoImage.png",
+            title: "2025 JOYURI FAN-CON",
+            date: "추후 공개",
+            location: "추후 공개",
+            category: "공연",
+            image: "/images/joyuri.jpg",
         },
         {
             id: 10,
-            title: "서울 라이트 페스티벌",
-            date: "2025-09-20 ~ 2025-09-25",
-            location: "남산타워",
-            category: "축제",
-            image: "/images/NoImage.png",
+            title: "IU HEREH WORLD TOUR CONCERT",
+            date: "추후 공개",
+            location: "추후 공개",
+            category: "공연",
+            image: "/images/iu.jpg",
         },
     ];
 
@@ -361,10 +426,10 @@ export const Main: React.FC = () => {
                     className="w-full h-full"
                     onSwiper={(swiper) => {
                         // Swiper 인스턴스를 저장
-                        (window as any).heroSwiper = swiper;
+                        (window as unknown as Window).heroSwiper = swiper;
                     }}
                 >
-                    {paidAdvertisements.map((ad, index) => (
+                    {paidAdvertisements.map((ad) => (
                         <SwiperSlide key={ad.id}>
                             <img
                                 src={ad.imageUrl}
@@ -385,7 +450,7 @@ export const Main: React.FC = () => {
                             key={ad.id}
                             className="w-16 h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
                             onMouseEnter={() => {
-                                const swiper = (window as any).heroSwiper;
+                                const swiper = (window as unknown as Window).heroSwiper;
                                 if (swiper) {
                                     swiper.slideTo(index);
                                 }
@@ -401,55 +466,72 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* Hot Picks 섹션 */}
-            <div className="bg-[#f7fafc] py-16">
+            {/* 핫픽스 섹션 (3D 커버플로우) */}
+            <div className="py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">Hot Picks</h2>
-                        <div className="flex space-x-2">
-                            <button
-                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                onClick={handleHotPicksPrev}
-                                disabled={hotPicksSlideIndex === 0}
-                            >
-                                <FaChevronLeft className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <button
-                                className={`w-12 h-12 border border-neutral-200 rounded hover:bg-gray-50 flex items-center justify-center ${hotPicksSlideIndex === 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                onClick={handleHotPicksNext}
-                                disabled={hotPicksSlideIndex === 5}
-                            >
-                                <FaChevronRight className="w-5 h-5 text-gray-600" />
-                            </button>
-                        </div>
+                        <h2 className="text-3xl font-bold text-black">HOT PICKS</h2>
                     </div>
 
-                    <div className="overflow-hidden">
-                        <div
-                            className="flex gap-6 transition-transform duration-500 ease-in-out"
-                            style={{ transform: `translateX(-${hotPicksSlideIndex * 20}%)` }}
-                        >
-                            {allHotPicks.map((item, index) => (
-                                <div key={item.id} className="relative flex-shrink-0"
-                                    style={{ width: 'calc(20% - 24px)' }}>
+                    <Swiper
+                        modules={[Navigation, Autoplay, EffectCoverflow]}
+                        navigation
+                        effect="coverflow"
+                        coverflowEffect={{ rotate: 0, stretch: -30, depth: 220, modifier: 1, slideShadows: false }}
+                        slidesPerView="auto"
+                        centeredSlides={true}
+                        loop={true}
+                        spaceBetween={0}
+                        watchSlidesProgress={true}
+                        speed={900}
+                        autoplay={{ delay: 3500, disableOnInteraction: false }}
+                        className="w-full hotpick-swiper"
+                        onSwiper={(swiper) => {
+                            setActiveHotPickIndex(swiper.realIndex % allHotPicks.length);
+                        }}
+                        onSlideChange={(swiper) => {
+                            setActiveHotPickIndex(swiper.realIndex % allHotPicks.length);
+                        }}
+                    >
+                        {allHotPicks.map((item, index) => (
+                            <SwiperSlide key={item.id} className="hotpick-slide">
+                                <div className="group relative w-full rounded-[10px] overflow-hidden">
                                     <img
-                                        className="w-full h-64 object-cover rounded-[10px]"
-                                        alt={`Hot Pick ${index + 1}`}
                                         src={item.image}
+                                        alt={`Hot Pick ${index + 1}`}
+                                        className="w-full aspect-poster-4-5 object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
                                     />
-                                    <div className="mt-4 text-left">
-                                        <span
-                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
-                                            {item.category}
-                                        </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{item.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
-                                            <div className="font-bold">{item.location}</div>
-                                            <div>{item.date}</div>
-                                        </div>
-                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                 </div>
-                            ))}
+                            </SwiperSlide>
+                        ))}
+                    </Swiper>
+
+                    {/* 중앙 캡션 (블루스퀘어 스타일) */}
+                    <div className="mt-6 text-center">
+                        <div
+                            key={activeHotPickIndex}
+                            className="text-[28px] font-extrabold text-black leading-tight truncate anim-fadeInUp"
+                        >
+                            {allHotPicks[activeHotPickIndex]?.title}
+                        </div>
+                        <div
+                            key={`meta-${activeHotPickIndex}`}
+                            className="mt-2 space-y-1 anim-fadeInUp"
+                        >
+                            <div className="text-sm text-gray-700 flex items-center justify-center gap-2">
+                                <HiOutlineCalendar className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate">
+                                    {(allHotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
+                                </span>
+                            </div>
+                            <div className="text-sm text-gray-700 flex items-center justify-center gap-2">
+                                <FaMapMarkerAlt className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate">
+                                    {allHotPicks[activeHotPickIndex]?.location}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -459,218 +541,7 @@ export const Main: React.FC = () => {
             <div className="py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">행사</h2>
-                        <div className="flex items-center space-x-4">
-                            <div className="relative">
-                                <button
-                                    className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0"
-                                    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                                >
-                                    <HiOutlineCalendar className="w-6 h-6 text-gray-600" />
-                                    <span className="text-lg text-black">{selectedDateRange}</span>
-                                    <FaChevronDown
-                                        className={`w-4 h-4 text-gray-600 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {/* 날짜 선택 드롭다운 */}
-                                {isDatePickerOpen && (
-                                    <div
-                                        className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
-                                        {/* 년도 선택 */}
-                                        <div className="mb-4">
-                                            <h3 className="text-sm font-medium text-gray-700 mb-2">년도 선택</h3>
-                                            <div className="flex items-center justify-center space-x-4">
-                                                <button
-                                                    className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
-                                                    onClick={() => {
-                                                        const newYear = selectedYear - 1;
-                                                        if (newYear >= 2024) {
-                                                            setSelectedYear(newYear);
-                                                            // 년도만 변경하고 기존 선택된 날짜는 유지
-                                                            // 범위 텍스트는 기존 선택된 날짜를 기반으로 업데이트
-                                                            if (startDate && endDate) {
-                                                                const startYear = startDate.getFullYear();
-                                                                const startMonth = startDate.getMonth() + 1;
-                                                                const endYear = endDate.getFullYear();
-                                                                const endMonth = endDate.getMonth() + 1;
-
-                                                                if (startYear === endYear && startMonth === endMonth) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
-                                                                } else if (startYear === endYear) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
-                                                                } else {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
-                                                                }
-                                                            } else {
-                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
-                                                            }
-                                                        }
-                                                    }}
-                                                    disabled={selectedYear <= 2024}
-                                                >
-                                                    &lt;
-                                                </button>
-                                                <span className="text-lg font-medium text-black">{selectedYear}</span>
-                                                <button
-                                                    className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
-                                                    onClick={() => {
-                                                        const newYear = selectedYear + 1;
-                                                        if (newYear <= 2028) {
-                                                            setSelectedYear(newYear);
-                                                            // 년도만 변경하고 기존 선택된 날짜는 유지
-                                                            // 범위 텍스트는 기존 선택된 날짜를 기반으로 업데이트
-                                                            if (startDate && endDate) {
-                                                                const startYear = startDate.getFullYear();
-                                                                const startMonth = startDate.getMonth() + 1;
-                                                                const endYear = endDate.getFullYear();
-                                                                const endMonth = endDate.getMonth() + 1;
-
-                                                                if (startYear === endYear && startMonth === endMonth) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
-                                                                } else if (startYear === endYear) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
-                                                                } else {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
-                                                                }
-                                                            } else {
-                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
-                                                            }
-                                                        }
-                                                    }}
-                                                    disabled={selectedYear >= 2028}
-                                                >
-                                                    &gt;
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* 월 선택 */}
-                                        <div className="mb-4">
-                                            <h3 className="text-sm font-medium text-gray-700 mb-2">월 선택</h3>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {Array.from({ length: 12 }, (_, i) => {
-                                                    const monthDate = new Date(selectedYear, i, 1);
-                                                    const isSelected = (startDate && startDate.getFullYear() === selectedYear && startDate.getMonth() === i) ||
-                                                        (endDate && endDate.getFullYear() === selectedYear && endDate.getMonth() === i);
-                                                    return (
-                                                        <button
-                                                            key={i}
-                                                            className={`px-3 py-2 text-sm rounded ${isSelected
-                                                                ? 'bg-black text-white'
-                                                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-                                                            onClick={() => {
-                                                                setCurrentMonth(monthDate);
-
-                                                                // 월 선택 시 범위 설정
-                                                                if (!startDate) {
-                                                                    // 첫 번째 선택 (시작월)
-                                                                    setStartDate(new Date(selectedYear, i, 1));
-                                                                } else if (!endDate) {
-                                                                    // 두 번째 선택 (종료월)
-                                                                    const startYear = startDate.getFullYear();
-                                                                    const startMonth = startDate.getMonth();
-                                                                    const endYear = selectedYear;
-                                                                    const endMonth = i;
-
-                                                                    // 년도가 다르거나 같은 년도에서 종료월이 시작월보다 크거나 같은 경우
-                                                                    if (endYear > startYear || (endYear === startYear && endMonth >= startMonth)) {
-                                                                        setEndDate(new Date(endYear, endMonth, 1));
-
-                                                                        // 범위 텍스트 업데이트
-                                                                        const startMonthNum = startMonth + 1;
-                                                                        const endMonthNum = endMonth + 1;
-                                                                        if (startYear === endYear && startMonthNum === endMonthNum) {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월`);
-                                                                        } else if (startYear === endYear) {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endMonthNum}월`);
-                                                                        } else {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endYear}년 ${endMonthNum}월`);
-                                                                        }
-                                                                        setIsDatePickerOpen(false);
-                                                                    } else {
-                                                                        // 종료월이 시작월보다 이전인 경우 시작월로 재설정
-                                                                        setStartDate(new Date(selectedYear, i, 1));
-                                                                        setEndDate(null);
-                                                                    }
-                                                                } else {
-                                                                    // 이미 범위가 설정된 경우 새로운 시작월로 설정
-                                                                    setStartDate(new Date(selectedYear, i, 1));
-                                                                    setEndDate(null);
-                                                                }
-                                                            }}
-                                                        >
-                                                            {i + 1}월
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* 선택된 범위 표시 */}
-                                        <div className="mb-4 p-3 bg-gray-50 rounded">
-                                            <div className="text-sm text-gray-600 mb-1">선택된 범위</div>
-                                            <div className="text-sm font-medium">
-                                                {startDate ? `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월 ${startDate.getDate()}일` : '시작일 미선택'} ~
-                                                {endDate ? `${endDate.getFullYear()}년 ${endDate.getMonth() + 1}월 ${endDate.getDate()}일` : '종료일 미선택'}
-                                            </div>
-                                        </div>
-
-                                        {/* 월 선택만 표시 */}
-                                        <div className="mb-4">
-                                            <div className="text-center">
-                                                <span className="font-medium text-sm">
-                                                    {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* 범위 초기화 버튼 */}
-                                        <div className="flex justify-end">
-                                            <button
-                                                className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
-                                                onClick={() => {
-                                                    setStartDate(null);
-                                                    setEndDate(null);
-                                                    setSelectedYear(2025);
-                                                    setSelectedDateRange("2025년 7월 ~ 8월");
-                                                }}
-                                            >
-                                                초기화
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="relative">
-                                <button
-                                    className="flex items-center justify-between w-32 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
-                                    onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
-                                >
-                                    <span className="text-sm truncate">{selectedRegion}</span>
-                                    <FaChevronDown
-                                        className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {/* 드롭다운 메뉴 */}
-                                {isRegionDropdownOpen && (
-                                    <div
-                                        className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                                        {["모든지역", "서울", "경기", "인천", "강원", "부산", "경남", "대구", "경북", "대전", "충남", "충북", "광주", "전북", "전남", "제주", "울산", "해외"].map((region) => (
-                                            <button
-                                                key={region}
-                                                className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedRegion === region ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
-                                                onClick={() => {
-                                                    setSelectedRegion(region);
-                                                    setIsRegionDropdownOpen(false);
-                                                }}
-                                            >
-                                                {region}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <h2 className="text-3xl font-bold text-black">EVENTS</h2>
                     </div>
 
                     {/* 필터 버튼들 */}
@@ -690,30 +561,23 @@ export const Main: React.FC = () => {
                     </div>
 
                     {/* 행사 카드들 */}
-                    <div className="grid grid-cols-5 gap-6">
+                    <div className="grid grid-cols-4 gap-6">
                         {events.map((event) => (
                             <div key={event.id} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
-                                    <div className="relative">
+                                    <div className="relative group">
                                         <img
-                                            className="w-full h-64 object-cover rounded-[10px]"
+                                            className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}
                                             src={event.thumbnailUrl}
                                         />
+                                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                                         <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                setLikedEvents(prev => {
-                                                    const newSet = new Set(prev);
-                                                    if (newSet.has(event.id)) {
-                                                        newSet.delete(event.id);
-                                                    } else {
-                                                        newSet.add(event.id);
-                                                    }
-                                                    return newSet;
-                                                });
+                                                toggleWish(event.id);
                                             }}
                                         />
 

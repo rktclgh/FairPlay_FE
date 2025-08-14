@@ -2,24 +2,49 @@ import {
     Calendar,
     ChevronDown,
     List,
+    Map as MapIcon,
 } from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate, useLocation } from "react-router-dom";
+import axios from "axios"; 
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
 import { eventAPI } from "../../services/event"
 import type { EventSummaryDto } from "../../services/types/eventType";
+import api from "../../api/axios";
+import type { WishlistResponseDto } from "../../services/types/wishlist";
+import { loadKakaoMap } from "../../lib/loadKakaoMap";
+import EventMapPin from "../../components/EventMapPin";
+
+const authHeaders = () => {
+    const t = localStorage.getItem("accessToken");
+    return t ? { Authorization: `Bearer ${t}` } : {};
+};
+
+const isAuthed = () => !!localStorage.getItem("accessToken");
+
+// 캘린더 api 데이터 함수
+type CalendarGroupedDto = { date: string; titles: string[] };
+
+const fetchCalendarGrouped = (year: number, month: number) =>
+    api.get<CalendarGroupedDto[]>("/api/calendar/events/grouped", {
+        params: { year, month },
+        headers: authHeaders(),
+    });
+
+
 
 export default function EventOverview() {
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
-    const [viewMode, setViewMode] = React.useState("list"); // "list" or "calendar"
+    const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
     const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
+
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
         try {
             // localStorage에서 좋아요 상태 불러오기
@@ -30,6 +55,8 @@ export default function EventOverview() {
             return new Set();
         }
     });
+    const [pending, setPending] = React.useState<Set<number>>(new Set());
+
     const [selectedDateRange, setSelectedDateRange] = React.useState(() => {
         const now = new Date();
         const currentYear = now.getFullYear();
@@ -48,31 +75,145 @@ export default function EventOverview() {
     const [startDate, setStartDate] = React.useState<Date | null>(null);
     const [endDate, setEndDate] = React.useState<Date | null>(null);
     const [selectedYear, setSelectedYear] = React.useState(2025);
+
+    // 캘린더 현재 연/월
     const [calendarYear, setCalendarYear] = React.useState(new Date().getFullYear());
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
     const navigate = useNavigate();
 
-    // 좋아요 토글 함수
-    const toggleLike = (eventId: number) => {
-        setLikedEvents(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(eventId)) {
-                newSet.delete(eventId);
-            } else {
-                newSet.add(eventId);
-            }
-            return newSet;
-        });
-    };
+    // 지도 관련 상태
+    const [map, setMap] = React.useState<any>(null);
+    const [selectedEvent, setSelectedEvent] = React.useState<EventSummaryDto | null>(null);
+    const mapRef = React.useRef<HTMLDivElement>(null);
+    const markersRef = React.useRef<any[]>([]);
 
-    // 좋아요 상태가 변경될 때마다 localStorage에 저장
+
+    const location = useLocation();
+
+    // 좋아요 토글 함수
+    const toggleWish = async (eventId: number) => {
+            // 인증 확인
+             if (!isAuthed()) {
+        alert("로그인 후 이용할 수 있습니다.");
+        navigate("/login", { state: { from: location.pathname } }); // 로그인 후 돌아올 수 있게
+        return;
+    }
+    
+            const wasLiked = likedEvents.has(eventId);
+    
+            // 낙관적 업데이트
+            setLikedEvents(prev => {
+                const next = new Set(prev);
+                if (wasLiked) {
+                    next.delete(eventId);
+                } else {
+                    next.add(eventId);
+                }
+                return next;
+            });
+    
+            try {
+                if (wasLiked) {
+                    // 찜 취소
+                    await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+                } else {
+                    // 찜 등록 (@RequestParam Long eventId)
+                    await api.post(`/api/wishlist`, null, {
+                        params: { eventId },            
+                        headers: authHeaders(),
+                    });
+                }
+            } catch (e) {
+                console.error("찜 토글 실패:", e);
+                // 실패 시 롤백
+                setLikedEvents(prev => {
+                    const next = new Set(prev);
+                    if (wasLiked) {
+                        next.add(eventId);
+                    } else {
+                        next.delete(eventId);
+                    }
+                    return next;
+                });
+                
+            }
+        };
+    
+
+    // 초기 위시리스트 로드 
     React.useEffect(() => {
-        try {
-            localStorage.setItem('likedEvents', JSON.stringify(Array.from(likedEvents)));
-        } catch (error) {
-            console.error('localStorage 저장 오류:', error);
-        }
-    }, [likedEvents]);
+  if (!isAuthed()) return; 
+
+  (async () => {
+    try {
+      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+        headers: authHeaders(),
+      });
+      const s = new Set<number>();
+      (data ?? []).forEach(w => s.add(w.eventId));
+      setLikedEvents(s);
+    } catch (e) {
+      console.error("위시리스트 로드 실패:", e);
+    }
+  })();
+}, []);
+
+    // 캘린더 데이터 상태
+    const [calendarData, setCalendarData] = React.useState<Map<string, string[]>>(new Map());
+    const [calendarLoading, setCalendarLoading] = React.useState(false);
+    const [calendarError, setCalendarError] = React.useState<string | null>(null);
+
+
+    // 캘린더 데이터 fetch (뷰/월 변경 시)
+    React.useEffect(() => {
+        //  비로그인: API 호출하지 않음
+  if (!isAuthed()) {
+    setCalendarLoading(false);
+    setCalendarError(null);
+    setCalendarData(new Map());
+    return;
+  }
+        (async () => {
+    setCalendarLoading(true);
+    setCalendarError(null);
+    try {
+      const { data } = await fetchCalendarGrouped(calendarYear, calendarMonth);
+      const map = new Map<string, string[]>();
+      data.forEach((d) => map.set(d.date, d.titles));
+      setCalendarData(map);
+    } catch (e: unknown) {
+        const st = axios.isAxiosError(e) ? e.response?.status : undefined;
+      if (st !== 401 && st !== 403) {
+        console.error(e);
+        setCalendarError(
+          e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
+        );
+      }
+    } finally {
+      setCalendarLoading(false);
+    }
+  })();
+    }, [viewMode, calendarYear, calendarMonth]);
+
+    // 헬퍼
+    const formatDate = React.useCallback((date: Date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+    }, []);
+
+    const daysInMonth = React.useMemo(() => {
+        return new Date(calendarYear, calendarMonth, 0).getDate(); // month: 1~12
+    }, [calendarYear, calendarMonth]);
+
+    const firstWeekdayOffset = React.useMemo(() => {
+        return new Date(calendarYear, calendarMonth - 1, 1).getDay(); // 0=일 ~ 6=토
+    }, [calendarYear, calendarMonth]);
+
+    const keyOf = React.useCallback((y: number, m: number, d: number) => {
+        return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }, []);
 
     // 달력 네비게이션 함수들
     const handlePrevMonth = () => {
@@ -108,8 +249,6 @@ export default function EventOverview() {
             setSelectedDateRange(`${newYear}년 ${newMonth}월`);
         }
     };
-
-    const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
     const mapMainCategoryToId = (name: string): number | undefined => {
         switch (name) {
@@ -393,6 +532,248 @@ export default function EventOverview() {
         return isEventInDateRange(event.startDate, event.endDate);
     });
 
+    // 지도 초기화 함수
+    const initializeMap = React.useCallback(() => {
+        if (!mapRef.current || !window.kakao || !window.kakao.maps) return;
+
+        const mapOption = {
+            center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울 중심좌표
+            level: 8,
+            mapTypeId: window.kakao.maps.MapTypeId.ROADMAP
+        };
+
+        const mapInstance = new window.kakao.maps.Map(mapRef.current, mapOption);
+        setMap(mapInstance);
+
+        // 지도 타입 컨트롤 추가
+        const mapTypeControl = new window.kakao.maps.MapTypeControl();
+        mapInstance.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
+
+        // 줌 컨트롤 추가
+        const zoomControl = new window.kakao.maps.ZoomControl();
+        mapInstance.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
+
+        return mapInstance;
+    }, []);
+
+    // 호버 카드 상태
+    const [hoveredEvent, setHoveredEvent] = React.useState<EventSummaryDto | null>(null);
+    const [hoverCardPosition, setHoverCardPosition] = React.useState<{ x: number; y: number } | null>(null);
+
+    // 마커 생성 함수
+    const createMarkers = React.useCallback((mapInstance: any, events: EventSummaryDto[]) => {
+        // Kakao Map API 확인
+        if (!window.kakao || !window.kakao.maps) {
+            console.error('Kakao Map API not loaded');
+            return;
+        }
+
+        // 기존 마커 제거
+        markersRef.current.forEach(overlay => {
+            if (overlay && overlay.setMap) {
+                overlay.setMap(null);
+            }
+        });
+
+        const newOverlays: any[] = [];
+        const bounds = new window.kakao.maps.LatLngBounds();
+
+        if (events.length === 0) {
+            markersRef.current = [];
+            return;
+        }
+
+        // 이모지 색상 변경을 위한 hue rotation
+        const getHueRotation = (category: string) => {
+            switch (category) {
+                case "박람회": return 210; // blue
+                case "공연": return 0; // red (default)
+                case "강연/세미나": return 120; // green
+                case "전시/행사": return 45; // yellow
+                case "축제": return 270; // purple
+                default: return 0;
+            }
+        };
+
+        events.forEach((event) => {
+            // 위도/경도가 유효한 경우에만 마커 생성
+            if (event.latitude && event.longitude && !isNaN(event.latitude) && !isNaN(event.longitude)) {
+                const coords = new window.kakao.maps.LatLng(event.latitude, event.longitude);
+
+                // 커스텀 오버레이만 사용 (기본 마커는 생성하지 않음)
+                const overlayContent = document.createElement('div');
+                overlayContent.className = 'map-pin-overlay';
+                overlayContent.style.cssText = `
+                    position: relative;
+                    width: 50px;
+                    height: 50px;
+                    cursor: pointer;
+                    z-index: 1000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 36px;
+                    line-height: 1;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    filter: hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+                    transition: all 0.3s ease;
+                    pointer-events: auto;
+                `;
+                overlayContent.innerHTML = '📍';
+                overlayContent.setAttribute('data-event-id', event.id.toString());
+
+                const customOverlay = new window.kakao.maps.CustomOverlay({
+                    content: overlayContent,
+                    position: coords,
+                    yAnchor: 1,
+                    zIndex: 1000
+                });
+
+                customOverlay.setMap(mapInstance);
+                newOverlays.push(customOverlay);
+                bounds.extend(coords);
+
+                // 호버 이벤트 핸들러들 (카드 위치 고정)
+                const handleMouseEnter = (e: MouseEvent) => {
+                    // 마커 애니메이션
+                    overlayContent.style.transform = 'scale(1.2) translateY(-5px)';
+                    overlayContent.style.filter = `hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 4px 8px rgba(0,0,0,0.5))`;
+
+                    // 호버 카드 표시
+                    setHoveredEvent(event);
+
+                    // 카드 위치를 마커 기준으로 고정 (지도 좌표계 사용)
+                    const mapContainer = mapRef.current;
+                    if (mapContainer && mapInstance) {
+                        const rect = mapContainer.getBoundingClientRect();
+                        const cardWidth = 250;
+                        const cardHeight = 350;
+
+                        // 지도에서 마커의 화면 좌표 계산
+                        const projection = mapInstance.getProjection();
+                        const markerPoint = projection.pointFromCoords(coords);
+
+                        // 마커 중심을 기준으로 카드 위치 설정 (고정)
+                        let x = markerPoint.x - cardWidth / 2;
+                        let y = markerPoint.y - cardHeight - 60; // 마커 위쪽에 카드
+
+                        // 화면 경계 체크
+                        if (x < 10) {
+                            x = 10;
+                        } else if (x + cardWidth > rect.width - 10) {
+                            x = rect.width - cardWidth - 10;
+                        }
+
+                        if (y < 10) {
+                            y = markerPoint.y + 40; // 마커 아래쪽에 표시
+                        }
+
+                        setHoverCardPosition({ x, y });
+                    }
+                };
+
+                const handleMouseLeave = () => {
+                    // 마커 원래 상태로 복원
+                    overlayContent.style.transform = 'scale(1) translateY(0)';
+                    overlayContent.style.filter = `hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3))`;
+
+                    // 호버 카드 즈시 숨기기 (지연 시간 최소화)
+                    setTimeout(() => {
+                        setHoveredEvent(null);
+                        setHoverCardPosition(null);
+                    }, 50);
+                };
+
+                const handleClick = () => {
+                    navigate(`/eventdetail/${event.id}`);
+                };
+
+                // 이벤트 리스너 추가 (마우스 움직임 이벤트 제거)
+                overlayContent.addEventListener('mouseenter', handleMouseEnter);
+                overlayContent.addEventListener('mouseleave', handleMouseLeave);
+                overlayContent.addEventListener('click', handleClick);
+            }
+        });
+
+        markersRef.current = newOverlays;
+
+        // 최초 로드시에만 지도 범위 조정 (호버시 자동 주맄 방지)
+        if (newOverlays.length > 0 && markersRef.current.length === 0) {
+            mapInstance.setBounds(bounds);
+        }
+    }, [navigate]);
+
+    // 지도 뷰 활성화 시 지도 초기화
+    React.useEffect(() => {
+        if (viewMode === "map") {
+            loadKakaoMap(() => {
+                const mapInstance = initializeMap();
+                if (mapInstance && filteredEvents.length > 0) {
+                    // 약간의 지연을 두고 마커 생성 (지도가 완전히 로드된 후)
+                    setTimeout(() => {
+                        createMarkers(mapInstance, filteredEvents);
+                    }, 100);
+                }
+            });
+        }
+    }, [viewMode, initializeMap]);
+
+    // 필터링된 이벤트가 변경될 때 마커 업데이트
+    React.useEffect(() => {
+        if (viewMode === "map" && map) {
+            createMarkers(map, filteredEvents);
+        }
+    }, [filteredEvents, map, viewMode, createMarkers]);
+
+    // 마커 호버 카드 위치 동기화 (지도 이동/줌 시)
+    React.useEffect(() => {
+        if (!map || !hoveredEvent) return;
+
+        const updateCardPosition = () => {
+            if (!hoveredEvent || !map) return; // Double check in case state changed during async call
+
+            const projection = map.getProjection();
+            const coords = new window.kakao.maps.LatLng(hoveredEvent.latitude, hoveredEvent.longitude);
+            const markerPoint = projection.pointFromCoords(coords);
+
+            const mapContainer = mapRef.current;
+            if (mapContainer) {
+                const rect = mapContainer.getBoundingClientRect();
+                const cardWidth = 320;
+                const cardHeight = 320;
+
+                let x = markerPoint.x - cardWidth / 2;
+                let y = markerPoint.y - cardHeight - 60;
+
+                // 화면 경계 체크 (same as in handleMouseEnter)
+                if (x < 10) {
+                    x = 10;
+                } else if (x + cardWidth > rect.width - 10) {
+                    x = rect.width - cardWidth - 10;
+                }
+
+                if (y < 10) {
+                    y = markerPoint.y + 40;
+                }
+
+                setHoverCardPosition({ x, y });
+            }
+        };
+
+        // Add listeners
+        window.kakao.maps.event.addListener(map, 'zoom_changed', updateCardPosition);
+        window.kakao.maps.event.addListener(map, 'center_changed', updateCardPosition);
+
+        // Initial update in case map was already moved before hover
+        updateCardPosition();
+
+        // Cleanup listeners
+        return () => {
+            window.kakao.maps.event.removeListener(map, 'zoom_changed', updateCardPosition);
+            window.kakao.maps.event.removeListener(map, 'center_changed', updateCardPosition);
+        };
+    }, [map, hoveredEvent, mapRef]);
+
     const footerLinks = [
         { name: "이용약관", href: "#" },
         { name: "개인정보처리방침", href: "#" },
@@ -433,7 +814,7 @@ export default function EventOverview() {
 
                     {/* View Toggle and Filters */}
                     <div className="flex justify-between items-center mt-[30px] px-7">
-                        {/* 리스트형/캘린더형 탭 */}
+                        {/* 리스트형/캘린더형/지도형 탭 */}
                         <div className="flex bg-white rounded-full border border-gray-200 p-1 shadow-sm">
                             <button
                                 onClick={() => setViewMode("list")}
@@ -460,6 +841,17 @@ export default function EventOverview() {
                             >
                                 <Calendar className="w-4 h-4" />
                                 <span className="text-sm font-medium">캘린더형</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode("map")}
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "map"
+                                    ? "bg-black text-white"
+                                    : "bg-white text-black hover:bg-gray-50"
+                                    }`}
+                                style={{ outline: 'none', border: 'none' }}
+                            >
+                                <MapIcon className="w-4 h-4" />
+                                <span className="text-sm font-medium">지도형</span>
                             </button>
                         </div>
 
@@ -731,23 +1123,27 @@ export default function EventOverview() {
                     </div>
 
                     {/* Event Grid */}
-                    {viewMode === "list" ? (
-                        <div className="grid grid-cols-5 gap-6 mt-10 px-6">
+                    {viewMode === "list" && (
+                        <div className="grid grid-cols-4 gap-6 mt-10 px-6">
                             {filteredEvents.map((event) => (
                                 <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
-                                    <div className="relative">
+                                    <div className="relative group">
                                         <img
-                                            className="w-full h-64 object-cover rounded-[10px]"
+                                            className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}
                                             src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleLike(event.id);
-                                            }}
+                                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                       <FaHeart
+                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                                onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleWish(event.id);
+                                                                }}
                                         />
+
+
                                     </div>
                                     <div className="mt-4 text-left">
                                         <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
@@ -774,7 +1170,9 @@ export default function EventOverview() {
                                 </div>
                             ))}
                         </div>
-                    ) : (
+                    )}
+
+                    {viewMode === "calendar" && (
                         <div className="mt-10 px-6">
                             {/* 캘린더형 뷰 */}
                             <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -833,8 +1231,8 @@ export default function EventOverview() {
                                             const dayEvents = filteredEvents.filter(event => {
                                                 const eventDate = new Date(event.startDate);
                                                 return eventDate.getFullYear() === calendarYear &&
-                                                       eventDate.getMonth() === calendarMonth - 1 &&
-                                                       eventDate.getDate() === day;
+                                                    eventDate.getMonth() === calendarMonth - 1 &&
+                                                    eventDate.getDate() === day;
                                             });
 
                                             // 현재 달의 요일 계산
@@ -851,18 +1249,23 @@ export default function EventOverview() {
                                                             <div
                                                                 key={event.id}
                                                                 className="text-xs flex items-center space-x-1"
+                                                                
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    navigate(`/eventdetail/${event.id}`);
-                                                                }}
+                                                                        if (!isAuthed()) {
+                                                                            alert("로그인 후 이용할 수 있습니다.");
+                                                                            navigate("/login", { state: { from: location.pathname } });
+                                                                            return;
+                                                                            }
+                                                                        navigate(`/eventdetail/${event.id}`);
+                                                                        }}
                                                             >
-                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                                                    event.mainCategory === "박람회" ? "bg-blue-500" :
+                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.mainCategory === "박람회" ? "bg-blue-500" :
                                                                     event.mainCategory === "공연" ? "bg-red-500" :
-                                                                    event.mainCategory === "강연/세미나" ? "bg-green-500" :
-                                                                    event.mainCategory === "전시/행사" ? "bg-yellow-500" :
-                                                                    event.mainCategory === "축제" ? "bg-gray-500" : "bg-gray-400"
-                                                                }`}></div>
+                                                                        event.mainCategory === "강연/세미나" ? "bg-green-500" :
+                                                                            event.mainCategory === "전시/행사" ? "bg-yellow-500" :
+                                                                                event.mainCategory === "축제" ? "bg-gray-500" : "bg-gray-400"
+                                                                    }`}></div>
                                                                 <span className="truncate text-gray-700">{event.title}</span>
                                                             </div>
                                                         ))}
@@ -877,8 +1280,6 @@ export default function EventOverview() {
 
                                     {/* 다음 달 날짜들 (회색) */}
                                     {(() => {
-                                        const nextMonth = calendarMonth === 12 ? 1 : calendarMonth + 1;
-                                        const nextYear = calendarMonth === 12 ? calendarYear + 1 : calendarYear;
                                         const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
                                         const firstDayOfMonth = new Date(calendarYear, calendarMonth - 1, 1).getDay();
                                         const daysFromPrevMonth = firstDayOfMonth;
@@ -896,6 +1297,148 @@ export default function EventOverview() {
                                     })()}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {viewMode === "map" && (
+                        <div className="mt-10 px-6">
+                            {/* 지도형 뷰 */}
+                            <div className="relative bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ height: '600px' }}>
+                                {/* 지도 컨테이너 */}
+                                <div
+                                    ref={mapRef}
+                                    className="w-full h-full"
+                                />
+
+                                {/* 범례 (카테고리별 색상 안내) */}
+                                <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg border p-3 z-10">
+                                    <div className="text-sm font-medium text-gray-700 mb-2">카테고리</div>
+                                    <div className="space-y-1">
+                                        {[
+                                            { category: "박람회", color: "#3B82F6" },
+                                            { category: "공연", color: "#EF4444" },
+                                            { category: "강연/세미나", color: "#10B981" },
+                                            { category: "전시/행사", color: "#F59E0B" },
+                                            { category: "축제", color: "#8B5CF6" }
+                                        ].map(({ category, color }) => (
+                                            <div key={category} className="flex items-center space-x-2">
+                                                <div
+                                                    className="w-3 h-3 rounded-full border border-white shadow-sm"
+                                                    style={{ backgroundColor: color }}
+                                                />
+                                                <span className="text-xs text-gray-600">{category}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 호버 카드 */}
+                                {hoveredEvent && hoverCardPosition && (
+                                    <div
+                                        className="absolute z-50"
+                                        style={{
+                                            left: `${hoverCardPosition.x}px`,
+                                            top: `${hoverCardPosition.y}px`,
+                                            width: '250px',
+                                            height: '320px',
+                                            pointerEvents: 'auto',
+                                            position: 'absolute'
+                                        }}
+                                        onMouseLeave={() => {
+                                            // 카드에서 마우스가 나가면 즉시 카드 숨기기
+                                            setHoveredEvent(null);
+                                            setHoverCardPosition(null);
+                                        }}
+                                    >
+                                        <div
+                                            className="bg-white rounded-xl shadow-2xl border overflow-hidden transform transition-all duration-200 h-full"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                animation: 'fadeInUp 0.2s ease-out'
+                                            }}
+                                        >
+                                            {/* 카드 배경 그라데이션 오버레이 */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-90"></div>
+
+                                            {/* 카테고리 배지 */}
+                                            <div className="absolute top-3 left-3 z-20">
+                                                <span className="inline-block px-2 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white border-opacity-30">
+                                                    {hoveredEvent.mainCategory}
+                                                </span>
+                                            </div>
+
+                                            <div className="relative z-10 h-full">
+                                                {/* 썸네일 영역 */}
+                                                <div className="relative h-full overflow-hidden">
+                                                    <img
+                                                        src={hoveredEvent.thumbnailUrl || "/images/NoImage.png"}
+                                                        alt={hoveredEvent.title}
+                                                        className="w-full h-full object-cover opacity-80"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+                                                </div>
+
+                                                {/* 카드 콘텐츠 */}
+                                                <div className="absolute bottom-0 left-0 right-0 py-3 px-4 text-white bg-black bg-opacity-70">
+                                                    <h3 className="text-base font-bold mb-2 line-clamp-2 text-white">
+                                                        {hoveredEvent.title}
+                                                    </h3>
+
+                                                    <div className="space-y-1 mb-3">
+                                                        <div className="flex items-center text-sm text-white text-opacity-90">
+                                                            <MapIcon className="w-3 h-3 mr-2 flex-shrink-0" />
+                                                            <span className="truncate">{hoveredEvent.location}</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm text-white text-opacity-90">
+                                                            <Calendar className="w-3 h-3 mr-2 flex-shrink-0" />
+                                                            <span className="text-xs">
+                                                                {hoveredEvent.startDate === hoveredEvent.endDate
+                                                                    ? new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', {
+                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                    }).replace(/\s/g, '')
+                                                                    : `${new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', {
+                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                    }).replace(/\s/g, '')} ~ ${new Date(hoveredEvent.endDate).toLocaleDateString('ko-KR', {
+                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                    }).replace(/\s/g, '')}`
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-sm font-bold text-yellow-200">
+                                                            {hoveredEvent.minPrice == null
+                                                                ? "가격 정보 없음"
+                                                                : hoveredEvent.minPrice === 0
+                                                                    ? "무료"
+                                                                    : `${hoveredEvent.minPrice.toLocaleString()}원 ~`}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => navigate(`/eventdetail/${hoveredEvent.id}`)}
+                                                            className="px-3 py-1.5 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-lg hover:bg-opacity-30 transition-all text-xs font-medium border border-white border-opacity-30 hover:border-opacity-50"
+                                                        >
+                                                            상세보기
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 로딩 상태 */}
+                                {filteredEvents.length === 0 && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20">
+                                        <div className="text-center">
+                                            <MapIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                            <p className="text-gray-500">표시할 행사가 없습니다</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                         </div>
                     )}
 

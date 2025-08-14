@@ -32,7 +32,7 @@ export interface UserInfo {
   phone: string;
   name: string;
   nickname: string;
-  role: string;
+  role: "ADMIN" | "EVENT_MANAGER" | "BOOTH_MANAGER" | "COMMON";
 }
 
 // 알림 정보 타입
@@ -51,6 +51,8 @@ export interface PasswordChangeRequest {
   currentPassword: string;
   newPassword: string;
 }
+
+import authManager from "../utils/auth";
 
 // API 서비스
 class EventApi {
@@ -256,7 +258,6 @@ class EventApi {
           // 실제 백엔드 API 호출 시도
           try {
             console.log("API 호출 시도: /api/users/mypage");
-            console.log("Authorization 헤더:", `Bearer ${accessToken}`);
 
             // 여러 가능한 엔드포인트 시도
             const endpoints = [
@@ -271,13 +272,7 @@ class EventApi {
             for (const endpoint of endpoints) {
               try {
                 console.log(`엔드포인트 시도: ${endpoint}`);
-                response = await fetch(endpoint, {
-                  method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                  },
-                });
+                response = await authManager.authenticatedFetch(endpoint);
 
                 console.log(
                   `${endpoint} 응답 상태:`,
@@ -344,7 +339,7 @@ class EventApi {
                 phone: payload.phone || "010-0000-0000",
                 name: payload.name || "사용자",
                 nickname: payload.name || "사용자",
-                role: payload.role || "USER",
+                role: payload.role || "COMMON",
               };
               console.log("accessToken 기반 사용자 데이터:", userData);
               resolve(userData);
@@ -362,7 +357,7 @@ class EventApi {
               phone: "010-0000-0000",
               name: "사용자",
               nickname: "사용자",
-              role: "USER",
+              role: "COMMON",
             };
             console.log("이메일 기반 사용자 데이터:", userData);
             resolve(userData);
@@ -375,7 +370,7 @@ class EventApi {
               phone: "010-1234-5678",
               name: "페어플레이 사용자",
               nickname: "페어플레이 사용자",
-              role: "USER",
+              role: "COMMON",
             };
             console.log("Mock 사용자 데이터:", mockUserData);
             resolve(mockUserData);
@@ -479,12 +474,8 @@ class EventApi {
     }
 
     try {
-      const response = await fetch("/api/notifications", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response =
+        await authManager.authenticatedFetch("/api/notifications");
 
       if (!response.ok) {
         const errorBody = await response.text();

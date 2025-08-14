@@ -4,9 +4,12 @@ import type {
     EventResponseDto,
     EventDetailRequestDto,
     EventDetailResponseDto,
+    EventDetailModificationRequestDto,
     ExternalLinkRequestDto,
     EventSummaryResponseDto,
-    Page
+    EventApplyRequestDto,
+    EventApplyResponseDto,
+    Page, PageResponse, EventApplyListItem, EventApplyDetail
 } from './types/eventType';
 
 
@@ -58,8 +61,20 @@ export const eventAPI = {
         page?: number;
         size?: number;
     }): Promise<EventSummaryResponseDto> => {
-        const res = await api.get('/api/events', { params });
-        return res.data;
+        try {
+            const res = await api.get('/api/events', { params });
+            return res.data;
+        } catch (error) {
+            console.error('이벤트 목록 로드 실패:', error);
+            // 기본값 반환하여 앱이 깨지지 않도록 함
+            return {
+                events: [],
+                totalPages: 0,
+                totalElements: 0,
+                currentPage: 0,
+                pageSize: params.size || 20
+            };
+        }
     },
 
     /**
@@ -95,6 +110,17 @@ export const eventAPI = {
     },
 
     /**
+     * [CREATE] 행사 상세 정보 수정 요청
+     * @param {string} eventId - 행사 ID
+     * @param {Object} modificationData - EventDetailModificationRequestDto 형식
+     * @returns 생성된 수정 요청 정보
+     */
+    createEventModificationRequest: async (eventId: number, data: EventDetailModificationRequestDto): Promise<any> => {
+        const res = await api.post(`/api/events/${eventId}/modification-request`, data);
+        return res.data;
+    },
+
+    /**
      * [DELETE] 행사 삭제
      * @param {number} eventId - 삭제할 행사 ID
      * @returns 삭제 완료 메시지
@@ -103,4 +129,44 @@ export const eventAPI = {
         const res = await api.delete(`/api/events/${eventId}`);
         return res.data;
     },
+
+    /**
+     * [CREATE] 행사 등록 신청
+     * @param {EventApplyRequestDto} data - 행사 등록 신청 데이터
+     * @returns 행사 등록 신청 응답
+     */
+    submitEventApplication: async (data: EventApplyRequestDto): Promise<EventApplyResponseDto> => {
+        const res = await api.post('/api/events/apply', data);
+        return res.data;
+    },
+
+    /**
+     * [READ] 행사 등록 신청 상태 확인
+     * @param {string} eventEmail - 등록한 이메일
+     * @returns 행사 등록 신청 정보
+     */
+    checkApplicationStatus: async (eventEmail: string): Promise<EventApplyResponseDto> => {
+        const res = await api.get('/api/events/apply/check', {
+            params: { eventEmail }
+        });
+        return res.data;
+    },
+
+    /** 행사 신청 목록 조회 (관리자) */
+    getEventApplications: (params?: { status?: string; page?: number; size?: number }) =>
+        api.get<PageResponse<EventApplyListItem>>("/api/events/applications", { params })
+            .then(res => res.data),
+
+    /** 행사 신청 상세 조회 */
+    getEventApplicationDetail: (id: number) =>
+        api.get<EventApplyDetail>(`/api/events/applications/${id}`).then(res => res.data),
+
+    /** 행사 신청 상태 변경 (승인/반려) */
+    updateEventApplicationStatus: (
+        id: number,
+        payload: { action: "approve" | "reject"; adminComment?: string }
+    ) =>
+        api.put(`/api/events/applications/${id}`, payload).then(res => res.data),
+
+
 };

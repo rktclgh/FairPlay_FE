@@ -2,6 +2,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
+import UserOnlineStatus from "./UserOnlineStatus";
+import { isAuthenticated } from "../../utils/authGuard";
 
 // 채팅방 DTO 타입 정의 (API 응답 형태와 동일하게!)
 type ChatRoomDto = {
@@ -18,7 +20,7 @@ type ChatRoomDto = {
 };
 
 type Props = {
-    onSelect: (roomId: number, eventTitle?: string, userName?: string) => void;
+    onSelect: (roomId: number, eventTitle?: string, userName?: string, otherUserId?: number, isAiChat?: boolean) => void;
 };
 
 export default function ChatRoomList({ onSelect }: Props) {
@@ -28,6 +30,11 @@ export default function ChatRoomList({ onSelect }: Props) {
     const clientRef = useRef<Stomp.Client | null>(null);
 
     const fetchRooms = useCallback(async () => {
+        if (!isAuthenticated()) {
+            setLoading(false);
+            return;
+        }
+
         try {
             // 백엔드에서 사용자 역할에 따라 적절한 채팅방 목록을 모두 반환
             // (복잡한 프론트엔드 역할 체크 로직 제거, 백엔드에서 처리)
@@ -38,31 +45,11 @@ export default function ChatRoomList({ onSelect }: Props) {
             const allRooms = response.data;
             console.log("백엔드에서 반환된 채팅방 수:", allRooms.length);
 
-            // 각 채팅방의 최신 메시지 시간을 가져와서 저장
-            const messageTimesPromises = allRooms.map(async (room: ChatRoomDto) => {
-                try {
-                    const messagesResponse = await axios.get(`/api/chat/messages?chatRoomId=${room.chatRoomId}`, {
-                        headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-                    });
-                    const messages = messagesResponse.data;
-                    return {
-                        roomId: room.chatRoomId,
-                        lastMessageTime: messages.length > 0 ? messages[messages.length - 1].sentAt : room.createdAt
-                    };
-                } catch (error) {
-                    return {
-                        roomId: room.chatRoomId,
-                        lastMessageTime: room.createdAt
-                    };
-                }
-            });
-
-            const messageTimes = await Promise.all(messageTimesPromises);
+            // 채팅방 생성 시간을 기본으로 사용 (메시지 조회하지 않음)
             const messageTimesMap: Record<number, string> = {};
-            messageTimes.forEach(({ roomId, lastMessageTime }) => {
-                messageTimesMap[roomId] = lastMessageTime;
+            allRooms.forEach((room: ChatRoomDto) => {
+                messageTimesMap[room.chatRoomId] = room.createdAt;
             });
-
             setLastMessageTimes(messageTimesMap);
             setRooms(allRooms);
         } catch (error) {
@@ -74,18 +61,23 @@ export default function ChatRoomList({ onSelect }: Props) {
     }, []);
 
     useEffect(() => {
+        if (!isAuthenticated()) {
+            setLoading(false);
+            return;
+        }
+
         fetchRooms();
 
-        // WebSocket 연결로 실시간 업데이트 (SockJS는 http/https 프로토콜 사용)
-        const wsUrl = window.location.hostname === 'localhost'
-            ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat`
-            : `${window.location.protocol}//${window.location.host}/ws/chat`;
-        const sock = new SockJS(wsUrl);
+        // WebSocket 연결로 실시간 업데이트 (SockJS fallback 엔드포인트 사용)
+        const token = localStorage.getItem("accessToken");
+        const sockjsUrl = window.location.hostname === 'localhost'
+            ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat-sockjs`
+            : `${window.location.protocol}//${window.location.host}/ws/chat-sockjs`;
+        const sock = new SockJS(token ? `${sockjsUrl}?token=${token}` : sockjsUrl);
         const stomp = Stomp.over(sock);
         stomp.debug = () => { };
         clientRef.current = stomp;
 
-        const token = localStorage.getItem("accessToken");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         stomp.connect(
@@ -114,6 +106,15 @@ export default function ChatRoomList({ onSelect }: Props) {
         };
     }, [fetchRooms]);
 
+    if (!isAuthenticated()) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 bg-white">
+                <p className="text-center">로그인이 필요한 서비스입니다.</p>
+                <p className="text-sm text-gray-400 mt-2">채팅 기능을 사용하려면 로그인해 주세요.</p>
+            </div>
+        );
+    }
+    
     if (loading) return <div className="flex-1 flex items-center justify-center bg-white text-neutral-500">로딩중...</div>;
     if (!rooms.length) return (
         <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 bg-white">
@@ -147,16 +148,30 @@ export default function ChatRoomList({ onSelect }: Props) {
                 <div
                     key={room.chatRoomId}
                     className="group flex items-center w-full px-4 py-3 border-b hover:bg-neutral-50 cursor-pointer transition-colors bg-white"
-                    onClick={() => onSelect(room.chatRoomId, room.eventTitle, room.userName)}
+                    onClick={() => onSelect(room.chatRoomId, room.eventTitle, room.userName, room.userId, room.targetType === 'AI')}
                 >
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3 shadow-sm">
-                        {getInitials(room.userName)}
+                    <div className="relative mr-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm ${
+                            room.targetType === 'AI' 
+                                ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+                                : 'bg-gradient-to-br from-blue-600 to-indigo-600'
+                        }`}>
+                            {room.targetType === 'AI' ? 'AI' : getInitials(room.userName)}
+                        </div>
+                        {/* 온라인 상태 표시 */}
+                        <div className="absolute -bottom-0.5 -right-0.5">
+                            {room.targetType === 'AI' ? (
+                                <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            ) : (
+                                <UserOnlineStatus userId={room.userId} />
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                             <span className="font-medium text-neutral-900 truncate">
-                                {room.userName || room.eventTitle || "문의"}
+                                {room.targetType === 'AI' ? 'AI 챗봇' : (room.userName || room.eventTitle || "문의")}
                             </span>
                             <div className="flex items-center gap-2">
                                 {(room.unreadCount || 0) > 0 && (
@@ -168,7 +183,7 @@ export default function ChatRoomList({ onSelect }: Props) {
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-neutral-600 truncate">
-                                {room.eventTitle || (room.eventId ? `행사 문의 (${room.eventId})` : "운영자 문의")}
+                                {room.targetType === 'AI' ? '24시간 상담 가능' : (room.eventTitle || (room.eventId ? `행사 문의 (${room.eventId})` : "운영자 문의"))}
                             </span>
                             <span className="text-xs text-neutral-400 ml-2 whitespace-nowrap">
                                 {new Date(room.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}

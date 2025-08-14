@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { toast } from 'react-toastify';
+import { hasHostPermission } from '../../utils/permissions';
 
 const KakaoCallback = () => {
     const location = useLocation();
@@ -27,14 +28,14 @@ const KakaoCallback = () => {
                 localStorage.setItem('refreshToken', refreshToken);
 
                 toast.success('카카오 로그인에 성공했습니다!');
-                
+
                 // accessToken에서 사용자 역할 추출
                 try {
                     const payload = JSON.parse(atob(accessToken.split('.')[1]));
                     const userRole = payload.role;
-                    
-                    // 사용자 역할에 따른 리다이렉션
-                    if (userRole === "HOST") {
+
+                    // 권한별 리다이렉션
+                    if (hasHostPermission(userRole)) {
                         navigate("/host/dashboard");
                     } else {
                         navigate("/");

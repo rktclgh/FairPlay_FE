@@ -1,303 +1,145 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
+import { ticketService, type Ticket, TicketService } from "../../services/ticketService";
+import { TicketFormModal } from "../../components/ticket/TicketFormModal";
+import { toast } from 'react-toastify';
+import authManager from "../../utils/auth";
 
-// 티켓 추가/수정 모달 컴포넌트
-const AddTicketModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    onAddTicket: (ticket: any) => void;
-    onUpdateTicket?: (ticket: any) => void;
-    editTicket?: any;
-    isEditMode?: boolean;
-}> = ({ isOpen, onClose, onAddTicket, onUpdateTicket, editTicket, isEditMode = false }) => {
-    const [formData, setFormData] = useState({
-        ticketName: "",
-        seatGrade: "",
-        ticketType: "",
-        price: "",
-        status: "",
-        limit: ""
-    });
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    // 수정 모드일 때 기존 데이터로 폼 초기화
-    React.useEffect(() => {
-        if (isEditMode && editTicket) {
-            setFormData({
-                ticketName: editTicket.name,
-                seatGrade: editTicket.seatGrade,
-                ticketType: editTicket.type,
-                price: editTicket.price.replace(/[^0-9]/g, ''), // "원" 제거
-                status: editTicket.status,
-                limit: editTicket.limit.replace(/[^0-9]/g, '') // "매" 제거
-            });
-        } else {
-            // 추가 모드일 때 폼 초기화
-            setFormData({
-                ticketName: "",
-                seatGrade: "",
-                ticketType: "",
-                price: "",
-                status: "",
-                limit: ""
-            });
-        }
-    }, [isEditMode, editTicket]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        console.log(isEditMode ? "티켓 수정:" : "새 티켓 추가:", formData);
-
-        const ticketData = {
-            id: isEditMode ? editTicket.id : Date.now(),
-            name: formData.ticketName,
-            seatGrade: formData.seatGrade,
-            type: formData.ticketType,
-            price: `${Number(formData.price).toLocaleString()}원`,
-            limit: `${formData.limit}매`,
-            status: formData.status,
-            statusColor: formData.status === "판매중" ? "bg-green-100" : formData.status === "판매 종료" ? "bg-red-100" : "bg-yellow-100",
-            textColor: formData.status === "판매중" ? "text-green-800" : formData.status === "판매 종료" ? "text-red-800" : "text-yellow-800"
-        };
-
-        if (isEditMode && onUpdateTicket) {
-            onUpdateTicket(ticketData);
-            alert("티켓이 수정되었습니다.");
-        } else {
-            onAddTicket(ticketData);
-            alert("티켓이 추가되었습니다.");
-        }
-
-        onClose();
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-            <div className="bg-white rounded-[10px] shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
-                {/* 모달 헤더 */}
-                <div className="flex items-center justify-center p-6 border-b border-gray-200">
-                    <h2 className="text-xl font-bold text-gray-900">{isEditMode ? "티켓 수정" : "티켓 추가"}</h2>
-                </div>
-
-                {/* 모달 바디 */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-
-                    {/* 티켓명 */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                            티켓명
-                        </label>
-                        <input
-                            type="text"
-                            name="ticketName"
-                            value={formData.ticketName}
-                            onChange={handleInputChange}
-                            placeholder="티켓명을 입력하세요"
-                            className="w-full h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            required
-                        />
-                    </div>
-
-                    {/* 좌석 등급 */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                            좌석 등급
-                        </label>
-                        <div className="relative">
-                            <select
-                                name="seatGrade"
-                                value={formData.seatGrade}
-                                onChange={handleInputChange}
-                                className="w-full h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                required
-                            >
-                                <option value="">좌석 등급을 선택하세요</option>
-                                <option value="VIP석">VIP석</option>
-                                <option value="A석">A석</option>
-                                <option value="B석">B석</option>
-                                <option value="C석">C석</option>
-                                <option value="S석">S석</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 티켓 유형 */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                            티켓 유형
-                        </label>
-                        <div className="relative">
-                            <select
-                                name="ticketType"
-                                value={formData.ticketType}
-                                onChange={handleInputChange}
-                                className="w-full h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                required
-                            >
-                                <option value="">티켓 유형을 선택하세요</option>
-                                <option value="성인">성인</option>
-                                <option value="청소년">청소년</option>
-                                <option value="어린이">어린이</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 가격 */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                            가격
-                        </label>
-                        <input
-                            type="number"
-                            name="price"
-                            value={formData.price}
-                            onChange={handleInputChange}
-                            placeholder="가격을 입력하세요"
-                            min="0"
-                            className="w-full h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            required
-                        />
-                    </div>
-
-                    {/* 상태 */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                            상태
-                        </label>
-                        <div className="relative">
-                            <select
-                                name="status"
-                                value={formData.status}
-                                onChange={handleInputChange}
-                                className="w-full h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                required
-                            >
-                                <option value="">상태를 선택하세요</option>
-                                <option value="판매중">판매중</option>
-                                <option value="판매 종료">판매 종료</option>
-                                <option value="판매 예정">판매 예정</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 1인 제한 수량 */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                            1인 제한 수량
-                        </label>
-                        <input
-                            type="number"
-                            name="limit"
-                            value={formData.limit}
-                            onChange={handleInputChange}
-                            placeholder="제한 수량을 입력하세요"
-                            min="1"
-                            className="w-full h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            required
-                        />
-                    </div>
-
-                    {/* 버튼 영역 */}
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-[10px] text-sm font-medium hover:bg-gray-50 transition-colors"
-                        >
-                            취소
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-black text-white rounded-[10px] text-sm font-medium hover:bg-gray-800 transition-colors focus:outline-none"
-                        >
-                            저장
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
 
 export const TicketManagement = () => {
-    const [selectedTicketType, setSelectedTicketType] = useState("전체");
-    const [searchTerm, setSearchTerm] = useState("");
+    const [eventId, setEventId] = useState<number | null>(null);
+    const [isEventLoading, setIsEventLoading] = useState(true);
+    const [eventError, setEventError] = useState<string | null>(null);
+
+    // 사용자의 담당 eventId 조회
+    useEffect(() => {
+        const fetchUserEventId = async () => {
+            try {
+                setIsEventLoading(true);
+                const response = await authManager.authenticatedFetch('/api/events/manager/event');
+
+                if (!response.ok) {
+                    throw new Error('행사 관리 권한이 없습니다.');
+                }
+                
+                const data = await response.json();
+                setEventId(data);
+            } catch (error) {
+                setEventError('행사 관리 권한이 없거나 담당 행사를 찾을 수 없습니다.');
+            } finally {
+                setIsEventLoading(false);
+            }
+        };
+        
+        fetchUserEventId();
+    }, []);
+
+    const [selectedSeatType, setSelectedSeatType] = useState("ALL");
+    const [selectedAudienceType, setSelectedAudienceType] = useState("ALL");
+    const [searchTicketName, setSearchTicketName] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [editTicket, setEditTicket] = useState(null);
-    const [ticketData, setTicketData] = useState([
-        {
-            id: 1,
-            name: "VIP 티켓",
-            seatGrade: "VIP석",
-            type: "성인",
-            price: "150,000원",
-            limit: "2매",
-            status: "판매중",
-            statusColor: "bg-green-100",
-            textColor: "text-green-800"
-        },
-        {
-            id: 2,
-            name: "얼리버드 티켓",
-            seatGrade: "A석",
-            type: "청소년",
-            price: "80,000원",
-            limit: "4매",
-            status: "판매중",
-            statusColor: "bg-green-100",
-            textColor: "text-green-800"
-        },
-        {
-            id: 3,
-            name: "일반 티켓",
-            seatGrade: "B석",
-            type: "어린이",
-            price: "100,000원",
-            limit: "6매",
-            status: "판매 종료",
-            statusColor: "bg-red-100",
-            textColor: "text-red-800"
-        }
-    ]);
+    const [editTicket, setEditTicket] = useState<Ticket | null>(null);
+    const [ticketData, setTicketData] = useState<Ticket[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const getTypeColor = (type: string) => {
-        switch (type) {
-            case "성인":
-                return "bg-red-100 text-red-800";
-            case "청소년":
-                return "bg-blue-100 text-blue-800";
-            case "어린이":
-                return "bg-green-100 text-green-800";
-            default:
-                return "bg-gray-100 text-gray-800";
+    // 티켓 목록 로드
+    const loadTickets = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const tickets = await ticketService.getTickets(eventId, selectedSeatType !== "ALL" ? selectedSeatType : undefined, searchTicketName, selectedAudienceType !== "ALL" ? selectedAudienceType : undefined);
+            setTicketData(tickets);
+        } catch (error) {
+            setError('티켓 목록을 불러오는데 실패했습니다.');
+            setTicketData([]);
+        } finally {
+            setIsLoading(false);
         }
     };
+
+    // eventId가 로드된 후 티켓 목록 로드
+    useEffect(() => {
+        if (eventId) {
+            loadTickets();
+        }
+    }, [eventId]);
+
+    // 필터 변경시 티켓 목록 다시 로드 (검색어는 Enter 키로만 조회)
+    useEffect(() => {
+        if (eventId) {
+            loadTickets();
+        }
+    }, [selectedSeatType, selectedAudienceType]);
+
+    // 티켓 추가 핸들러
+    const handleAddTicket = (newTicket: Ticket) => {
+        setTicketData(prev => [...prev, newTicket]);
+    };
+
+    // 티켓 수정 핸들러
+    const handleUpdateTicket = (updatedTicket: Ticket) => {
+        setTicketData(prev => prev.map(ticket => 
+            ticket.ticketId === updatedTicket.ticketId ? updatedTicket : ticket
+        ));
+    };
+
+    // 티켓 삭제 핸들러
+    const handleDeleteTicket = async (ticketId: number, name: string, eventId: number) => {
+        if (!window.confirm(`"${name}" 티켓을 삭제하시겠습니까?`)) {
+            return;
+        }
+
+        try {
+            await ticketService.deleteTicket(eventId, ticketId);
+            setTicketData(prev => prev.filter(ticket => ticket.ticketId !== ticketId));
+            toast.success('티켓이 삭제되었습니다.');
+        } catch (error) {
+            toast.error('티켓 삭제에 실패했습니다.');
+        }
+    };
+
+    // 서버에서 이미 필터링되므로 클라이언트 필터링 제거
+    const filteredTickets = ticketData;
+
+    // eventId 로딩 중이거나 에러가 있으면 해당 화면 표시
+    if (isEventLoading) {
+        return (
+            <div className="bg-white flex flex-row justify-center w-full">
+                <div className="bg-white w-[1256px] h-[1407px] relative">
+                    <TopNav />
+                    <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
+                        티켓 관리
+                    </div>
+                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
+                        <div className="text-gray-500">담당 행사 정보를 불러오는 중...</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (eventError || !eventId) {
+        return (
+            <div className="bg-white flex flex-row justify-center w-full">
+                <div className="bg-white w-[1256px] h-[1407px] relative">
+                    <TopNav />
+                    <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
+                        티켓 관리
+                    </div>
+                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
+                        <div className="text-red-500">
+                            {eventError || '행사 관리 권한이 없습니다.'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -323,14 +165,38 @@ export const TicketManagement = () => {
                                     <label className="text-sm font-bold text-gray-700 mb-2">티켓 유형</label>
                                     <div className="relative">
                                         <select
-                                            value={selectedTicketType}
-                                            onChange={(e) => setSelectedTicketType(e.target.value)}
+                                            value={selectedAudienceType}
+                                            onChange={(e) => setSelectedAudienceType(e.target.value)}
                                             className="w-48 h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                            disabled={isLoading}
                                         >
-                                            <option value="전체">전체</option>
-                                            <option value="성인">성인</option>
-                                            <option value="청소년">청소년</option>
-                                            <option value="어린이">어린이</option>
+                                            <option value="ALL">전체</option>
+                                            {TicketService.AUDIENCE_TYPES.map(type => (
+                                                <option key={type.value} value={type.value}>{type.label}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 좌석 등급 필터 */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-bold text-gray-700 mb-2">좌석 등급</label>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedSeatType}
+                                            onChange={(e) => setSelectedSeatType(e.target.value)}
+                                            className="w-48 h-11 bg-white border border-gray-300 rounded-[10px] px-4 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                            disabled={isLoading}
+                                        >
+                                            <option value="ALL">전체</option>
+                                            {TicketService.SEAT_TYPES.map(seatType => (
+                                                <option key={seatType.value} value={seatType.value}>{seatType.label}</option>
+                                            ))}
                                         </select>
                                         <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                                             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,10 +211,16 @@ export const TicketManagement = () => {
                                     <label className="text-sm font-bold text-gray-700 mb-2">티켓명 검색</label>
                                     <input
                                         type="text"
-                                        placeholder="티켓명을 입력하세요"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="티켓명을 입력하세요 (Enter키로 검색)"
+                                        value={searchTicketName}
+                                        onChange={(e) => setSearchTicketName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && eventId) {
+                                                loadTickets();
+                                            }
+                                        }}
                                         className="w-72 h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                        disabled={isLoading}
                                     />
                                 </div>
                             </div>
@@ -390,92 +262,102 @@ export const TicketManagement = () => {
 
                         {/* 테이블 바디 */}
                         <div className="bg-white">
-                            {ticketData
-                                .filter(ticket => {
-                                    // 티켓 유형 필터링
-                                    const typeMatch = selectedTicketType === "전체" || ticket.type === selectedTicketType;
-                                    // 검색어 필터링
-                                    const searchMatch = !searchTerm || ticket.name.toLowerCase().includes(searchTerm.toLowerCase());
-                                    return typeMatch && searchMatch;
-                                })
-                                .map((ticket, index) => (
-                                    <div
-                                        key={ticket.id}
-                                        className={`grid grid-cols-7 gap-2 py-5 px-6 text-sm items-center ${index !== ticketData.length - 1 ? "border-b border-gray-200" : ""
-                                            }`}
+                            {isLoading ? (
+                                <div className="py-12 text-center">
+                                    <div className="text-gray-500">티켓 목록을 불러오는 중...</div>
+                                </div>
+                            ) : error ? (
+                                <div className="py-12 text-center">
+                                    <div className="text-red-500 mb-2">{error}</div>
+                                    <button 
+                                        onClick={loadTickets}
+                                        className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-sm"
                                     >
-                                        <div className="font-medium text-gray-900 text-left truncate">{ticket.name}</div>
-                                        <div className="text-gray-600 text-center">{ticket.seatGrade}</div>
-                                        <div className="text-center">
-                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(ticket.type)}`}>
-                                                {ticket.type}
-                                            </span>
-                                        </div>
-                                        <div className="font-bold text-gray-900 text-center">{ticket.price}</div>
-                                        <div className="text-center text-gray-600">{ticket.limit}</div>
-                                        <div className="text-center">
-                                            <span className={`inline-block px-3 py-1 rounded text-xs font-medium ${ticket.statusColor} ${ticket.textColor}`}>
-                                                {ticket.status}
-                                            </span>
-                                        </div>
-                                        <div className="text-center flex justify-center gap-1">
-                                            <button
-                                                onClick={() => {
-                                                    setEditTicket(ticket);
-                                                    setIsEditMode(true);
-                                                    setIsModalOpen(true);
-                                                }}
-                                                className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-xs"
-                                            >
-                                                수정
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (window.confirm(`"${ticket.name}" 티켓을 삭제하시겠습니까?`)) {
-                                                        setTicketData(prev => prev.filter(t => t.id !== ticket.id));
-                                                    }
-                                                }}
-                                                className="text-red-600 hover:text-red-800 font-medium transition-colors text-xs"
-                                            >
-                                                삭제
-                                            </button>
-                                        </div>
+                                        다시 시도
+                                    </button>
+                                </div>
+                            ) : filteredTickets.length === 0 ? (
+                                <div className="py-12 text-center">
+                                    <div className="text-gray-500">
+                                        {searchTicketName || selectedSeatType !== "ALL"
+                                            ? "검색 조건에 맞는 티켓이 없습니다." 
+                                            : "등록된 티켓이 없습니다."}
                                     </div>
-                                ))}
+                                </div>
+                            ) : (
+                                filteredTickets.map((ticket, index) => {
+                                    const ticketStatus = ticketService.getTicketStatusCode(ticket.ticketStatusCode);
+
+                                    return (
+                                        <div
+                                            key={ticket.ticketId}
+                                            className={`grid grid-cols-7 gap-2 py-5 px-6 text-sm items-center ${
+                                                index !== filteredTickets.length - 1 ? "border-b border-gray-200" : ""
+                                            }`}
+                                        >
+                                            <div className="font-medium text-gray-900 text-left truncate">{ticket.name || '티켓명 없음'}</div>
+                                            <div className="text-gray-600 text-center">{ticket.seatTypeName || '없음'}</div>
+                                            <div className="text-center">
+                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${ticket.audienceTypeCode ? ticketService.getAudienceTypeColor(ticket.audienceTypeCode) : 'bg-gray-100 text-gray-800'}`}>
+                                                    {ticket.audienceTypeName}
+                                                </span>
+                                            </div>
+                                            <div className="font-bold text-gray-900 text-center">{ticket.price ? ticket.price.toLocaleString() : '0'}원</div>
+                                            <div className="text-center text-gray-600">{ticket.maxPurchase || 0}매</div>
+                                            <div className="text-center">
+                                                <span className={`inline-block px-3 py-1 rounded text-xs font-medium ${ticketStatus.color} ${ticketStatus.textColor}`}>
+                                                    {ticket.ticketStatusName}
+                                                </span>
+                                            </div>
+                                            <div className="text-center flex justify-center gap-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditTicket(ticket);
+                                                        setIsEditMode(true);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-xs"
+                                                    disabled={isLoading}
+                                                >
+                                                    수정
+                                                </button>
+                                                <button
+                                                    onClick={() => ticket.ticketId && handleDeleteTicket(ticket.ticketId, ticket.name, eventId)}
+                                                    className="text-red-600 hover:text-red-800 font-medium transition-colors text-xs"
+                                                    disabled={isLoading || !ticket.ticketId}
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 
                     {/* 하단 정보 */}
-                    <div className="mt-6 text-sm text-gray-600">
-                        총 <span className="font-bold text-black">
-                            {ticketData.filter(ticket => {
-                                const typeMatch = selectedTicketType === "전체" || ticket.type === selectedTicketType;
-                                const searchMatch = !searchTerm || ticket.name.toLowerCase().includes(searchTerm.toLowerCase());
-                                return typeMatch && searchMatch;
-                            }).length}
-                        </span>개의 티켓
-                    </div>
+                    {!isLoading && !error && (
+                        <div className="mt-6 text-sm text-gray-600">
+                            총 <span className="font-bold text-black">{filteredTickets.length}</span>개의 티켓
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* 티켓 추가/수정 모달 */}
-            <AddTicketModal
+            <TicketFormModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
                     setIsEditMode(false);
                     setEditTicket(null);
                 }}
-                onAddTicket={(newTicket) => {
-                    setTicketData(prev => [...prev, newTicket]);
-                }}
-                onUpdateTicket={(updatedTicket) => {
-                    setTicketData(prev => prev.map(ticket =>
-                        ticket.id === updatedTicket.id ? updatedTicket : ticket
-                    ));
-                }}
+                onAddTicket={handleAddTicket}
+                onUpdateTicket={handleUpdateTicket}
                 editTicket={editTicket}
                 isEditMode={isEditMode}
+                eventId={eventId}
             />
         </div>
     );

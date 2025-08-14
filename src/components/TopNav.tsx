@@ -2,9 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eventApi } from '../services/api';
-import type { Notification } from '../services/api';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
+import { useNotificationSocket, Notification } from '../hooks/useNotificationSocket';
+import { requireAuth, isAuthenticated } from '../utils/authGuard';
+import { hasHostPermission } from '../utils/permissions';
+import { clearCachedRoleCode, getRoleCode } from '../utils/role';
+
 
 interface TopNavProps {
     className?: string;
@@ -14,34 +18,31 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const [activeMenu, setActiveMenu] = useState<string>('HOME');
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const location = useLocation();
     const navigate = useNavigate();
 
-    const fetchNotifications = useCallback(async () => {
-        if (!localStorage.getItem('accessToken')) return;
-        try {
-            const fetchedNotifications = await eventApi.getNotifications();
-            setNotifications(fetchedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        } catch (error) {
-            console.error("알림 로딩 실패:", error);
-        }
-    }, []);
+    // 웹소켓 기반 알림 시스템 사용
+    const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
 
     const checkLoginStatus = useCallback(() => {
-        const loggedIn = !!localStorage.getItem('accessToken');
+        const loggedIn = isAuthenticated();
         setIsLoggedIn(loggedIn);
         if (loggedIn) {
-            fetchNotifications();
+            connect(); // 로그인 시 웹소켓 연결
+        } else {
+            disconnect(); // 로그아웃 시 웹소켓 연결 해제
         }
-    }, [fetchNotifications]);
+    }, [connect, disconnect]);
 
     useEffect(() => {
         checkLoginStatus();
         window.addEventListener('storage', checkLoginStatus); // 다른 탭에서 로그인/로그아웃 시 상태 동기화
-        return () => window.removeEventListener('storage', checkLoginStatus);
-    }, [checkLoginStatus]);
+        return () => {
+            window.removeEventListener('storage', checkLoginStatus);
+            disconnect(); // 컴포넌트 언마운트 시 웹소켓 연결 해제
+        };
+    }, [checkLoginStatus, disconnect]);
 
     useEffect(() => {
         const path = location.pathname;
@@ -57,51 +58,43 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
             e.preventDefault();
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
+            clearCachedRoleCode();
             setIsLoggedIn(false);
-            setNotifications([]);
+            disconnect(); // 로그아웃 시 웹소켓 연결 해제
             navigate('/');
         }
     };
 
     const toggleNotification = () => {
-        if (!isLoggedIn) {
-            alert('로그인이 필요한 서비스입니다.');
-            navigate('/login');
+        if (!requireAuth(navigate, '알림')) {
             return;
         }
         setIsNotificationOpen(prev => !prev);
-        if (!isNotificationOpen) {
-            fetchNotifications();
-        }
     };
 
-    const handleMarkAsRead = async (notificationId: number) => {
-        await eventApi.markNotificationAsRead(notificationId);
-        setNotifications(prev => prev.map(n => n.notificationId === notificationId ? { ...n, isRead: true } : n));
+    const handleMarkAsRead = (notificationId: number) => {
+        markAsRead(notificationId); // 웹소켓을 통한 읽음 처리
     };
 
     const handleDeleteNotification = async (e: React.MouseEvent, notificationId: number) => {
         e.stopPropagation(); // 이벤트 버블링 방지
-        const success = await eventApi.deleteNotification(notificationId);
-        if (success) {
-            setNotifications(prev => prev.filter(n => n.notificationId !== notificationId));
-        }
+        await eventApi.deleteNotification(notificationId);
+        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
     };
 
     const handleDeleteAllRead = async () => {
         const readNotificationIds = notifications.filter(n => n.isRead).map(n => n.notificationId);
         if (readNotificationIds.length === 0) return;
 
-        const success = await eventApi.deleteMultipleNotifications(readNotificationIds);
-        if (success) {
-            setNotifications(prev => prev.filter(n => !n.isRead));
-        }
+        await eventApi.deleteMultipleNotifications(readNotificationIds);
+        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
     };
+
+
 
     // 운영자(전체 관리자) 문의 채팅방 생성/입장
     const handleCustomerService = async () => {
-        if (!isLoggedIn) {
-            navigate('/login');
+        if (!requireAuth(navigate, '고객센터 채팅')) {
             return;
         }
 
@@ -125,77 +118,78 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         }
     };
 
-    const newNotificationCount = notifications.filter(n => !n.isRead).length;
+    // 웹소켓에서 제공하는 unreadCount 사용
 
     return (
-        <div className={`bg-white/90 backdrop-blur w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 1000, marginTop: '-32px' }}>
-            <div className="flex justify-end items-center px-6 py-0.5 gap-3">
-                <button
-                    onClick={handleCustomerService}
-                    className="p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
-                >
-                    고객센터
-                </button>
-                <button
-                    onClick={toggleNotification}
-                    className="relative p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
-                >
-                    알림
-                    {isLoggedIn && newNotificationCount > 0 && (
-                        <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                    )}
-                </button>
-                <Link
-                    to={isLoggedIn ? "#" : "/login"}
-                    className="p-0 text-xs text-gray-500 hover:text-black focus:outline-none focus:ring-0"
-                    onClick={handleAuthClick}
-                >
-                    {isLoggedIn ? '로그아웃' : '로그인'}
-                </Link>
-            </div>
+        <>
+            <div className={`bg-white/90 backdrop-blur w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
+                <div className="flex justify-end items-center px-6 py-0.5 gap-3">
+                    <button
+                        onClick={handleCustomerService}
+                        className="p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                    >
+                        고객센터
+                    </button>
+                    <button
+                        onClick={toggleNotification}
+                        className="relative p-0 text-xs text-gray-500 hover:text-black bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0"
+                    >
+                        알림
+                        {isLoggedIn && unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
+                    </button>
+                    <Link
+                        to={isLoggedIn ? "#" : "/login"}
+                        className="p-0 text-xs text-gray-500 hover:text-black focus:outline-none focus:ring-0"
+                        onClick={handleAuthClick}
+                    >
+                        {isLoggedIn ? '로그아웃' : '로그인'}
+                    </Link>
+                </div>
 
-            <div className="flex items-center justify-between px-6 py-2">
-                <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
-                <div className="flex items-center space-x-6">
-                    <nav className="hidden md:flex items-center space-x-6">
-                        <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
-                        <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
-                        <Link to="/event-registration-intro" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>NEWEVENT</Link>
-                    </nav>
+                <div className="flex items-center justify-between px-6 py-2">
+                    <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
                     <div className="flex items-center space-x-6">
-                        <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
-                        <HiOutlineUser className="w-5 h-5 text-black cursor-pointer" onClick={() => {
-                            // 토큰에서 사용자 역할 확인
-                            const accessToken = localStorage.getItem('accessToken');
-                            if (accessToken) {
-                                try {
-                                    const payload = JSON.parse(decodeURIComponent(escape(atob(accessToken.split('.')[1]))));
-                                    const userRole = payload.role;
+                        <nav className="hidden md:flex items-center space-x-6">
+                            <Link to="/" className={`text-black ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
+                            <Link to="/eventoverview" className={`text-black ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
+                            <Link to="/event-registration-intro" className={`text-black ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
+                        </nav>
+                        <div className="flex items-center space-x-6">
+                            <HiOutlineSearch className="w-5 h-5 text-black cursor-pointer" />
+                            <HiOutlineUser className="w-5 h-5 text-black cursor-pointer" onClick={() => {
+                                if (!requireAuth(navigate, '마이페이지')) {
+                                    return;
+                                }
 
-                                    if (userRole === 'HOST' || userRole === 'ADMIN' || userRole.includes('행사') || userRole.includes('관리자')) {
+                                (async () => {
+                                    const role = await getRoleCode();
+                                    if (!role) { navigate('/login'); return; }
+                                    if (role === 'ADMIN') {
+                                        navigate('/admin_dashboard');
+                                    } else if (hasHostPermission(role)) {
                                         navigate('/host/dashboard');
                                     } else {
                                         navigate('/mypage/info');
                                     }
-                                } catch (error) {
-                                    console.error('토큰 파싱 실패:', error);
-                                    navigate('/mypage/info');
-                                }
-                            } else {
-                                alert('로그인이 필요한 서비스입니다.');
-                                navigate('/login');
-                            }
-                        }} />
-                        <HiOutlineGlobeAlt className="w-5 h-5 text-black cursor-pointer" />
+                                })();
+                            }} />
+                            <HiOutlineGlobeAlt className="w-5 h-5 text-black cursor-pointer" />
+                        </div>
                     </div>
                 </div>
+                <div className="pb-4"></div>
             </div>
-            <div className="pb-4"></div>
 
+            {/* 알림 팝업을 TopNav 밖으로 이동 */}
             {isNotificationOpen && (
-                <div className="fixed inset-0 z-50">
-                    <div className="absolute inset-0 bg-black bg-opacity-30" onClick={toggleNotification} />
-                    <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-2xl flex flex-col">
+                <div className="fixed inset-0 z-[9999]">
+                    {/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
+                    <div className="absolute inset-0 bg-black bg-opacity-50" onClick={toggleNotification} />
+
+                    {/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
+                    <div className="absolute right-0 top-0 h-full left-[calc(100vw-420px)] bg-white shadow-2xl flex flex-col">
                         <div className="flex items-center justify-between p-4 border-b">
                             <h2 className="text-lg font-semibold">알림</h2>
                             <div className="flex items-center gap-2">
@@ -216,7 +210,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                     {notifications.map(n => (
                                         <div
                                             key={n.notificationId}
-                                            className={`p-3 rounded-lg border relative ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
+                                            className={`p-3 rounded-lg border relative group ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
                                             onClick={() => !n.isRead && handleMarkAsRead(n.notificationId)}
                                         >
                                             <div className={`flex-1 ${!n.isRead ? 'cursor-pointer' : ''}`}>
@@ -229,7 +223,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                                             </div>
                                             <button
                                                 onClick={(e) => handleDeleteNotification(e, n.notificationId)}
-                                                className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none"
+                                                className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
                                                 <HiOutlineX className="w-4 h-4" />
                                             </button>
@@ -245,6 +239,6 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
