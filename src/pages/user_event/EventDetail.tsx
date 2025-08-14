@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {useParams, useNavigate} from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {TopNav} from "../../components/TopNav";
 import {MapPin} from "lucide-react";
 import {FaHeart} from "react-icons/fa";
@@ -32,6 +32,8 @@ const authHeaders = () => {
     return t ? {Authorization: `Bearer ${t}`} : {};
 };
 
+const isAuthed = () => !!localStorage.getItem("accessToken");
+
 const EventDetail = (): JSX.Element => {
     const {eventId} = useParams();
     const navigate = useNavigate();
@@ -62,6 +64,8 @@ const EventDetail = (): JSX.Element => {
         }
     };
 
+    const location = useLocation();
+
     // 관심(위시) 상태
     const [isLiked, setIsLiked] = useState(false);
     const [pending, setPending] = useState(false);
@@ -69,28 +73,35 @@ const EventDetail = (): JSX.Element => {
     const id = Number(eventId); // 컴포넌트 내부에서 계산
 
     // 초기 위시 상태 로드
-    useEffect(() => {
-        if (!id) return;
-        (async () => {
-            try {
-                const {data} = await api.get<WishlistResponseDto[]>("/api/wishlist", {
-                    headers: authHeaders(),
-                });
-                if (!requireAuth(navigate, '관심 등록')) {
-                    return;
-                }
-                setIsLiked((data ?? []).some(w => w.eventId === id));
-            } catch (e) {
-                console.error("상세 위시 상태 로드 실패:", e);
-            }
-        })();
-    }, [id]);
+    React.useEffect(() => {
+  if (!isAuthed()) return; 
+
+  (async () => {
+    try {
+      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+        headers: authHeaders(),
+      });
+      const s = new Set<number>();
+      (data ?? []).forEach(w => s.add(w.eventId));
+        setIsLiked((data ?? []).some((w) => w.eventId === id));
+    } catch (e) {
+      console.error("위시리스트 로드 실패:", e);
+    }
+  })();
+}, []);
 
     // 관심 토글
     const toggleLike = async () => {
         if (!id || pending) return;
+
+        if (!isAuthed()) {
+    alert("로그인 후 이용할 수 있습니다.");
+    navigate("/login", { state: { from: location.pathname } }); // 필요하면 search도 붙이려면 `${location.pathname}${location.search}`
+    return;
+  }
         setPending(true);
 
+        
         const was = isLiked;
         setIsLiked(!was); // 낙관적 업데이트
 

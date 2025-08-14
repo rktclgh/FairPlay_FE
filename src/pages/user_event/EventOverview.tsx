@@ -5,7 +5,8 @@ import {
     Map as MapIcon,
 } from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate, useLocation } from "react-router-dom";
+
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
@@ -21,6 +22,8 @@ const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
     return t ? { Authorization: `Bearer ${t}` } : {};
 };
+
+const isAuthed = () => !!localStorage.getItem("accessToken");
 
 // 캘린더 api 데이터 함수
 type CalendarGroupedDto = { date: string; titles: string[] };
@@ -84,67 +87,76 @@ export default function EventOverview() {
     const mapRef = React.useRef<HTMLDivElement>(null);
     const markersRef = React.useRef<any[]>([]);
 
+
+    const location = useLocation();
+
     // 좋아요 토글 함수
-    const toggleLike = async (eventId: number) => {
-        if (pending.has(eventId)) return;                 // 연타 방지
-        setPending(p => new Set(p).add(eventId));
-
-        const wasLiked = likedEvents.has(eventId);
-
-        setLikedEvents(prev => {
-            const next = new Set(prev);
-            if (wasLiked) {
-                next.delete(eventId);
-            } else {
-                next.add(eventId);
-            }
-            return next;
-        });
-
-
-        try {
-            if (wasLiked) {
-                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
-            } else {
-                await api.post(`/api/wishlist`, null, {
-                    params: { eventId },
-                    headers: authHeaders(),
-                });
-            }
-        } catch (e) {
-            // 실패 시 롤백
+    const toggleWish = async (eventId: number) => {
+            // 인증 확인
+             if (!isAuthed()) {
+        alert("로그인 후 이용할 수 있습니다.");
+        navigate("/login", { state: { from: location.pathname } }); // 로그인 후 돌아올 수 있게
+        return;
+    }
+    
+            const wasLiked = likedEvents.has(eventId);
+    
+            // 낙관적 업데이트
             setLikedEvents(prev => {
                 const next = new Set(prev);
                 if (wasLiked) {
-                    next.add(eventId);
-                } else {
                     next.delete(eventId);
+                } else {
+                    next.add(eventId);
                 }
                 return next;
             });
-
-            console.error("찜 토글 실패:", e);
-        } finally {
-            setPending(p => { const n = new Set(p); n.delete(eventId); return n; }); // ← 이거 추가
-        }
-
-    };
+    
+            try {
+                if (wasLiked) {
+                    // 찜 취소
+                    await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+                } else {
+                    // 찜 등록 (@RequestParam Long eventId)
+                    await api.post(`/api/wishlist`, null, {
+                        params: { eventId },            
+                        headers: authHeaders(),
+                    });
+                }
+            } catch (e) {
+                console.error("찜 토글 실패:", e);
+                // 실패 시 롤백
+                setLikedEvents(prev => {
+                    const next = new Set(prev);
+                    if (wasLiked) {
+                        next.add(eventId);
+                    } else {
+                        next.delete(eventId);
+                    }
+                    return next;
+                });
+                
+            }
+        };
+    
 
     // 초기 위시리스트 로드 
     React.useEffect(() => {
-        (async () => {
-            try {
-                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
-                    headers: authHeaders(),
-                });
-                const s = new Set<number>();
-                (data ?? []).forEach(w => s.add(w.eventId));
-                setLikedEvents(s);
-            } catch (e) {
-                console.error("위시리스트 로드 실패:", e);
-            }
-        })();
-    }, []);
+  if (!isAuthed()) return; 
+
+  (async () => {
+    try {
+      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+        headers: authHeaders(),
+      });
+      const s = new Set<number>();
+      (data ?? []).forEach(w => s.add(w.eventId));
+      setLikedEvents(s);
+    } catch (e) {
+      console.error("위시리스트 로드 실패:", e);
+    }
+  })();
+}, []);
 
     // 캘린더 데이터 상태
     const [calendarData, setCalendarData] = React.useState<Map<string, string[]>>(new Map());
@@ -1113,18 +1125,14 @@ export default function EventOverview() {
                                             src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
                                         <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                        <button
-                                            className={`absolute top-3 right-3 p-0 ${pending.has(event.id) ? "cursor-wait opacity-70" : ""}`}
-                                            style={{ background: "transparent", border: "none" }}
-                                            onClick={(e) => { e.stopPropagation(); toggleLike(event.id); }}
-                                            disabled={pending.has(event.id)}
-                                            aria-label={likedEvents.has(event.id) ? "찜 취소" : "찜"}
-                                            title={likedEvents.has(event.id) ? "찜 취소" : "찜"}
-                                        >
-                                            <FaHeart
-                                                className={`w-5 h-5 z-10 ${likedEvents.has(event.id) ? "text-red-500" : "text-white opacity-70"}`}
-                                            />
-                                        </button>
+                                       <FaHeart
+                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                                onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleWish(event.id);
+                                                                }}
+                                        />
 
 
                                     </div>
