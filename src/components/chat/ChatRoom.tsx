@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import { useChatSocket } from "./useChatSocket";
 import { ArrowLeft, Send } from "lucide-react";
@@ -64,7 +64,8 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         }
     }, []);
 
-    const { send } = useChatSocket(roomId, (msg: ChatMessageDto) => {
+    // 메시지 처리 함수를 useCallback으로 메모이제이션
+    const handleMessage = useCallback((msg: ChatMessageDto) => {
         console.log("💬 메시지 수신:", { senderId: msg.senderId, content: msg.content.substring(0, 30) + "..." });
         
         setMessages(prev => {
@@ -84,7 +85,9 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
             setPendingMessage(null);
             setLastAiMessageId(msg.chatMessageId);
         }
-    });
+    }, [isAiChat]);
+
+    const { send } = useChatSocket(roomId, handleMessage);
 
     // 최초 진입 시 기존 메시지 내역 조회
     useEffect(() => {
