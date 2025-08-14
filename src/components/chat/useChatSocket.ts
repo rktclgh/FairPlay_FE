@@ -25,22 +25,24 @@ export function useChatSocket(
   const reconnectDelay = 3000; // 3초
   const pendingMessages = useRef<string[]>([]); // 연결 전 대기 중인 메시지들
 
-  // onMessage를 useCallback으로 메모이제이션
-  const memoizedOnMessage = useCallback(onMessage, [onMessage]);
+  // onMessage는 이미 ChatRoom에서 useCallback으로 메모이제이션됨
 
   useEffect(() => {
-    // 룸 ID가 변경되었거나 처음 연결하는 경우
+    // 룸 ID가 변경된 경우에만 처리
     if (currentRoomIdRef.current !== roomId) {
       console.log(`Room changed from ${currentRoomIdRef.current} to ${roomId}`);
 
       // 기존 구독 해제
       if (subscriptionRef.current) {
-        console.log("Unsubscribing from previous room");
+        console.log(`Unsubscribing from room ${currentRoomIdRef.current}`);
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
       }
 
       currentRoomIdRef.current = roomId;
+    } else if (subscriptionRef.current) {
+      // 같은 룸이고 이미 구독 중이면 아무것도 하지 않음
+      return () => {};
     }
 
     // 인증되지 않은 사용자는 연결하지 않음
@@ -110,7 +112,7 @@ export function useChatSocket(
                     "roomId:",
                     parsedMessage.chatRoomId
                   );
-                  memoizedOnMessage(parsedMessage);
+                  onMessage(parsedMessage);
                 } catch (error) {
                   console.error("메시지 파싱 실패:", error, message.body);
                 }
@@ -169,6 +171,9 @@ export function useChatSocket(
           }
         }
       );
+    } else if (clientRef.current?.connected && subscriptionRef.current) {
+      // 이미 구독 중인 경우, 불필요한 재구독 방지
+      console.log(`Already subscribed to room ${roomId}`);
     } else if (clientRef.current?.connected && !subscriptionRef.current) {
       // 연결되어 있지만 구독이 없는 경우
       console.log(`Subscribing to room ${roomId} on existing connection`);
@@ -185,7 +190,7 @@ export function useChatSocket(
               "roomId:",
               parsedMessage.chatRoomId
             );
-            memoizedOnMessage(parsedMessage);
+            onMessage(parsedMessage);
           } catch (error) {
             console.error("메시지 파싱 실패:", error, message.body);
           }
@@ -202,7 +207,7 @@ export function useChatSocket(
         subscriptionRef.current = null;
       }
     };
-  }, [roomId, memoizedOnMessage]);
+  }, [roomId, onMessage]);
 
   // 내부 메시지 전송 함수
   const sendMessageInternal = useCallback((content: string, stomp: Stomp.Client) => {
