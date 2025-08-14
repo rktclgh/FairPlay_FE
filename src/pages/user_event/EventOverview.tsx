@@ -1251,14 +1251,10 @@ export default function EventOverview() {
                                                                 className="text-xs flex items-center space-x-1"
                                                                 
                                                                 onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                        if (!isAuthed()) {
-                                                                            alert("로그인 후 이용할 수 있습니다.");
-                                                                            navigate("/login", { state: { from: location.pathname } });
-                                                                            return;
-                                                                            }
-                                                                        navigate(`/eventdetail/${event.id}`);
-                                                                        }}
+  e.stopPropagation();
+  navigate(`/eventdetail/${event.id}`);
+}}
+
                                                             >
                                                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.mainCategory === "박람회" ? "bg-blue-500" :
                                                                     event.mainCategory === "공연" ? "bg-red-500" :
