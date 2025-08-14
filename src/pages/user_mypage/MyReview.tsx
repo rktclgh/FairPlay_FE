@@ -225,7 +225,14 @@ export const MyPageMyReview = () => {
         setDeleteTargetId(null);
     };
 
-    const handleEventClick = (event: EventDto, reservationId:number) => {
+    const handleEventClick = (event: EventDto, reservationId: number) => {
+        
+        if (savedReview?.some(review => review.reservationId === reservationId)) {
+            alert("이미 리뷰가 있습니다.");
+            return;
+       }
+
+
         setSelectedEvent(event);
         setSelectReservationId(reservationId)
         setRating(0);
@@ -278,6 +285,8 @@ export const MyPageMyReview = () => {
             setActiveTab('my');
             // 스크롤을 맨 위로 올림
             window.scrollTo(0, 0);
+        } else {
+            setActiveTab('write')
         }
     };
 
@@ -306,7 +315,7 @@ export const MyPageMyReview = () => {
             const reviewUpdateRequestDto: ReviewUpdateRequestDto = {
                     star: rating,
                     comment: reviewText,
-                    visible: isPrivate
+                    visible: !isPrivate
             }
 
             const res = await updateReview(editingReview.reviewId, reviewUpdateRequestDto);
@@ -333,9 +342,10 @@ export const MyPageMyReview = () => {
             const saveReviewRequest: ReviewSaveRequestDto = {
                 reservationId: selectReservationId,
                 star: rating,
-                visible: isPrivate,
+                visible: !isPrivate,
                 comment: reviewText
             };
+            console.log("reservationId:"+selectReservationId);
 
             const res = await saveReview(saveReviewRequest);
 
@@ -371,13 +381,6 @@ export const MyPageMyReview = () => {
 
         // 제출 후 리스트로 돌아가기
         handleBackToList();
-
-        // 수정 모드였다면 내 관람평 탭으로 이동
-        if (isEditMode) {
-            setActiveTab('my');
-            // 스크롤을 맨 위로 올림
-            window.scrollTo(0, 0);
-        }
     };
 
     const renderStars = (rating: number) => {

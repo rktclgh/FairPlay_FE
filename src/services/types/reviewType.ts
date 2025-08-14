@@ -80,6 +80,7 @@ export interface EventDto{
 
 export interface ReviewDto{
     reviewId: number,
+    nickname: string,
     star: number,
     reactions: number,
     comment: string,
