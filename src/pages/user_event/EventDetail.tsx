@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import {useParams, useNavigate, useLocation} from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { MapPin } from "lucide-react";
 import { FaHeart } from "react-icons/fa";
@@ -570,7 +570,8 @@ const EventDetail = (): JSX.Element => {
                 setTimeout(() => {
                     setEventData(data);
                     setReviews(reviewData);
-                setEventData(data);
+                    setLoading(false);
+                }, 500);
 
                 // 이벤트 날짜 범위에서 날짜 목록 생성
                 if (data.startDate && data.endDate) {
@@ -604,9 +605,7 @@ const EventDetail = (): JSX.Element => {
                     }
                 }
 
-                setTimeout(() => {
-                    setLoading(false);
-                }, 500);
+
             } catch (error) {
                 console.error('이벤트 데이터 로드 실패:', error);
                 setLoading(false);

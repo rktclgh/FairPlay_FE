@@ -64,6 +64,9 @@ const defaultReservationData = [
 export default function Reservation(): JSX.Element {
     const [reservationData, setReservationData] = useState(defaultReservationData);
 
+
+
+
     useEffect(() => {
         // localStorage에서 예매 내역 읽어오기
         const bookingHistory = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
