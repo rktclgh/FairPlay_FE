@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
+import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -43,6 +44,7 @@ interface HotPick {
 }
 
 export const Main: React.FC = () => {
+    const { isDark } = useTheme();
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
@@ -406,18 +408,18 @@ export const Main: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'} flex items-center justify-center`}>
                 <div className="text-xl">로딩 중...</div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-white'}`}>
             <TopNav />
 
             {/* 히어로 섹션 */}
-            <div className="relative w-full h-[600px] bg-gray-100">
+            <div className={`relative w-full h-[600px] ${isDark ? 'bg-black' : 'bg-gray-100'}`}>
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
@@ -470,7 +472,7 @@ export const Main: React.FC = () => {
             <div className="py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">HOT PICKS</h2>
+                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>HOT PICKS</h2>
                     </div>
 
                     <Swiper
@@ -510,23 +512,17 @@ export const Main: React.FC = () => {
 
                     {/* 중앙 캡션 (블루스퀘어 스타일) */}
                     <div className="mt-6 text-center">
-                        <div
-                            key={activeHotPickIndex}
-                            className="text-[28px] font-extrabold text-black leading-tight truncate anim-fadeInUp"
-                        >
+                        <div key={activeHotPickIndex} className={`text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
                             {allHotPicks[activeHotPickIndex]?.title}
                         </div>
-                        <div
-                            key={`meta-${activeHotPickIndex}`}
-                            className="mt-2 space-y-1 anim-fadeInUp"
-                        >
-                            <div className="text-sm text-gray-700 flex items-center justify-center gap-2">
+                        <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
+                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                 <HiOutlineCalendar className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate">
                                     {(allHotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
                                 </span>
                             </div>
-                            <div className="text-sm text-gray-700 flex items-center justify-center gap-2">
+                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                 <FaMapMarkerAlt className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate">
                                     {allHotPicks[activeHotPickIndex]?.location}
@@ -541,20 +537,13 @@ export const Main: React.FC = () => {
             <div className="py-16">
                 <div className="max-w-7xl mx-auto px-8">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-black">EVENTS</h2>
+                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>EVENTS</h2>
                     </div>
 
                     {/* 필터 버튼들 */}
                     <div className="flex space-x-4 mb-8">
                         {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleCategoryChange(filter)}
-                                className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter
-                                    ? "bg-black text-white font-bold"
-                                    : "bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold"
-                                    }`}
-                            >
+                            <button key={index} onClick={() => handleCategoryChange(filter)} className={`px-4 py-2 rounded-full text-sm border ${selectedCategory === filter ? 'bg-black text-white font-bold' : `${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'} font-semibold`}`}>
                                 {filter}
                             </button>
                         ))}
@@ -584,12 +573,11 @@ export const Main: React.FC = () => {
                                     </div>
                                     <div className="mt-4 text-left">
 
-                                        <span
-                                            className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                                        <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2`}>
                                             {event.mainCategory}
                                         </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
+                                        <h3 className={`font-bold text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{event.title}</h3>
+                                        <div className={`text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                         </div>
@@ -604,8 +592,7 @@ export const Main: React.FC = () => {
                     }
                     <div className="text-center mt-12">
                         <Link to="/eventoverview">
-                            <button
-                                className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
+                            <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
                                 전체보기
                             </button>
                         </Link>
@@ -615,16 +602,16 @@ export const Main: React.FC = () => {
 
             {/* 푸터 */
             }
-            <footer className="bg-white border-t border-gray-200 py-16">
+            <footer className={`${isDark ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} border-t py-16`}>
                 <div className="max-w-7xl mx-auto px-8 text-center">
-                    <p className="text-gray-600 mb-8">
+                    <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-8`}>
                         간편하고 안전한 행사 관리 솔루션
                     </p>
                     <div className="flex justify-center space-x-8">
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">이용약관</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">개인정보처리방침</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">고객센터</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">회사소개</a>
+                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>이용약관</a>
+                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>개인정보처리방침</a>
+                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>고객센터</a>
+                        <a href="#" className={`${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} text-sm`}>회사소개</a>
                     </div>
                 </div>
             </footer>
