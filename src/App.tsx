@@ -44,7 +44,7 @@ import { AdminRouteGuard } from "./components/AdminRouteGuard";
 import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
 import EventComparison from "./pages/admin_dashboard/EventComparison";
 import EventList from "./pages/admin_event/EventList";
-import EventApproval from "./pages/admin_event/EventApproval";
+import {EventApproval} from "./pages/admin_event/EventApproval";
 import EventApprovalDetail from "./pages/admin_event/EventApprovalDetail";
 import EventEditRequests from "./pages/admin_event/EventEditRequests";
 import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";

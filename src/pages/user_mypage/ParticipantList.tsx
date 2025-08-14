@@ -152,7 +152,7 @@ export default function ParticipantList(): JSX.Element {
                                                         {!(index == 0) && (
                                                             <button
                                                                 onClick={() => handleEdit(participant)}
-                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-[10px] transition-colors"
                                                                 title="수정"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
