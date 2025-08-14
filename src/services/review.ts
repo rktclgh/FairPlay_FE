@@ -13,9 +13,14 @@ import type {
     PageableRequest
 } from "./types/reviewType";
 
+const setAuthorization = () => {
+    const accessToken = localStorage.getItem("accessToken");
+    return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+};
+
 // 리뷰 저장 
 export const saveReview = async (data: ReviewSaveRequestDto): Promise<ReviewSaveResponseDto> => {
-    const res = await api.post<ReviewSaveResponseDto>(`/api/reviews`,data);
+    const res = await api.post<ReviewSaveResponseDto>(`/api/reviews`, data,{headers: setAuthorization() });
     return res.data;
 }
 
@@ -27,24 +32,24 @@ export const getReviewsByEvent = async (eventId: number, params?: PageableReques
 
 // 리뷰 조회 - 마이페이지
 export const getReviewsByMember = async (page: number): Promise<Page<ReviewResponseDto>> => {
-    const res = await api.get<Page<ReviewResponseDto>>(`/api/reviews?page=${page}`);
+    const res = await api.get<Page<ReviewResponseDto>>(`/api/reviews?page=${page}`,{headers : setAuthorization()});
     return res.data;
 }
 
 // 작성 가능한 행사 목록 조회 - 마이페이지
 export const getPossibleSaveReview = async (page: number): Promise<Page<PossibleReviewResponseDto>> => {
-    const res = await api.get<Page<PossibleReviewResponseDto>>(`/api/reviews/mypage?page=${page}`);
+    const res = await api.get<Page<PossibleReviewResponseDto>>(`/api/reviews/mypage?page=${page}`,{headers : setAuthorization()});
     return res.data;
 }
 
 // 리뷰 수정
 export const updateReview = async (reviewId: number, data: ReviewUpdateRequestDto): Promise<ReviewUpdateResponseDto> => {
-    const res = await api.patch<ReviewUpdateResponseDto>(`/api/reviews/${reviewId}`, data);
+    const res = await api.patch<ReviewUpdateResponseDto>(`/api/reviews/${reviewId}`, data, { headers: setAuthorization() });
     return res.data;
 }
 
 // 리뷰 삭제
 export const deleteReview = async (reviewId: number): Promise<ReviewDeleteResponseDto> => {
-    const res = await api.delete<ReviewDeleteResponseDto>(`/api/reviews/${reviewId}`);
+    const res = await api.delete<ReviewDeleteResponseDto>(`/api/reviews/${reviewId}`,{headers : setAuthorization()});
     return res.data;
 }

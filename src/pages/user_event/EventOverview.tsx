@@ -5,8 +5,8 @@ import {
     Map as MapIcon,
 } from "lucide-react";
 import React from "react";
-import {useNavigate, useLocation } from "react-router-dom";
-
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
@@ -17,6 +17,8 @@ import api from "../../api/axios";
 import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
 import EventMapPin from "../../components/EventMapPin";
+import { useTheme } from "../../context/ThemeContext";
+import { Footer } from "../../components/Footer";
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
@@ -37,6 +39,7 @@ const fetchCalendarGrouped = (year: number, month: number) =>
 
 
 export default function EventOverview() {
+    const { isDark } = useTheme();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
@@ -92,71 +95,71 @@ export default function EventOverview() {
 
     // 좋아요 토글 함수
     const toggleWish = async (eventId: number) => {
-            // 인증 확인
-             if (!isAuthed()) {
-        alert("로그인 후 이용할 수 있습니다.");
-        navigate("/login", { state: { from: location.pathname } }); // 로그인 후 돌아올 수 있게
-        return;
-    }
-    
-            const wasLiked = likedEvents.has(eventId);
-    
-            // 낙관적 업데이트
+        // 인증 확인
+        if (!isAuthed()) {
+            alert("로그인 후 이용할 수 있습니다.");
+            navigate("/login", { state: { from: location.pathname } }); // 로그인 후 돌아올 수 있게
+            return;
+        }
+
+        const wasLiked = likedEvents.has(eventId);
+
+        // 낙관적 업데이트
+        setLikedEvents(prev => {
+            const next = new Set(prev);
+            if (wasLiked) {
+                next.delete(eventId);
+            } else {
+                next.add(eventId);
+            }
+            return next;
+        });
+
+        try {
+            if (wasLiked) {
+                // 찜 취소
+                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+            } else {
+                // 찜 등록 (@RequestParam Long eventId)
+                await api.post(`/api/wishlist`, null, {
+                    params: { eventId },
+                    headers: authHeaders(),
+                });
+            }
+        } catch (e) {
+            console.error("찜 토글 실패:", e);
+            // 실패 시 롤백
             setLikedEvents(prev => {
                 const next = new Set(prev);
                 if (wasLiked) {
-                    next.delete(eventId);
-                } else {
                     next.add(eventId);
+                } else {
+                    next.delete(eventId);
                 }
                 return next;
             });
-    
-            try {
-                if (wasLiked) {
-                    // 찜 취소
-                    await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
-                } else {
-                    // 찜 등록 (@RequestParam Long eventId)
-                    await api.post(`/api/wishlist`, null, {
-                        params: { eventId },            
-                        headers: authHeaders(),
-                    });
-                }
-            } catch (e) {
-                console.error("찜 토글 실패:", e);
-                // 실패 시 롤백
-                setLikedEvents(prev => {
-                    const next = new Set(prev);
-                    if (wasLiked) {
-                        next.add(eventId);
-                    } else {
-                        next.delete(eventId);
-                    }
-                    return next;
-                });
-                
-            }
-        };
-    
+
+        }
+    };
+
 
     // 초기 위시리스트 로드 
     React.useEffect(() => {
-  if (!isAuthed()) return; 
+        if (!isAuthed()) return;
 
-  (async () => {
-    try {
-      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
-        headers: authHeaders(),
-      });
-      const s = new Set<number>();
-      (data ?? []).forEach(w => s.add(w.eventId));
-      setLikedEvents(s);
-    } catch (e) {
-      console.error("위시리스트 로드 실패:", e);
-    }
-  })();
-}, []);
+        (async () => {
+            try {
+                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+                    headers: authHeaders(),
+                });
+                const s = new Set<number>();
+                (data ?? []).forEach(w => s.add(w.eventId));
+                setLikedEvents(s);
+            } catch (e) {
+                console.error("위시리스트 로드 실패:", e);
+            }
+        })();
+    }, []);
 
     // 캘린더 데이터 상태
     const [calendarData, setCalendarData] = React.useState<Map<string, string[]>>(new Map());
@@ -166,7 +169,13 @@ export default function EventOverview() {
 
     // 캘린더 데이터 fetch (뷰/월 변경 시)
     React.useEffect(() => {
-        if (viewMode !== "calendar") return;
+        //  비로그인: API 호출하지 않음
+        if (!isAuthed()) {
+            setCalendarLoading(false);
+            setCalendarError(null);
+            setCalendarData(new Map());
+            return;
+        }
         (async () => {
             setCalendarLoading(true);
             setCalendarError(null);
@@ -175,11 +184,14 @@ export default function EventOverview() {
                 const map = new Map<string, string[]>();
                 data.forEach((d) => map.set(d.date, d.titles));
                 setCalendarData(map);
-            } catch (e) {
-                console.error(e);
-                setCalendarError(
-                    e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
-                );
+            } catch (e: unknown) {
+                const st = axios.isAxiosError(e) ? e.response?.status : undefined;
+                if (st !== 401 && st !== 403) {
+                    console.error(e);
+                    setCalendarError(
+                        e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
+                    );
+                }
             } finally {
                 setCalendarLoading(false);
             }
@@ -765,13 +777,7 @@ export default function EventOverview() {
         };
     }, [map, hoveredEvent, mapRef]);
 
-    const footerLinks = [
-        { name: "이용약관", href: "#" },
-        { name: "개인정보처리방침", href: "#" },
-        { name: "고객센터", href: "#" },
-        { name: "회사소개", href: "#" },
-    ];
-
+    // 렌더 하단에서 공용 Footer 적용
     return (
         <div className="min-h-screen bg-white">
             <TopNav />
@@ -793,7 +799,9 @@ export default function EventOverview() {
                                     <span
                                         className={`
             relative text-base leading-[28px] font-['Roboto'] inline-block pb-1
-            ${selectedCategory === category.id ? 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]' : 'font-normal text-gray-600 hover:text-black'}
+            ${selectedCategory === category.id
+                                                ? (isDark ? 'font-bold text-white after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-white content-[""]' : 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]')
+                                                : (isDark ? 'font-normal text-gray-300 hover:text-white' : 'font-normal text-gray-600 hover:text-black')}
         `}
                                     >
                                         {category.name}
@@ -806,12 +814,12 @@ export default function EventOverview() {
                     {/* View Toggle and Filters */}
                     <div className="flex justify-between items-center mt-[30px] px-7">
                         {/* 리스트형/캘린더형/지도형 탭 */}
-                        <div className="flex bg-white rounded-full border border-gray-200 p-1 shadow-sm">
+                        <div className={`flex rounded-full p-1 shadow-sm theme-transition ${isDark ? 'border border-gray-700 bg-transparent' : 'bg-white border border-gray-200'}`}>
                             <button
                                 onClick={() => setViewMode("list")}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
-                                    ? "bg-black text-white"
-                                    : "bg-white text-black hover:bg-gray-50"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
+                                    ? (isDark ? 'dm-light' : 'bg-black text-white')
+                                    : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -824,9 +832,9 @@ export default function EventOverview() {
                                     // 캘린더형으로 전환할 때 상단 날짜 범위를 현재 캘린더 월로 동기화
                                     setSelectedDateRange(`${calendarYear}년 ${calendarMonth}월`);
                                 }}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
-                                    ? "bg-black text-white"
-                                    : "bg-white text-black hover:bg-gray-50"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
+                                    ? (isDark ? 'dm-light' : 'bg-black text-white')
+                                    : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -835,9 +843,9 @@ export default function EventOverview() {
                             </button>
                             <button
                                 onClick={() => setViewMode("map")}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "map"
-                                    ? "bg-black text-white"
-                                    : "bg-white text-black hover:bg-gray-50"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "map"
+                                    ? (isDark ? 'dm-light' : 'bg-black text-white')
+                                    : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -1125,13 +1133,13 @@ export default function EventOverview() {
                                             src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
                                         <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                       <FaHeart
-                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                                onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        toggleWish(event.id);
-                                                                }}
+                                        <FaHeart
+                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                toggleWish(event.id);
+                                            }}
                                         />
 
 
@@ -1240,10 +1248,12 @@ export default function EventOverview() {
                                                             <div
                                                                 key={event.id}
                                                                 className="text-xs flex items-center space-x-1"
+
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     navigate(`/eventdetail/${event.id}`);
                                                                 }}
+
                                                             >
                                                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.mainCategory === "박람회" ? "bg-blue-500" :
                                                                     event.mainCategory === "공연" ? "bg-red-500" :
@@ -1428,23 +1438,7 @@ export default function EventOverview() {
                     )}
 
                     {/* Footer */}
-                    <footer className="mt-[60px] pt-[60px] border-t border-[#0000001f] text-center">
-                        <p className="text-base text-[#666666]">
-                            간편하고 안전한 행사 관리 솔루션
-                        </p>
-
-                        <div className="flex justify-center gap-5 mt-10">
-                            {footerLinks.map((link, index) => (
-                                <a
-                                    key={index}
-                                    href={link.href}
-                                    className="text-sm text-[#666666]"
-                                >
-                                    {link.name}
-                                </a>
-                            ))}
-                        </div>
-                    </footer>
+                    <Footer />
                 </div>
             </div>
         </div>

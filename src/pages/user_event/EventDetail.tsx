@@ -1,16 +1,16 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {TopNav} from "../../components/TopNav";
-import {MapPin} from "lucide-react";
-import {FaHeart} from "react-icons/fa";
-import {requireAuth} from "../../utils/authGuard";
-import {VenueInfo} from "./VenueInfo";
-import {CancelPolicy} from "./CancelPolicy";
-import {Reviews} from "./Reviews";
-import {Expectations} from "./Expectations";
+import { TopNav } from "../../components/TopNav";
+import { MapPin } from "lucide-react";
+import { FaHeart } from "react-icons/fa";
+import { requireAuth } from "../../utils/authGuard";
+import { VenueInfo } from "./VenueInfo";
+import { CancelPolicy } from "./CancelPolicy";
+import { Reviews } from "./Reviews";
+import { Expectations } from "./Expectations";
 import ExternalLink from "./ExternalLink";
-import {eventAPI} from "../../services/event";
-import type {EventDetailResponseDto} from "../../services/types/eventType";
+import { eventAPI } from "../../services/event";
+import type { EventDetailResponseDto } from "../../services/types/eventType";
 import api from "../../api/axios";
 import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 import type {
@@ -23,22 +23,23 @@ import type {
 import {
     getReviewsByEvent
 } from "../../services/review";
-import type {WishlistResponseDto} from "../../services/types/wishlist";
+type WishlistResponseDto = { eventId: number };
 
 
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
-    return t ? {Authorization: `Bearer ${t}`} : {};
+    return t ? { Authorization: `Bearer ${t}` } : {};
 };
 
 const isAuthed = () => !!localStorage.getItem("accessToken");
 
 const EventDetail = (): JSX.Element => {
-    const {eventId} = useParams();
+    const { eventId } = useParams();
     const navigate = useNavigate();
     const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
+
     const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(2025);
     const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(7);
     const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
@@ -74,43 +75,43 @@ const EventDetail = (): JSX.Element => {
 
     // 초기 위시 상태 로드
     React.useEffect(() => {
-  if (!isAuthed()) return; 
+        if (!isAuthed()) return;
 
-  (async () => {
-    try {
-      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
-        headers: authHeaders(),
-      });
-      const s = new Set<number>();
-      (data ?? []).forEach(w => s.add(w.eventId));
-        setIsLiked((data ?? []).some((w) => w.eventId === id));
-    } catch (e) {
-      console.error("위시리스트 로드 실패:", e);
-    }
-  })();
-}, []);
+        (async () => {
+            try {
+                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+                    headers: authHeaders(),
+                });
+                const s = new Set<number>();
+                (data ?? []).forEach(w => s.add(w.eventId));
+                setIsLiked((data ?? []).some((w) => w.eventId === id));
+            } catch (e) {
+                console.error("위시리스트 로드 실패:", e);
+            }
+        })();
+    }, []);
 
     // 관심 토글
     const toggleLike = async () => {
         if (!id || pending) return;
 
         if (!isAuthed()) {
-    alert("로그인 후 이용할 수 있습니다.");
-    navigate("/login", { state: { from: location.pathname } }); // 필요하면 search도 붙이려면 `${location.pathname}${location.search}`
-    return;
-  }
+            alert("로그인 후 이용할 수 있습니다.");
+            navigate("/login", { state: { from: location.pathname } }); // 필요하면 search도 붙이려면 `${location.pathname}${location.search}`
+            return;
+        }
         setPending(true);
 
-        
+
         const was = isLiked;
         setIsLiked(!was); // 낙관적 업데이트
 
         try {
             if (was) {
-                await api.delete(`/api/wishlist/${id}`, {headers: authHeaders()});
+                await api.delete(`/api/wishlist/${id}`, { headers: authHeaders() });
             } else {
                 await api.post(`/api/wishlist`, null, {
-                    params: {eventId: id},
+                    params: { eventId: id },
                     headers: authHeaders(),
                 });
             }
@@ -134,6 +135,8 @@ const EventDetail = (): JSX.Element => {
     // }, [eventData]);
 
     // 날짜 파싱 함수
+
+
     const parseEventDates = (schedule: string) => {
         // "2025.07.26 - 2025.07.27 11:00" 형식에서 날짜 추출
         const dateMatches = schedule.match(/(\d{4})\.(\d{2})\.(\d{2})/g);
@@ -542,8 +545,8 @@ const EventDetail = (): JSX.Element => {
                 const data = await eventAPI.getEventDetail(Number(eventId));
 
                 const params: PageableRequest = {
-                    page: 0,        
-                    size: 10,      
+                    page: 0,
+                    size: 10,
                     sort: 'createdAt,desc'
                 }
 
@@ -582,7 +585,7 @@ const EventDetail = (): JSX.Element => {
 
     return (
         <div className="min-h-screen bg-white">
-            <TopNav/>
+            <TopNav />
 
             {/* Event Content */}
             <section className="pt-10">
@@ -613,9 +616,9 @@ const EventDetail = (): JSX.Element => {
                                     className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none
               ${isLiked ? "bg-[#EF6156] text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}
               ${pending ? "opacity-70 cursor-wait" : ""}`}
-                                    style={{outline: "none", border: "none"}}
+                                    style={{ outline: "none", border: "none" }}
                                 >
-                                    <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`}/>
+                                    <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`} />
                                     <span className="font-bold text-sm">{isLiked ? "관심" : "관심"}</span>
                                 </button>
 
@@ -625,7 +628,7 @@ const EventDetail = (): JSX.Element => {
                             </p>
                         </div>
 
-                        <hr className="h-[3px] my-6 bg-black"/>
+                        <hr className="h-[3px] my-6 bg-black" />
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-32">
@@ -634,7 +637,7 @@ const EventDetail = (): JSX.Element => {
                                     <span className="text-base inline-block">
                                         {eventData.placeName}
                                     </span>
-                                    <MapPin className="w-3 h-3 ml-1"/>
+                                    <MapPin className="w-3 h-3 ml-1" />
                                 </div>
                                 {/*<div className="flex items-center">*/}
                                 {/*    <span className="text-base text-[#00000099] font-semibold w-20">관람등급</span>*/}
@@ -649,11 +652,11 @@ const EventDetail = (): JSX.Element => {
                                 <span className="text-base">{eventData.startDate} ~ {eventData.endDate}</span>
                             </div>
 
-                            <hr className="my-2 bg-gray-300"/>
+                            <hr className="my-2 bg-gray-300" />
 
                             <div className="flex items-start">
                                 <span className="text-base text-[#00000099] font-semibold w-20">행사 소개</span>
-                                <div className="text-base" dangerouslySetInnerHTML={{__html: eventData.bio}}/>
+                                <div className="text-base" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
                             </div>
 
                             <div className="flex items-start">
@@ -770,11 +773,11 @@ const EventDetail = (): JSX.Element => {
                                 setIsExternalBookingOpen(true);
                             }
                         }}
-                        // disabled={!selectedDate || !selectedSchedule}
-                        // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
-                        //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                        //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        //     }`}
+                    // disabled={!selectedDate || !selectedSchedule}
+                    // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
+                    //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                    //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    //     }`}
                     >
                         예매하기
                     </button>
@@ -783,14 +786,14 @@ const EventDetail = (): JSX.Element => {
                 {/* Event Details Tabs */}
                 <div className="mb-12">
                     <nav className="h-[40px] border-b border-neutral-200 relative"
-                         style={{borderBottom: '1px solid #e5e5e5', marginBottom: '-1px'}}>
+                        style={{ borderBottom: '1px solid #e5e5e5', marginBottom: '-1px' }}>
                         <ul className="flex items-center h-full pl-0">
                             {[
-                                {id: "detail", name: "상세정보"},
-                                {id: "location", name: "장소정보"},
-                                {id: "booking", name: "예매/취소안내"},
-                                {id: "review", name: "관람평"},
-                                {id: "expectation", name: "기대평"}
+                                { id: "detail", name: "상세정보" },
+                                { id: "location", name: "장소정보" },
+                                { id: "booking", name: "예매/취소안내" },
+                                { id: "review", name: "관람평" },
+                                { id: "expectation", name: "기대평" }
                             ].map((tab) => (
                                 <li
                                     key={tab.id}
@@ -816,24 +819,24 @@ const EventDetail = (): JSX.Element => {
                                 <h3 className="text-lg font-semibold text-[#212121] mb-4">
                                     {eventData.mainCategory === "공연" ? "공연 소개" : "행사 소개"}
                                 </h3>
-                                <div className="text-base mb-4" dangerouslySetInnerHTML={{__html: eventData.bio}}/>
+                                <div className="text-base mb-4" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
 
                                 {eventData.content && (
                                     <div className="text-base mb-6"
-                                         dangerouslySetInnerHTML={{__html: eventData.content}}/>
+                                        dangerouslySetInnerHTML={{ __html: eventData.content }} />
                                 )}
 
                                 {/*<div className="bg-[#e7eaff] rounded-lg mt-8 p-4">*/}
                                 {/*    <h4 className="text-base font-semibold text-[#212121] mb-4">*/}
                                 {/*        주요 안내사항*/}
                                 {/*    </h4>*/}
-                                    {/*<ul className="space-y-2">*/}
-                                    {/*    {eventData.policy.map((notice: string, index: number) => (*/}
-                                    {/*        <li key={index} className="text-sm">*/}
-                                    {/*            • {notice}*/}
-                                    {/*        </li>*/}
-                                    {/*    ))}*/}
-                                    {/*</ul>*/}
+                                {/*<ul className="space-y-2">*/}
+                                {/*    {eventData.policy.map((notice: string, index: number) => (*/}
+                                {/*        <li key={index} className="text-sm">*/}
+                                {/*            • {notice}*/}
+                                {/*        </li>*/}
+                                {/*    ))}*/}
+                                {/*</ul>*/}
                                 {/*</div>*/}
                             </>
                         )}
@@ -853,331 +856,21 @@ const EventDetail = (): JSX.Element => {
                             <>
                                 {eventData.policy && (
                                     <div className="text-base mb-6"
-                                         dangerouslySetInnerHTML={{__html: eventData.policy}}/>
+                                        dangerouslySetInnerHTML={{ __html: eventData.policy }} />
                                 )}
                             </>
                         )}
 
                         {activeTab === "review" && (
-                            eventData.mainCategory === "박람회" ? (
-                                <div>
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <h3 className="text-2xl font-semibold text-[#212121]">
-                                            박람회 후기
-                                        </h3>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex gap-1">
-                                                {Array.from({length: 5}, (_, index) => (
-                                                    <span key={index}
-                                                          className="text-xl leading-6 text-[#ffd700]">★</span>
-                                                ))}
-                                            </div>
-                                            <span className="text-lg font-medium text-[#212121]">
-                                                4.85
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="w-full p-6 rounded-lg border border-[#0000001a]">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-base text-[#212121] font-normal">
-                                                        김웨딩
-                                                    </span>
-                                                    <div className="flex gap-1">
-                                                        {Array.from({length: 5}, (_, index) => (
-                                                            <span key={index}
-                                                                  className="text-base leading-6 text-[#ffd700]">★</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <span className="text-sm text-[#00000099] font-normal">
-                                                    2024.01.15
-                                                </span>
-                                            </div>
-                                            <div className="mb-4">
-                                                <p className="text-base text-black font-normal leading-6">
-                                                    정말 유익한 박람회였어요! 예식장부터 스튜디오, 드레스까지 모든 웨딩 관련 업체를 한자리에서 만날 수 있어서 너무
-                                                    편리했습니다. 특히 현장 계약 시 제공되는 혜택들이 정말 좋았고, 웨딩 키트도 퀄리티가 높았어요.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
-                                                        <span className="text-lg">🤍</span>
-                                                        <span>좋아요</span>
-                                                        <span>24</span>
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
-                                                    신고
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full p-6 rounded-lg border border-[#0000001a]">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-base text-[#212121] font-normal">
-                                                        박신랑
-                                                    </span>
-                                                    <div className="flex gap-1">
-                                                        {Array.from({length: 4}, (_, index) => (
-                                                            <span key={index}
-                                                                  className="text-base leading-6 text-[#ffd700]">★</span>
-                                                        ))}
-                                                        <span className="text-base leading-6 text-[#dddddd]">★</span>
-                                                    </div>
-                                                </div>
-                                                <span className="text-sm text-[#00000099] font-normal">
-                                                    2024.01.12
-                                                </span>
-                                            </div>
-                                            <div className="mb-4">
-                                                <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비에 대한 모든 정보를 얻을 수 있어서 정말 도움이 되었습니다. 각 업체들의 상담도 전문적이고 친절했어요. 다만
-                                                    사람이 너무 많아서 일부 부스는 대기 시간이 길었던 점이 아쉬웠습니다.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
-                                                        <span className="text-lg">🤍</span>
-                                                        <span>좋아요</span>
-                                                        <span>18</span>
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
-                                                    신고
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full p-6 rounded-lg border border-[#0000001a]">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-base text-[#212121] font-normal">
-                                                        이예비부부
-                                                    </span>
-                                                    <div className="flex gap-1">
-                                                        {Array.from({length: 5}, (_, index) => (
-                                                            <span key={index}
-                                                                  className="text-base leading-6 text-[#ffd700]">★</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <span className="text-sm text-[#00000099] font-normal">
-                                                    2024.01.10
-                                                </span>
-                                            </div>
-                                            <div className="mb-4">
-                                                <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비의 모든 과정을 체계적으로 알 수 있어서 정말 만족스러웠어요. 특히 허니문 패키지와 한복 관련 정보가 정말
-                                                    유용했습니다. 현장에서 계약한 업체들의 서비스도 훌륭했고, 웨딩 키트도 예상보다 퀄리티가 높았어요!
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
-                                                        <span className="text-lg">🤍</span>
-                                                        <span>좋아요</span>
-                                                        <span>31</span>
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
-                                                    신고
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-[#e7eaff] rounded-lg p-6 mt-8">
-                                        <h4 className="text-base font-semibold text-[#212121] mb-4">
-                                            주요 안내사항
-                                        </h4>
-                                        <div className="space-y-2">
-                                            <p className="text-sm text-black font-normal">
-                                                • 박람회 후기는 실제 참관 후 작성해주시기 바랍니다.
-                                            </p>
-                                            <p className="text-sm text-black font-normal">
-                                                • 부적절한 내용이나 광고성 글은 관리자에 의해 삭제될 수 있습니다.
-                                            </p>
-                                            <p className="text-sm text-black font-normal">
-                                                • 타인에게 불쾌감을 주는 표현은 자제해주시기 바랍니다.
-                                            </p>
-                                            <p className="text-sm text-black font-normal">
-                                                • 개인정보나 민감한 정보는 포함하지 말아주세요.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                    <Reviews
-                                        data= {reviews}
-                                        currentPage={ currentPage}
-                                        onPageChange={(page) => setCurrentPage(page)}
-                                    />
-                            )
+                            <Reviews
+                                data={reviews}
+                                currentPage={currentPage}
+                                onPageChange={(page) => setCurrentPage(page)}
+                            />
                         )}
 
                         {activeTab === "expectation" && (
-                            eventData.mainCategory === "박람회" ? (
-                                <div>
-                                    <h3 className="text-2xl font-semibold text-[#212121] mb-8">
-                                        박람회 기대평
-                                    </h3>
-
-                                    {/* 기대평 작성 폼 */}
-                                    <div className="w-full p-6 rounded-lg border border-[#0000001a] mb-6">
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-medium text-[#212121] mb-2">
-                                                기대평 작성
-                                            </label>
-                                            <textarea
-                                                placeholder="웨딩박람회에 대한 기대감을 자유롭게 작성해주세요."
-                                                className="w-full p-4 border border-gray-300 rounded-lg resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base leading-6"
-                                            />
-                                        </div>
-
-                                        <div className="flex justify-end">
-                                            <button
-                                                className="bg-black hover:bg-gray-800 text-white font-medium text-base px-6 py-3 rounded-[10px] transition-colors">
-                                                등록
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="w-full p-6 rounded-lg border border-[#0000001a]">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-base text-[#212121] font-normal">
-                                                        김예비부부
-                                                    </span>
-                                                </div>
-                                                <span className="text-sm text-[#00000099] font-normal">
-                                                    2024.01.20
-                                                </span>
-                                            </div>
-                                            <div className="mb-4">
-                                                <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비를 시작하는데 정말 많은 정보가 필요해서 이번 박람회가 기대됩니다! 예식장부터 스튜디오, 드레스까지 모든 업체를
-                                                    한자리에서 만날 수 있다니 정말 편리할 것 같아요. 특히 현장 계약 시 제공되는 혜택들도 기대됩니다.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
-                                                        <span className="text-lg">🤍</span>
-                                                        <span>좋아요</span>
-                                                        <span>15</span>
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
-                                                    신고
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full p-6 rounded-lg border border-[#0000001a]">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-base text-[#212121] font-normal">
-                                                        박웨딩
-                                                    </span>
-                                                </div>
-                                                <span className="text-sm text-[#00000099] font-normal">
-                                                    2024.01.18
-                                                </span>
-                                            </div>
-                                            <div className="mb-4">
-                                                <p className="text-base text-black font-normal leading-6">
-                                                    작년에도 참관했는데 정말 유익했어서 올해도 꼭 가려고 해요! 올해는 한복 관련 업체들도 더 많이 참가한다고 해서
-                                                    기대됩니다. 웨딩 키트도 작년보다 더 좋아졌다고 하니 정말 기대돼요.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
-                                                        <span className="text-lg">🤍</span>
-                                                        <span>좋아요</span>
-                                                        <span>22</span>
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
-                                                    신고
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full p-6 rounded-lg border border-[#0000001a]">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-base text-[#212121] font-normal">
-                                                        이신랑
-                                                    </span>
-                                                </div>
-                                                <span className="text-sm text-[#00000099] font-normal">
-                                                    2024.01.16
-                                                </span>
-                                            </div>
-                                            <div className="mb-4">
-                                                <p className="text-base text-black font-normal leading-6">
-                                                    웨딩 준비에 대해 아는 게 없어서 이번 박람회를 통해 많은 정보를 얻고 싶어요. 각 업체들의 상담도 받아보고, 현장에서
-                                                    계약할 수 있는 혜택들도 확인해보려고 합니다. 특히 허니문 패키지가 궁금해요!
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <button
-                                                        className="flex items-center gap-2 text-sm font-normal text-[#00000099] hover:text-red-500 transition-colors">
-                                                        <span className="text-lg">🤍</span>
-                                                        <span>좋아요</span>
-                                                        <span>18</span>
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors">
-                                                    신고
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-[#e7eaff] rounded-lg p-6 mt-8">
-                                        <h4 className="text-base font-semibold text-[#212121] mb-4">
-                                            주요 안내사항
-                                        </h4>
-                                        <div className="space-y-2">
-                                            <p className="text-sm text-black font-normal">
-                                                • 기대평은 박람회 참관 전후에 자유롭게 작성하실 수 있습니다.
-                                            </p>
-                                            <p className="text-sm text-black font-normal">
-                                                • 부적절한 내용이나 광고성 글은 관리자에 의해 삭제될 수 있습니다.
-                                            </p>
-                                            <p className="text-sm text-black font-normal">
-                                                • 타인에게 불쾌감을 주는 표현은 자제해주시기 바랍니다.
-                                            </p>
-                                            <p className="text-sm text-black font-normal">
-                                                • 허위 정보나 과장된 내용은 작성하지 말아주세요.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <Expectations/>
-                            )
+                            <Expectations />
                         )}
                     </div>
                 </div>
