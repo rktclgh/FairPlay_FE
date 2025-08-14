@@ -1,129 +1,45 @@
 import React, { useState } from "react";
+import type {
+  ReviewResponseDto,
+  ReviewForEventResponseDto,
+  ReviewWithOwnerDto,
+    ReviewDto,
+    Page,
+    PageableRequest
+} from "../../services/types/reviewType";
 
-interface Review {
-  id: number;
-  author: string;
-  rating: number;
-  date: string;
-  content: string;
-  likeCount: number;
-  isHidden?: boolean;
-  isLiked?: boolean;
+// interface Review {
+//   id: number; // 리뷰ID
+//   author: string; // 작성자
+//   rating: number; // 별점
+//   date: string; // 날짜
+//   content: string; // 내용
+//   likeCount: number; // 좋아요 갯수
+//   isHidden?: boolean; // 비공개 여부
+//   isLiked?: boolean; // 내가 좋아요한 리뷰인지
+// }
+
+
+interface ReviewsProps {
+  data: ReviewForEventResponseDto | null;
+  currentPage: number;   
+  onPageChange: (page: number) => void;
 }
 
-export const Reviews = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
+  // const [currentPage, setCurrentPage] = useState(1);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState("");
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: 1,
-      author: "김민수",
-      rating: 5,
-      date: "2024.01.15",
-      content: "정말 감동적인 공연이었습니다. 배우들의 연기력이 뛰어나고 무대 연출도 훌륭했어요. 특히 2막의 클라이맥스 장면은 잊을 수 없을 것 같습니다.",
-      likeCount: 24,
-      isLiked: false
-    },
-    {
-      id: 2,
-      author: "박지영",
-      rating: 4,
-      date: "2024.01.12",
-      content: "전체적으로 만족스러운 공연이었습니다. 음향과 조명이 인상적이었고, 스토리 전개도 흥미로웠어요. 다만 좌석이 조금 불편했던 점이 아쉬웠습니다.",
-      likeCount: 18,
-      isLiked: false
-    },
-    {
-      id: 3,
-      author: "이준호",
-      rating: 5,
-      date: "2024.01.10",
-      content: "",
-      likeCount: 31,
-      isHidden: true,
-      isLiked: false
-    },
-    {
-      id: 4,
-      author: "최영희",
-      rating: 5,
-      date: "2024.01.08",
-      content: "포스트 말론의 라이브 퍼포먼스가 정말 대단했어요. 무대 위에서의 에너지가 관객들에게까지 전달되어 환상적인 분위기였습니다.",
-      likeCount: 42,
-      isLiked: false
-    },
-    {
-      id: 5,
-      author: "정수민",
-      rating: 4,
-      date: "2024.01.05",
-      content: "음악은 정말 좋았지만 좌석이 조금 멀어서 아쉬웠어요. 그래도 전체적으로 만족스러운 공연이었습니다.",
-      likeCount: 15,
-      isLiked: false
-    },
-    {
-      id: 6,
-      author: "박현우",
-      rating: 5,
-      date: "2024.01.03",
-      content: "기대 이상의 공연이었습니다. 포스트 말론의 목소리와 무대 연출이 완벽하게 어우러져 잊을 수 없는 경험이었어요.",
-      likeCount: 28,
-      isLiked: false
-    },
-    {
-      id: 7,
-      author: "김소영",
-      rating: 3,
-      date: "2024.01.01",
-      content: "음향이 조금 아쉬웠지만 전체적으로 괜찮은 공연이었습니다. 다음에는 더 좋은 좌석에서 관람하고 싶어요.",
-      likeCount: 8,
-      isLiked: false
-    },
-    {
-      id: 8,
-      author: "이민수",
-      rating: 5,
-      date: "2023.12.30",
-      content: "연말을 장식하는 최고의 공연이었습니다. 포스트 말론의 히트곡들을 라이브로 들을 수 있어서 정말 행복했어요.",
-      likeCount: 35,
-      isLiked: false
-    },
-    {
-      id: 9,
-      author: "최지원",
-      rating: 4,
-      date: "2023.12.28",
-      content: "무대 연출과 조명이 정말 훌륭했어요. 포스트 말론의 카리스마 넘치는 무대 매너도 인상적이었습니다.",
-      likeCount: 22,
-      isLiked: false
-    },
-    {
-      id: 10,
-      author: "정다은",
-      rating: 5,
-      date: "2023.12.25",
-      content: "크리스마스에 포스트 말론 공연을 보다니 꿈만 같았어요. 모든 것이 완벽했고 평생 기억에 남을 것 같습니다.",
-      likeCount: 47,
-      isLiked: false
-    },
-    {
-      id: 11,
-      author: "박준호",
-      rating: 4,
-      date: "2023.12.22",
-      content: "좋은 공연이었지만 입장 시간이 조금 길어서 아쉬웠어요. 그래도 공연 자체는 만족스러웠습니다.",
-      likeCount: 12,
-      isLiked: false
-    }
-  ]);
+  const [reviews, setReviews] = useState<ReviewWithOwnerDto[]>(data?.reviews?.content ?? []);
+  const totalPages = data?.reviews?.totalPages ?? 1;
 
-  const reviewsPerPage = 10;
-  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
-  const startIndex = (currentPage - 1) * reviewsPerPage;
-  const endIndex = startIndex + reviewsPerPage;
-  const currentReviews = reviews.slice(startIndex, endIndex);
+
+  // const reviewsPerPage = 10;
+  // const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+  // const startIndex = (currentPage - 1) * reviewsPerPage;
+  // const endIndex = startIndex + reviewsPerPage;
+  // const currentReviews = reviews.slice(startIndex, endIndex);
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, index) => (
@@ -139,14 +55,14 @@ export const Reviews = () => {
 
   const handleLike = (reviewId: number) => {
     setReviews(prevReviews =>
-      prevReviews.map(review =>
-        review.id === reviewId
+      prevReviews.map(currentReview =>
+        currentReview.review.reviewId === reviewId
           ? {
-            ...review,
-            isLiked: !review.isLiked,
-            likeCount: review.isLiked ? review.likeCount - 1 : review.likeCount + 1
+            ...currentReview,
+            isLiked: !currentReview.owner,
+            likeCount: currentReview.owner ? currentReview.review.reactions - 1 : currentReview.review.reactions + 1
           }
-          : review
+          : currentReview
       )
     );
   };
@@ -180,16 +96,12 @@ export const Reviews = () => {
     setReportReason("");
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
   // 별점 평균 계산
   const calculateAverageRating = (): string => {
-    const visibleReviews = reviews.filter(review => !review.isHidden);
+    const visibleReviews = reviews.filter(currentReview => !currentReview.review.visible);
     if (visibleReviews.length === 0) return "0.00";
 
-    const totalRating = visibleReviews.reduce((sum, review) => sum + review.rating, 0);
+    const totalRating = visibleReviews.reduce((sum, currentReview) => sum + currentReview.review.reactions, 0);
     return (totalRating / visibleReviews.length).toFixed(2);
   };
 
@@ -236,33 +148,33 @@ export const Reviews = () => {
       </div>
 
       <div className="space-y-4">
-        {currentReviews.map((review) => (
+        {reviews.map(currentReview => (
           <div
-            key={review.id}
+            key={currentReview.review.reviewId}
             className="w-full p-6 rounded-lg border border-[#0000001a]"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <span className="text-base text-[#212121] font-normal">
-                  {review.author}
+                  review.re
                 </span>
                 <div className="flex gap-1">
-                  {renderStars(review.rating)}
+                  {renderStars(currentReview.review.star)}
                 </div>
               </div>
               <span className="text-sm text-[#00000099] font-normal">
-                {review.date}
+                {currentReview.review.createdAt}
               </span>
             </div>
 
             <div className="mb-4">
-              {review.isHidden ? (
+              {currentReview.review.visible ? (
                 <p className="text-base text-[#00000080] font-normal">
                   비공개 처리된 관람평입니다.
                 </p>
               ) : (
                 <p className="text-base text-black font-normal leading-6">
-                  {review.content}
+                  {currentReview.review.comment}
                 </p>
               )}
             </div>
@@ -270,21 +182,21 @@ export const Reviews = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => handleLike(review.id)}
-                  className={`flex items-center gap-2 text-sm font-normal transition-colors ${review.isLiked
+                  onClick={() => handleLike(currentReview.review.reviewId)}
+                  className={`flex items-center gap-2 text-sm font-normal transition-colors ${currentReview.owner
                     ? "text-red-500"
                     : "text-[#00000099] hover:text-red-500"
                     }`}
                 >
                   <span className="text-lg">
-                    {review.isLiked ? "❤️" : "🤍"}
+                    {currentReview.owner ? "❤️" : "🤍"}
                   </span>
                   <span>좋아요</span>
-                  <span>{review.likeCount}</span>
+                  <span>{currentReview.review.reactions}</span>
                 </button>
               </div>
               <button
-                onClick={() => handleReport(review.id)}
+                onClick={() => handleReport(currentReview.review.reviewId)}
                 className="text-sm text-[#00000099] font-normal hover:text-red-500 transition-colors"
               >
                 신고
@@ -295,12 +207,13 @@ export const Reviews = () => {
       </div>
 
       {/* 페이지네이션 */}
-      {totalPages > 1 && (
+      {totalPages > 0 && (
         <div className="flex justify-center mt-8">
           <div className="flex items-center gap-2">
+            {/* 이전 페이지 버튼 */}
             <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
+              onClick={() =>  onPageChange(currentPage -1)}
+              disabled={currentPage === 0}
               className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === 1
                 ? "text-gray-400 border-gray-200 cursor-not-allowed"
                 : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
@@ -308,23 +221,23 @@ export const Reviews = () => {
             >
               &lt;
             </button>
-
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            {/* 페이지 번호 버튼 */}
+            {Array.from({ length: totalPages }, (_, page) => (
               <button
                 key={page}
-                onClick={() => handlePageChange(page)}
+                onClick={() =>  onPageChange(page)} // 0-based
                 className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === page
                   ? "bg-black text-white border-black"
                   : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
                   }`}
               >
-                {page}
+                {page + 1}
               </button>
             ))}
-
+            {/* 다음 페이지 버튼 */}
             <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              onClick={() =>  onPageChange(currentPage + 1 )}
+              disabled={currentPage === totalPages - 1}
               className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${currentPage === totalPages
                 ? "text-gray-400 border-gray-200 cursor-not-allowed"
                 : "text-[#00000099] border-[#00000033] hover:bg-gray-50"

@@ -12,8 +12,19 @@ import ExternalLink from "./ExternalLink";
 import {eventAPI} from "../../services/event";
 import type {EventDetailResponseDto} from "../../services/types/eventType";
 import api from "../../api/axios";
-import {openChatRoomGlobal} from "../../components/chat/ChatFloatingModal";
+import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
+import type {
+    ReviewResponseDto,
+    ReviewDto,
+    Page,
+    PageableRequest,
+    ReviewForEventResponseDto
+} from "../../services/types/reviewType";
+import {
+    getReviewsByEvent
+} from "../../services/review";
 import type {WishlistResponseDto} from "../../services/types/wishlist";
+
 
 
 const authHeaders = () => {
@@ -31,6 +42,9 @@ const EventDetail = (): JSX.Element => {
     const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
     const [activeTab, setActiveTab] = useState<string>("detail");
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
+    const [reviews, setReviews] = useState<ReviewForEventResponseDto | null>(null)
+    const [currentPage, setCurrentPage] = useState(0);
+
     // 담당자 채팅 오픈 함수
     const handleInquiry = async () => {
         try {
@@ -515,8 +529,17 @@ const EventDetail = (): JSX.Element => {
                 // 실제로는 API 호출: const data = await eventApi.getEventById(eventId);
                 // 지금은 임시 데이터 사용
                 const data = await eventAPI.getEventDetail(Number(eventId));
+
+                const params: PageableRequest = {
+                    page: 0,        
+                    size: 10,      
+                    sort: 'createdAt,desc'
+                }
+
+                const reviewData = await getReviewsByEvent(Number(eventId), params);
                 setTimeout(() => {
                     setEventData(data);
+                    setReviews(reviewData);
                     setLoading(false);
                 }, 500);
             } catch (error) {
@@ -985,7 +1008,11 @@ const EventDetail = (): JSX.Element => {
                                     </div>
                                 </div>
                             ) : (
-                                <Reviews/>
+                                    <Reviews
+                                        data= {reviews}
+                                        currentPage={ currentPage}
+                                        onPageChange={(page) => setCurrentPage(page)}
+                                    />
                             )
                         )}
 
