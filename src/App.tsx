@@ -104,6 +104,7 @@ function AppContent() {
     <>
       <Routes>
         <Route path="/" element={<Main />} />
+        <Route path="/participant-form" element={<ParticipantForm />} />
         <Route path="/eventoverview" element={<EventOverview />} />
         <Route path="/eventdetail/:eventId" element={<EventDetail />} />
         <Route path="/booking/:eventId" element={<BookingPage />} />
@@ -112,7 +113,6 @@ function AppContent() {
         <Route path="/mypage/favorites" element={<MyPageFavorites />} />
         <Route path="/mypage/reservation" element={<Reservation />} />
         <Route path="/mypage/tickets" element={<MyTickets />} />
-        <Route path="/mypage/participant-form" element={<ParticipantForm />} />
         <Route path="/mypage/participant-list" element={<ParticipantList />} />
         <Route path="/mypage/write-review" element={<MyPageMyReview />} />
         <Route path="/mypage/my-review" element={<MyPageMyReview />} />

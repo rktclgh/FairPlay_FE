@@ -3,12 +3,16 @@ import { TopNav } from "../../components/TopNav";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import RegistrationSuccessModal from "../../components/RegistrationSuccessModal";
 import WarningModal from "../../components/WarningModal";
-import { eventApi } from "../../services/api";
+import { saveAttendee, getFormInfo } from "../../services/attendee";
+import type {
+    AttendeeSaveRequestDto,
+    ShareTicketInfoResponseDto
+} from "../../services/types/attendeeType";
 
 export default function ParticipantForm(): JSX.Element {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const eventName = searchParams.get('eventName') || '행사';
+    const [formInfo, setFormInfo] = useState<ShareTicketInfoResponseDto | null>(null);
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
@@ -22,116 +26,21 @@ export default function ParticipantForm(): JSX.Element {
     const [warningMessage, setWarningMessage] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
-
-        if (name === 'phone') {
-            // 숫자만 허용하고 11자리로 제한
-            const numericValue = value.replace(/[^0-9]/g, '');
-            if (numericValue.length <= 11) {
-                // 하이픈 자동 추가
-                let formattedValue = numericValue;
-                if (numericValue.length >= 3 && numericValue.length <= 7) {
-                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3);
-                } else if (numericValue.length >= 8) {
-                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3, 7) + '-' + numericValue.slice(7);
-                }
-
-                setFormData(prev => ({
-                    ...prev,
-                    [name]: formattedValue
-                }));
-            }
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value
-            }));
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formData.agreeToTerms) {
-            alert("개인정보 수집 및 이용에 동의해주세요.");
-            return;
-        }
-        if (!formData.name || !formData.phone || !formData.email) {
-            alert("모든 필드를 입력해주세요.");
-            return;
-        }
-
-        // 행사별 참여자 목록 가져오기
-        const eventKey = `participants_${eventName}`;
-        const existingParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
-
-        // 행사별 최대 참여자 수 확인
-        const getMaxParticipants = (eventName: string): number => {
-            if (eventName === "웨덱스 웨딩박람회 in COEX") return 1; // 계정 주인 + 1명 = 총 2명
-            if (eventName === "G-DRAGON 콘서트: WORLD TOUR") return 2; // 계정 주인 + 2명 = 총 3명
-            return 10; // 기본값
-        };
-
-        const maxParticipants = getMaxParticipants(eventName);
-
-        // 현재 등록된 참여자 수가 최대치에 도달했는지 확인
-        if (existingParticipants.length >= maxParticipants) {
-            setWarningTitle("참여자 등록 완료");
-            setWarningMessage("이미 모든 참석자의 정보가 제출되었습니다.");
-            setIsWarningModalOpen(true);
-            return;
-        }
-
-        // localStorage에 참여자 정보 저장
-        const newParticipant = {
-            id: `participant-${Date.now()}`,
-            name: formData.name,
-            phone: formData.phone,
-            email: formData.email,
-            registrationDate: new Date().toISOString().split('T')[0],
-            isOwner: false
-        };
-
-        // 새 참여자 추가
-        const updatedParticipants = [...existingParticipants, newParticipant];
-
-        // localStorage에 행사별로 저장
-        localStorage.setItem(eventKey, JSON.stringify(updatedParticipants));
-
-        // 성공 모달 표시
-        setRegisteredParticipant(newParticipant);
-        setIsSuccessModalOpen(true);
-    };
-
-
-
-    const handleSuccessModalClose = () => {
-        setIsSuccessModalOpen(false);
-        setRegisteredParticipant(null);
-        navigate("/mypage/tickets");
-    };
-
-    const handleWarningModalClose = () => {
-        setIsWarningModalOpen(false);
-        navigate("/mypage/tickets");
-    };
-
-    // 토큰 검증 API 호출
+        // 토큰 검증 API 호출
     const validateToken = async () => {
         try {
             // URL에서 토큰 추출 (예: ?token=abc123)
             const token = searchParams.get('token');
+
             if (!token) {
-                // 토큰이 없는 경우에도 테스트를 위해 기본값 사용
-                console.log("토큰이 없음, 테스트용 기본값 사용");
-                const testToken = 'valid'; // 테스트용 유효한 토큰
-                const response = await eventApi.validateParticipantToken(testToken, eventName);
-                setIsLoading(false);
-                return true;
+                setWarningMessage("잘못된 링크입니다.")
+                setWarningTitle("오류 발생");
+                setIsWarningModalOpen(true);
+                return;
             }
 
-            // API 호출
-            const response = await eventApi.validateParticipantToken(token, eventName);
+            const res = await getFormInfo(token);
+            setFormInfo(res);
 
             // 성공 응답
             setIsLoading(false);
@@ -170,9 +79,82 @@ export default function ParticipantForm(): JSX.Element {
 
     // 페이지 로드 시 토큰 검증
     useEffect(() => {
-        // 토큰 검증 실행
         validateToken();
-    }, [eventName]);
+    },[])
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, type, checked } = e.target;
+
+        if (name === 'phone') {
+            // 숫자만 허용하고 11자리로 제한
+            const numericValue = value.replace(/[^0-9]/g, '');
+            if (numericValue.length <= 11) {
+                // 하이픈 자동 추가
+                let formattedValue = numericValue;
+                if (numericValue.length >= 3 && numericValue.length <= 7) {
+                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3);
+                } else if (numericValue.length >= 8) {
+                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3, 7) + '-' + numericValue.slice(7);
+                }
+
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: formattedValue
+                }));
+            }
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
+            }));
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.agreeToTerms) {
+            alert("개인정보 수집 및 이용에 동의해주세요.");
+            return;
+        }
+        if (!formData.name || !formData.phone || !formData.email) {
+            alert("모든 필드를 입력해주세요.");
+            return;
+        }
+
+        const data: AttendeeSaveRequestDto = {
+            name: formData.name,
+            email: formData.email, 
+             phone: formData.phone,
+            birth: null
+        }
+
+        const token = searchParams.get("token");
+
+        const res = await saveAttendee(token ?? "", data);
+        
+        const participant = {
+            name: res.name,
+            email: res.email,
+            phone: res.phone
+        };
+    
+        // 성공 모달 표시
+        setRegisteredParticipant(participant);
+        setIsSuccessModalOpen(true);
+    };
+
+
+    const handleSuccessModalClose = () => {
+        setIsSuccessModalOpen(false);
+        setRegisteredParticipant(null);
+        navigate("/mypage/tickets");
+    };
+
+    const handleWarningModalClose = () => {
+        setIsWarningModalOpen(false);
+        navigate("/mypage/tickets");
+    };
+
 
     if (isLoading) {
         return (
@@ -307,7 +289,7 @@ export default function ParticipantForm(): JSX.Element {
                 isOpen={isSuccessModalOpen}
                 onClose={handleSuccessModalClose}
                 participant={registeredParticipant}
-                eventName={eventName}
+                eventName={formInfo?.eventName ?? ""}
             />
             <WarningModal
                 isOpen={isWarningModalOpen}

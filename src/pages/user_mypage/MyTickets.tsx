@@ -112,8 +112,9 @@ export default function MyTickets(): JSX.Element {
         setSelectedTicketData(null);
     };
 
+    // reservationId 임시 설정
     const handleParticipantListOpen = (eventName: string) => {
-        navigate(`/mypage/participant-list?eventName=${encodeURIComponent(eventName)}`);
+        navigate(`/mypage/participant-list`,{state: {reservationId:1,eventName:eventName}});
     };
 
     return (

@@ -1,10 +1,17 @@
-import api from "@/api/axios";
+import api from "../api/axios";
 import type {
     AttendeeSaveRequestDto,
     AttendeeInfoResponseDto,
     AttendeeListInfoResponseDto,
-    AttendeeUpdateRequestDto
+    AttendeeUpdateRequestDto,
+    ShareTicketInfoResponseDto
 } from "./types/attendeeType";
+
+// 폼 링크 조회
+export const getFormInfo = async (token: string): Promise<ShareTicketInfoResponseDto> => {
+    const res = await api.get<ShareTicketInfoResponseDto>(`/api/form?token=${token}`);
+    return res.data;
+}
 
 // 참석자 저장
 export const saveAttendee = async (token: string, data: AttendeeSaveRequestDto): Promise<AttendeeInfoResponseDto> => {
