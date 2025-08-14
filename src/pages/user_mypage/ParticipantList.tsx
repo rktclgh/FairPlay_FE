@@ -25,7 +25,6 @@ export default function ParticipantList(): JSX.Element {
     useEffect(() => {
 
         const fetchParticipant = async () => {
-
             const res = await getAttendeesReservation(Number(reservationId));
             setParticipants(res.attendees);
         }
@@ -61,6 +60,12 @@ export default function ParticipantList(): JSX.Element {
         }
 
         const res = await updateAttendee(Number(updatedParticipant.attendeeId), data);
+
+        setParticipants(prev =>
+            prev.map(p =>
+                p.attendeeId === updatedParticipant.attendeeId ? updatedParticipant : p
+            )
+        );
         alert("참여자 정보가 수정되었습니다.");
     };
 

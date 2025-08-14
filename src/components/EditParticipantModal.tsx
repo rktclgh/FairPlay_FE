@@ -20,7 +20,7 @@ export default function EditParticipantModal({
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
-        email: ""
+        email: "",
     });
 
     useEffect(() => {

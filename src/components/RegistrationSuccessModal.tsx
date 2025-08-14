@@ -2,18 +2,16 @@ import React from "react";
 import { CheckCircle } from "lucide-react";
 
 interface Participant {
-    id: string;
+    id: number;
     name: string;
     phone: string;
     email: string;
-    registrationDate: string;
-    isOwner?: boolean;
 }
 
 interface RegistrationSuccessModalProps {
     isOpen: boolean;
     onClose: () => void;
-    participant: Participant;
+    participant: Participant | null;
     eventName: string;
 }
 
@@ -54,15 +52,15 @@ export default function RegistrationSuccessModal({
                                     이름
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
-                                    {participant.name}
+                                    {participant?.name}
                                 </span>
-                            </div>
+                            </div>                          
                             <div className="flex justify-between">
                                 <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-700 text-sm">
                                     휴대폰 번호
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
-                                    {participant.phone}
+                                    {participant?.phone}
                                 </span>
                             </div>
                             <div className="flex justify-between">
@@ -70,7 +68,7 @@ export default function RegistrationSuccessModal({
                                     이메일
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
-                                    {participant.email}
+                                    {participant?.email}
                                 </span>
                             </div>
                         </div>

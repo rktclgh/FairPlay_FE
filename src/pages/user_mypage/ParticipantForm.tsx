@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import RegistrationSuccessModal from "../../components/RegistrationSuccessModal";
 import WarningModal from "../../components/WarningModal";
 import { saveAttendee, getFormInfo } from "../../services/attendee";
@@ -8,9 +8,14 @@ import type {
     AttendeeSaveRequestDto,
     ShareTicketInfoResponseDto
 } from "../../services/types/attendeeType";
+interface Participant{
+    id: number;
+    name: string;
+    phone: string;
+    email: string;
+};
 
 export default function ParticipantForm(): JSX.Element {
-    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [formInfo, setFormInfo] = useState<ShareTicketInfoResponseDto | null>(null);
     const [formData, setFormData] = useState({
@@ -20,7 +25,7 @@ export default function ParticipantForm(): JSX.Element {
         agreeToTerms: false,
     });
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-    const [registeredParticipant, setRegisteredParticipant] = useState<any>(null);
+    const [registeredParticipant, setRegisteredParticipant] = useState<Participant | null>(null);
     const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
     const [warningTitle, setWarningTitle] = useState("");
     const [warningMessage, setWarningMessage] = useState("");
@@ -121,25 +126,25 @@ export default function ParticipantForm(): JSX.Element {
             return;
         }
 
-        const data: AttendeeSaveRequestDto = {
+        const attendeeData: AttendeeSaveRequestDto = {
             name: formData.name,
             email: formData.email, 
             phone: formData.phone,
-            birth: null
+            agreeToTerms: formData.agreeToTerms
         }
 
         const token = searchParams.get("token");
+        const res = await saveAttendee(token ?? "", attendeeData);
 
-        const res = await saveAttendee(token ?? "", data);
-        
-        const participant = {
+        const resParticipant: Participant = {
+            id: res.attendeeId,
             name: res.name,
+            phone: res.phone,
             email: res.email,
-            phone: res.phone
-        };
-    
+        }
+        
         // 성공 모달 표시
-        setRegisteredParticipant(participant);
+        setRegisteredParticipant(resParticipant);
         setIsSuccessModalOpen(true);
     };
 
@@ -192,7 +197,7 @@ export default function ParticipantForm(): JSX.Element {
                             <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto mb-4">
                                 <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm leading-6 tracking-[0]">
                                     <p className="mb-2 font-bold">1. 수집하는 개인정보 항목</p>
-                                    <p className="mb-2">• 필수항목: 이름, 연락처, 이메일</p>
+                                    <p className="mb-2">• 필수항목: 이름, 생년월일, 연락처, 이메일</p>
                                     <p className="mb-2">• 선택항목: 없음</p>
                                     <p className="mb-2 font-bold">2. 개인정보의 수집 및 이용목적</p>
                                     <p className="mb-2">• 이벤트 참여자 관리 및 안내</p>
