@@ -89,7 +89,7 @@ export const Footer: React.FC = () => {
                 <div className="mt-12 pt-8">
                     <div className="flex flex-col md:flex-row justify-between items-center">
                         <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            © 2024 FairPlay. All rights reserved.
+                            © 2025 FairPlay. All rights reserved.
                         </p>
                         <div className="flex space-x-6 mt-4 md:mt-0 items-center">
                             <a href="#" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>개인정보처리방침</a>
