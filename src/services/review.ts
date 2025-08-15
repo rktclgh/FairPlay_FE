@@ -9,6 +9,8 @@ import type {
     ReviewUpdateResponseDto,
     ReviewDeleteResponseDto,
     PossibleReviewResponseDto,
+    ReactionRequestDto,
+    ReactionResponseDto,
     Page,
     PageableRequest
 } from "./types/reviewType";
@@ -20,7 +22,7 @@ const setAuthorization = () => {
 
 // 리뷰 저장 
 export const saveReview = async (data: ReviewSaveRequestDto): Promise<ReviewSaveResponseDto> => {
-    const res = await api.post<ReviewSaveResponseDto>(`/api/reviews`, data,{headers: setAuthorization() });
+    const res = await api.post<ReviewSaveResponseDto>(`/api/reviews`, data, {headers: setAuthorization() });
     return res.data;
 }
 
@@ -51,5 +53,11 @@ export const updateReview = async (reviewId: number, data: ReviewUpdateRequestDt
 // 리뷰 삭제
 export const deleteReview = async (reviewId: number): Promise<ReviewDeleteResponseDto> => {
     const res = await api.delete<ReviewDeleteResponseDto>(`/api/reviews/${reviewId}`,{headers : setAuthorization()});
+    return res.data;
+}
+
+// 리뷰 리액션 업데이트
+export const updateReaction = async (data: ReactionRequestDto): Promise<ReactionResponseDto> => {
+    const res = await api.post<ReactionResponseDto>(`/api/review-reactions`, data, { headers: setAuthorization() });
     return res.data;
 }

@@ -18,97 +18,6 @@ import {
     deleteReview
 } from "../../services/review";
 
-// const reviewsData = [
-//     {
-//         id: 1,
-//         title: "2025 AI & 로봇 박람회",
-//         date: "2025.01.16 (목) 14:00",
-//         location: "코엑스 전시장 A홀",
-//         rating: 5,
-//         reviewDate: "2025.01.17",
-//         content: "정말 유익하고 재미있는 박람회였습니다. 최신 AI 기술과 로봇들을 직접 체험해볼 수 있어서 좋았고, 전시 구성도 체계적이었습니다. 특히 휴머노이드 로봇 시연이 인상적이었어요. 다음에도 꼭 참석하고 싶습니다.",
-//         likes: 12,
-//         isPublic: true,
-//         createdAt: "2025.01.17"
-//     },
-//     {
-//         id: 2,
-//         title: "2024 스마트시티 엑스포",
-//         date: "2024.12.10 (화) 10:00",
-//         location: "킨텍스 제1전시장",
-//         rating: 4,
-//         reviewDate: "2024.12.11",
-//         content: "스마트시티 관련 다양한 기술들을 한 번에 볼 수 있어서 좋았습니다. 다만 관람객이 너무 많아서 조금 복잡했어요.",
-//         likes: 8,
-//         isPublic: true,
-//         createdAt: "2024.12.11"
-//     },
-//     {
-//         id: 3,
-//         title: "2024 푸드테크 페어",
-//         date: "2024.11.20 (수) 13:00",
-//         location: "삼성동 코엑스",
-//         rating: 3,
-//         reviewDate: "2024.11.21",
-//         content: "음식 관련 기술들이 흥미로웠지만 체험 기회가 부족했습니다.",
-//         likes: 3,
-//         isPublic: false,
-//         createdAt: "2024.11.21"
-//     }
-// ];
-
-// const writeReviews = [
-//     {
-//         id: 1,
-//         title: "2025 AI & 로봇 박람회",
-//         dateRange: "2025.01.15 (수) ~ 2025.01.17 (금)",
-//         viewDate: "2025.01.16 (목) 14:00",
-//         location: "코엑스 전시장 A홀",
-//         ticket: "일반 관람권 1매",
-//         image: "/images/NoImage.png",
-//         hasReview: false
-//     },
-//     {
-//         id: 2,
-//         title: "2024 스마트시티 엑스포",
-//         dateRange: "2024.12.05 (목) ~ 2024.12.08 (일)",
-//         viewDate: "2024.12.06 (금) 10:30",
-//         location: "킨텍스 제1전시장",
-//         ticket: "VIP 관람권 2매",
-//         image: "/images/NoImage.png",
-//         hasReview: true
-//     },
-//     {
-//         id: 3,
-//         title: "2024 푸드테크 페어",
-//         dateRange: "2024.11.20 (수) ~ 2024.11.22 (금)",
-//         viewDate: "2024.11.21 (목) 13:00",
-//         location: "삼성동 코엑스",
-//         ticket: "일반 관람권 1매",
-//         image: "/images/NoImage.png",
-//         hasReview: false
-//     },
-//     {
-//         id: 4,
-//         title: "2024 게임쇼 코리아",
-//         dateRange: "2024.10.15 (화) ~ 2024.10.18 (금)",
-//         viewDate: "2024.10.16 (수) 15:00",
-//         location: "킨텍스 제2전시장",
-//         ticket: "프리미엄 패스 1매",
-//         image: "/images/NoImage.png",
-//         hasReview: true
-//     },
-//     {
-//         id: 5,
-//         title: "2024 자동차 엑스포",
-//         dateRange: "2024.09.25 (수) ~ 2024.09.28 (토)",
-//         viewDate: "2024.09.26 (목) 11:00",
-//         location: "킨텍스 제1전시장",
-//         ticket: "일반 관람권 1매",
-//         image: "/images/NoImage.png",
-//         hasReview: false
-//     },
-// ];
 
 export const MyPageMyReview = () => {
     /** 초기 세팅 데이터 */
@@ -190,23 +99,6 @@ export const MyPageMyReview = () => {
     };
 
     const confirmDelete = async () => {
-        // if (deleteType === 'bulk') {
-        //     // 선택된 리뷰들을 제외한 나머지 리뷰들만 남김
-        //     setReviews(reviews.filter(review => !selectedReviews.includes(review.id)));
-
-        //     // 선택 상태 초기화
-        //     setSelectedReviews([]);
-        //     setSelectAll(false);
-
-        //     console.log("일괄 삭제 완료:", selectedReviews.length + "개");
-        // } else if (deleteType === 'single' && deleteTargetId) {
-        //     // 개별 삭제
-        //     setReviews(reviews.filter(review => review.id !== deleteTargetId));
-        //     console.log("개별 삭제 완료:", deleteTargetId);
-        // }
-
-        // 개별 삭제
-
         if (deleteTargetId == null) {
             return;
         }
@@ -228,10 +120,9 @@ export const MyPageMyReview = () => {
     const handleEventClick = (event: EventDto, reservationId: number) => {
         
         if (savedReview?.some(review => review.reservationId === reservationId)) {
-            alert("이미 리뷰가 있습니다.");
+            alert("이미 리뷰 작성이 완료된 행사입니다.");
             return;
        }
-
 
         setSelectedEvent(event);
         setSelectReservationId(reservationId)
@@ -295,23 +186,12 @@ export const MyPageMyReview = () => {
         
         // 수정 모드 O 수정하려고 선택한 리뷰 정보
         if (isEditMode && editingReview) {
-            // 수정 모드: 기존 리뷰 업데이트
-            // const updatedReviews = savedReview?.map(data =>
-            //     data.review.reviewId === editingReview.id
-            //         ? {
-            //             ...review,
-            //             rating: rating,
-            //             content: reviewText,
-            //             isPublic: !isPrivate,
-            //             reviewDate: new Date().toLocaleDateString('ko-KR', {
-            //                 year: 'numeric',
-            //                 month: '2-digit',
-            //                 day: '2-digit'
-            //             }).replace(/\. /g, '.').replace('.', '')
-            //         }
-            //         : null;
-            // );
 
+            if (!savedReview?.some(data => data.review.reviewId === editingReview.reviewId)) {
+                alert("해당 리뷰는 저장되지 않은 리뷰입니다.");
+                return;
+            }
+            // 수정 모드: 기존 리뷰 업데이트
             const reviewUpdateRequestDto: ReviewUpdateRequestDto = {
                     star: rating,
                     comment: reviewText,
@@ -327,10 +207,8 @@ export const MyPageMyReview = () => {
                         : data
                 )
             );
-
-            console.log("리뷰 수정 완료:", res.reviewId);
         } else {
-
+            // 리뷰 저장
             if (selectReservationId == null) {
                 return;
             }
@@ -345,38 +223,29 @@ export const MyPageMyReview = () => {
                 visible: !isPrivate,
                 comment: reviewText
             };
-            console.log("reservationId:"+selectReservationId);
-
             const res = await saveReview(saveReviewRequest);
 
             const reviewDto: ReviewDto = {
-                    reviewId: res.reviewId,
-                    star: res.star,
-                    reactions: 0,
-                    comment: res.comment,
-                    visible: res.visible,
-                    createdAt: res.createdAt.toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                        }).replace(/\. /g, '.').replace('.', '')
+                reviewId: res.reviewId,
+                userId: null,
+                nickname: res.nickname,
+                star: res.star,
+                reactions: 0,
+                comment: res.comment,
+                visible: res.visible,
+                createdAt: res.createdAt.toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }).replace(/\. /g, '.').replace('.', '')
             }
-
             const reviewResponse: ReviewResponseDto = {
                 reservationId: selectReservationId,
-                event: selectedEvent ?? null,
+                event: selectedEvent,
                 review: reviewDto,
                 owner: true
             }
             setSavedReviews([reviewResponse, ...(savedReview ?? [])]);
-
-
-            // 선택된 행사의 리뷰 작성 상태 업데이트
-            // setWriteReviewsState(prev => prev?.map(data =>
-            //     data. === selectedEvent.
-            //         ? { ...event, hasReview: true }
-            //         : event
-            // ));
         }
 
         // 제출 후 리스트로 돌아가기

@@ -9,6 +9,7 @@ export interface ReviewSaveRequestDto{
 // 리뷰 저장 응답
 export interface ReviewSaveResponseDto{
     reviewId: number,
+    nickname: string,
     star: number,
     visible: boolean,
     comment: string,
@@ -21,9 +22,11 @@ export interface ReviewForEventResponseDto{
     reviews: Page<ReviewWithOwnerDto> | null
 }
 
+// 리뷰 + 로그인사용자=작성자 일치여부
 export interface ReviewWithOwnerDto {
-  review: ReviewDto;
-  owner: boolean;
+    review: ReviewDto;
+    owner: boolean;
+    liked: boolean
 }
 
 // 마이페이지 리뷰 가능한 행사 목록 조회
@@ -69,6 +72,8 @@ export interface ReviewResponseDto{
     owner: boolean
 }
 
+
+// 이벤트 정보
 export interface EventDto{
     title: string, // 행사 제목
     buildingName: string, // 행사 장소
@@ -78,8 +83,10 @@ export interface EventDto{
     eventScheduleInfo: EventScheduleInfo // 이벤트 시작, 끝 날짜
 }
 
+// 리뷰 
 export interface ReviewDto{
     reviewId: number,
+    userId: number | null,
     nickname: string,
     star: number,
     reactions: number,
@@ -88,12 +95,25 @@ export interface ReviewDto{
     createdAt: string
 }
 
+// 관람 정보
 export interface ViewingScheduleInfo{
     date: string, 
     dayOfWeek: string, 
     startTime: string; 
 }
 
+// 리뷰 좋아요 요청
+export interface ReactionRequestDto{
+    reviewId: number
+}
+
+// 리뷰 좋아요 응답
+export interface ReactionResponseDto{
+    reviewId: number,
+    count: number
+}
+
+// 행사 스케줄 정보
 export interface EventScheduleInfo{
     startDate: string,
     endDate: string
