@@ -622,20 +622,9 @@ const EventDetail = (): JSX.Element => {
     const loadAllSchedules = async () => {
         try {
             console.log('전체 회차 조회 시도...');
-            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule`);
+            const response = await api.get(`/api/events/${eventId}/schedule`);
 
-            if (!response.ok) {
-                if (response.status === 403) {
-                    console.warn('회차 조회 권한이 없습니다. 목업 데이터를 사용합니다.');
-                    // 권한이 없을 때 전체 날짜에 대한 목업 데이터 생성
-                    const mockAllSchedules = generateMockSchedulesForAllDates();
-                    setAllSchedules(mockAllSchedules);
-                    return;
-                }
-                throw new Error(`회차 목록 조회 실패: ${response.status}`);
-            }
-
-            const scheduleList = await response.json();
+            const scheduleList = response.data;
             console.log('API로부터 받은 전체 회차 목록:', scheduleList);
 
             // 전체 회차 데이터 포맷팅
@@ -738,40 +727,8 @@ const EventDetail = (): JSX.Element => {
         try {
             console.log('이벤트 티켓 정보 조회 시도...', { eventId });
 
-            // 이벤트에 등록된 티켓 목록 조회 (Ticket 테이블 + event_ticket 테이블)
-            // TicketController의 @GetMapping 엔드포인트 사용
-            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/tickets`);
-
-            if (!response.ok) {
-                console.error('티켓 조회 API 응답 실패:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    url: response.url
-                });
-
-                if (response.status === 403) {
-                    console.warn('티켓 조회 권한이 없습니다.');
-                    setTicketPrices([]); // 빈 배열로 설정하여 등록되지 않음 메시지 표시
-                    return;
-                }
-                if (response.status === 404) {
-                    console.log('해당 이벤트에 등록된 티켓이 없습니다.');
-                    setTicketPrices([]); // 빈 배열로 설정
-                    return;
-                }
-
-                // 에러 응답 내용 확인
-                try {
-                    const errorText = await response.text();
-                    console.error('에러 응답 내용:', errorText);
-                } catch (e) {
-                    console.error('에러 응답 읽기 실패:', e);
-                }
-
-                throw new Error(`티켓 조회 실패: ${response.status} ${response.statusText}`);
-            }
-
-            const ticketList = await response.json();
+            const response = await api.get(`/api/events/${eventId}/tickets`);
+            const ticketList = response.data;
             console.log('API로부터 받은 이벤트 티켓 목록:', ticketList);
 
             if (!ticketList || ticketList.length === 0) {
