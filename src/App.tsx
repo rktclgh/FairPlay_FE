@@ -66,11 +66,6 @@ import { ThemeProvider } from './context/ThemeContext';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
-import AdminEventApproval from "./pages/admin/admin_event_apply";
-import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
-import ModificationRequestList from "./pages/admin/ModificationRequestList";
-import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
-// import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 
 function AppContent() {
   useScrollToTop();
@@ -188,10 +183,6 @@ function AppContent() {
           <Route path="/host/revenue-summary" element={<RevenueSummary />} />
           <Route path="/host/time-analysis" element={<TimeAnalysis />} />
           <Route path="/host/qr-scan" element={<QRScanPage />} />
-          <Route path="/admin/event-applications" element={<AdminEventApproval />} />
-          <Route path="/admin/event-applications/:id" element={<AdminEventApprovalDetail />} />
-          <Route path="/admin/modification-requests" element={<ModificationRequestList />} />
-          <Route path="/admin/modification-requests/:requestId" element={<ModificationRequestDetailPage />} />
           <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
         </Routes>
       </Suspense>
