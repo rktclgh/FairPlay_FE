@@ -724,6 +724,75 @@ const EventDetail = (): JSX.Element => {
 
     // 티켓 가격 정보 로드 함수
     const loadTicketPrices = async () => {
+        // 기존 코드 (인증 필요)
+        // try {
+        //     console.log('이벤트 티켓 정보 조회 시도...', { eventId });
+        //
+        //     // 이벤트에 등록된 티켓 목록 조회 (Ticket 테이블 + event_ticket 테이블)
+        //     // TicketController의 @GetMapping 엔드포인트 사용
+        //     const response = await authManager.authenticatedFetch(`/api/events/${eventId}/tickets`);
+        //
+        //     if (!response.ok) {
+        //         console.error('티켓 조회 API 응답 실패:', {
+        //             status: response.status,
+        //             statusText: response.statusText,
+        //             url: response.url
+        //         });
+        //
+        //         if (response.status === 403) {
+        //             console.warn('티켓 조회 권한이 없습니다.');
+        //             setTicketPrices([]); // 빈 배열로 설정하여 등록되지 않음 메시지 표시
+        //             return;
+        //         }
+        //         if (response.status === 404) {
+        //             console.log('해당 이벤트에 등록된 티켓이 없습니다.');
+        //             setTicketPrices([]); // 빈 배열로 설정
+        //             return;
+        //         }
+        //
+        //         // 에러 응답 내용 확인
+        //         try {
+        //             const errorText = await response.text();
+        //             console.error('에러 응답 내용:', errorText);
+        //         } catch (e) {
+        //             console.error('에러 응답 읽기 실패:', e);
+        //         }
+        //
+        //         throw new Error(`티켓 조회 실패: ${response.status} ${response.statusText}`);
+        //     }
+        //
+        //     const ticketList = await response.json();
+        //     console.log('API로부터 받은 이벤트 티켓 목록:', ticketList);
+        //
+        //     if (!ticketList || ticketList.length === 0) {
+        //         console.log('조회된 티켓이 없습니다.');
+        //         setTicketPrices([]); // 빈 배열로 설정
+        //         return;
+        //     }
+        //
+        //     // 티켓 가격 목록 생성
+        //     const priceList = ticketList.map((ticket: any) => {
+        //         console.log('개별 티켓 데이터:', ticket);
+        //         return {
+        //             name: ticket.name || ticket.ticketName || ticket.title || '이름 없음',
+        //             price: ticket.price || 0
+        //         };
+        //     }).sort((a, b) => b.price - a.price); // 가격 높은 순으로 정렬
+        //
+        //     setTicketPrices(priceList);
+        //     console.log('이벤트 티켓 가격 목록:', priceList);
+        //
+        // } catch (error) {
+        //     console.error('티켓 가격 로드 실패:', error);
+        //     console.error('에러 상세 정보:', {
+        //         message: error instanceof Error ? error.message : error,
+        //         stack: error instanceof Error ? error.stack : undefined,
+        //         eventId
+        //     });
+        //     // 에러 발생 시에도 빈 배열로 설정 (목업 데이터 사용하지 않음)
+        //     setTicketPrices([]);
+        // }
+
         try {
             console.log('이벤트 티켓 정보 조회 시도...', { eventId });
 
