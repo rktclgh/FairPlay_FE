@@ -16,7 +16,7 @@ import ParticipantForm from "./pages/user_mypage/ParticipantForm";
 import ParticipantList from "./pages/user_mypage/ParticipantList";
 import EventOverview from "./pages/user_event/EventOverview";
 import EventDetail from "./pages/user_event/EventDetail";
-import { BookingPage } from "./pages/user_event/BookingPage";
+import { TicketReservation } from "./pages/user_event/TicketReservation";
 import { LoginPage } from "./pages/user_auth/LoginPage";
 import { SignUpPage } from "./pages/user_auth/SignUpPage";
 import { FindPassword } from "./pages/user_auth/FindPassword";
@@ -110,12 +110,13 @@ function AppContent() {
           <Route path="/participant-form" element={<ParticipantForm />} />
           <Route path="/eventoverview" element={<EventOverview />} />
           <Route path="/eventdetail/:eventId" element={<EventDetail />} />
-          <Route path="/booking/:eventId" element={<BookingPage />} />
+          <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
           <Route path="/mypage/info" element={<MyPageInfo />} />
           <Route path="/mypage/account" element={<MyPageAccount />} />
           <Route path="/mypage/favorites" element={<MyPageFavorites />} />
           <Route path="/mypage/reservation" element={<Reservation />} />
           <Route path="/mypage/tickets" element={<MyTickets />} />
+          <Route path="/mypage/participant-form" element={<ParticipantForm />} />
           <Route path="/mypage/participant-list" element={<ParticipantList />} />
           <Route path="/mypage/write-review" element={<MyPageMyReview />} />
           <Route path="/mypage/my-review" element={<MyPageMyReview />} />
