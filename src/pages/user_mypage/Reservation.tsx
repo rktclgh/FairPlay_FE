@@ -1,80 +1,71 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
-
-const defaultReservationData = [
-    {
-        id: 1,
-        title: "G-DRAGON 콘서트: WORLD TOUR",
-        image: "/images/gd1.png",
-        bookingDate: "2024년 7월 15일",
-        amount: "250,000원",
-        paymentMethod: "신용카드",
-        status: "결제 완료",
-        statusColor: "bg-[#4caf50]",
-        quantity: 2,
-    },
-    {
-        id: 2,
-        title: "POST MALONE LIVE CONCERT",
-        image: "/images/malone.jpg",
-        bookingDate: "2024년 7월 20일",
-        amount: "270,000원",
-        paymentMethod: "카카오페이",
-        status: "결제 완료",
-        statusColor: "bg-[#4caf50]",
-        quantity: 1,
-    },
-    {
-        id: 3,
-        title: "2024 AI & 로봇 박람회",
-        image: "/images/NoImage.png",
-        bookingDate: "2024년 8월 1일",
-        amount: "0원",
-        paymentMethod: "-",
-        status: "예약 완료",
-        statusColor: "bg-[#2196f3]",
-        hasButton: true,
-        quantity: 3,
-    },
-    {
-        id: 4,
-        title: "현대미술 특별전",
-        image: "/images/NoImage.png",
-        bookingDate: "2024년 7월 28일",
-        amount: "24,000원",
-        paymentMethod: "카카오페이",
-        status: "결제 실패",
-        statusColor: "bg-[#f44336]",
-        quantity: 1,
-    },
-    {
-        id: 5,
-        title: "스타트업 투자 세미나",
-        image: "/images/NoImage.png",
-        bookingDate: "2024년 7월 28일",
-        amount: "15,000원",
-        paymentMethod: "신용카드",
-        status: "취소 완료",
-        statusColor: "bg-[#9e9e9e]",
-        quantity: 2,
-    },
-];
+import { toast } from "react-toastify";
+import reservationService, { ReservationResponseDto } from "../../services/reservationService";
 
 export default function Reservation(): JSX.Element {
-    const [reservationData, setReservationData] = useState(defaultReservationData);
+    const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
+    const [loading, setLoading] = useState(true);
 
 
 
 
     useEffect(() => {
-        // localStorage에서 예매 내역 읽어오기
-        const bookingHistory = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
+        const loadReservations = async () => {
+            try {
+                setLoading(true);
+                const data = await reservationService.getMyReservations();
+                setReservations(data);
+            } catch (error) {
+                console.error('예약 목록 로드 실패:', error);
+                toast.error('예약 목록을 불러오는 중 오류가 발생했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        // localStorage 데이터와 기본 데이터 합치기
-        const allReservations = [...bookingHistory, ...defaultReservationData];
-        setReservationData(allReservations);
+        loadReservations();
     }, []);
+
+    // 결제 상태에 따른 색상 결정
+    const getPaymentStatusColor = (paymentStatus?: string) => {
+        if (!paymentStatus) return 'bg-[#2196f3]'; // 결제 대기 (파란색)
+        
+        switch (paymentStatus) {
+            case '결제 완료':
+            case 'COMPLETED':
+                return 'bg-[#4caf50]'; // 초록색
+            case '결제 대기':
+            case 'PENDING':
+                return 'bg-[#2196f3]'; // 파란색
+            case '결제 취소':
+            case 'CANCELLED':
+                return 'bg-[#9e9e9e]'; // 회색
+            case '결제 실패':
+            case 'FAILED':
+                return 'bg-[#f44336]'; // 빨간색
+            default:
+                return 'bg-[#666666]'; // 기본 회색
+        }
+    };
+
+    // 날짜 포맷팅
+    const formatDate = (dateTimeStr: string | null) => {
+        if (!dateTimeStr) return "날짜 미정";
+        const date = new Date(dateTimeStr);
+        return date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+
+    // 금액 포맷팅
+    const formatAmount = (price: number, quantity: number) => {
+        const total = price * quantity;
+        return total === 0 ? "무료" : `${total.toLocaleString()}원`;
+    };
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -87,81 +78,111 @@ export default function Reservation(): JSX.Element {
                                     <TopNav />
 
                 <div className="absolute top-[239px] left-64 right-0">
-                    <div className="space-y-[30px]">
-                        {reservationData.map((reservation) => (
-                            <div
-                                key={reservation.id}
-                                className="border-none shadow-none bg-transparent"
-                            >
-                                <div className="p-0 flex items-start gap-[31px] relative">
-                                    <img
-                                        className="w-[158px] h-[190px] object-cover rounded"
-                                        alt="Event"
-                                        src={reservation.image}
-                                    />
+                    {loading ? (
+                        <div className="flex items-center justify-center h-64">
+                            <div className="text-lg">로딩 중...</div>
+                        </div>
+                    ) : reservations.length === 0 ? (
+                        <div className="flex items-center justify-center h-64">
+                            <div className="text-gray-500">예약 내역이 없습니다.</div>
+                        </div>
+                    ) : (
+                        <div className="space-y-[30px]">
+                            {reservations.map((reservation) => (
+                                <div
+                                    key={reservation.reservationId}
+                                    className="border-none shadow-none bg-transparent"
+                                >
+                                    <div className="p-0 flex items-start gap-[31px] relative">
+                                        <img
+                                            className="w-[158px] h-[190px] object-cover rounded"
+                                            alt="Event"
+                                            src={reservation.eventThumbnailUrl || "/images/NoImage.png"}
+                                        />
 
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-4 mb-[15px]">
-                                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-                                                {reservation.title}
-                                            </h3>
-                                            {reservation.hasButton && (
-                                                <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg border-2 border-blue-600 hover:border-blue-700 h-[32px] px-4 flex items-center justify-center shadow-md transition-colors duration-200">
-                                                    <span className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-xs tracking-[0] leading-[18px]">
-                                                        부스 예약 신청
-                                                    </span>
-                                                </button>
-                                            )}
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-4 mb-[15px]">
+                                                <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                                                    {reservation.eventName}
+                                                </h3>
+                                                {/* 부스 예약 버튼은 특정 조건에서만 표시 - 현재는 제거 */}
+                                            </div>
+
+                                            <div className="mb-[15px] flex gap-[100px]">
+                                                <div>
+                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                        예매일
+                                                    </div>
+                                                    <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                        {formatDate(reservation.createdAt)}
+                                                    </div>
+                                                </div>
+
+                                                {/* 행사 정보 */}
+                                                {reservation.scheduleDate && (
+                                                    <div>
+                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                            행사 정보
+                                                        </div>
+                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6">
+                                                            <div>{formatDate(reservation.scheduleDate)}</div>
+                                                            {reservation.startTime && reservation.endTime && (
+                                                                <div className="text-sm text-gray-600 mt-1">
+                                                                    {reservation.startTime.slice(0, 5)} - {reservation.endTime.slice(0, 5)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex gap-[100px]">
+                                                <div>
+                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                        결제 금액
+                                                    </div>
+                                                    <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                        {formatAmount(reservation.price, reservation.quantity)}
+                                                        {reservation.quantity > 1 && (
+                                                            <span className="text-gray-500 ml-1">({reservation.quantity}매)</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                        결제 수단
+                                                    </div>
+                                                    <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                        {reservation.paymentMethod || (reservation.price === 0 ? "무료" : "미결제")}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                        티켓 정보
+                                                    </div>
+                                                    <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                        {reservation.ticketName} (₩{reservation.ticketPrice.toLocaleString()})
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div className="mb-[15px]">
-                                            <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                예매일
+                                        <div className="absolute top-0 right-0">
+                                            <div
+                                                className={`${getPaymentStatusColor(reservation.paymentStatus)} text-white border-none rounded h-[27px] px-1.5 flex items-center justify-center`}
+                                            >
+                                                <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-xs tracking-[0] leading-[18px]">
+                                                    {reservation.paymentStatus || "결제 대기"}
+                                                </span>
                                             </div>
-                                            <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                {reservation.bookingDate}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-[100px]">
-                                            <div>
-                                                <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                    결제 금액
-                                                </div>
-                                                <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                    {reservation.amount}
-                                                    {(reservation.quantity || 1) > 1 && (
-                                                        <span className="text-gray-500 ml-1">({reservation.quantity || 1}매)</span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                    결제 수단
-                                                </div>
-                                                <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                    {reservation.paymentMethod}
-                                                </div>
-                                            </div>
-                                        </div>
-
-
-                                    </div>
-
-                                    <div className="absolute top-0 right-0">
-                                        <div
-                                            className={`${reservation.statusColor} text-white border-none rounded h-[27px] px-1.5 flex items-center justify-center`}
-                                        >
-                                            <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-xs tracking-[0] leading-[18px]">
-                                                {reservation.status}
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
