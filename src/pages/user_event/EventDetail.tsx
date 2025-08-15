@@ -15,9 +15,6 @@ import type { EventDetailResponseDto } from "../../services/types/eventType";
 import api from "../../api/axios";
 import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 import type {
-    ReviewResponseDto,
-    ReviewDto,
-    Page,
     PageableRequest,
     ReviewForEventResponseDto
 } from "../../services/types/reviewType";
