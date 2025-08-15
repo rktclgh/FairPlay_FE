@@ -23,7 +23,6 @@ export default function EventApprovalDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    // ▶ 데이터 로딩은 1번 파일 기준
     const [detail, setDetail] = useState<EventApplyDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
