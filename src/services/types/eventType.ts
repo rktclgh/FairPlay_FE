@@ -134,6 +134,11 @@ export interface EventDetailModificationRequestDto {
     checkInAllowed?: boolean;
     checkOutAllowed?: boolean;
     age?: boolean;
+    businessNumber?: string;    // 사업자 등록번호
+    verified?: boolean;         // 사업자 등록번호 검증 여부
+    managerName?: string;       // 담당자명
+    managerPhone?: string;      // 담당자 연락처
+    managerEmail?: string;      // 담당자 이메일
     tempFiles?: FileUploadDto[];
     deletedFileIds?: number[];  // 삭제할 파일 ID 목록
 }
