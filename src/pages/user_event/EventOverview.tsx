@@ -5,7 +5,8 @@ import {
     Map as MapIcon,
 } from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
@@ -16,24 +17,29 @@ import api from "../../api/axios";
 import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
 import EventMapPin from "../../components/EventMapPin";
+import { useTheme } from "../../context/ThemeContext";
+import { Footer } from "../../components/Footer";
 
 const authHeaders = () => {
-  const t = localStorage.getItem("accessToken");
-  return t ? { Authorization: `Bearer ${t}` } : {};
+    const t = localStorage.getItem("accessToken");
+    return t ? { Authorization: `Bearer ${t}` } : {};
 };
+
+const isAuthed = () => !!localStorage.getItem("accessToken");
 
 // 캘린더 api 데이터 함수
 type CalendarGroupedDto = { date: string; titles: string[] };
 
 const fetchCalendarGrouped = (year: number, month: number) =>
-  api.get<CalendarGroupedDto[]>("/api/calendar/events/grouped", {
-    params: { year, month },
-    headers: authHeaders(),
-  });
+    api.get<CalendarGroupedDto[]>("/api/calendar/events/grouped", {
+        params: { year, month },
+        headers: authHeaders(),
+    });
 
 
 
 export default function EventOverview() {
+    const { isDark } = useTheme();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
@@ -41,7 +47,7 @@ export default function EventOverview() {
     const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
     const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
-    
+
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
         try {
             // localStorage에서 좋아요 상태 불러오기
@@ -72,7 +78,7 @@ export default function EventOverview() {
     const [startDate, setStartDate] = React.useState<Date | null>(null);
     const [endDate, setEndDate] = React.useState<Date | null>(null);
     const [selectedYear, setSelectedYear] = React.useState(2025);
-    
+
     // 캘린더 현재 연/월
     const [calendarYear, setCalendarYear] = React.useState(new Date().getFullYear());
     const [calendarMonth, setCalendarMonth] = React.useState(new Date().getMonth() + 1);
@@ -84,115 +90,133 @@ export default function EventOverview() {
     const mapRef = React.useRef<HTMLDivElement>(null);
     const markersRef = React.useRef<any[]>([]);
 
-     // 좋아요 토글 함수
-  const toggleLike = async (eventId: number) => {
-  if (pending.has(eventId)) return;                 // 연타 방지
-  setPending(p => new Set(p).add(eventId));
 
-  const wasLiked = likedEvents.has(eventId);
+    const location = useLocation();
 
-setLikedEvents(prev => {
-  const next = new Set(prev);
-  if (wasLiked) {
-    next.delete(eventId);
-  } else {
-    next.add(eventId);
-  }
-  return next;
-});
+    // 좋아요 토글 함수
+    const toggleWish = async (eventId: number) => {
+        // 인증 확인
+        if (!isAuthed()) {
+            alert("로그인 후 이용할 수 있습니다.");
+            navigate("/login", { state: { from: location.pathname } }); // 로그인 후 돌아올 수 있게
+            return;
+        }
 
+        const wasLiked = likedEvents.has(eventId);
 
-try {
-  if (wasLiked) {
-    await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
-  } else {
-    await api.post(`/api/wishlist`, null, {
-      params: { eventId },
-      headers: authHeaders(),
-    });
-  }
-} catch (e) {
-  // 실패 시 롤백
-  setLikedEvents(prev => {
-  const next = new Set(prev);
-  if (wasLiked) {
-    next.add(eventId);
-  } else {
-    next.delete(eventId);
-  }
-  return next;
-});
+        // 낙관적 업데이트
+        setLikedEvents(prev => {
+            const next = new Set(prev);
+            if (wasLiked) {
+                next.delete(eventId);
+            } else {
+                next.add(eventId);
+            }
+            return next;
+        });
 
-  console.error("찜 토글 실패:", e);
-}finally {
-    setPending(p => { const n = new Set(p); n.delete(eventId); return n; }); // ← 이거 추가
-  }
+        try {
+            if (wasLiked) {
+                // 찜 취소
+                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+            } else {
+                // 찜 등록 (@RequestParam Long eventId)
+                await api.post(`/api/wishlist`, null, {
+                    params: { eventId },
+                    headers: authHeaders(),
+                });
+            }
+        } catch (e) {
+            console.error("찜 토글 실패:", e);
+            // 실패 시 롤백
+            setLikedEvents(prev => {
+                const next = new Set(prev);
+                if (wasLiked) {
+                    next.add(eventId);
+                } else {
+                    next.delete(eventId);
+                }
+                return next;
+            });
 
-  };
-
-  // 초기 위시리스트 로드 
-React.useEffect(() => {
-  (async () => {
-    try {
-      const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
-        headers: authHeaders(),
-      });
-      const s = new Set<number>();
-      (data ?? []).forEach(w => s.add(w.eventId));
-      setLikedEvents(s);
-    } catch (e) {
-      console.error("위시리스트 로드 실패:", e);
-    }
-  })();
-}, []);
-
-// 캘린더 데이터 상태
-const [calendarData, setCalendarData] = React.useState<Map<string, string[]>>(new Map());
-const [calendarLoading, setCalendarLoading] = React.useState(false);
-const [calendarError, setCalendarError] = React.useState<string | null>(null);
+        }
+    };
 
 
-// 캘린더 데이터 fetch (뷰/월 변경 시)
-React.useEffect(() => {
-    if (viewMode !== "calendar") return;
-    (async () => {
-      setCalendarLoading(true);
-      setCalendarError(null);
-      try {
-        const { data } = await fetchCalendarGrouped(calendarYear, calendarMonth);
-        const map = new Map<string, string[]>();
-        data.forEach((d) => map.set(d.date, d.titles));
-        setCalendarData(map);
-      } catch (e) {
-  console.error(e);
-  setCalendarError(
-    e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
-  );
-} finally {
-  setCalendarLoading(false);
-}
-    })();
-  }, [viewMode, calendarYear, calendarMonth]);
+    // 초기 위시리스트 로드 
+    React.useEffect(() => {
+        if (!isAuthed()) return;
 
-// 헬퍼
- const formatDate = React.useCallback((date: Date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}, []);
+        (async () => {
+            try {
+                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+                    headers: authHeaders(),
+                });
+                const s = new Set<number>();
+                (data ?? []).forEach(w => s.add(w.eventId));
+                setLikedEvents(s);
+            } catch (e) {
+                console.error("위시리스트 로드 실패:", e);
+            }
+        })();
+    }, []);
 
- const daysInMonth = React.useMemo(() => {
-    return new Date(calendarYear, calendarMonth, 0).getDate(); // month: 1~12
-  }, [calendarYear, calendarMonth]);
+    // 캘린더 데이터 상태
+    const [calendarData, setCalendarData] = React.useState<Map<string, string[]>>(new Map());
+    const [calendarLoading, setCalendarLoading] = React.useState(false);
+    const [calendarError, setCalendarError] = React.useState<string | null>(null);
 
- const firstWeekdayOffset = React.useMemo(() => {
-    return new Date(calendarYear, calendarMonth - 1, 1).getDay(); // 0=일 ~ 6=토
-  }, [calendarYear, calendarMonth]);
 
- const keyOf = React.useCallback((y: number, m: number, d: number) => {
-    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  }, []);
+    // 캘린더 데이터 fetch (뷰/월 변경 시)
+    React.useEffect(() => {
+        //  비로그인: API 호출하지 않음
+        if (!isAuthed()) {
+            setCalendarLoading(false);
+            setCalendarError(null);
+            setCalendarData(new Map());
+            return;
+        }
+        (async () => {
+            setCalendarLoading(true);
+            setCalendarError(null);
+            try {
+                const { data } = await fetchCalendarGrouped(calendarYear, calendarMonth);
+                const map = new Map<string, string[]>();
+                data.forEach((d) => map.set(d.date, d.titles));
+                setCalendarData(map);
+            } catch (e: unknown) {
+                const st = axios.isAxiosError(e) ? e.response?.status : undefined;
+                if (st !== 401 && st !== 403) {
+                    console.error(e);
+                    setCalendarError(
+                        e instanceof Error ? e.message : "캘린더 데이터를 불러오지 못했어요."
+                    );
+                }
+            } finally {
+                setCalendarLoading(false);
+            }
+        })();
+    }, [viewMode, calendarYear, calendarMonth]);
+
+    // 헬퍼
+    const formatDate = React.useCallback((date: Date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+    }, []);
+
+    const daysInMonth = React.useMemo(() => {
+        return new Date(calendarYear, calendarMonth, 0).getDate(); // month: 1~12
+    }, [calendarYear, calendarMonth]);
+
+    const firstWeekdayOffset = React.useMemo(() => {
+        return new Date(calendarYear, calendarMonth - 1, 1).getDay(); // 0=일 ~ 6=토
+    }, [calendarYear, calendarMonth]);
+
+    const keyOf = React.useCallback((y: number, m: number, d: number) => {
+        return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }, []);
 
     // 달력 네비게이션 함수들
     const handlePrevMonth = () => {
@@ -617,36 +641,36 @@ React.useEffect(() => {
                     // 마커 애니메이션
                     overlayContent.style.transform = 'scale(1.2) translateY(-5px)';
                     overlayContent.style.filter = `hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 4px 8px rgba(0,0,0,0.5))`;
-                    
+
                     // 호버 카드 표시
                     setHoveredEvent(event);
-                    
+
                     // 카드 위치를 마커 기준으로 고정 (지도 좌표계 사용)
                     const mapContainer = mapRef.current;
                     if (mapContainer && mapInstance) {
                         const rect = mapContainer.getBoundingClientRect();
                         const cardWidth = 250;
                         const cardHeight = 350;
-                        
+
                         // 지도에서 마커의 화면 좌표 계산
                         const projection = mapInstance.getProjection();
                         const markerPoint = projection.pointFromCoords(coords);
-                        
+
                         // 마커 중심을 기준으로 카드 위치 설정 (고정)
                         let x = markerPoint.x - cardWidth / 2;
                         let y = markerPoint.y - cardHeight - 60; // 마커 위쪽에 카드
-                        
+
                         // 화면 경계 체크
                         if (x < 10) {
                             x = 10;
                         } else if (x + cardWidth > rect.width - 10) {
                             x = rect.width - cardWidth - 10;
                         }
-                        
+
                         if (y < 10) {
                             y = markerPoint.y + 40; // 마커 아래쪽에 표시
                         }
-                        
+
                         setHoverCardPosition({ x, y });
                     }
                 };
@@ -655,7 +679,7 @@ React.useEffect(() => {
                     // 마커 원래 상태로 복원
                     overlayContent.style.transform = 'scale(1) translateY(0)';
                     overlayContent.style.filter = `hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3))`;
-                    
+
                     // 호버 카드 즈시 숨기기 (지연 시간 최소화)
                     setTimeout(() => {
                         setHoveredEvent(null);
@@ -673,9 +697,9 @@ React.useEffect(() => {
                 overlayContent.addEventListener('click', handleClick);
             }
         });
-        
+
         markersRef.current = newOverlays;
-        
+
         // 최초 로드시에만 지도 범위 조정 (호버시 자동 주맄 방지)
         if (newOverlays.length > 0 && markersRef.current.length === 0) {
             mapInstance.setBounds(bounds);
@@ -730,7 +754,7 @@ React.useEffect(() => {
                 } else if (x + cardWidth > rect.width - 10) {
                     x = rect.width - cardWidth - 10;
                 }
-                
+
                 if (y < 10) {
                     y = markerPoint.y + 40;
                 }
@@ -753,13 +777,7 @@ React.useEffect(() => {
         };
     }, [map, hoveredEvent, mapRef]);
 
-    const footerLinks = [
-        { name: "이용약관", href: "#" },
-        { name: "개인정보처리방침", href: "#" },
-        { name: "고객센터", href: "#" },
-        { name: "회사소개", href: "#" },
-    ];
-
+    // 렌더 하단에서 공용 Footer 적용
     return (
         <div className="min-h-screen bg-white">
             <TopNav />
@@ -781,7 +799,9 @@ React.useEffect(() => {
                                     <span
                                         className={`
             relative text-base leading-[28px] font-['Roboto'] inline-block pb-1
-            ${selectedCategory === category.id ? 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]' : 'font-normal text-gray-600 hover:text-black'}
+            ${selectedCategory === category.id
+                                                ? (isDark ? 'font-bold text-white after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-white content-[""]' : 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]')
+                                                : (isDark ? 'font-normal text-gray-300 hover:text-white' : 'font-normal text-gray-600 hover:text-black')}
         `}
                                     >
                                         {category.name}
@@ -794,12 +814,12 @@ React.useEffect(() => {
                     {/* View Toggle and Filters */}
                     <div className="flex justify-between items-center mt-[30px] px-7">
                         {/* 리스트형/캘린더형/지도형 탭 */}
-                        <div className="flex bg-white rounded-full border border-gray-200 p-1 shadow-sm">
+                        <div className={`flex rounded-full p-1 shadow-sm theme-transition ${isDark ? 'border border-gray-700 bg-transparent' : 'bg-white border border-gray-200'}`}>
                             <button
                                 onClick={() => setViewMode("list")}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
-                                    ? "bg-black text-white"
-                                    : "bg-white text-black hover:bg-gray-50"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
+                                    ? (isDark ? 'dm-light' : 'bg-black text-white')
+                                    : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -812,9 +832,9 @@ React.useEffect(() => {
                                     // 캘린더형으로 전환할 때 상단 날짜 범위를 현재 캘린더 월로 동기화
                                     setSelectedDateRange(`${calendarYear}년 ${calendarMonth}월`);
                                 }}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
-                                    ? "bg-black text-white"
-                                    : "bg-white text-black hover:bg-gray-50"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
+                                    ? (isDark ? 'dm-light' : 'bg-black text-white')
+                                    : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -823,9 +843,9 @@ React.useEffect(() => {
                             </button>
                             <button
                                 onClick={() => setViewMode("map")}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "map"
-                                    ? "bg-black text-white"
-                                    : "bg-white text-black hover:bg-gray-50"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "map"
+                                    ? (isDark ? 'dm-light' : 'bg-black text-white')
+                                    : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
@@ -1103,27 +1123,24 @@ React.useEffect(() => {
 
                     {/* Event Grid */}
                     {viewMode === "list" && (
-                        <div className="grid grid-cols-5 gap-6 mt-10 px-6">
+                        <div className="grid grid-cols-4 gap-6 mt-10 px-6">
                             {filteredEvents.map((event) => (
                                 <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
-                                    <div className="relative">
+                                    <div className="relative group">
                                         <img
-                                            className="w-full h-64 object-cover rounded-[10px]"
+                                            className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}
                                             src={event.thumbnailUrl || "/images/NoImage.png"}
                                         />
-                                        <button
-  className={`absolute top-3 right-3 p-0 ${pending.has(event.id) ? "cursor-wait opacity-70" : ""}`}
-  style={{ background: "transparent", border: "none" }}
-  onClick={(e) => { e.stopPropagation(); toggleLike(event.id); }}
-  disabled={pending.has(event.id)}
-  aria-label={likedEvents.has(event.id) ? "찜 취소" : "찜"}
-  title={likedEvents.has(event.id) ? "찜 취소" : "찜"}
->
-  <FaHeart
-    className={`w-5 h-5 ${likedEvents.has(event.id) ? "text-red-500" : "text-white opacity-70"}`}
-  />
-</button>
+                                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                        <FaHeart
+                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                toggleWish(event.id);
+                                            }}
+                                        />
 
 
                                     </div>
@@ -1213,8 +1230,8 @@ React.useEffect(() => {
                                             const dayEvents = filteredEvents.filter(event => {
                                                 const eventDate = new Date(event.startDate);
                                                 return eventDate.getFullYear() === calendarYear &&
-                                                       eventDate.getMonth() === calendarMonth - 1 &&
-                                                       eventDate.getDate() === day;
+                                                    eventDate.getMonth() === calendarMonth - 1 &&
+                                                    eventDate.getDate() === day;
                                             });
 
                                             // 현재 달의 요일 계산
@@ -1231,18 +1248,19 @@ React.useEffect(() => {
                                                             <div
                                                                 key={event.id}
                                                                 className="text-xs flex items-center space-x-1"
+
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     navigate(`/eventdetail/${event.id}`);
                                                                 }}
+
                                                             >
-                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                                                                    event.mainCategory === "박람회" ? "bg-blue-500" :
+                                                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${event.mainCategory === "박람회" ? "bg-blue-500" :
                                                                     event.mainCategory === "공연" ? "bg-red-500" :
-                                                                    event.mainCategory === "강연/세미나" ? "bg-green-500" :
-                                                                    event.mainCategory === "전시/행사" ? "bg-yellow-500" :
-                                                                    event.mainCategory === "축제" ? "bg-gray-500" : "bg-gray-400"
-                                                                }`}></div>
+                                                                        event.mainCategory === "강연/세미나" ? "bg-green-500" :
+                                                                            event.mainCategory === "전시/행사" ? "bg-yellow-500" :
+                                                                                event.mainCategory === "축제" ? "bg-gray-500" : "bg-gray-400"
+                                                                    }`}></div>
                                                                 <span className="truncate text-gray-700">{event.title}</span>
                                                             </div>
                                                         ))}
@@ -1282,11 +1300,11 @@ React.useEffect(() => {
                             {/* 지도형 뷰 */}
                             <div className="relative bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ height: '600px' }}>
                                 {/* 지도 컨테이너 */}
-                                <div 
+                                <div
                                     ref={mapRef}
                                     className="w-full h-full"
                                 />
-                                
+
                                 {/* 범례 (카테고리별 색상 안내) */}
                                 <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg border p-3 z-10">
                                     <div className="text-sm font-medium text-gray-700 mb-2">카테고리</div>
@@ -1299,7 +1317,7 @@ React.useEffect(() => {
                                             { category: "축제", color: "#8B5CF6" }
                                         ].map(({ category, color }) => (
                                             <div key={category} className="flex items-center space-x-2">
-                                                <div 
+                                                <div
                                                     className="w-3 h-3 rounded-full border border-white shadow-sm"
                                                     style={{ backgroundColor: color }}
                                                 />
@@ -1311,7 +1329,7 @@ React.useEffect(() => {
 
                                 {/* 호버 카드 */}
                                 {hoveredEvent && hoverCardPosition && (
-                                    <div 
+                                    <div
                                         className="absolute z-50"
                                         style={{
                                             left: `${hoverCardPosition.x}px`,
@@ -1327,7 +1345,7 @@ React.useEffect(() => {
                                             setHoverCardPosition(null);
                                         }}
                                     >
-                                        <div 
+                                        <div
                                             className="bg-white rounded-xl shadow-2xl border overflow-hidden transform transition-all duration-200 h-full"
                                             style={{
                                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1337,31 +1355,31 @@ React.useEffect(() => {
                                         >
                                             {/* 카드 배경 그라데이션 오버레이 */}
                                             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-90"></div>
-                                            
+
                                             {/* 카테고리 배지 */}
                                             <div className="absolute top-3 left-3 z-20">
                                                 <span className="inline-block px-2 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white border-opacity-30">
                                                     {hoveredEvent.mainCategory}
                                                 </span>
                                             </div>
-                                            
+
                                             <div className="relative z-10 h-full">
                                                 {/* 썸네일 영역 */}
                                                 <div className="relative h-full overflow-hidden">
-                                                    <img 
+                                                    <img
                                                         src={hoveredEvent.thumbnailUrl || "/images/NoImage.png"}
                                                         alt={hoveredEvent.title}
                                                         className="w-full h-full object-cover opacity-80"
                                                     />
                                                     <div className="absolute inset-0 bg-black bg-opacity-20"></div>
                                                 </div>
-                                                
+
                                                 {/* 카드 콘텐츠 */}
                                                 <div className="absolute bottom-0 left-0 right-0 py-3 px-4 text-white bg-black bg-opacity-70">
                                                     <h3 className="text-base font-bold mb-2 line-clamp-2 text-white">
                                                         {hoveredEvent.title}
                                                     </h3>
-                                                    
+
                                                     <div className="space-y-1 mb-3">
                                                         <div className="flex items-center text-sm text-white text-opacity-90">
                                                             <MapIcon className="w-3 h-3 mr-2 flex-shrink-0" />
@@ -1371,13 +1389,13 @@ React.useEffect(() => {
                                                             <Calendar className="w-3 h-3 mr-2 flex-shrink-0" />
                                                             <span className="text-xs">
                                                                 {hoveredEvent.startDate === hoveredEvent.endDate
-                                                                    ? new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', { 
-                                                                        year: 'numeric', month: '2-digit', day: '2-digit' 
+                                                                    ? new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', {
+                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
                                                                     }).replace(/\s/g, '')
-                                                                    : `${new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', { 
-                                                                        year: 'numeric', month: '2-digit', day: '2-digit' 
-                                                                    }).replace(/\s/g, '')} ~ ${new Date(hoveredEvent.endDate).toLocaleDateString('ko-KR', { 
-                                                                        year: 'numeric', month: '2-digit', day: '2-digit' 
+                                                                    : `${new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', {
+                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                    }).replace(/\s/g, '')} ~ ${new Date(hoveredEvent.endDate).toLocaleDateString('ko-KR', {
+                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
                                                                     }).replace(/\s/g, '')}`
                                                                 }
                                                             </span>
@@ -1420,23 +1438,7 @@ React.useEffect(() => {
                     )}
 
                     {/* Footer */}
-                    <footer className="mt-[60px] pt-[60px] border-t border-[#0000001f] text-center">
-                        <p className="text-base text-[#666666]">
-                            간편하고 안전한 행사 관리 솔루션
-                        </p>
-
-                        <div className="flex justify-center gap-5 mt-10">
-                            {footerLinks.map((link, index) => (
-                                <a
-                                    key={index}
-                                    href={link.href}
-                                    className="text-sm text-[#666666]"
-                                >
-                                    {link.name}
-                                </a>
-                            ))}
-                        </div>
-                    </footer>
+                    <Footer />
                 </div>
             </div>
         </div>

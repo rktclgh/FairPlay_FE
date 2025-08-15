@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
-
-interface Participant {
-    id: string;
-    name: string;
-    phone: string;
-    email: string;
-    registrationDate: string;
-    isOwner?: boolean;
-}
+import type {
+    AttendeeInfoResponseDto
+} from "../services/types/attendeeType";
 
 interface EditParticipantModalProps {
     isOpen: boolean;
     onClose: () => void;
-    participant: Participant | null;
-    onSave: (updatedParticipant: Participant) => void;
+    participant: AttendeeInfoResponseDto | null;
+    onSave: (updatedParticipant: AttendeeInfoResponseDto) => void;
 }
 
 export default function EditParticipantModal({
@@ -26,7 +20,7 @@ export default function EditParticipantModal({
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
-        email: ""
+        email: "",
     });
 
     useEffect(() => {
@@ -77,7 +71,7 @@ export default function EditParticipantModal({
 
         if (!participant) return;
 
-        const updatedParticipant: Participant = {
+        const updatedParticipant: AttendeeInfoResponseDto = {
             ...participant,
             name: formData.name,
             phone: formData.phone,
@@ -161,14 +155,14 @@ export default function EditParticipantModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-sm"
+                            className="px-6 py-2 bg-gray-300 text-gray-700 rounded-[10px] hover:bg-gray-400 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-sm"
                         >
                             취소
                         </button>
                         <button
                             type="submit"
                             disabled={!formData.name || !formData.phone || !formData.email}
-                            className={`px-6 py-2 rounded-lg transition-colors text-sm [font-family:'Roboto-Medium',Helvetica] font-medium ${formData.name && formData.phone && formData.email
+                            className={`px-6 py-2 rounded-[10px] transition-colors text-sm [font-family:'Roboto-Medium',Helvetica] font-medium ${formData.name && formData.phone && formData.email
                                 ? 'bg-blue-500 text-white hover:bg-blue-600'
                                 : 'bg-gray-400 text-white cursor-not-allowed'
                                 }`}

@@ -1,137 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import RegistrationSuccessModal from "../../components/RegistrationSuccessModal";
 import WarningModal from "../../components/WarningModal";
-import { eventApi } from "../../services/api";
+import { saveAttendee, getFormInfo } from "../../services/attendee";
+import type {
+    AttendeeSaveRequestDto,
+    ShareTicketInfoResponseDto
+} from "../../services/types/attendeeType";
+interface Participant{
+    id: number;
+    name: string;
+    phone: string;
+    email: string;
+};
 
 export default function ParticipantForm(): JSX.Element {
-    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const eventName = searchParams.get('eventName') || '행사';
+    const [formInfo, setFormInfo] = useState<ShareTicketInfoResponseDto | null>(null);
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
         email: "",
-        agreeToTerms: false
+        agreeToTerms: false,
     });
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-    const [registeredParticipant, setRegisteredParticipant] = useState<any>(null);
+    const [registeredParticipant, setRegisteredParticipant] = useState<Participant | null>(null);
     const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
     const [warningTitle, setWarningTitle] = useState("");
     const [warningMessage, setWarningMessage] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
-
-        if (name === 'phone') {
-            // 숫자만 허용하고 11자리로 제한
-            const numericValue = value.replace(/[^0-9]/g, '');
-            if (numericValue.length <= 11) {
-                // 하이픈 자동 추가
-                let formattedValue = numericValue;
-                if (numericValue.length >= 3 && numericValue.length <= 7) {
-                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3);
-                } else if (numericValue.length >= 8) {
-                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3, 7) + '-' + numericValue.slice(7);
-                }
-
-                setFormData(prev => ({
-                    ...prev,
-                    [name]: formattedValue
-                }));
-            }
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value
-            }));
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formData.agreeToTerms) {
-            alert("개인정보 수집 및 이용에 동의해주세요.");
-            return;
-        }
-        if (!formData.name || !formData.phone || !formData.email) {
-            alert("모든 필드를 입력해주세요.");
-            return;
-        }
-
-        // 행사별 참여자 목록 가져오기
-        const eventKey = `participants_${eventName}`;
-        const existingParticipants = JSON.parse(localStorage.getItem(eventKey) || '[]');
-
-        // 행사별 최대 참여자 수 확인
-        const getMaxParticipants = (eventName: string): number => {
-            if (eventName === "웨덱스 웨딩박람회 in COEX") return 1; // 계정 주인 + 1명 = 총 2명
-            if (eventName === "G-DRAGON 콘서트: WORLD TOUR") return 2; // 계정 주인 + 2명 = 총 3명
-            return 10; // 기본값
-        };
-
-        const maxParticipants = getMaxParticipants(eventName);
-
-        // 현재 등록된 참여자 수가 최대치에 도달했는지 확인
-        if (existingParticipants.length >= maxParticipants) {
-            setWarningTitle("참여자 등록 완료");
-            setWarningMessage("이미 모든 참석자의 정보가 제출되었습니다.");
-            setIsWarningModalOpen(true);
-            return;
-        }
-
-        // localStorage에 참여자 정보 저장
-        const newParticipant = {
-            id: `participant-${Date.now()}`,
-            name: formData.name,
-            phone: formData.phone,
-            email: formData.email,
-            registrationDate: new Date().toISOString().split('T')[0],
-            isOwner: false
-        };
-
-        // 새 참여자 추가
-        const updatedParticipants = [...existingParticipants, newParticipant];
-
-        // localStorage에 행사별로 저장
-        localStorage.setItem(eventKey, JSON.stringify(updatedParticipants));
-
-        // 성공 모달 표시
-        setRegisteredParticipant(newParticipant);
-        setIsSuccessModalOpen(true);
-    };
-
-
-
-    const handleSuccessModalClose = () => {
-        setIsSuccessModalOpen(false);
-        setRegisteredParticipant(null);
-        navigate("/mypage/tickets");
-    };
-
-    const handleWarningModalClose = () => {
-        setIsWarningModalOpen(false);
-        navigate("/mypage/tickets");
-    };
-
-    // 토큰 검증 API 호출
+        // 토큰 검증 API 호출
     const validateToken = async () => {
         try {
             // URL에서 토큰 추출 (예: ?token=abc123)
             const token = searchParams.get('token');
+
             if (!token) {
-                // 토큰이 없는 경우에도 테스트를 위해 기본값 사용
-                console.log("토큰이 없음, 테스트용 기본값 사용");
-                const testToken = 'valid'; // 테스트용 유효한 토큰
-                const response = await eventApi.validateParticipantToken(testToken, eventName);
-                setIsLoading(false);
-                return true;
+                setWarningMessage("잘못된 링크입니다.")
+                setWarningTitle("오류 발생");
+                setIsWarningModalOpen(true);
+                return;
             }
 
-            // API 호출
-            const response = await eventApi.validateParticipantToken(token, eventName);
+            const res = await getFormInfo(token);
+            setFormInfo(res);
 
             // 성공 응답
             setIsLoading(false);
@@ -170,9 +84,86 @@ export default function ParticipantForm(): JSX.Element {
 
     // 페이지 로드 시 토큰 검증
     useEffect(() => {
-        // 토큰 검증 실행
         validateToken();
-    }, [eventName]);
+    },[])
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, type, checked } = e.target;
+
+        if (name === 'phone') {
+            // 숫자만 허용하고 11자리로 제한
+            const numericValue = value.replace(/[^0-9]/g, '');
+            if (numericValue.length <= 11) {
+                // 하이픈 자동 추가
+                let formattedValue = numericValue;
+                if (numericValue.length >= 3 && numericValue.length <= 7) {
+                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3);
+                } else if (numericValue.length >= 8) {
+                    formattedValue = numericValue.slice(0, 3) + '-' + numericValue.slice(3, 7) + '-' + numericValue.slice(7);
+                }
+
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: formattedValue
+                }));
+            }
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
+            }));
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.agreeToTerms) {
+            alert("개인정보 수집 및 이용에 동의해주세요.");
+            return;
+        }
+        if (!formData.name || !formData.phone || !formData.email) {
+            alert("모든 필드를 입력해주세요.");
+            return;
+        }
+
+        const attendeeData: AttendeeSaveRequestDto = {
+            name: formData.name,
+            email: formData.email, 
+            phone: formData.phone,
+            agreeToTerms: formData.agreeToTerms
+        }
+
+        const token = searchParams.get("token");
+        const res = await saveAttendee(token ?? "", attendeeData);
+
+        const resParticipant: Participant = {
+            id: res.attendeeId,
+            name: res.name,
+            phone: res.phone,
+            email: res.email,
+        }
+        
+        // 성공 모달 표시
+        setRegisteredParticipant(resParticipant);
+        setIsSuccessModalOpen(true);
+    };
+
+
+    const handleSuccessModalClose = () => {
+        setIsSuccessModalOpen(false);
+        setRegisteredParticipant(null);
+        setFormData({
+            name: "",
+            phone: "",
+            email: "",
+            agreeToTerms: false,
+        });
+    };
+
+    const handleWarningModalClose = () => {
+        setIsWarningModalOpen(false);
+    };
+
 
     if (isLoading) {
         return (
@@ -195,7 +186,7 @@ export default function ParticipantForm(): JSX.Element {
             <TopNav />
             <div className="w-full flex flex-col items-center">
                 <div className="w-full max-w-[800px] mt-20 mb-8">
-                    <h1 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[54px] mb-8">참여자 정보 입력</h1>
+                    <h1 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[54px] mb-8">[{formInfo?.eventName}] 참여자 정보 입력</h1>
                     {/* 폼 컨테이너 시작 */}
                     <div className="bg-white">
                         {/* 개인정보 수집 및 이용 동의 섹션 */}
@@ -205,16 +196,16 @@ export default function ParticipantForm(): JSX.Element {
                             </h2>
                             <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto mb-4">
                                 <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm leading-6 tracking-[0]">
-                                    <p className="mb-2">1. 수집하는 개인정보 항목</p>
-                                    <p className="mb-2">- 필수항목: 이름, 연락처, 이메일</p>
-                                    <p className="mb-2">- 선택항목: 없음</p>
-                                    <p className="mb-2">2. 개인정보의 수집 및 이용목적</p>
-                                    <p className="mb-2">- 이벤트 참여자 관리 및 안내</p>
-                                    <p className="mb-2">- 이벤트 관련 정보 전달</p>
-                                    <p className="mb-2">3. 개인정보의 보유 및 이용기간</p>
-                                    <p className="mb-2">- 이벤트 종료 후 1년까지</p>
-                                    <p className="mb-2">4. 동의 거부권 및 거부에 따른 불이익</p>
-                                    <p>개인정보 수집 및 이용에 동의하지 않을 경우 이벤트 참여가 제한될 수 있습니다.</p>
+                                    <p className="mb-2 font-bold">1. 수집하는 개인정보 항목</p>
+                                    <p className="mb-2">• 필수항목: 이름, 연락처, 이메일</p>
+                                    <p className="mb-2">• 선택항목: 없음</p>
+                                    <p className="mb-2 font-bold">2. 개인정보의 수집 및 이용목적</p>
+                                    <p className="mb-2">• 이벤트 참여자 관리 및 안내</p>
+                                    <p className="mb-2">• 이벤트 관련 정보 전달</p>
+                                    <p className="mb-2 font-bold">3. 개인정보의 보유 및 이용기간</p>
+                                    <p className="mb-2">• 이벤트 종료 후 1년까지</p>
+                                    <p className="mb-2 font-bold">4. 동의 거부권 및 거부에 따른 불이익</p>
+                                    <p className="mb-2">• 개인정보 수집 및 이용에 동의하지 않을 경우 이벤트 참여가 제한될 수 있습니다.</p>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -307,7 +298,7 @@ export default function ParticipantForm(): JSX.Element {
                 isOpen={isSuccessModalOpen}
                 onClose={handleSuccessModalClose}
                 participant={registeredParticipant}
-                eventName={eventName}
+                eventName={formInfo?.eventName ?? ""}
             />
             <WarningModal
                 isOpen={isWarningModalOpen}

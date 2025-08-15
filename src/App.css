@@ -1,3 +1,53 @@
+/* Global background color variable */
+:root {
+  --bg-main: #ffffff;
+}
+
+/* Dark mode root override */
+body.dark-mode {
+  --bg-main: #0d1117; /* 기존 #0a0a0f → GitHub Dark */
+  color: #e5e7eb;
+}
+
+body {
+  background-color: var(--bg-main);
+  transition:
+    background-color 0.5s ease,
+    color 0.5s ease;
+}
+
+/* 단일 표면/전환 유틸 */
+.theme-surface {
+  background-color: var(--bg-main);
+}
+.theme-transition {
+  transition:
+    background-color 0.5s ease,
+    color 0.5s ease;
+}
+
+/* 다크모드일 때 로고를 흰색으로 변환 */
+body.dark-mode img[alt="FairPlay Logo"] {
+  filter: brightness(0) invert(1);
+  transition: filter 0.5s ease;
+}
+
+/* Dark-mode global surface override for legacy backgrounds */
+body.dark-mode .bg-white,
+body.dark-mode .bg-gray-50,
+body.dark-mode .bg-gray-100,
+body.dark-mode .bg-gray-200,
+body.dark-mode .bg-gray-300,
+body.dark-mode .bg-slate-50,
+body.dark-mode .bg-slate-100,
+body.dark-mode .bg-slate-200,
+body.dark-mode .bg-neutral-50,
+body.dark-mode .bg-neutral-100,
+body.dark-mode .bg-neutral-200,
+body.dark-mode [class*="bg-white/"] {
+  background-color: var(--bg-main) !important;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -41,7 +91,6 @@
   background-color: #e6f3ff;
 }
 
-
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -76,4 +125,69 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Hotpick coverflow visual tweaks */
+.hotpick-swiper .swiper-slide {
+  width: 260px;
+  transition:
+    transform 300ms ease,
+    opacity 300ms ease;
+  opacity: 0.55;
+}
+
+.hotpick-swiper .swiper-slide-active {
+  transform: scale(1.03);
+  opacity: 1;
+}
+
+.hotpick-swiper .swiper-slide-prev,
+.hotpick-swiper .swiper-slide-next {
+  transform: scale(0.9);
+  opacity: 0.85;
+}
+
+/* simple fade up for captions */
+.anim-fadeInUp {
+  animation: fadeInUp 500ms ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark Mode Button */
+.theme-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.theme-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.theme-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-btn:focus {
+  outline: none;
+  box-shadow: none;
 }

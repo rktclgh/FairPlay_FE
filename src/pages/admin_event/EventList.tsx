@@ -212,7 +212,7 @@ export const EventList: React.FC = () => {
                         <div className="flex justify-end mt-4">
                             <button
                                 onClick={handleReset}
-                                className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-[10px] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-[10px] hover:bg-gray-400 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-sm"
                             >
                                 초기화
                             </button>
