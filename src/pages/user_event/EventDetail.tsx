@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {useParams, useNavigate, useLocation} from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { MapPin } from "lucide-react";
 import { FaHeart } from "react-icons/fa";
@@ -8,6 +8,7 @@ import { VenueInfo } from "./VenueInfo";
 import { CancelPolicy } from "./CancelPolicy";
 import { Reviews } from "./Reviews";
 import { Expectations } from "./Expectations";
+import { ParticipatingBooths } from "./ParticipatingBooths";
 import ExternalLink from "./ExternalLink";
 import { eventAPI } from "../../services/event";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
@@ -60,7 +61,7 @@ const EventDetail = (): JSX.Element => {
     const [availableSchedules, setAvailableSchedules] = useState<EventSchedule[]>([]); // 선택된 날짜의 회차 목록
     const [allSchedules, setAllSchedules] = useState<EventSchedule[]>([]); // 전체 회차 목록
     const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null); // 선택된 회차 ID
-    const [ticketPrices, setTicketPrices] = useState<{name: string, price: number}[]>([]); // 티켓 가격 목록
+    const [ticketPrices, setTicketPrices] = useState<{ name: string, price: number }[]>([]); // 티켓 가격 목록
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
     const [reviews, setReviews] = useState<ReviewForEventResponseDto | null>(null)
     const [currentPage, setCurrentPage] = useState(0);
@@ -1069,9 +1070,8 @@ const EventDetail = (): JSX.Element => {
                                 {/* 요일 헤더 */}
                                 <div className="grid grid-cols-7 gap-1 mb-1">
                                     {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
-                                        <div key={day} className={`p-1 text-xs font-medium text-center ${
-                                            index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
-                                        }`}>
+                                        <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                                            }`}>
                                             {day}
                                         </div>
                                     ))}
@@ -1090,23 +1090,21 @@ const EventDetail = (): JSX.Element => {
                                                 key={index}
                                                 onClick={() => isEventDate ? handleDateSelect(day.dateString) : null}
                                                 disabled={!isEventDate || !isCurrentMonth}
-                                                className={`p-1.5 text-xs rounded transition-colors relative h-8 ${
-                                                    !isCurrentMonth 
-                                                        ? 'text-gray-300 cursor-not-allowed'
-                                                        : isSelected && isEventDate
-                                                            ? 'bg-blue-600 text-white'
-                                                            : isEventDate && isBookable
-                                                                ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'
-                                                                : isEventDate && !isBookable
-                                                                    ? 'bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer'
-                                                                    : 'text-gray-400 cursor-not-allowed'
-                                                }`}
+                                                className={`p-1.5 text-xs rounded transition-colors relative h-8 ${!isCurrentMonth
+                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                    : isSelected && isEventDate
+                                                        ? 'bg-blue-600 text-white'
+                                                        : isEventDate && isBookable
+                                                            ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'
+                                                            : isEventDate && !isBookable
+                                                                ? 'bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer'
+                                                                : 'text-gray-400 cursor-not-allowed'
+                                                    }`}
                                             >
                                                 {day.date}
                                                 {isEventDate && isCurrentMonth && (
-                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
-                                                        isBookable ? 'bg-green-600' : 'bg-pink-600'
-                                                    }`}></div>
+                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${isBookable ? 'bg-green-600' : 'bg-pink-600'
+                                                        }`}></div>
                                                 )}
                                             </button>
                                         );
@@ -1125,11 +1123,10 @@ const EventDetail = (): JSX.Element => {
                                         availableSchedules.map((schedule) => (
                                             <div
                                                 key={schedule.scheduleId}
-                                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                                                    selectedScheduleId === schedule.scheduleId
-                                                        ? 'border-blue-500 bg-blue-50'
-                                                        : 'border-gray-200 hover:bg-gray-50'
-                                                }`}
+                                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedScheduleId === schedule.scheduleId
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 hover:bg-gray-50'
+                                                    }`}
                                                 onClick={() => setSelectedScheduleId(schedule.scheduleId)}
                                             >
                                                 <div className="flex flex-col">
@@ -1210,19 +1207,17 @@ const EventDetail = (): JSX.Element => {
                                                 return (
                                                     <div
                                                         key={date}
-                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
-                                                            isSelected ? 'bg-blue-50' : ''
-                                                        }`}
+                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''
+                                                            }`}
                                                         onClick={() => handleDateSelect(date)}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-3 h-3 rounded ${
-                                                                isSelected 
-                                                                    ? 'bg-blue-600' 
-                                                                    : isBookable 
-                                                                        ? 'bg-green-100 border border-green-300' 
-                                                                        : 'bg-pink-100 border border-pink-300'
-                                                            }`}></div>
+                                                            <div className={`w-3 h-3 rounded ${isSelected
+                                                                ? 'bg-blue-600'
+                                                                : isBookable
+                                                                    ? 'bg-green-100 border border-green-300'
+                                                                    : 'bg-pink-100 border border-pink-300'
+                                                                }`}></div>
                                                             <div>
                                                                 <span className="text-sm font-medium">{date}</span>
                                                                 <span className="text-xs text-gray-500 ml-2">({dayName})</span>
@@ -1295,11 +1290,10 @@ const EventDetail = (): JSX.Element => {
                             }
                         }}
                         disabled={eventData.mainCategory !== "공연" && !selectedScheduleId}
-                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${
-                            eventData.mainCategory === "공연" || selectedScheduleId
-                                ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
+                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${eventData.mainCategory === "공연" || selectedScheduleId
+                            ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
                     >
                         예매하기
                     </button>
@@ -1315,7 +1309,8 @@ const EventDetail = (): JSX.Element => {
                                 { id: "location", name: "장소정보" },
                                 { id: "booking", name: "예매/취소안내" },
                                 { id: "review", name: "관람평" },
-                                { id: "expectation", name: "기대평" }
+                                { id: "expectation", name: "기대평" },
+                                ...(eventData.mainCategory === "박람회" ? [{ id: "booths", name: "참가부스" }] : [])
                             ].map((tab) => (
                                 <li
                                     key={tab.id}
@@ -1393,6 +1388,12 @@ const EventDetail = (): JSX.Element => {
 
                         {activeTab === "expectation" && (
                             <Expectations />
+                        )}
+
+                        {activeTab === "booths" && (
+                            <div data-tab-content="booths">
+                                <ParticipatingBooths eventId={eventId} />
+                            </div>
                         )}
                     </div>
                 </div>
