@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, X } from "lucide-react";
+import { Bell, X, Trash2 } from "lucide-react";
 import { useNotificationSocket, Notification } from "../hooks/useNotificationSocket";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -7,7 +7,8 @@ import { ko } from "date-fns/locale";
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
+  const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -35,11 +36,32 @@ export function NotificationBell() {
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {
+      console.log("📖 알림 읽음 처리:", notification.notificationId);
       markAsRead(notification.notificationId);
     }
     
     if (notification.url) {
       window.location.href = notification.url;
+    }
+  };
+
+  const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {
+    e.stopPropagation();
+    
+    console.log("🗑️ 삭제 버튼 클릭됨:", notificationId);
+    
+    setDeletingIds(prev => new Set(prev).add(notificationId));
+    
+    const success = deleteNotification(notificationId);
+    console.log("🗑️ deleteNotification 결과:", success);
+    
+    if (!success) {
+      console.log("🗑️ 삭제 실패, 상태 롤백");
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notificationId);
+        return newSet;
+      });
     }
   };
 
@@ -87,40 +109,56 @@ export function NotificationBell() {
                 알림이 없습니다.
               </div>
             ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.notificationId}
-                  className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    !notification.isRead ? "bg-blue-50" : ""
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-lg flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.typeCode)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-sm ${
-                        !notification.isRead ? "text-gray-900" : "text-gray-700"
-                      }`}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {formatDistanceToNow(new Date(notification.createdAt), {
-                          addSuffix: true,
-                          locale: ko
-                        })}
-                      </p>
+              notifications.map((notification) => {
+                const isDeleting = deletingIds.has(notification.notificationId);
+                return (
+                  <div
+                    key={notification.notificationId}
+                    className={`relative group p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all duration-300 ${
+                      !notification.isRead ? "bg-blue-50" : ""
+                    } ${isDeleting ? "opacity-50 transform translate-x-full" : ""}`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg flex-shrink-0 mt-1">
+                        {getNotificationIcon(notification.typeCode)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-medium text-sm ${
+                          !notification.isRead ? "text-gray-900" : "text-gray-700"
+                        }`}>
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {formatDistanceToNow(new Date(notification.createdAt), {
+                            addSuffix: true,
+                            locale: ko
+                          })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            console.log("🗑️ 버튼 onClick 이벤트 발생!");
+                            handleDeleteNotification(e, notification.notificationId);
+                          }}
+                          className="opacity-100 transition-opacity p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded z-10"
+                          disabled={isDeleting}
+                          style={{ pointerEvents: 'all' }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-                    {!notification.isRead && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
-                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
           
