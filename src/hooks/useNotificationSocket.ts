@@ -69,6 +69,15 @@ export function useNotificationSocket() {
     });
   }, [updateUnreadCount]);
 
+  const onNotificationDeleted = useCallback((notificationId: number) => {
+    console.log("🗑️ 알림 삭제 완료:", notificationId);
+    setNotifications(prev => {
+      const updated = prev.filter(n => n.notificationId !== notificationId);
+      updateUnreadCount(updated);
+      return updated;
+    });
+  }, [updateUnreadCount]);
+
   const connect = useCallback(() => {
     if (isConnectedRef.current || !isAuthenticated()) return;
 
@@ -183,6 +192,20 @@ export function useNotificationSocket() {
               }
             }
           );
+
+          // 삭제 처리 알림 구독
+          const deleteSubscriptionRef = stomp.subscribe(
+            "/user/topic/notifications/deleted",
+            (message) => {
+              try {
+                const notificationId = JSON.parse(message.body);
+                console.log("🗑️ 알림 삭제 처리:", notificationId);
+                onNotificationDeleted(notificationId);
+              } catch (error) {
+                console.error("삭제 처리 파싱 실패:", error);
+              }
+            }
+          );
           
           console.log("🔔 실시간 알림 구독 완료");
         }, 100);
@@ -203,7 +226,7 @@ export function useNotificationSocket() {
         }
       }
     );
-  }, [onNewNotification, onNotificationRead, updateUnreadCount]);
+  }, [onNewNotification, onNotificationRead, onNotificationDeleted, updateUnreadCount]);
 
   const disconnect = useCallback(() => {
     if (subscriptionRef.current) {
@@ -236,6 +259,22 @@ export function useNotificationSocket() {
     stomp.send("/app/notifications/markRead", headers, JSON.stringify(notificationId));
   }, []);
 
+  const deleteNotification = useCallback((notificationId: number) => {
+    const stomp = clientRef.current;
+    if (!stomp || !stomp.connected) {
+      console.warn("WebSocket 연결되지 않음 - 삭제 불가");
+      return false;
+    }
+
+    // WebSocket으로만 삭제 요청 (실시간 동기화)
+    const token = localStorage.getItem("accessToken");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    console.log("🗑️ WebSocket으로 알림 삭제 요청:", notificationId);
+    stomp.send("/app/notifications/delete", headers, JSON.stringify(notificationId));
+    return true;
+  }, []);
+
   // 브라우저 알림 권한 요청
   useEffect(() => {
     if (Notification.permission === "default") {
@@ -249,6 +288,7 @@ export function useNotificationSocket() {
     connect,
     disconnect,
     markAsRead,
+    deleteNotification,
     isConnected: isConnectedRef.current
   };
 }

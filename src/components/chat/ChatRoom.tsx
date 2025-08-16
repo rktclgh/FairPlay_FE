@@ -69,10 +69,19 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         console.log("💬 메시지 수신:", { senderId: msg.senderId, content: msg.content.substring(0, 30) + "..." });
         
         setMessages(prev => {
-            // 중복 메시지 방지
-            if (prev.some(existingMsg => existingMsg.chatMessageId === msg.chatMessageId)) {
+            // 중복 메시지 방지 - chatMessageId와 senderId+content+sentAt로 중복 체크
+            const isDuplicate = prev.some(existingMsg => 
+                existingMsg.chatMessageId === msg.chatMessageId ||
+                (existingMsg.senderId === msg.senderId && 
+                 existingMsg.content === msg.content && 
+                 Math.abs(new Date(existingMsg.sentAt).getTime() - new Date(msg.sentAt).getTime()) < 1000)
+            );
+            
+            if (isDuplicate) {
+                console.log("🔄 중복 메시지 무시:", msg.chatMessageId);
                 return prev;
             }
+            
             // 새 메시지 추가 후 시간순 정렬
             const newMessages = [...prev, msg];
             return newMessages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
@@ -80,10 +89,13 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         
         // AI 봇 메시지 감지 (ID: 999)
         if (isAiChat && msg.senderId === 999) {
-            console.log("🤖 AI 봇 응답 도착! 전송 버튼 활성화");
+            console.log("🤖 AI 봇 응답 도착! 전송 버튼 활성화 및 즉시 읽음 처리");
             setIsSending(false);
             setPendingMessage(null);
             setLastAiMessageId(msg.chatMessageId);
+            
+            // AI 메시지는 즉시 백엔드로 읽음 처리 요청
+            setTimeout(() => markMessagesAsRead(), 100);
         }
     }, [isAiChat]);
 
@@ -141,8 +153,12 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
 
     // 메시지 읽음 처리
     const markMessagesAsRead = () => {
+        // AI 채팅방도 백엔드로 읽음 처리 전송 (unreadCount 업데이트 위해)
         axios.patch(`/api/chat/messages/read?chatRoomId=${roomId}`, {}, {
             headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
+        }).then(() => {
+            // 성공 시 로컬 상태도 업데이트
+            setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
         }).catch(err => {
             console.warn("메시지 읽음 처리 실패:", err);
         });
@@ -153,6 +169,13 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    // AI 챗봇 최초 진입 시 읽음 처리
+    useEffect(() => {
+        if (isAiChat && messages.length > 0) {
+            markMessagesAsRead();
+        }
+    }, [isAiChat]); // messages 의존성 제거
+
     const handleSend = () => {
         if (!input.trim() || isSending) {
             console.log("❌ 전송 차단:", { inputEmpty: !input.trim(), isSending });
@@ -162,23 +185,11 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         const message = input.trim();
         setInput(""); // 먼저 입력 필드를 클리어
         
-        // AI 채팅일 경우 전송 중 상태로 설정
+        // AI 채팅일 경우 전송 중 상태로 설정 (임시 메시지 추가 안함)
         if (isAiChat) {
             console.log("🚀 AI 메시지 전송 시작 - 버튼 비활성화!");
             setIsSending(true);
             setPendingMessage(message);
-            
-            // 사용자 메시지를 즉시 표시 (임시 ID 사용)
-            const tempMessage: ChatMessageDto = {
-                chatMessageId: Date.now(), // 임시 ID
-                chatRoomId: roomId,
-                senderId: myUserId,
-                content: message,
-                sentAt: new Date().toISOString(),
-                isRead: true
-            };
-            
-            setMessages(prev => [...prev, tempMessage]);
         }
         
         send(message);
