@@ -52,6 +52,7 @@ import EventEditRequests from "./pages/admin_event/EventEditRequests";
 import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 import AccountRoles from "./pages/admin_account/AccountRoles";
 import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
+import AdvertisementApplicationList from "./pages/admin_vip_banner/AdvertisementApplicationList";
 import SettlementManagement from "./pages/admin_settlement/SettlementManagement";
 import RemittanceHistory from "./pages/admin_settlement/RemittanceHistory";
 import ReservationStatistics from "./pages/admin_statistics/ReservationStatistics";
@@ -155,6 +156,7 @@ function AppContent() {
 
           {/* VIP 배너 광고 */}
           <Route path="/admin_dashboard/vip-banners" element={<AdminRouteGuard><VipBannerManagement /></AdminRouteGuard>} />
+          <Route path="/admin_dashboard/advertisement-applications" element={<AdminRouteGuard><AdvertisementApplicationList /></AdminRouteGuard>} />
 
           {/* 정산 관리 */}
           <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />
