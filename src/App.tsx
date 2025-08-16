@@ -127,7 +127,7 @@ function AppContent() {
           <Route path="/host/round-management" element={<HostRouteGuard><ScheduleManagement /></HostRouteGuard>} />
           <Route path="/host/status-management" element={<HostRouteGuard><EventStatusBanner /></HostRouteGuard>} />
           <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
-          <Route path="/host/event-version/:eventId/:versionNumber" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
+          <Route path="/host/event-version/:versionNumber" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
           <Route path="/host/event-version/comparison" element={<HostRouteGuard><EventVersionComparison /></HostRouteGuard>} />
           <Route path="/host/reservation-list/:eventId" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
           <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />

@@ -1370,7 +1370,7 @@ export const EditEventInfo = () => {
                                     </div>
                                     <div>
                                         <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">연락처</label>
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자 연락처</label>
                                         <input
                                             type="text"
                                             name="phone"
@@ -1382,7 +1382,7 @@ export const EditEventInfo = () => {
                                     </div>
                                     <div>
                                         <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">이메일</label>
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자 이메일</label>
                                         <input
                                             type="email"
                                             name="email"
@@ -1403,7 +1403,7 @@ export const EditEventInfo = () => {
                                 <div className="mb-12">
                                     <label
                                         className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                        상세정보
+                                        상세 정보
                                     </label>
                                     <div>
                                         <ReactQuill
@@ -1413,7 +1413,7 @@ export const EditEventInfo = () => {
                                             onChange={(html) => setFormData((p) => ({ ...p, contactInfo: html || "" }))}
                                             modules={inquiryModules}
                                             formats={quillFormats}
-                                            placeholder="문의처 상세정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
+                                            placeholder="문의처 상세 정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
                                             style={{height: "150px"}}
                                         />
                                     </div>
