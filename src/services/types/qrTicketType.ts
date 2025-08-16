@@ -80,3 +80,15 @@ export interface AdminForceCheckRequestDto{
     ticketNo: string,
     qrCheckStatusCode: string
 }
+
+export interface QrTicketData {
+    eventName: string;  // 행사명
+    eventDate: string | null; // 행사날짜
+    venue: string; // 장소. 없으면 street 
+    seatInfo: string | null; // 좌석정보. 없으면 Null
+    ticketNumber: string; // ticketNo
+    bookingDate: string; // 예약날짜
+    entryTime: string; // 입장시간
+    qrCode: string; // qrCode
+    manualCode: string; // 수동코드
+}
