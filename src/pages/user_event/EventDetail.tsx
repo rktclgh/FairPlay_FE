@@ -513,8 +513,28 @@ const EventDetail = (): JSX.Element => {
         return availableSchedules.find(schedule => schedule.scheduleId === selectedScheduleId);
     };
 
+    // 현재 날짜(오늘) 가져오기
+    const getTodayDateString = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // 날짜가 오늘 이후인지 확인 (오늘 포함)
+    const isDateInFuture = (date: string) => {
+        const todayString = getTodayDateString();
+        return date >= todayString;
+    };
+
     // 특정 날짜의 예매 가능 여부 확인
     const isDateBookable = (date: string) => {
+        // 오늘 이전 날짜는 예매 불가
+        if (!isDateInFuture(date)) {
+            return false;
+        }
+        
         // 전체 회차 데이터에서 해당 날짜의 회차들을 찾아서 예매 가능 여부 확인
         const dateSchedules = allSchedules.filter(schedule => schedule.date === date);
 
@@ -720,27 +740,41 @@ const EventDetail = (): JSX.Element => {
                                         const isSelected = selectedDate === day.dateString;
                                         const isCurrentMonth = day.isCurrentMonth;
                                         const isBookable = isEventDate && isDateBookable(day.dateString);
+                                        const isPastDate = isEventDate && !isDateInFuture(day.dateString);
 
                                         return (
                                             <button
                                                 key={index}
-                                                onClick={() => isEventDate ? handleDateSelect(day.dateString) : null}
-                                                disabled={!isEventDate || !isCurrentMonth}
+                                                onClick={() => (isEventDate && !isPastDate) ? handleDateSelect(day.dateString) : null}
+                                                disabled={!isEventDate || !isCurrentMonth || isPastDate}
                                                 className={`p-1.5 text-xs rounded transition-colors relative h-8 ${!isCurrentMonth
                                                     ? 'text-gray-300 cursor-not-allowed'
-                                                    : isSelected && isEventDate
-                                                        ? 'bg-blue-600 text-white'
-                                                        : isEventDate && isBookable
-                                                            ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'
-                                                            : isEventDate && !isBookable
-                                                                ? 'bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer'
-                                                                : 'text-gray-400 cursor-not-allowed'
+                                                    : isPastDate
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                        : isSelected && isEventDate
+                                                            ? 'bg-blue-600 text-white'
+                                                            : isEventDate && isBookable
+                                                                ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'
+                                                                : isEventDate && !isBookable
+                                                                    ? 'bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer'
+                                                                    : 'text-gray-400 cursor-not-allowed'
                                                     }`}
                                             >
                                                 {day.date}
                                                 {isEventDate && isCurrentMonth && (
-                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${isBookable ? 'bg-green-600' : 'bg-pink-600'
+                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                                                        isPastDate 
+                                                            ? 'bg-gray-400' 
+                                                            : isBookable 
+                                                                ? 'bg-green-600' 
+                                                                : 'bg-pink-600'
                                                         }`}></div>
+                                                )}
+                                                {isPastDate && isEventDate && isCurrentMonth && (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="w-4 h-0.5 bg-gray-400 rotate-45 absolute"></div>
+                                                        <div className="w-4 h-0.5 bg-gray-400 -rotate-45 absolute"></div>
+                                                    </div>
                                                 )}
                                             </button>
                                         );
@@ -768,9 +802,6 @@ const EventDetail = (): JSX.Element => {
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-semibold text-[#212121]">
                                                         {schedule.startTime} - {schedule.endTime}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        판매: {schedule.soldTicketCount}매
                                                     </span>
                                                 </div>
                                                 <div>
@@ -822,6 +853,10 @@ const EventDetail = (): JSX.Element => {
                                                 <span>예매 불가능</span>
                                             </div>
                                             <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-gray-300 rounded"></div>
+                                                <span>지난 날짜</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
                                                 <div className="w-3 h-3 bg-blue-600 rounded"></div>
                                                 <span>선택된 날짜</span>
                                             </div>
@@ -837,30 +872,50 @@ const EventDetail = (): JSX.Element => {
                                             {eventDates.map((date) => {
                                                 const isBookable = isDateBookable(date);
                                                 const isSelected = selectedDate === date;
+                                                const isPastDate = !isDateInFuture(date);
                                                 const dateObj = new Date(date + 'T00:00:00');
                                                 const dayName = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
 
                                                 return (
                                                     <div
                                                         key={date}
-                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''
-                                                            }`}
-                                                        onClick={() => handleDateSelect(date)}
+                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 ${
+                                                            isPastDate 
+                                                                ? 'cursor-not-allowed opacity-60' 
+                                                                : 'cursor-pointer hover:bg-gray-50'
+                                                            } ${isSelected ? 'bg-blue-50' : ''}`}
+                                                        onClick={() => !isPastDate ? handleDateSelect(date) : null}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-3 h-3 rounded ${isSelected
-                                                                ? 'bg-blue-600'
-                                                                : isBookable
-                                                                    ? 'bg-green-100 border border-green-300'
-                                                                    : 'bg-pink-100 border border-pink-300'
+                                                            <div className={`w-3 h-3 rounded ${
+                                                                isPastDate
+                                                                    ? 'bg-gray-300'
+                                                                    : isSelected
+                                                                        ? 'bg-blue-600'
+                                                                        : isBookable
+                                                                            ? 'bg-green-100 border border-green-300'
+                                                                            : 'bg-pink-100 border border-pink-300'
                                                                 }`}></div>
                                                             <div>
-                                                                <span className="text-sm font-medium">{date}</span>
-                                                                <span className="text-xs text-gray-500 ml-2">({dayName})</span>
+                                                                <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
+                                                                    {date}
+                                                                </span>
+                                                                <span className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                    ({dayName})
+                                                                </span>
+                                                                {isPastDate && (
+                                                                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
+                                                                        지난 날짜
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            {isBookable ? (
+                                                            {isPastDate ? (
+                                                                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
+                                                                    예매 불가
+                                                                </span>
+                                                            ) : isBookable ? (
                                                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
                                                                     예매가능
                                                                 </span>
