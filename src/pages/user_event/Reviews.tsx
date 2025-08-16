@@ -37,20 +37,38 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
   };
 
   const handleLike = async (reviewId: number) => {
+    if (!localStorage.getItem("accessToken")) {
+      alert("로그인한 회원만 좋아요 반응을 할 수 있습니다. 로그인해주세요.");
+    }
 
     if(reviews.find(review => review.review.reviewId === reviewId)?.owner) {
       alert("본인이 작성한 관람평은 좋아요할 수 없습니다.");
       return;
     }
 
+    if (!reviews.find(review => review.review.reviewId === reviewId)?.review.visible) {
+      alert("비공개된 리뷰에는 좋아요를 할 수 없습니다.");
+      return;
+    }
+
     const res = await updateReaction({ reviewId });
     // 서버에서 내려준 최신 카운트로 동기화
-    setReviews(prev => prev.map(r =>
-      r.review.reviewId === res.reviewId
-        ? { ...r, review: { ...r.review, reactions: res.count } }
-        : r
-    ));
+    setReviews(prev =>
+      prev.map(r =>
+        r.review.reviewId === res.reviewId
+          ? {
+            ...r,
+            review: { ...r.review, reactions: res.count },
+            liked: !r.liked // 토글해줌
+          } : r
+  )
+);
   };
+
+  const formattedDate = (createdAt: string) => {
+    const formatted = createdAt.slice(0, 10).replace(/-/g, ". ");
+    return formatted;
+  }
 
   const handleReport = (reviewId: number) => {
     setSelectedReviewId(reviewId);
@@ -81,13 +99,12 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
     setReportReason("");
   };
 
-  // 별점 평균 계산 (공개된 관람평만, 별점 기반)
+  // 별점 평균 계산
   const calculateAverageRating = (): string => {
-    const visibleReviews = reviews.filter(currentReview => currentReview.review.visible);
-    if (visibleReviews.length === 0) return "0.00";
+    if (reviews.length === 0) return "0.00";
 
-    const totalRating = visibleReviews.reduce((sum, currentReview) => sum + currentReview.review.star, 0);
-    return (totalRating / visibleReviews.length).toFixed(2);
+    const totalRating = reviews.reduce((sum, currentReview) => sum + currentReview.review.star, 0);
+    return (totalRating / reviews.length).toFixed(2);
   };
 
   const averageRating = calculateAverageRating();
@@ -141,14 +158,14 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <span className="text-base text-[#212121] font-normal">
-                  test
+                  {currentReview.review.nickname}
                 </span>
                 <div className="flex gap-1">
                   {renderStars(currentReview.review.star)}
                 </div>
               </div>
               <span className="text-sm text-[#00000099] font-normal">
-                {currentReview.review.createdAt}
+                {formattedDate(currentReview.review.createdAt)}
               </span>
             </div>
 
@@ -168,10 +185,14 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => handleLike(currentReview.review.reviewId)}
-                  className={`flex items-center gap-2 text-sm font-normal transition-colors ${currentReview.liked
-                    ? "text-red-500"
-                    : "text-[#00000099] hover:text-red-500"
-                    }`}
+                  disabled={!currentReview.review.visible}
+                  className={`flex items-center gap-2 text-sm font-normal transition-colors
+                  ${currentReview.review.visible
+                    ? currentReview.liked
+                      ? "text-red-500 border border-red-500 hover:bg-red-50"
+                      : "text-[#00000099] border border-[#00000033] hover:text-red-500 hover:bg-gray-50" 
+                    : "text-gray-400 border border-gray-200 cursor-not-allowed" 
+                  }`}
                 >
                   <span className="text-lg">
                     {currentReview.liked ? "❤️" : "🤍"}
