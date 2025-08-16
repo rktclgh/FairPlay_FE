@@ -165,10 +165,25 @@ export const EditEventInfo = () => {
             history: { delay: 1000, maxStack: 100, userOnly: true },
         }) as const;
 
+    const createInquiryModules = (ref: React.RefObject<ReactQuill>) =>
+        ({
+            toolbar: {
+                container: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline"],
+                    // 리스트/링크/이미지 버튼
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    ["clean"],
+                ],
+            },
+            clipboard: { matchVisual: false },
+            history: { delay: 1000, maxStack: 100, userOnly: true },
+        }) as const;
+
     // modules는 렌더마다 바뀌지 않게 고정
     const detailModules = useMemo(() => createModules(detailRef), []);
     const policyModules = useMemo(() => createModules(policyRef), []);
-    const inquiryModules = useMemo(() => createModules(inquiryRef), []);
+    const inquiryModules = useMemo(() => createInquiryModules(inquiryRef), []);
 
     const quillFormats = useMemo(
         () => ["header", "bold", "italic", "underline", "list", "bullet", "link", "image"],
