@@ -97,20 +97,21 @@ export default function MyTickets(): JSX.Element {
         navigate(`/mypage/participant-list`, {
             state: {
                 eventName: reservation.eventName,
-                reservationId: reservation.reservationId
+                reservationId: reservation.reservationId,
+                scheduleDate: reservation.scheduleDate
             }
         });
     };
 
     const formatDate = (dateStr: string | null) => {
-            if (!dateStr) return "날짜 미정";
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        };
+        if (!dateStr) return "날짜 미정";
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
 
     // 시간 포맷팅: HH:MM:SS를 HH:MM으로 변환
     const formatTime = (timeStr: string | null) => {

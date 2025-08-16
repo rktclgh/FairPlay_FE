@@ -17,19 +17,38 @@ import EditParticipantModal from "../../components/EditParticipantModal";
 export default function ParticipantList(): JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { eventName } = location.state || {};
+    const { eventName, reservationId, scheduleDate } = location.state || {};
     const [participants, setParticipants] = useState<AttendeeInfoResponseDto[]>([]);
+    const [isPossibleEdit, setIsPossibleEdit] = useState<boolean>(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedParticipant, setSelectedParticipant] = useState<AttendeeInfoResponseDto | null>(null);
 
     useEffect(() => {
-
         const fetchParticipant = async () => {
             const res = await getAttendeesReservation(Number(reservationId));
             setParticipants(res.attendees);
+
+            if (isOneDayBeforeEvent(scheduleDate)) {
+                setIsPossibleEdit(false);
+            }
         }
         fetchParticipant();
     }, []);
+
+    const isOneDayBeforeEvent = (dateStr: string | null) => {
+        if (!dateStr) return false;
+
+        const eventDate = new Date(dateStr);
+        eventDate.setHours(0, 0, 0, 0); // 시분초 초기화
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const oneDayBeforeEvent = new Date(eventDate);
+        oneDayBeforeEvent.setDate(eventDate.getDate() - 1);
+
+        return today.getTime() === oneDayBeforeEvent.getTime();
+    };
 
     const handleBack = () => {
         navigate('/mypage/tickets');
@@ -67,6 +86,21 @@ export default function ParticipantList(): JSX.Element {
             )
         );
         alert("참여자 정보가 수정되었습니다.");
+    };
+
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return "날짜 미정";
+        const date = new Date(dateStr);
+        date.setHours(0, 0, 0, 0); // 시분초 초기화
+
+        const oneDayBeforeEvent = new Date(date);
+        oneDayBeforeEvent.setDate(date.getDate() - 1);
+
+        return oneDayBeforeEvent.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     };
 
     return (
@@ -157,7 +191,12 @@ export default function ParticipantList(): JSX.Element {
                                                         {!(index == 0) && (
                                                             <button
                                                                 onClick={() => handleEdit(participant)}
-                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-[10px] transition-colors"
+                                                                disabled={!isPossibleEdit}
+                                                                className={`p-2 rounded-[10px] transition-colors
+                                                                    ${isPossibleEdit
+                                                                        ? "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                                                                        : "text-gray-300 cursor-not-allowed"
+                                                                    }`}
                                                                 title="수정"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
@@ -168,7 +207,10 @@ export default function ParticipantList(): JSX.Element {
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
+                                    <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-sm mt-1 text-right">
+                                        <span className="font-semibold text-gray-900">{formatDate(scheduleDate)}</span>까지 수정 가능
+                                    </div>    
+                                </div>   
                             )}
                         </div>
                     </div>
