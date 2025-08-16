@@ -878,7 +878,7 @@ export const EventEditRequestDetail: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            연락처
+                                            담당자 연락처
                                             {isFieldModified('managerPhone', originalData.managerPhone, modifiedData.managerPhone) && 
                                                 <span className="ml-2 text-sm text-blue-600 font-medium">수정됨</span>
                                             }
@@ -892,7 +892,7 @@ export const EventEditRequestDetail: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            이메일
+                                            담당자 이메일
                                             {isFieldModified('managerEmail', originalData.managerEmail, modifiedData.managerEmail) && 
                                                 <span className="ml-2 text-sm text-blue-600 font-medium">수정됨</span>
                                             }
