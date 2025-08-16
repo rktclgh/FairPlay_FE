@@ -8,15 +8,13 @@ import {
 } from "lucide-react";
 
 import {
-    getQrTicketForMypage,
     reissueQrTicketByMember
 } from "../services/qrTicket"
 
 import { QRCodeCanvas } from 'qrcode.react';
 import type {
-    QrTicketRequestDto,
-    QrTicketResponseDto,
-    QrTicketReissueMemberRequestDto
+    QrTicketReissueMemberRequestDto,
+    QrTicketData
 } from "@/services/types/qrTicketType";
 
 // 스크롤바 숨기기 CSS
@@ -33,66 +31,34 @@ const scrollbarHideStyles = `
 interface QrTicketProps {
     isOpen: boolean;
     onClose: () => void;
-    ticketData?: {
-        eventName: string;
-        eventDate: string;
-        venue: string;
-        seatInfo: string;
-        ticketNumber: string;
-        bookingDate: string;
-        entryTime: string;
-    };
+    ticketData?: QrTicketData | null;
+    updateIds?: {
+        reservationId: number,
+        qrTicketId: number
+    }
 }
 
-const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
+const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, updateIds }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
-    const [qrCode, setQrCode] = useState(""); // QR 코드 상태
-    const [manualCode, setManualCode] = useState(""); // 수동 코드 상태
-    const [currentTicketNumber, setCurrentTicketNumber] = useState(""); // 현재 티켓 번호
-    const [resData, setResData] = useState<QrTicketResponseDto>();
+    const [qrCode, setQrCode] = useState(ticketData?.qrCode || ""); // QR 코드 상태
+    const [manualCode, setManualCode] = useState(ticketData?.manualCode || ""); // 수동 코드 상태
+    const [resData, setResData] = useState(ticketData || null);
+    const [updateData, setUpdateData] = useState(updateIds || null)
 
-    const defaultTicketData = {
-        eventName: "G-DRAGON 콘서트: WORLD TOUR",
-        eventDate: "2024년 8월 9일 (금) 19:00",
-        venue: "고양종합운동장",
-        seatInfo: "A구역 12열 15번",
-        ticketNumber: "KPC-2024-001234",
-        bookingDate: "2024.11.28",
-        entryTime: "18:30 ~ 19:00",
-    };
-
-    const data = ticketData || defaultTicketData;
+    useEffect(() => {
+        setQrCode(ticketData?.qrCode ?? "");
+        setManualCode(ticketData?.manualCode ?? "");
+        setUpdateData(updateIds ?? null);
+        setResData(ticketData ?? null);
+    }, [ticketData]);
 
     // 카운트다운 타이머
     useEffect(() => {
         if (!isOpen) {
             setTimeLeft(300); // 모달이 닫힐 때 타이머 리셋
             setQrCode(""); // QR 코드 초기화
-            setCurrentTicketNumber(""); // 티켓 번호 초기화
+            setManualCode("");
             return;
-        }
-
-        // 모달이 열릴 때 초기 QR 코드 생성
-        if (isOpen && !qrCode) {
-            console.log("qr티켓 조회시작")
-
-            const fetchQrTicket = async () => {
-                // 임시 데이터
-                const qrTicketRequestDto : QrTicketRequestDto = {
-                    attendeeId: null,
-                    eventId: 1,
-                    ticketId: 1,
-                    reservationId: 1
-                };
-                
-
-                const res = await getQrTicketForMypage(qrTicketRequestDto);
-                setCurrentTicketNumber(res.ticketNo);
-                setQrCode(res.qrCode);
-                setManualCode(res.manualCode);
-                setResData(res);
-            };
-            fetchQrTicket();
         }
 
         const timer = setInterval(() => {
@@ -108,25 +74,17 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
         return () => clearInterval(timer);
     }, [isOpen, qrCode]);
 
-    // 삭제 예정
-    // // 티켓 번호 생성 함수
-    // const generateTicketNumber = () => {
-    //     const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    //     return `KPC-2024-${randomNum}`;
-    // };
-
-    // // QR 코드 생성 함수
-    // const generateQRCode = () => {
-    //     const timestamp = Date.now();
-    //     const randomString = Math.random().toString(36).substring(2, 15);
-    //     return `${currentTicketNumber || data.ticketNumber}-${timestamp}-${randomString}`;
-    // };
-
     // 새로고침 함수
     const handleRefresh = async () => {
+
+        if ((updateData?.reservationId === 0) || (updateData?.qrTicketId === 0)) {
+            alert("예약 ID와 QR 티켓 ID 값이 조회되지 앟습니다.");
+            return;
+        } 
+
         const data: QrTicketReissueMemberRequestDto = {
-            reservationId: 1,
-            qrTicketId: 1
+            reservationId: updateData?.reservationId ?? 0,
+            qrTicketId:updateData?.qrTicketId ?? 0 
         }
 
         const res = await reissueQrTicketByMember(data);
@@ -162,14 +120,14 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                             <Calendar className="w-3 h-3 sm:w-4 md:w-5 sm:h-4 md:h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-sm sm:text-base md:text-lg font-bold leading-tight mb-1">{resData?.title}</h2>
-                            <p className="text-xs sm:text-sm opacity-90">{resData?.viewingScheduleInfo.date} ({resData?.viewingScheduleInfo.dayOfWeek}) {resData?.viewingScheduleInfo.startTime}</p>
+                            <h2 className="text-sm sm:text-base md:text-lg font-bold leading-tight mb-1">{resData?.eventName}</h2>
+                            <p className="text-xs sm:text-sm opacity-90">{resData?.eventDate}</p>
                         </div>
                     </div>
 
                     <div className="flex items-center space-x-2 text-xs sm:text-sm">
                         <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span>{resData?.buildingName}</span>
+                        <span>{resData?.venue}</span>
                     </div>
                 </div>
 
@@ -181,7 +139,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                                 <div className="text-center text-gray-500">
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
                                         <QRCodeCanvas
-                                            value={qrCode}
+                                            value={qrCode ?? ""}
                                             size={116}
                                             fgColor={'#000'}
                                             style={{
@@ -197,7 +155,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
 
                         <div className="text-center">
                             <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">{manualCode}</p>
-                            <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">TicketNo.{currentTicketNumber || data.ticketNumber}</p>
+                            <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">TicketNo.{resData?.ticketNumber}</p>
                             <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 <span>유효한 티켓</span>
@@ -211,18 +169,18 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                             <User className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                             <span className="text-xs sm:text-sm font-medium text-blue-900">좌석 정보</span>
                         </div>
-                        <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 mt-1">{data.seatInfo}</p>
+                        <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 mt-1">{resData?.seatInfo}</p>
                     </div>
 
                     {/* 티켓 상세 정보 */}
                     <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-between items-center py-1 sm:py-2 border-b border-gray-100">
                             <span className="text-xs sm:text-sm text-gray-600">예매일</span>
-                            <span className="text-xs sm:text-sm font-medium">{resData?.reservationDate}</span>
+                            <span className="text-xs sm:text-sm font-medium">{resData?.bookingDate}</span>
                         </div>
                         <div className="flex justify-between items-center py-1 sm:py-2 border-b border-gray-100">
                             <span className="text-xs sm:text-sm text-gray-600">관람 시간</span>
-                            <span className="text-xs sm:text-sm font-medium">{resData?.viewingScheduleInfo.startTime}</span>
+                            <span className="text-xs sm:text-sm font-medium">{resData?.entryTime}</span>
                         </div>
                         <div className="flex justify-between items-center py-1 sm:py-2">
                             <span className="text-xs sm:text-sm text-gray-600">유효시간</span>

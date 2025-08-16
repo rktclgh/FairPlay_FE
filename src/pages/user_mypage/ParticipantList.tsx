@@ -17,7 +17,7 @@ import EditParticipantModal from "../../components/EditParticipantModal";
 export default function ParticipantList(): JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { reservationId, eventName } = location.state || {};
+    const { eventName } = location.state || {};
     const [participants, setParticipants] = useState<AttendeeInfoResponseDto[]>([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedParticipant, setSelectedParticipant] = useState<AttendeeInfoResponseDto | null>(null);
