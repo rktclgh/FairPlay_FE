@@ -33,8 +33,17 @@ export function useNotificationSocket() {
   }, []);
 
   const onNewNotification = useCallback((notification: Notification) => {
+    console.log("📨 onNewNotification 호출됨:", notification);
     setNotifications(prev => {
+      console.log("📨 이전 알림 목록:", prev.length);
+      // 중복 방지: 같은 ID의 알림이 이미 있는지 확인
+      const exists = prev.some(n => n.notificationId === notification.notificationId);
+      if (exists) {
+        console.log("📨 중복 알림 무시:", notification.notificationId);
+        return prev;
+      }
       const updated = [notification, ...prev];
+      console.log("📨 새 알림 추가 후 목록:", updated.length);
       updateUnreadCount(updated);
       return updated;
     });
@@ -95,61 +104,88 @@ export function useNotificationSocket() {
         console.log("Connected to notification WebSocket");
         reconnectAttempts.current = 0;
 
-        // 개인 알림 구독
-        subscriptionRef.current = stomp.subscribe(
-          "/user/topic/notifications",
-          (message) => {
-            try {
-              const notification = JSON.parse(message.body);
-              console.log("새 알림 수신:", notification.title);
-              onNewNotification(notification);
-            } catch (error) {
-              console.error("알림 파싱 실패:", error);
-            }
-          }
-        );
-
-        // 브로드캐스트 알림 구독
-        broadcastSubscriptionRef.current = stomp.subscribe(
-          "/topic/notifications/broadcast",
-          (message) => {
-            try {
-              const notification = JSON.parse(message.body);
-              console.log("브로드캐스트 알림 수신:", notification.title);
-              onNewNotification(notification);
-            } catch (error) {
-              console.error("브로드캐스트 알림 파싱 실패:", error);
-            }
-          }
-        );
-
-        // 읽음 처리 알림 구독
-        readSubscriptionRef.current = stomp.subscribe(
-          "/user/topic/notifications/read",
-          (message) => {
-            try {
-              const notificationId = JSON.parse(message.body);
-              console.log("알림 읽음 처리:", notificationId);
-              onNotificationRead(notificationId);
-            } catch (error) {
-              console.error("읽음 처리 파싱 실패:", error);
-            }
-          }
-        );
-
-        // 구독 시 기존 알림 목록 요청
-        stomp.subscribe("/topic/notifications", (message) => {
+        console.log("🔌 웹소켓 연결 성공, 구독 시작");
+        
+        // 기존 알림 목록 직접 요청 (REST API 호출)
+        const fetchExistingNotifications = async () => {
           try {
-            const existingNotifications = JSON.parse(message.body);
-            if (Array.isArray(existingNotifications)) {
-              console.log("기존 알림 목록 로드:", existingNotifications.length);
+            const token = localStorage.getItem("accessToken");
+            if (!token) return;
+            
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/notifications`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (response.ok) {
+              const existingNotifications = await response.json();
+              console.log("🔄 REST API로 기존 알림 목록 로드:", existingNotifications.length);
+              console.log("🔄 기존 알림 데이터:", existingNotifications);
               setNotifications(existingNotifications);
               updateUnreadCount(existingNotifications);
+            } else {
+              console.log("📋 기존 알림 없음 또는 로드 실패");
+              setNotifications([]);
+              updateUnreadCount([]);
             }
           } catch (error) {
             console.error("기존 알림 로드 실패:", error);
+            setNotifications([]);
+            updateUnreadCount([]);
           }
-        });
+        };
+        
+        // 기존 알림 로드
+        fetchExistingNotifications();
+
+        // 잠시 후 개인 알림 구독 (기존 알림 로드 후)
+        setTimeout(() => {
+          // 개인 알림 구독
+          subscriptionRef.current = stomp.subscribe(
+            "/user/topic/notifications",
+            (message) => {
+              try {
+                const notification = JSON.parse(message.body);
+                console.log("📨 새 개인 알림 수신:", notification);
+                onNewNotification(notification);
+              } catch (error) {
+                console.error("알림 파싱 실패:", error);
+              }
+            }
+          );
+
+          // 브로드캐스트 알림 구독
+          broadcastSubscriptionRef.current = stomp.subscribe(
+            "/topic/notifications/broadcast",
+            (message) => {
+              try {
+                const notification = JSON.parse(message.body);
+                console.log("📢 브로드캐스트 알림 수신:", notification);
+                onNewNotification(notification);
+              } catch (error) {
+                console.error("브로드캐스트 알림 파싱 실패:", error);
+              }
+            }
+          );
+
+          // 읽음 처리 알림 구독
+          readSubscriptionRef.current = stomp.subscribe(
+            "/user/topic/notifications/read",
+            (message) => {
+              try {
+                const notificationId = JSON.parse(message.body);
+                console.log("✅ 알림 읽음 처리:", notificationId);
+                onNotificationRead(notificationId);
+              } catch (error) {
+                console.error("읽음 처리 파싱 실패:", error);
+              }
+            }
+          );
+          
+          console.log("🔔 실시간 알림 구독 완료");
+        }, 100);
       },
       (error) => {
         console.error("Notification WebSocket connection failed:", error);
