@@ -164,6 +164,25 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                             >
                                 회차 관리
                             </Link>
+                            <Link
+                                to="/host/advertisement-application"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/advertisement-application"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/host/advertisement-application" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/advertisement-application" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/advertisement-application" ? "black" : "#00000080";
+                                }}
+                            >
+                                광고 신청
+                            </Link>
                         </div>
                     </div>
 
