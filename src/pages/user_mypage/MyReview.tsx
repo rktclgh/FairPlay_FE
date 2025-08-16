@@ -264,6 +264,11 @@ export const MyPageMyReview = () => {
         ));
     };
 
+      const formattedDate = (createdAt: string) => {
+        const formatted = createdAt.slice(0, 10).replace(/-/g, ". ");
+        return formatted;
+  }
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
@@ -359,14 +364,12 @@ export const MyPageMyReview = () => {
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">장소</div>
-                                                <div className="text-sm text-[#000000b2]">{item.event.buildingName}</div>
+                                                <div className="text-sm text-[#000000b2]">{item.event.buildingName !== null ? item.event.buildingName : item.event.address }</div>
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">관람일</div>
                                                 <div className="text-sm text-[#000000b2]">
-                                                    {item.event.viewingScheduleInfo.date}
-                                                    ({item.event.viewingScheduleInfo.dayOfWeek})
-                                                    {item.event.viewingScheduleInfo.startTime}
+                                                    {item.event.viewingScheduleInfo.date} ({item.event.viewingScheduleInfo.dayOfWeek}) {item.event.viewingScheduleInfo.startTime}
                                                 </div>
                                             </div>
                                             <div className="flex gap-4">
@@ -404,7 +407,7 @@ export const MyPageMyReview = () => {
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">장소</div>
-                                            <div className="text-sm text-[#000000b2]">{selectedEvent.buildingName}</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.buildingName !== null ? selectedEvent.buildingName : selectedEvent.address }</div>
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">관람일</div>
@@ -426,7 +429,14 @@ export const MyPageMyReview = () => {
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <button
                                                     key={star}
-                                                    onClick={() => setRating(star)}
+                                                    onClick={() => { 
+                                                        if (star === rating) { 
+                                                            setRating(star - 1);
+                                                        } else {
+                                                            setRating(star);
+                                                        }
+
+                                                    } }
                                                     className="w-[27px] h-[26px] p-0 bg-transparent border-none focus:outline-none"
                                                 >
                                                     <Star
@@ -624,7 +634,7 @@ export const MyPageMyReview = () => {
                                         </div>
                                         <div className="flex gap-4 mb-4">
                                             <span className="[font-family:'Roboto-Regular',Helvetica] text-[#000000b2] text-sm leading-[21px]">
-                                                {data.event.viewingScheduleInfo.date} ({ data.event.viewingScheduleInfo.dayOfWeek}) { data.event.viewingScheduleInfo.startTime}
+                                                {data.event.viewingScheduleInfo.date} ({data.event.viewingScheduleInfo.dayOfWeek}) {data.event.viewingScheduleInfo.startTime}
                                             </span>
                                             <span className="[font-family:'Roboto-Regular',Helvetica] text-[#000000b2] text-sm leading-[21px]">
                                                 {data.event.buildingName}
@@ -655,7 +665,7 @@ export const MyPageMyReview = () => {
                                                 </span>
                                             </div>
                                             <span className="[font-family:'Roboto-Regular',Helvetica] text-[#00000080] text-xs">
-                                                작성일: {data.review.createdAt}
+                                                작성일: {formattedDate(data.review.createdAt)}
                                             </span>
                                         </div>
                                     </div>
