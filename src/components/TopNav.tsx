@@ -25,7 +25,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const navigate = useNavigate();
 
     // 웹소켓 기반 알림 시스템 사용
-    const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
+    const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
 
     const checkLoginStatus = useCallback(() => {
         const loggedIn = isAuthenticated();
@@ -78,10 +78,16 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         markAsRead(notificationId); // 웹소켓을 통한 읽음 처리
     };
 
-    const handleDeleteNotification = async (e: React.MouseEvent, notificationId: number) => {
+    const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {
         e.stopPropagation(); // 이벤트 버블링 방지
-        await eventApi.deleteNotification(notificationId);
-        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
+        
+        console.log("🗑️ TopNav에서 알림 삭제:", notificationId);
+        
+        // 즉시 삭제 (아이폰 스타일)
+        const success = deleteNotification(notificationId);
+        if (!success) {
+            console.warn("WebSocket을 통한 알림 삭제 실패");
+        }
     };
 
 

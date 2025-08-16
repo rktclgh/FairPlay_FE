@@ -50,19 +50,18 @@ export function NotificationBell() {
     
     console.log("🗑️ 삭제 버튼 클릭됨:", notificationId);
     
+    // 슬라이드 애니메이션 시작
     setDeletingIds(prev => new Set(prev).add(notificationId));
     
-    const success = deleteNotification(notificationId);
-    console.log("🗑️ deleteNotification 결과:", success);
-    
-    if (!success) {
-      console.log("🗑️ 삭제 실패, 상태 롤백");
+    // 0.3초 후 실제 삭제 (슬라이드 애니메이션과 함께)
+    setTimeout(() => {
+      deleteNotification(notificationId); // 이미 즉시 UI 업데이트 + 백엔드 요청 처리됨
       setDeletingIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(notificationId);
         return newSet;
       });
-    }
+    }, 300);
   };
 
   const getNotificationIcon = (typeCode: string) => {
@@ -116,7 +115,7 @@ export function NotificationBell() {
                     key={notification.notificationId}
                     className={`relative group p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all duration-300 ${
                       !notification.isRead ? "bg-blue-50" : ""
-                    } ${isDeleting ? "opacity-50 transform translate-x-full" : ""}`}
+                    } ${isDeleting ? "opacity-0 transform translate-x-full scale-95" : ""}`}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start gap-3">

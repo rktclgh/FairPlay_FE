@@ -266,14 +266,22 @@ export function useNotificationSocket() {
       return false;
     }
 
-    // WebSocket으로만 삭제 요청 (실시간 동기화)
+    // 1. 즉시 UI에서 제거 (아이폰 스타일)
+    console.log("🗑️ 즉시 로컬에서 알림 제거:", notificationId);
+    setNotifications(prev => {
+      const updated = prev.filter(n => n.notificationId !== notificationId);
+      updateUnreadCount(updated);
+      return updated;
+    });
+
+    // 2. 백엔드로 soft delete 요청
     const token = localStorage.getItem("accessToken");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     console.log("🗑️ WebSocket으로 알림 삭제 요청:", notificationId);
     stomp.send("/app/notifications/delete", headers, JSON.stringify(notificationId));
     return true;
-  }, []);
+  }, [updateUnreadCount]);
 
   // 브라우저 알림 권한 요청
   useEffect(() => {
