@@ -224,6 +224,12 @@ class PaymentService {
         reservationData?: any
     ): Promise<any> {
         try {
+            // 무료 티켓인지 확인
+            if (amount === 0) {
+                return await this.processFreeTicket(
+                    title, userId, userName, eventId, paymentTargetType, quantity, price, amount, reservationData
+                );
+            }
 
             const merchantUid = await this.generateMerchantUid(paymentTargetType);
             console.log('merchantUid:', merchantUid);
@@ -294,6 +300,69 @@ class PaymentService {
     }
 
     /**
+     * 무료 티켓 처리 (PG사 연동 없이 직접 처리)
+     */
+    async processFreeTicket(
+        title: string,
+        userId: number,
+        userName: string,
+        eventId: number,
+        paymentTargetType: string,
+        quantity: number,
+        price: number,
+        amount: number,
+        reservationData?: any
+    ): Promise<any> {
+        try {
+            const merchantUid = await this.generateMerchantUid(paymentTargetType);
+            console.log('무료 티켓 처리 - merchantUid:', merchantUid);
+
+            // 1. 무료 티켓 직접 처리 (백엔드에서 즉시 완료 처리)
+            const freeTicketResult = await this.processFreeTicketOnServer({
+                eventId: eventId,
+                paymentTargetType: paymentTargetType,
+                quantity: quantity,
+                price: 0, // 무료 티켓이므로 0
+                merchantUid: merchantUid,
+                pgProvider: 'free'
+            });
+
+            // 2. 예약 데이터 처리 (무료 티켓도 예약 생성 필요)
+            const targetId = await this.processTargetData(
+                paymentTargetType,
+                eventId,
+                {
+                    imp_uid: freeTicketResult.impUid,
+                    merchant_uid: freeTicketResult.merchantUid,
+                    paid_amount: 0,
+                    apply_num: 'FREE_TICKET'
+                },
+                reservationData
+            );
+
+            // 3. 결제 테이블에 target_id 업데이트
+            await this.updatePaymentTargetId(freeTicketResult.merchantUid, targetId);
+
+            return {
+                success: true,
+                paymentResponse: {
+                    success: true,
+                    merchant_uid: freeTicketResult.merchantUid,
+                    imp_uid: freeTicketResult.impUid,
+                    paid_amount: 0,
+                    apply_num: 'FREE_TICKET'
+                },
+                completionResult: freeTicketResult,
+                targetId
+            };
+
+        } catch (error) {
+            console.error('무료 티켓 처리 중 오류:', error);
+            throw error;
+        }
+    }
+
+    /**
      * 백엔드에 결제 요청 정보 저장
      */
     async savePaymentRequest(paymentData: {
@@ -330,6 +399,45 @@ class PaymentService {
             return await response.json();
         } catch (error) {
             console.error('결제 요청 저장 중 오류:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 무료 티켓 서버 처리
+     */
+    async processFreeTicketOnServer(paymentData: {
+        eventId?: number;
+        paymentTargetType: string;
+        quantity: number;
+        price: number;
+        merchantUid: string;
+        pgProvider: string;
+    }): Promise<any> {
+        try {
+            const response = await authManager.authenticatedFetch('/api/payments/free', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: paymentData.eventId,
+                    paymentTargetType: paymentData.paymentTargetType,
+                    quantity: paymentData.quantity,
+                    price: paymentData.price,
+                    merchantUid: paymentData.merchantUid,
+                    pgProvider: paymentData.pgProvider,
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`무료 티켓 처리 실패: ${response.status} - ${errorData}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('무료 티켓 서버 처리 중 오류:', error);
             throw error;
         }
     }
