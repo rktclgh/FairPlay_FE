@@ -123,6 +123,13 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                             >
                                 배너 관리
                             </Link>
+                            <Link
+                                to="/admin_dashboard/advertisement-applications"
+                                className={linkClass("/admin_dashboard/advertisement-applications")}
+                                style={linkStyle("/admin_dashboard/advertisement-applications")}
+                            >
+                                광고 신청 목록
+                            </Link>
                         </div>
                     </div>
 

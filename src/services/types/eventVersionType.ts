@@ -32,7 +32,9 @@ export interface EventSnapshot {
     startDate: string; // LocalDate is serialized as string
     endDate: string; // LocalDate is serialized as string
     mainCategoryId: number;
+    mainCategoryName: string;
     subCategoryId: number;
+    subCategoryName: string;
     regionCodeId: number;
     reentryAllowed: boolean;
     checkInAllowed: boolean;
@@ -40,6 +42,18 @@ export interface EventSnapshot {
     hostCompany: string;
     age: boolean;
     externalLinks: ExternalLinkSnapshot[];
+
+    // from Location
+    placeName: string;
+    latitude: number;
+    longitude: number;
+    address: string;
+
+    // from Manager
+    businessNumber: string;
+    managerName: string;
+    managerPhone: string;
+    managerEmail: string;
 }
 
 export interface ExternalLinkSnapshot {
@@ -48,11 +62,15 @@ export interface ExternalLinkSnapshot {
 }
 
 export interface TicketSnapshot {
-    // Define ticket snapshot properties based on TicketSnapshotDto if available
-    // Assuming it has at least these fields for now
-    ticketId: number;
     name: string;
+    description: string;
+    ticketStatusCodeId: number;
+    stock: number;
     price: number;
+    maxPurchase: number;
+    visible: boolean;
+    deleted: boolean;
+    types: string; // TypesEnum from backend
 }
 
 export interface EventVersionComparison {
@@ -61,5 +79,5 @@ export interface EventVersionComparison {
     version2: number;
     snapshot1: EventSnapshot;
     snapshot2: EventSnapshot;
-    fieldDifferences: Record<string, { oldValue: any; newValue: any }>;
+    fieldDifferences: any; // JSON 형태의 필드별 차이점
 }

@@ -30,6 +30,7 @@ import ScheduleManagement from "./pages/host_event/ScheduleManagement";
 import EventVersionManagement from "./pages/host_event/EventVersionManagement";
 import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
 import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
+import AdvertisementApplication from "./pages/host_event/AdvertisementApplication";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
@@ -51,6 +52,7 @@ import EventEditRequests from "./pages/admin_event/EventEditRequests";
 import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 import AccountRoles from "./pages/admin_account/AccountRoles";
 import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
+import AdvertisementApplicationList from "./pages/admin_vip_banner/AdvertisementApplicationList";
 import SettlementManagement from "./pages/admin_settlement/SettlementManagement";
 import RemittanceHistory from "./pages/admin_settlement/RemittanceHistory";
 import ReservationStatistics from "./pages/admin_statistics/ReservationStatistics";
@@ -127,8 +129,9 @@ function AppContent() {
           <Route path="/host/round-management" element={<HostRouteGuard><ScheduleManagement /></HostRouteGuard>} />
           <Route path="/host/status-management" element={<HostRouteGuard><EventStatusBanner /></HostRouteGuard>} />
           <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
-          <Route path="/host/event-version/:eventId/:versionNumber" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
+          <Route path="/host/event-version/:versionNumber" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
           <Route path="/host/event-version/comparison" element={<HostRouteGuard><EventVersionComparison /></HostRouteGuard>} />
+          <Route path="/host/advertisement-application" element={<HostRouteGuard><AdvertisementApplication /></HostRouteGuard>} />
           <Route path="/host/reservation-list/:eventId" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
           <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
           <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
@@ -153,6 +156,7 @@ function AppContent() {
 
           {/* VIP 배너 광고 */}
           <Route path="/admin_dashboard/vip-banners" element={<AdminRouteGuard><VipBannerManagement /></AdminRouteGuard>} />
+          <Route path="/admin_dashboard/advertisement-applications" element={<AdminRouteGuard><AdvertisementApplicationList /></AdminRouteGuard>} />
 
           {/* 정산 관리 */}
           <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />

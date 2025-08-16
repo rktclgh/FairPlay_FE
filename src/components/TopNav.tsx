@@ -25,7 +25,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
     const navigate = useNavigate();
 
     // 웹소켓 기반 알림 시스템 사용
-    const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
+    const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
 
     const checkLoginStatus = useCallback(() => {
         const loggedIn = isAuthenticated();
@@ -78,19 +78,18 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
         markAsRead(notificationId); // 웹소켓을 통한 읽음 처리
     };
 
-    const handleDeleteNotification = async (e: React.MouseEvent, notificationId: number) => {
+    const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {
         e.stopPropagation(); // 이벤트 버블링 방지
-        await eventApi.deleteNotification(notificationId);
-        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
+        
+        console.log("🗑️ TopNav에서 알림 삭제:", notificationId);
+        
+        // 즉시 삭제 (아이폰 스타일)
+        const success = deleteNotification(notificationId);
+        if (!success) {
+            console.warn("WebSocket을 통한 알림 삭제 실패");
+        }
     };
 
-    const handleDeleteAllRead = async () => {
-        const readNotificationIds = notifications.filter(n => n.isRead).map(n => n.notificationId);
-        if (readNotificationIds.length === 0) return;
-
-        await eventApi.deleteMultipleNotifications(readNotificationIds);
-        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
-    };
 
 
 
@@ -202,11 +201,6 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
                         <div className="flex items-center justify-between p-4 border-b">
                             <h2 className="text-lg font-semibold">알림</h2>
                             <div className="flex items-center gap-2">
-                                {notifications.some(n => n.isRead) && (
-                                    <button onClick={handleDeleteAllRead} className="text-xs text-gray-500 hover:text-black p-1 rounded">
-                                        읽은 알림 삭제
-                                    </button>
-                                )}
                                 <button onClick={toggleNotification} className="p-1 bg-transparent border-none hover:bg-gray-100 rounded">
                                     <HiOutlineX className="w-5 h-5" />
                                 </button>
