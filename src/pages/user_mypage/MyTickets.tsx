@@ -10,7 +10,6 @@ import type {
     QrTicketRequestDto,
     QrTicketData
 } from "../../services/types/qrTicketType";
-
 import {
     getQrTicketForMypage,
 } from "../../services/qrTicket"
@@ -57,35 +56,50 @@ export default function MyTickets(): JSX.Element {
     }, []);
 
     const handleQrTicketOpen = async (reservation: ReservationResponseDto) => {
-        const eventDate = `${formatDate(reservation.scheduleDate ?? null)} ${formatTime(reservation.startTime ?? null)} - ${formatTime(reservation.endTime ?? null)}`;
 
-        const qrTicketRequestDto: QrTicketRequestDto = {
-            attendeeId: null,
-            eventId: reservation.eventId,
-            ticketId: reservation.ticketId,
-            reservationId: reservation.reservationId
-        };
+        try {
+            const eventDate = `${formatDate(reservation.scheduleDate ?? null)} ${formatTime(reservation.startTime ?? null)} - ${formatTime(reservation.endTime ?? null)}`;
 
-        // QR 티켓 정보 호출
-        const res = await getQrTicketForMypage(qrTicketRequestDto);
-        // 선택한 티켓 정보
-        setSelectedTicketData({
-            eventName: reservation.eventName || "행사명 미정",
-            eventDate: eventDate,
-            venue: res.buildingName ?? res.address, // TODO: 실제 장소 정보가 필요하면 Event 엔티티에서 가져와야 함
-            seatInfo: reservation.ticketName || "티켓 정보 없음",
-            ticketNumber: res.ticketNo,
-            bookingDate: formatDateTime(reservation.createdAt),
-            entryTime: `${formatTime(reservation.startTime ?? null)} ~ ${formatTime(reservation.endTime ?? null)}`,
-            qrCode: res.qrCode,
-            manualCode: res.manualCode
-        });
-        setUpdateIds({
-            reservationId: reservation.reservationId,
-            qrTicketId: res.qrTicketId
-        });
+            const qrTicketRequestDto: QrTicketRequestDto = {
+                attendeeId: null,
+                eventId: reservation.eventId,
+                ticketId: reservation.ticketId,
+                reservationId: reservation.reservationId
+            };
 
-        setIsQrTicketOpen(true);
+            // QR 티켓 정보 호출
+            const res = await getQrTicketForMypage(qrTicketRequestDto);
+            // 선택한 티켓 정보
+            setSelectedTicketData({
+                eventName: reservation.eventName || "행사명 미정",
+                eventDate: eventDate,
+                venue: res.buildingName ?? res.address, // TODO: 실제 장소 정보가 필요하면 Event 엔티티에서 가져와야 함
+                seatInfo: reservation.ticketName || "티켓 정보 없음",
+                ticketNumber: res.ticketNo,
+                bookingDate: formatDateTime(reservation.createdAt),
+                entryTime: `${formatTime(reservation.startTime ?? null)} ~ ${formatTime(reservation.endTime ?? null)}`,
+                qrCode: res.qrCode,
+                manualCode: res.manualCode
+            });
+            setUpdateIds({
+                reservationId: reservation.reservationId,
+                qrTicketId: res.qrTicketId
+            });
+
+            setIsQrTicketOpen(true);
+            
+        } catch (error: any) {
+
+            const data = error.response?.data;
+
+            if (data) {
+                toast.error(`${data.code} : ${data.message}`)
+            } else if (error.request) {
+                toast.error("서버 응답이 없습니다. 네트워크를 확인하세요.")
+            } else {
+                toast.error("알 수 없는 오류가 발생했습니다.");
+            }
+        }
     };
 
     const handleQrTicketClose = () => {
