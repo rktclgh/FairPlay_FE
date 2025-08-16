@@ -30,6 +30,7 @@ import ScheduleManagement from "./pages/host_event/ScheduleManagement";
 import EventVersionManagement from "./pages/host_event/EventVersionManagement";
 import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
 import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
+import AdvertisementApplication from "./pages/host_event/AdvertisementApplication";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
@@ -129,6 +130,7 @@ function AppContent() {
           <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
           <Route path="/host/event-version/:eventId/:versionNumber" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
           <Route path="/host/event-version/comparison" element={<HostRouteGuard><EventVersionComparison /></HostRouteGuard>} />
+          <Route path="/host/advertisement-application" element={<HostRouteGuard><AdvertisementApplication /></HostRouteGuard>} />
           <Route path="/host/reservation-list/:eventId" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
           <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
           <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
