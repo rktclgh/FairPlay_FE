@@ -32,13 +32,25 @@ interface QrTicketProps {
     isOpen: boolean;
     onClose: () => void;
     ticketData?: QrTicketData | null;
+    updateIds?: {
+        reservationId: number,
+        qrTicketId: number
+    }
 }
 
-const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
+const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, updateIds }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
-    const [qrCode, setQrCode] = useState(ticketData?.qrCode); // QR 코드 상태
-    const [manualCode, setManualCode] = useState(ticketData?.manualCode); // 수동 코드 상태
-    const [resData, setResData] = useState(ticketData);
+    const [qrCode, setQrCode] = useState(ticketData?.qrCode || ""); // QR 코드 상태
+    const [manualCode, setManualCode] = useState(ticketData?.manualCode || ""); // 수동 코드 상태
+    const [resData, setResData] = useState(ticketData || null);
+    const [updateData, setUpdateData] = useState(updateIds || null)
+
+    useEffect(() => {
+        setQrCode(ticketData?.qrCode ?? "");
+        setManualCode(ticketData?.manualCode ?? "");
+        setUpdateData(updateIds ?? null);
+        setResData(ticketData ?? null);
+    }, [ticketData]);
 
     // 카운트다운 타이머
     useEffect(() => {
@@ -64,9 +76,15 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
 
     // 새로고침 함수
     const handleRefresh = async () => {
+
+        if ((updateData?.reservationId === 0) || (updateData?.qrTicketId === 0)) {
+            alert("예약 ID와 QR 티켓 ID 값이 조회되지 앟습니다.");
+            return;
+        } 
+
         const data: QrTicketReissueMemberRequestDto = {
-            reservationId: 1,
-            qrTicketId: 1
+            reservationId: updateData?.reservationId ?? 0,
+            qrTicketId:updateData?.qrTicketId ?? 0 
         }
 
         const res = await reissueQrTicketByMember(data);
@@ -151,7 +169,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData }) => {
                             <User className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                             <span className="text-xs sm:text-sm font-medium text-blue-900">좌석 정보</span>
                         </div>
-                        <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 mt-1">{data.seatInfo}</p>
+                        <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 mt-1">{resData?.seatInfo}</p>
                     </div>
 
                     {/* 티켓 상세 정보 */}

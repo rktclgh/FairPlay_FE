@@ -17,8 +17,10 @@ interface ViewingScheduleInfo{
 
 // 마이페이지 QR 티켓 조회 또는 비회원 QR 티켓 조회 응답
 export interface QrTicketResponseDto{
+    qrTicketId: number,
     title: string, // 행사 제목
     buildingName: string, // 행사 장소
+    address: string // 행사 주소
     qrCode: string, // QR 이미지 코드
     manualCode: string, // 수동 코드
     ticketNo: string, // 티켓 번호

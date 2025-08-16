@@ -22,6 +22,10 @@ export default function MyTickets(): JSX.Element {
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [canUseQrTicket, setCanUseQrTicketList] = useState<boolean[]>([]);
+    const [updateIds, setUpdateIds] = useState({
+        reservationId: 0,
+        qrTicketId: 0
+    });
 
     useEffect(() => {
         const loadMyReservations = async () => {
@@ -63,20 +67,12 @@ export default function MyTickets(): JSX.Element {
         };
 
         // QR 티켓 정보 호출
-        try {
-            const res = await getQrTicketForMypage(qrTicketRequestDto);
-
-            
-        } catch (error) {
-            alert();
-            
-        }
-        
+        const res = await getQrTicketForMypage(qrTicketRequestDto);
         // 선택한 티켓 정보
         setSelectedTicketData({
             eventName: reservation.eventName || "행사명 미정",
             eventDate: eventDate,
-            venue: res.buildingName, // TODO: 실제 장소 정보가 필요하면 Event 엔티티에서 가져와야 함
+            venue: res.buildingName ?? res.address, // TODO: 실제 장소 정보가 필요하면 Event 엔티티에서 가져와야 함
             seatInfo: reservation.ticketName || "티켓 정보 없음",
             ticketNumber: res.ticketNo,
             bookingDate: formatDateTime(reservation.createdAt),
@@ -84,6 +80,11 @@ export default function MyTickets(): JSX.Element {
             qrCode: res.qrCode,
             manualCode: res.manualCode
         });
+        setUpdateIds({
+            reservationId: reservation.reservationId,
+            qrTicketId: res.qrTicketId
+        });
+
         setIsQrTicketOpen(true);
     };
 
@@ -271,6 +272,7 @@ export default function MyTickets(): JSX.Element {
                 isOpen={isQrTicketOpen}
                 onClose={handleQrTicketClose}
                 ticketData={selectedTicketData}
+                updateIds={updateIds}
             />
         </div>
     );
