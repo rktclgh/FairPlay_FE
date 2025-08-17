@@ -166,6 +166,20 @@ class AuthManager {
     }
   }
 
+  // 현재 로그인한 사용자 ID 가져오기
+  getCurrentUserId(): number | null {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) return null;
+      
+      const payload = JSON.parse(atob(accessToken.split('.')[1]));
+      return payload.userId || payload.sub || null;
+    } catch (error) {
+      console.error('사용자 ID 추출 실패:', error);
+      return null;
+    }
+  }
+
   // 인증된 API 요청을 위한 헬퍼 함수
   async authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
     // 토큰 갱신 체크

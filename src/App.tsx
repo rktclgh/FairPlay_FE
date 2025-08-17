@@ -68,6 +68,10 @@ import { ThemeProvider } from './context/ThemeContext';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
+import BoothExperienceList from "./pages/user_booth/BoothExperienceList";
+import MyBoothExperienceReservations from "./pages/user_booth/MyBoothExperienceReservations";
+import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagement";
+import BoothExperienceReserverManagement from "./pages/host_booth/BoothExperienceReserverManagement";
 
 function AppContent() {
   useScrollToTop();
@@ -188,6 +192,12 @@ function AppContent() {
           <Route path="/host/time-analysis" element={<TimeAnalysis />} />
           <Route path="/host/qr-scan" element={<QRScanPage />} />
           <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+          
+          {/* 부스 체험 */}
+          <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
+          <Route path="/host/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
+          <Route path="/mypage/booth-experiences" element={<BoothExperienceList />} />
+          <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations />} />
         </Routes>
       </Suspense>
       <ToastContainer

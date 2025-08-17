@@ -142,6 +142,51 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                             </Link>
                         </div>
                     </div>
+
+                    {/* 부스 체험 */}
+                    <div className="mb-4 space-y-0">
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">부스 체험</h3>
+                        <div className="space-y-1">
+                            <Link
+                                to="/mypage/booth-experiences"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/booth-experiences"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/booth-experiences" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/booth-experiences" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/booth-experiences" ? "black" : "#00000080";
+                                }}
+                            >
+                                체험 목록 조회
+                            </Link>
+                            <Link
+                                to="/mypage/booth-experiences-reservation"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/booth-experiences-reservation"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/booth-experiences-reservation" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/booth-experiences-reservation" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/booth-experiences-reservation" ? "black" : "#00000080";
+                                }}
+                            >
+                                체험 예약 현황
+                            </Link>
+                        </div>
+                    </div>
                 </nav>
             </div>
         </div>
