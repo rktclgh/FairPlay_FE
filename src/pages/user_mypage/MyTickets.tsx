@@ -109,8 +109,6 @@ export default function MyTickets(): JSX.Element {
 
     const handleShowFormLink = async (reservationId: number) => {
 
-        if()
-         
         if (formLinks[reservationId]) {
             await navigator.clipboard.writeText(formLinks[reservationId]);
             toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");
