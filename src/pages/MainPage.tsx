@@ -420,7 +420,7 @@ export const Main: React.FC = () => {
             <TopNav />
 
             {/* 히어로 섹션 */}
-            <div className={`relative w-full h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
+            <div className={`relative w-full aspect-square sm:h-[400px] md:h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
                 <Swiper
                     modules={[Autoplay, EffectFade]}
                     effect="fade"
@@ -451,7 +451,7 @@ export const Main: React.FC = () => {
                     {paidAdvertisements.map((ad, index) => (
                         <div
                             key={ad.id}
-                            className="w-16 h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                            className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
                             onMouseEnter={() => {
                                 const swiper = (window as unknown as Window & { heroSwiper?: any }).heroSwiper;
                                 if (swiper) {
@@ -471,17 +471,23 @@ export const Main: React.FC = () => {
             </div>
 
             {/* 핫픽스 섹션 (3D 커버플로우) */}
-            <div className="py-16 theme-surface theme-transition">
-                <div className="max-w-7xl mx-auto px-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>HOT PICKS</h2>
+            <div className="py-8 md:py-16 theme-surface theme-transition">
+                <div className="max-w-7xl mx-auto px-4 md:px-8">
+                    <div className="flex justify-between items-center mb-6 md:mb-8">
+                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>HOT PICKS</h2>
                     </div>
 
                     <Swiper
                         modules={[Navigation, Autoplay, EffectCoverflow]}
                         navigation
                         effect="coverflow"
-                        coverflowEffect={{ rotate: 0, stretch: -30, depth: 220, modifier: 1, slideShadows: false }}
+                        coverflowEffect={{ 
+                            rotate: 0, 
+                            stretch: -30, 
+                            depth: 220, 
+                            modifier: 1, 
+                            slideShadows: false 
+                        }}
                         slidesPerView="auto"
                         centeredSlides={true}
                         loop={true}
@@ -513,19 +519,19 @@ export const Main: React.FC = () => {
                     </Swiper>
 
                     {/* 중앙 캡션 (블루스퀘어 스타일) */}
-                    <div className="mt-6 text-center">
-                        <div key={activeHotPickIndex} className={`text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
+                    <div className="mt-4 md:mt-6 text-center px-4">
+                        <div key={activeHotPickIndex} className={`text-xl md:text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
                             {allHotPicks[activeHotPickIndex]?.title}
                         </div>
                         <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
-                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                <HiOutlineCalendar className="w-4 h-4 flex-shrink-0" />
+                            <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <HiOutlineCalendar className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
                                 <span className="truncate">
                                     {(allHotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
                                 </span>
                             </div>
-                            <div className={`text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                <FaMapMarkerAlt className="w-4 h-4 flex-shrink-0" />
+                            <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <FaMapMarkerAlt className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
                                 <span className="truncate">
                                     {allHotPicks[activeHotPickIndex]?.location}
                                 </span>
@@ -536,34 +542,36 @@ export const Main: React.FC = () => {
             </div>
 
             {/* 행사 섹션 */}
-            <div className="py-16 theme-surface theme-transition">
-                <div className="max-w-7xl mx-auto px-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>EVENTS</h2>
+            <div className="py-8 md:py-16 theme-surface theme-transition">
+                <div className="max-w-7xl mx-auto px-4 md:px-8">
+                    <div className="flex justify-between items-center mb-6 md:mb-8">
+                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>EVENTS</h2>
                     </div>
 
                     {/* 필터 버튼들 */}
-                    <div className="flex space-x-4 mb-8">
-                        {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleCategoryChange(filter)}
-                                className={`px-4 py-2 rounded-full text-sm border theme-transition ${selectedCategory === filter
-                                    ? (isDark
-                                        ? 'dm-light font-bold border-gray-300'
-                                        : 'bg-black text-white font-bold border-gray-800')
-                                    : (isDark
-                                        ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
-                                        : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
-                                    }`}
-                            >
-                                {filter}
-                            </button>
-                        ))}
+                    <div className="mb-6 md:mb-8">
+                        <div className="flex md:flex-wrap overflow-x-auto md:overflow-visible whitespace-nowrap no-scrollbar gap-2 md:gap-4 -mx-4 px-4">
+                            {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleCategoryChange(filter)}
+                                    className={`shrink-0 inline-flex px-3 py-2 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === filter
+                                        ? (isDark
+                                            ? 'dm-light font-bold border-gray-300'
+                                            : 'bg-black text-white font-bold border-gray-800')
+                                        : (isDark
+                                            ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
+                                            : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
+                                        }`}
+                                >
+                                    {filter}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* 행사 카드들 */}
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                         {events.map((event) => (
                             <div key={event.id} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
@@ -589,12 +597,12 @@ export const Main: React.FC = () => {
                                         <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2`}>
                                             {event.mainCategory}
                                         </span>
-                                        <h3 className={`font-bold text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{event.title}</h3>
-                                        <div className={`text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        <h3 className={`font-bold text-lg md:text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{event.title}</h3>
+                                        <div className={`text-xs md:text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                         </div>
-                                        <p className="font-bold text-lg text-[#ff6b35]">{event.minPrice}</p>
+                                        <p className="font-bold text-base md:text-lg text-[#ff6b35]">{event.minPrice}</p>
                                     </div>
                                 </Link>
                             </div>
@@ -602,7 +610,7 @@ export const Main: React.FC = () => {
                     </div>
 
                     {/* 전체보기 버튼 */}
-                    <div className="text-center mt-12">
+                    <div className="text-center mt-8 md:mt-12">
                         <Link to="/eventoverview">
                             <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
                                 전체보기
