@@ -738,10 +738,6 @@ const AdvertisementApplication: React.FC = () => {
                     alt="검색 상단 고정 예시" 
                     className="w-full h-64 object-contain rounded"
                   />
-                  <div className="text-sm text-gray-600">
-                    <p className="font-medium">권장 크기: 750 x 200px</p>
-                    <p className="text-xs text-gray-500 mt-1">검색 페이지 카드 최적화</p>
-                  </div>
                 </div>
 
                 {/* 날짜 선택 */}
