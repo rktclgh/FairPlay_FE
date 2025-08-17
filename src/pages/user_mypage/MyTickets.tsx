@@ -68,26 +68,43 @@ export default function MyTickets(): JSX.Element {
             reservationId: reservation.reservationId
         };
 
-        // QR 티켓 정보 호출
-        const res = await getQrTicketForMypage(qrTicketRequestDto);
-        // 선택한 티켓 정보
-        setSelectedTicketData({
-            eventName: reservation.eventName || "행사명 미정",
-            eventDate: eventDate,
-            venue: res.buildingName ?? res.address, // TODO: 실제 장소 정보가 필요하면 Event 엔티티에서 가져와야 함
-            seatInfo: reservation.ticketName || "티켓 정보 없음",
-            ticketNumber: res.ticketNo,
-            bookingDate: formatDateTime(reservation.createdAt),
-            entryTime: `${formatTime(reservation.startTime ?? null)} ~ ${formatTime(reservation.endTime ?? null)}`,
-            qrCode: res.qrCode,
-            manualCode: res.manualCode
-        });
-        setUpdateIds({
-            reservationId: reservation.reservationId,
-            qrTicketId: res.qrTicketId
-        });
+        try {
+                // QR 티켓 정보 호출
+            const res = await getQrTicketForMypage(qrTicketRequestDto);
+            // 선택한 티켓 정보
+            setSelectedTicketData({
+                eventName: reservation.eventName || "행사명 미정",
+                eventDate: eventDate,
+                venue: res.buildingName ?? res.address, // TODO: 실제 장소 정보가 필요하면 Event 엔티티에서 가져와야 함
+                seatInfo: reservation.ticketName || "티켓 정보 없음",
+                ticketNumber: res.ticketNo,
+                bookingDate: formatDateTime(reservation.createdAt),
+                entryTime: `${formatTime(reservation.startTime ?? null)} ~ ${formatTime(reservation.endTime ?? null)}`,
+                qrCode: res.qrCode,
+                manualCode: res.manualCode
+            });
+            setUpdateIds({
+                reservationId: reservation.reservationId,
+                qrTicketId: res.qrTicketId
+            });
 
-        setIsQrTicketOpen(true);
+            setIsQrTicketOpen(true);
+            
+        } catch (error) {
+            if (error.response) {
+                const { message } = error.response.data;
+                alert(message);
+            } else if (error.request) {
+                // 요청은 됐지만 응답 없음
+                console.error("서버 응답 없음:", error.request);
+                alert("서버 응답이 없습니다. 잠시 후 다시 시도해주세요.");
+            } else {
+                    // 기타 오류
+                    console.error("알 수 없는 오류:", error.message);
+                    alert("알 수 없는 오류가 발생했습니다.");
+            }
+            
+        }
     };
 
     const handleQrTicketClose = () => {
