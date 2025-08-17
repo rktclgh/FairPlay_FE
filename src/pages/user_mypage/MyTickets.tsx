@@ -95,17 +95,21 @@ export default function MyTickets(): JSX.Element {
         setSelectedTicketData(null);
     };
 
-    const handleParticipantListOpen = (reservation: ReservationResponseDto) => {
+    const handleParticipantListOpen = (reservation: ReservationResponseDto, bookingDate: string) => {
+        console.log("handleParticipantListOpen:"+reservation.createdAt)
         navigate(`/mypage/participant-list`, {
             state: {
                 eventName: reservation.eventName,
                 reservationId: reservation.reservationId,
+                reservationDate: bookingDate,
                 scheduleDate: reservation.scheduleDate
             }
         });
     };
 
     const handleShowFormLink = async (reservationId: number) => {
+
+        if()
          
         if (formLinks[reservationId]) {
             await navigator.clipboard.writeText(formLinks[reservationId]);
@@ -273,7 +277,7 @@ export default function MyTickets(): JSX.Element {
 
                                                 {reservation.quantity >= 2 && (
                                                     <button
-                                                        onClick={() => handleParticipantListOpen(reservation)}
+                                                        onClick={() => handleParticipantListOpen(reservation, reservation.createdAt)}
                                                         className="w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
                                                     >
                                                         <span className="font-semibold text-white text-xs tracking-wide">
