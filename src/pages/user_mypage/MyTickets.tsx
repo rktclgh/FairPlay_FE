@@ -14,12 +14,14 @@ import type {
 import {
     getQrTicketForMypage,
 } from "../../services/qrTicket"
+import { getFormLink } from "../../services/attendee";
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
     const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
     const [selectedTicketData, setSelectedTicketData] = useState<QrTicketData | null>(null);
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
+    const [formLinks, setFormLinks] = useState<{ [key: number]: string }>({});
     const [loading, setLoading] = useState(true);
     const [canUseQrTicket, setCanUseQrTicketList] = useState<boolean[]>([]);
     const [updateIds, setUpdateIds] = useState({
@@ -102,6 +104,27 @@ export default function MyTickets(): JSX.Element {
             }
         });
     };
+
+    const handleShowFormLink = async (reservationId: number) => {
+         
+        if (formLinks[reservationId]) {
+            await navigator.clipboard.writeText(formLinks[reservationId]);
+            toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");
+            return;
+        }
+
+        try {
+            const res = await getFormLink(reservationId);
+            const link = `${import.meta.env.VITE_FRONTEND_BASE_URL}/participant-form?token=${res.token}`;
+
+            setFormLinks(prev => ({ ...prev, [reservationId]: link }));
+
+            await navigator.clipboard.writeText(link);
+            toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");            
+        } catch (error) {
+            toast.error("폼 링크를 불러오는 중 오류가 발생했습니다.");
+        }
+     }
 
     const formatDate = (dateStr: string | null) => {
         if (!dateStr) return "날짜 미정";
@@ -214,7 +237,7 @@ export default function MyTickets(): JSX.Element {
                                                             </div>
                                                             <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-6 tracking-[0] whitespace-nowrap">
                                                                 <button
-                                                                    onClick={() => window.open(`/mypage/participant-form?token=${encodeURIComponent(reservation.eventName)}`, '_blank')}
+                                                                    onClick={() => handleShowFormLink(reservation.reservationId)}
                                                                     className="text-blue-600 hover:text-blue-800 underline bg-transparent border-none cursor-pointer p-0 font-normal text-base focus:outline-none"
                                                                 >
                                                                     참여자 정보 입력
