@@ -37,11 +37,11 @@ class TicketReservationService {
                 body: JSON.stringify(reservationData)
             });
 
+
             if (!response.ok) {
                 const errorData = await response.text();
                 throw new Error(`예약 실패: ${response.status} - ${errorData}`);
             }
-
             return await response.json();
         } catch (error) {
             console.error('예약 처리 중 오류:', error);
