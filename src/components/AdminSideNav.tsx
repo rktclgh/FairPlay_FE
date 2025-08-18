@@ -224,6 +224,22 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                             </Link>
                         </div>
                     </div>
+
+                    {/* 내 정보 관리 */}
+                    <div className="mb-4 space-y-0">
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
+                            내 정보 관리
+                        </h3>
+                        <div className="space-y-1">
+                            <Link
+                                to="/admin_dashboard/profile"
+                                className={linkClass("/admin_dashboard/profile")}
+                                style={linkStyle("/admin_dashboard/profile")}
+                            >
+                                내 정보 조회
+                            </Link>
+                        </div>
+                    </div>
                 </nav>
             </div>
         </div>

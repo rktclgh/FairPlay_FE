@@ -61,6 +61,10 @@ import IntegrationSettings from "./pages/admin_settings/IntegrationSettings";
 import MessageTemplates from "./pages/admin_settings/MessageTemplates";
 import AccessLogs from "./pages/admin_security/AccessLogs";
 import ChangeLogs from "./pages/admin_security/ChangeLogs";
+import { AdminProfile } from "./pages/admin_account/AdminProfile";
+import { HostProfile } from "./pages/host_account/HostProfile";
+import { BoothAdminProfile } from "./pages/booth_admin/BoothAdminProfile";
+import { BoothAdminRouteGuard } from "./components/BoothAdminRouteGuard";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -147,6 +151,7 @@ function AppContent() {
           <Route path="/host/revenue-summary" element={<HostRouteGuard><RevenueSummary /></HostRouteGuard>} />
           <Route path="/host/time-analysis" element={<HostRouteGuard><TimeAnalysis /></HostRouteGuard>} />
           <Route path="/host/qr-scan" element={<HostRouteGuard><QRScanPage /></HostRouteGuard>} />
+          <Route path="/host/profile" element={<HostRouteGuard><HostProfile /></HostRouteGuard>} />
           <Route path="/admin_dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
           <Route path="/admin_dashboard/event-comparison" element={<AdminRouteGuard><EventComparison /></AdminRouteGuard>} />
 
@@ -179,6 +184,12 @@ function AppContent() {
           {/* 로그/보안 */}
           <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
           <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
+
+          {/* 내 정보 관리 */}
+          <Route path="/admin_dashboard/profile" element={<AdminRouteGuard><AdminProfile /></AdminRouteGuard>} />
+
+          {/* 부스 관리자 전용 페이지 */}
+          <Route path="/booth-admin/profile" element={<BoothAdminRouteGuard><BoothAdminProfile /></BoothAdminRouteGuard>} />
           <Route path="/host/dashboard" element={<HostDashboard />} />
           <Route path="/host/edit-event-info" element={<EditEventInfo />} />
           <Route path="/host/ticket-management" element={<TicketManagement />} />
