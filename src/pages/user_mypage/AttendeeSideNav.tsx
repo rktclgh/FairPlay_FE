@@ -38,6 +38,25 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                 예약/결제
                             </Link>
                             <Link
+                                to="/mypage/refund"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/refund"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/refund" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/refund" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/refund" ? "black" : "#00000080";
+                                }}
+                            >
+                                취소/환불
+                            </Link>
+                            <Link
                                 to="/mypage/tickets"
                                 className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/tickets"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
@@ -56,7 +75,6 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                             >
                                 내 티켓
                             </Link>
-                            <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] whitespace-nowrap">취소/환불</div>
                         </div>
                     </div>
 

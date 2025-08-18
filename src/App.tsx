@@ -75,6 +75,9 @@ import { ThemeProvider } from './context/ThemeContext';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
+import {RefundList} from "./pages/user_refund/RefundList";
+import RefundManagement from "./pages/admin_refund/RefundManagement";
+import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 import BoothExperienceList from "./pages/user_booth/BoothExperienceList";
 import MyBoothExperienceReservations from "./pages/user_booth/MyBoothExperienceReservations";
 import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagement";
@@ -131,6 +134,7 @@ function AppContent() {
           <Route path="/mypage/write-review" element={<MyPageMyReview />} />
           <Route path="/mypage/my-review" element={<MyPageMyReview />} />
           <Route path="/mypage/withdrawal" element={<Withdrawal />} />
+          <Route path="/mypage/refund" element={<RefundList />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/find-password" element={<FindPassword />} />
@@ -157,6 +161,7 @@ function AppContent() {
           <Route path="/host/booking-analysis" element={<HostRouteGuard><BookingAnalysis /></HostRouteGuard>} />
           <Route path="/host/revenue-summary" element={<HostRouteGuard><RevenueSummary /></HostRouteGuard>} />
           <Route path="/host/time-analysis" element={<HostRouteGuard><TimeAnalysis /></HostRouteGuard>} />
+          <Route path="/host/refund-management" element={<HostRouteGuard><HostRefundManagement /></HostRouteGuard>} />
           <Route path="/host/qr-scan" element={<HostRouteGuard><QRScanPage /></HostRouteGuard>} />
           <Route path="/host/profile" element={<HostRouteGuard><HostProfile /></HostRouteGuard>} />
           <Route path="/admin_dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
@@ -179,6 +184,9 @@ function AppContent() {
           {/* 정산 관리 */}
           <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />
           <Route path="/admin_dashboard/remittances" element={<AdminRouteGuard><RemittanceHistory /></AdminRouteGuard>} />
+
+          {/* 환불 관리 */}
+          <Route path="/admin_dashboard/refunds" element={<AdminRouteGuard><RefundManagement /></AdminRouteGuard>} />
 
           {/* 통합 통계 */}
           <Route path="/admin_dashboard/analytics/reservations" element={<AdminRouteGuard><ReservationStatistics /></AdminRouteGuard>} />
