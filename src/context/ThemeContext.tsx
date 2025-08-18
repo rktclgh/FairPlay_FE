@@ -1,14 +1,14 @@
-import React from "react";
+import React, { useState, useCallback, useEffect, useContext, createContext } from "react";
 
 interface ThemeContextValue {
     isDark: boolean;
     toggleDark: () => void;
 }
 
-const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [isDark, setIsDark] = React.useState<boolean>(() => {
+    const [isDark, setIsDark] = useState<boolean>(() => {
         try {
             const saved = localStorage.getItem("fp_dark_mode");
             return saved ? saved === "1" : false;
@@ -17,7 +17,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     });
 
-    const applyBodyClass = React.useCallback((next: boolean) => {
+    const applyBodyClass = useCallback((next: boolean) => {
         if (next) {
             document.body.classList.add("dark-mode");
         } else {
@@ -25,7 +25,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, []);
 
-    React.useEffect(() => {
+    useEffect(() => {
         applyBodyClass(isDark);
         try {
             localStorage.setItem("fp_dark_mode", isDark ? "1" : "0");
@@ -34,7 +34,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, [applyBodyClass, isDark]);
 
-    const toggleDark = React.useCallback(() => setIsDark(prev => !prev), []);
+    const toggleDark = useCallback(() => setIsDark(prev => !prev), []);
 
     return (
         <ThemeContext.Provider value={{ isDark, toggleDark }}>
@@ -44,7 +44,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 };
 
 export const useTheme = (): ThemeContextValue => {
-    const ctx = React.useContext(ThemeContext);
+    const ctx = useContext(ThemeContext);
     if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
     return ctx;
 };

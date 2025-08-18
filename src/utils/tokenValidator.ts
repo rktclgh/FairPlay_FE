@@ -33,15 +33,21 @@ class TokenValidator {
 
     try {
       // 1단계: 토큰 형식 검증
-      if (!authManager.isTokenValidFormat(accessToken)) {
+      if (accessToken && !authManager.isTokenValidFormat(accessToken)) {
         console.log('토큰 형식 오류 - 로그아웃 처리');
         authManager.logout();
         this.isValidating = false;
         return false;
       }
 
-      // 2단계: 서버 검증 - 간단한 인증이 필요한 API 호출
-      const response = await authManager.authenticatedFetch('/api/users/mypage');
+      // 2단계: 간단한 API 호출로 토큰 검증 (authenticatedFetch 사용하지 않음)
+      const response = await fetch('/api/users/mypage', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
       
       if (response.ok) {
         console.log('토큰 유효성 검증 성공');
