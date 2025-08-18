@@ -156,6 +156,22 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </div>
                     </div>
 
+                    {/* 환불 관리 */}
+                    <div className="mb-4 space-y-0">
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
+                            환불 관리
+                        </h3>
+                        <div className="space-y-1">
+                            <Link
+                                to="/admin_dashboard/refunds"
+                                className={linkClass("/admin_dashboard/refunds")}
+                                style={linkStyle("/admin_dashboard/refunds")}
+                            >
+                                환불 요청 관리
+                            </Link>
+                        </div>
+                    </div>
+
                     {/* 통합 통계 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
