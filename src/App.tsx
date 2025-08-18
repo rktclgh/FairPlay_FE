@@ -243,7 +243,7 @@ function AppContent() {
             <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
             <Route path="/host/revenue-summary" element={<RevenueSummary />} />
             <Route path="/host/time-analysis" element={<TimeAnalysis />} />
-            <Route path="/host/qr-scan" element={<QRScanPage />} />
+            <Route path="/host/booth/qr-scan" element={<QRScanPage />} />
             <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
 
             {/* 부스 체험 */}
