@@ -229,6 +229,27 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                 예약 통계 요약
                             </Link>
 
+                            {/* 신규: 예약/결제 목록 */}
+                            <Link
+                                to="/host/payment-list"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname.startsWith("/host/payment-list")
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname.startsWith("/host/payment-list") ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname.startsWith("/host/payment-list") ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname.startsWith("/host/payment-list") ? "black" : "#00000080";
+                                }}
+                            >
+                                예약/결제 목록
+                            </Link>
+
                         </div>
                     </div>
 
@@ -289,7 +310,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-experience-management"
                                         ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                         : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
+                                        }`}
                                     style={{
                                         textDecoration: 'none',
                                         color: location.pathname === "/host/booth-experience-management" ? "black" : "#00000080"
@@ -308,7 +329,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-applications"
                                         ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                         : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
+                                        }`}
                                     style={{
                                         textDecoration: 'none',
                                         color: location.pathname === "/host/booth-experience-reserver-management" ? "black" : "#00000080"
