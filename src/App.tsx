@@ -85,6 +85,7 @@ import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagem
 import BoothExperienceReserverManagement from "./pages/host_booth/BoothExperienceReserverManagement";
 import { OnlyQrTicketPage } from './pages/OnlyQrTicketPage';
 import { Footer } from "./components/Footer";
+import AppLayout from "./components/AppLayout";
 import Notices from "./pages/footer/Notices";
 import FAQ from "./pages/footer/FAQ";
 import PrivacyPolicy from "./pages/footer/PrivacyPolicy";
@@ -280,7 +281,9 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AppContent />
+        <AppLayout>
+          <AppContent />
+        </AppLayout>
         {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
         <ChatFloatingModal />
       </ThemeProvider>
