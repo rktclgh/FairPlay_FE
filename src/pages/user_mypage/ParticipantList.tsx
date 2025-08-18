@@ -17,20 +17,78 @@ import EditParticipantModal from "../../components/EditParticipantModal";
 export default function ParticipantList(): JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { reservationId, eventName } = location.state || {};
+    const { eventName, reservationId, reservationDate, scheduleDate } = location.state || {};
     const [participants, setParticipants] = useState<AttendeeInfoResponseDto[]>([]);
+    const [isPossibleEdit, setIsPossibleEdit] = useState<boolean>(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [possibleDate, setPossibleDate] = useState("");
     const [selectedParticipant, setSelectedParticipant] = useState<AttendeeInfoResponseDto | null>(null);
 
     useEffect(() => {
-
         const fetchParticipant = async () => {
-
             const res = await getAttendeesReservation(Number(reservationId));
             setParticipants(res.attendees);
+            console.log("setParticipants 완료");
+            console.log("reservationDate:"+reservationDate);
+            console.log("scheduleDate:"+scheduleDate);
+
+            if (!isOneDayBeforeEvent(scheduleDate)) {
+                console.log("isOneDayBeforeEvent 완료");
+                setIsPossibleEdit(false);
+            }
         }
         fetchParticipant();
     }, []);
+
+
+    const isOneDayBeforeEvent = (dateStr: string | null) => {
+        if (!dateStr) return false;
+
+        const eventDate = new Date(dateStr);
+        eventDate.setHours(0, 0, 0, 0); // 시분초 초기화
+
+        const reservationDateObj = new Date(reservationDate);
+        reservationDateObj.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const oneDayBefore = new Date(eventDate);
+        oneDayBefore.setDate(eventDate.getDate() - 1);
+
+        const twoDaysBefore = new Date(eventDate);
+        twoDaysBefore.setDate(eventDate.getDate() - 2);
+
+        // 1. 예약날짜가 행사 하루 전인 경우 → 행사 하루 전까지 수정 가능
+        if (reservationDateObj.getTime() === oneDayBefore.getTime()) {
+            setPossibleDate(oneDayBefore.toLocaleDateString("ko-KR",
+                {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit"
+                })
+            );
+            console.log("reservationDate"+reservationDate+" oneDayBefore: "+oneDayBefore);
+            return true;
+        }
+
+        // 2. 그 외 → 행사 이틀 전까지만 가능
+        if (reservationDateObj.getTime() <= twoDaysBefore.getTime()) {
+            setPossibleDate(twoDaysBefore.toLocaleDateString("ko-KR",
+                {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit"
+                })
+            );
+                        console.log("reservationDate"+reservationDate+" twoDaysBefore: "+twoDaysBefore);
+
+            return true;
+        }
+
+        // 3. 행사 하루 전 당일은 수정 불가
+        return false;
+    };
 
     const handleBack = () => {
         navigate('/mypage/tickets');
@@ -61,7 +119,28 @@ export default function ParticipantList(): JSX.Element {
         }
 
         const res = await updateAttendee(Number(updatedParticipant.attendeeId), data);
+
+        setParticipants(prev =>
+            prev.map(p =>
+                p.attendeeId === updatedParticipant.attendeeId ? updatedParticipant : p
+            )
+        );
         alert("참여자 정보가 수정되었습니다.");
+    };
+
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return "날짜 미정";
+        const date = new Date(dateStr);
+        date.setHours(0, 0, 0, 0); // 시분초 초기화
+
+        const oneDayBeforeEvent = new Date(date);
+        oneDayBeforeEvent.setDate(date.getDate() - 1);
+
+        return oneDayBeforeEvent.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     };
 
     return (
@@ -81,7 +160,7 @@ export default function ParticipantList(): JSX.Element {
                             <div className="flex items-center space-x-4">
                                 <button
                                     onClick={handleBack}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    className="p-2 hover:bg-gray-100 rounded-[10px] transition-colors"
                                 >
                                     <ArrowLeft className="w-5 h-5 text-gray-500" />
                                 </button>
@@ -152,7 +231,12 @@ export default function ParticipantList(): JSX.Element {
                                                         {!(index == 0) && (
                                                             <button
                                                                 onClick={() => handleEdit(participant)}
-                                                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                disabled={!isPossibleEdit}
+                                                                className={`p-2 rounded-[10px] transition-colors
+                                                                    ${isPossibleEdit
+                                                                        ? "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                                                                        : "text-gray-300 cursor-not-allowed"
+                                                                    }`}
                                                                 title="수정"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
@@ -163,7 +247,10 @@ export default function ParticipantList(): JSX.Element {
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
+                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-sm mt-1 text-right">
+                                            <span className="font-semibold text-gray-900">{possibleDate}</span>까지 수정 가능
+                                        </div>
+                                </div>   
                             )}
                         </div>
                     </div>

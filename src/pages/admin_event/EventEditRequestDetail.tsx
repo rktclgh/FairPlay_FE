@@ -103,11 +103,10 @@ export const EventEditRequestDetail: React.FC = () => {
         externalTicketUrl: "",
         organizerName: "",
         representativeName: "",
-        organizerContact: "",
+        contactInfo: "",
         organizerWebsite: "",
         hostCompany: "",
         policy: "",
-        inquiryDetails: "",
         reentryAllowed: false,
         exitScanRequired: false,
         checkInRequired: false,
@@ -187,14 +186,24 @@ export const EventEditRequestDetail: React.FC = () => {
 
     // 필드가 수정되었는지 확인하는 함수
     const isFieldModified = (fieldName: string, originalValue: any, modifiedValue: any): boolean => {
-        // null, undefined, 빈 문자열을 모두 같은 것으로 취급
+        if (!requestDetail) return false;
+        
+        // null, undefined, 빈 문자열을 모두 같은 것으로 취급하여 정규화
         const normalizeValue = (val: any) => {
-            if (val === null || val === undefined || val === "") return "";
-            return val;
+            if (val === null || val === undefined || val === "") return null;
+            if (typeof val === 'boolean') return val;
+            if (typeof val === 'number') return val;
+            return String(val);
         };
         
         const normalizedOriginal = normalizeValue(originalValue);
         const normalizedModified = normalizeValue(modifiedValue);
+        
+        // modifiedData에 해당 필드가 실제로 있고, 원본과 다른 값인 경우에만 수정됨으로 간주
+        const modifiedData = requestDetail.modifiedData;
+        const fieldExistsInModified = modifiedData && fieldName in modifiedData && modifiedData[fieldName] !== null && modifiedData[fieldName] !== undefined;
+        
+        if (!fieldExistsInModified) return false;
         
         return normalizedOriginal !== normalizedModified;
     };
@@ -209,6 +218,16 @@ export const EventEditRequestDetail: React.FC = () => {
             setLoading(true);
             const data = await modificationRequestAPI.getModificationRequestDetail(Number(id));
             setRequestDetail(data);
+            
+            // 디버깅용 로그
+            console.log('Original Data:', data.originalData);
+            console.log('Modified Data:', data.modifiedData);
+            console.log('BusinessNumber - Original:', data.originalData.businessNumber, 'Modified:', data.modifiedData.businessNumber);
+            console.log('ManagerName - Original:', data.originalData.managerName, 'Modified:', data.modifiedData.managerName);
+            console.log('ManagerPhone - Original:', data.originalData.managerPhone, 'Modified:', data.modifiedData.managerPhone);
+            console.log('ManagerEmail - Original:', data.originalData.managerEmail, 'Modified:', data.modifiedData.managerEmail);
+            console.log('ContactInfo - Original:', data.originalData.contactInfo, 'Modified:', data.modifiedData.contactInfo);
+            console.log('ExternalLinks - Original:', data.originalData.externalLinks, 'Modified:', data.modifiedData.externalLinks);
             
             // 폼 데이터 매핑
             const originalData = data.originalData;
@@ -237,11 +256,10 @@ export const EventEditRequestDetail: React.FC = () => {
                 externalTicketUrl: "",
                 organizerName: "",
                 representativeName: modifiedData.hostName || originalData.hostName || "",
-                organizerContact: modifiedData.contactInfo || originalData.contactInfo || "",
+                contactInfo: modifiedData.contactInfo || originalData.contactInfo || "",
                 organizerWebsite: modifiedData.officialUrl || originalData.officialUrl || "",
                 hostCompany: modifiedData.hostCompany || originalData.hostCompany || "",
                 policy: modifiedData.policy || originalData.policy || "",
-                inquiryDetails: modifiedData.contactInfo || originalData.contactInfo || "",
                 reentryAllowed: modifiedData.reentryAllowed !== undefined ? modifiedData.reentryAllowed : originalData.reentryAllowed || false,
                 exitScanRequired: modifiedData.checkOutAllowed !== undefined ? modifiedData.checkOutAllowed : originalData.checkOutAllowed || false,
                 checkInRequired: modifiedData.checkInAllowed !== undefined ? modifiedData.checkInAllowed : originalData.checkInAllowed || false,
@@ -252,20 +270,19 @@ export const EventEditRequestDetail: React.FC = () => {
                 organizerBusinessNumber: modifiedData.businessNumber || originalData.businessNumber || "",
             });
 
-            // 외부 링크 처리
-            const officialUrl = modifiedData.officialUrl || originalData.officialUrl;
-            if (officialUrl) {
-                try {
-                    const parsedLinks = JSON.parse(officialUrl);
-                    if (Array.isArray(parsedLinks) && parsedLinks.length > 0) {
-                        setExternalLinks(parsedLinks);
-                    } else {
-                        setExternalLinks([{name: "공식 웹사이트", url: officialUrl}]);
-                    }
-                } catch (e) {
-                    setExternalLinks([{name: "공식 웹사이트", url: officialUrl}]);
-                }
-            }
+            // 외부 링크 처리 - modifiedData와 originalData에서 externalLinks 필드 사용
+            const modifiedLinks = modifiedData.externalLinks || [];
+            const originalLinks = originalData.externalLinks || [];
+            
+            // 수정된 링크가 있으면 사용, 없으면 원본 사용
+            const linksToShow = modifiedLinks.length > 0 ? modifiedLinks : originalLinks;
+            
+            const externalLinksData = linksToShow.map(link => ({
+                name: link.displayText || "외부 사이트", 
+                url: link.url
+            }));
+            
+            setExternalLinks(externalLinksData);
             
         } catch (error) {
             console.error('수정 요청 상세 조회 실패:', error);
@@ -295,7 +312,7 @@ export const EventEditRequestDetail: React.FC = () => {
             await modificationRequestAPI.processModificationRequest(requestDetail.requestId, approvalRequest);
             
             toast.success(action === 'approve' ? '수정 요청이 승인되었습니다.' : '수정 요청이 반려되었습니다.');
-            navigate('/admin-event/modification-requests');
+            navigate('/admin_dashboard/event-edit-requests');
             
         } catch (error) {
             console.error('수정 요청 처리 실패:', error);
@@ -360,17 +377,16 @@ export const EventEditRequestDetail: React.FC = () => {
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="font-bold text-lg">요청 정보</h2>
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                requestDetail.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                                requestDetail.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                requestDetail.statusCode === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                requestDetail.statusCode === 'APPROVED' ? 'bg-green-100 text-green-800' :
                                 'bg-red-100 text-red-800'
                             }`}>
-                                {requestDetail.status === 'PENDING' ? '대기' : 
-                                 requestDetail.status === 'APPROVED' ? '승인' : '반려'}
+                                {requestDetail.statusName}
                             </span>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><strong>요청자:</strong> {requestDetail.requesterName}</div>
-                            <div><strong>요청일:</strong> {new Date(requestDetail.requestedAt).toLocaleDateString()}</div>
+                            <div><strong>요청자 ID:</strong> {requestDetail.requestedBy}</div>
+                            <div><strong>요청일:</strong> {new Date(requestDetail.createdAt).toLocaleDateString()}</div>
                             {requestDetail.adminComment && (
                                 <div className="col-span-2">
                                     <strong>관리자 코멘트:</strong> {requestDetail.adminComment}
@@ -540,15 +556,15 @@ export const EventEditRequestDetail: React.FC = () => {
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             행사 배너 (세로형)
-                                            {isFieldModified('bannerUrl', originalData.bannerUrl, modifiedData.bannerUrl) && 
+                                            {isFieldModified('thumbnailUrl', originalData.thumbnailUrl, modifiedData.thumbnailUrl) && 
                                                 <span className="ml-2 text-sm text-blue-600 font-medium">수정됨</span>
                                             }
                                         </label>
                                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                                            {(modifiedData.bannerUrl || originalData.bannerUrl) ? (
+                                            {(modifiedData.bannerUrl || modifiedData.thumbnailUrl || originalData.bannerUrl || originalData.thumbnailUrl) ? (
                                                 <div className="space-y-2">
                                                     <img
-                                                        src={modifiedData.bannerUrl || originalData.bannerUrl}
+                                                        src={modifiedData.bannerUrl || modifiedData.thumbnailUrl || originalData.bannerUrl || originalData.thumbnailUrl}
                                                         alt="행사 배너"
                                                         className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                     />
@@ -862,7 +878,7 @@ export const EventEditRequestDetail: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            연락처
+                                            담당자 연락처
                                             {isFieldModified('managerPhone', originalData.managerPhone, modifiedData.managerPhone) && 
                                                 <span className="ml-2 text-sm text-blue-600 font-medium">수정됨</span>
                                             }
@@ -876,7 +892,7 @@ export const EventEditRequestDetail: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                            이메일
+                                            담당자 이메일
                                             {isFieldModified('managerEmail', originalData.managerEmail, modifiedData.managerEmail) && 
                                                 <span className="ml-2 text-sm text-blue-600 font-medium">수정됨</span>
                                             }
@@ -909,7 +925,7 @@ export const EventEditRequestDetail: React.FC = () => {
                                         <ReactQuill
                                             ref={inquiryRef}
                                             theme="snow"
-                                            value={formData.inquiryDetails || ""}
+                                            value={formData.contactInfo || ""}
                                             readOnly={true}
                                             modules={inquiryModules}
                                             formats={quillFormats}
@@ -921,7 +937,7 @@ export const EventEditRequestDetail: React.FC = () => {
                         </div>
 
                         {/* 관리자 처리 섹션 */}
-                        {requestDetail.status === 'PENDING' && (
+                        {requestDetail.statusCode === 'PENDING' && (
                             <div className="mb-8">
                                 <div className="bg-white rounded-lg shadow-md p-6">
                                     <h2 className="font-bold text-black text-lg leading-[30px] mb-6">관리자 검토</h2>
@@ -953,7 +969,7 @@ export const EventEditRequestDetail: React.FC = () => {
                                             {processing ? '처리 중...' : '반려'}
                                         </button>
                                         <button
-                                            onClick={() => navigate('/admin-event/modification-requests')}
+                                            onClick={() => navigate('/admin_dashboard/event-edit-requests')}
                                             className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                                         >
                                             목록으로 돌아가기
@@ -964,10 +980,10 @@ export const EventEditRequestDetail: React.FC = () => {
                         )}
 
                         {/* 이미 처리된 요청의 경우 목록 버튼만 표시 */}
-                        {requestDetail.status !== 'PENDING' && (
+                        {requestDetail.statusCode !== 'PENDING' && (
                             <div className="flex justify-center mt-8">
                                 <button
-                                    onClick={() => navigate('/admin-event/modification-requests')}
+                                    onClick={() => navigate('/admin_dashboard/event-edit-requests')}
                                     className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                                 >
                                     목록으로 돌아가기

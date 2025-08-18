@@ -13,7 +13,7 @@ export default function ChatFloatingButton({
 }) {
     return (
         <button
-            className="fixed bottom-6 right-6 z-[1003] w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-600/20 ring-1 ring-black/10 flex items-center justify-center hover:brightness-105 active:scale-95 transition-all duration-300"
+            className="fixed bottom-20 md:bottom-6 right-6 z-[1003] w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-lg shadow-purple-600/20 ring-1 ring-black/10 flex items-center justify-center hover:brightness-105 active:scale-95 transition-all duration-300"
             onClick={onClick}
             aria-label={isOpen ? "채팅 닫기" : "채팅 열기"}
         >

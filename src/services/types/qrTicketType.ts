@@ -10,20 +10,43 @@ export interface QrTicketRequestDto{
 }
 
 interface ViewingScheduleInfo{
-        date: string, 
+    date: string, 
     dayOfWeek: string, 
     startTime: string; 
 }
 
+interface ViewingGuestScheduleInfo{
+    date: string, 
+    dayOfWeek: string, 
+    startTime: string; 
+    endTime: string
+}
+
 // 마이페이지 QR 티켓 조회 또는 비회원 QR 티켓 조회 응답
 export interface QrTicketResponseDto{
+    qrTicketId: number,
     title: string, // 행사 제목
     buildingName: string, // 행사 장소
+    address: string // 행사 주소
     qrCode: string, // QR 이미지 코드
     manualCode: string, // 수동 코드
     ticketNo: string, // 티켓 번호
     viewingScheduleInfo: ViewingScheduleInfo, // 관람 일시 정보
     reservationDate: string // 예매일
+}
+
+export interface QrTicketGuestResponseDto {
+    qrTicketId: number,
+    reservationId: number,
+    title: string, // 행사 제목
+    buildingName: string, // 행사 장소
+    address: string // 행사 주소
+    qrCode: string, // QR 이미지 코드
+    manualCode: string, // 수동 코드
+    ticketNo: string, // 티켓 번호
+    viewingScheduleInfo: ViewingGuestScheduleInfo, // 관람 일시 정보
+    reservationDate: string, // 예매일
+    seatInfo: string
 }
 
 /* ===== 티켓 재발급 ===== */
@@ -79,4 +102,16 @@ export interface CheckResponseDto{
 export interface AdminForceCheckRequestDto{
     ticketNo: string,
     qrCheckStatusCode: string
+}
+
+export interface QrTicketData {
+    eventName: string;  // 행사명
+    eventDate: string | null; // 행사날짜
+    venue: string; // 장소. 없으면 street 
+    seatInfo: string | null; // 좌석정보. 없으면 Null
+    ticketNumber: string; // ticketNo
+    bookingDate: string; // 예약날짜
+    entryTime: string; // 입장시간
+    qrCode: string; // qrCode
+    manualCode: string; // 수동코드
 }

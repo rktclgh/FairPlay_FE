@@ -9,6 +9,7 @@ import type {EventDetailResponseDto, EventDetailModificationRequestDto} from "..
 import { dashboardAPI } from "../../services/dashboard";
 import {toast} from "react-toastify";
 import {eventAPI} from "../../services/event";
+import { businessAPI, BusinessVerificationRequest } from "../../services/business";
 
 // 커스텀 체크박스 스타일
 const customCheckboxStyles = `
@@ -164,10 +165,25 @@ export const EditEventInfo = () => {
             history: { delay: 1000, maxStack: 100, userOnly: true },
         }) as const;
 
+    const createInquiryModules = (ref: React.RefObject<ReactQuill>) =>
+        ({
+            toolbar: {
+                container: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline"],
+                    // 리스트/링크/이미지 버튼
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    ["clean"],
+                ],
+            },
+            clipboard: { matchVisual: false },
+            history: { delay: 1000, maxStack: 100, userOnly: true },
+        }) as const;
+
     // modules는 렌더마다 바뀌지 않게 고정
     const detailModules = useMemo(() => createModules(detailRef), []);
     const policyModules = useMemo(() => createModules(policyRef), []);
-    const inquiryModules = useMemo(() => createModules(inquiryRef), []);
+    const inquiryModules = useMemo(() => createInquiryModules(inquiryRef), []);
 
     const quillFormats = useMemo(
         () => ["header", "bold", "italic", "underline", "list", "bullet", "link", "image"],
@@ -245,11 +261,10 @@ export const EditEventInfo = () => {
         externalTicketUrl: "",
         organizerName: "",
         representativeName: "",
-        organizerContact: "",
+        contactInfo: "",
         organizerWebsite: "",
         hostCompany: "",
         policy: "",
-        inquiryDetails: "",
         reentryAllowed: false,
         exitScanRequired: false,
         checkInRequired: false,
@@ -260,9 +275,7 @@ export const EditEventInfo = () => {
         placeUrl: "",
         organizerBusinessNumber: "",
     });
-    const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([
-        {name: "", url: ""},
-    ]);
+    const [externalLinks, setExternalLinks] = useState<ExternalLink[]>([]);
 
     const [searchKeyword, setSearchKeyword] = useState("");
     const [searchResults, setSearchResults] = useState<KakaoPlace[]>([]);
@@ -278,6 +291,8 @@ export const EditEventInfo = () => {
     } = useFileUpload();
 
     const [uploading, setUploading] = useState<'vertical' | 'horizontal' | null>(null);
+    const [businessVerifying, setBusinessVerifying] = useState(false);
+    const [businessVerified, setBusinessVerified] = useState<boolean | null>(null);
 
     const handleBannerUpload = async (file: File, usage: 'banner_vertical') => {
         if (!file) return;
@@ -310,11 +325,16 @@ export const EditEventInfo = () => {
         fetchEventData();
     }, []);
 
+
     const fetchEventData = async () => {
         try {
             setLoading(true);
             const myEvent = await dashboardAPI.getMyEventWithDetails();
             if (myEvent) {
+                console.log('로드된 이벤트 데이터:', myEvent);
+                console.log('썸네일 URL:', myEvent.thumbnailUrl);
+                console.log('배너 URL:', myEvent.bannerUrl);
+                console.log('썸네일 URL에 tmp 포함여부:', myEvent.thumbnailUrl?.includes('/tmp') ? 'YES - tmp 파일입니다!' : 'NO - 정상 파일입니다');
                 setEventData(myEvent);
                 setFormData({
                     eventId: myEvent.eventId,
@@ -337,7 +357,7 @@ export const EditEventInfo = () => {
                     externalTicketUrl: "",
                     organizerName: "",
                     representativeName: myEvent.hostName || "",
-                    organizerContact: myEvent.contactInfo || "",
+                    contactInfo: myEvent.contactInfo || "",
                     organizerWebsite: myEvent.officialUrl
                         ? typeof myEvent.officialUrl === "string" &&
                         !myEvent.officialUrl.startsWith("[")
@@ -346,7 +366,6 @@ export const EditEventInfo = () => {
                         : "",
                     hostCompany: myEvent.hostCompany || "",
                     policy: myEvent.policy || "",
-                    inquiryDetails: "",
                     reentryAllowed: myEvent.reentryAllowed ?? false,
                     exitScanRequired: myEvent.checkOutAllowed ?? false,
                     checkInRequired: myEvent.checkInAllowed ?? false,
@@ -359,15 +378,14 @@ export const EditEventInfo = () => {
                     organizerBusinessNumber: myEvent.managerBusinessNumber || ""
                 });
 
-                if (myEvent.officialUrl) {
-                    try {
-                        const parsedLinks = JSON.parse(myEvent.officialUrl);
-                        if (Array.isArray(parsedLinks) && parsedLinks.length > 0) {
-                            setExternalLinks(parsedLinks);
-                        }
-                    } catch (e) {
-                        setExternalLinks([{name: "공식 웹사이트", url: myEvent.officialUrl}]);
-                    }
+                // 외부 링크 로드 (externalLinks 사용)
+                if (myEvent.externalLinks && myEvent.externalLinks.length > 0) {
+                    setExternalLinks(myEvent.externalLinks.map(link => ({
+                        name: link.displayText || "",
+                        url: link.url || ""
+                    })));
+                } else {
+                    setExternalLinks([{name: "", url: ""}]);
                 }
 
                 if (myEvent.placeName) setSearchKeyword(myEvent.placeName);
@@ -430,7 +448,8 @@ export const EditEventInfo = () => {
     };
 
     const handleLinkChange = (index: number, field: "name" | "url", value: string) => {
-        const newLinks = [...externalLinks];
+        const currentLinks = externalLinks.length > 0 ? externalLinks : [{name: "", url: ""}];
+        const newLinks = [...currentLinks];
         newLinks[index][field] = value;
         setExternalLinks(newLinks);
     };
@@ -438,12 +457,11 @@ export const EditEventInfo = () => {
     const addLink = () => setExternalLinks([...externalLinks, {name: "", url: ""}]);
 
     const removeLink = (index: number) => {
-        if (externalLinks.length > 1) {
+        if (externalLinks.length > 0) {
             const newLinks = externalLinks.filter((_, i) => i !== index);
             setExternalLinks(newLinks);
-        } else {
-            toast.warn("최소 하나 이상의 링크가 필요합니다.");
         }
+        // 빈 배열이 되어도 UI에서는 기본 입력칸이 하나 표시됨
     };
 
     // 카카오맵 장소 검색
@@ -491,6 +509,38 @@ export const EditEventInfo = () => {
         }));
         setSearchKeyword(place.place_name);
         setShowSearchResults(false);
+    };
+
+    // 사업자 번호 검증 함수
+    const verifyBusinessNumber = async (businessNumber: string) => {
+        if (!businessNumber || businessNumber.length !== 10) {
+            return false;
+        }
+
+        setBusinessVerifying(true);
+        try {
+            const businessData: BusinessVerificationRequest = {
+                businessNumber: businessNumber
+            };
+
+            const result = await businessAPI.verifyBusiness(businessData);
+            setBusinessVerified(result.valid);
+            
+            if (result.valid) {
+                toast.success("사업자 등록번호가 확인되었습니다.");
+            } else {
+                toast.error(result.message || "사업자 등록번호 검증에 실패했습니다.");
+            }
+            
+            return result.valid;
+        } catch (error) {
+            console.error('사업자 번호 검증 실패:', error);
+            setBusinessVerified(false);
+            toast.error("사업자 번호 검증 중 오류가 발생했습니다.");
+            return false;
+        } finally {
+            setBusinessVerifying(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -573,26 +623,44 @@ export const EditEventInfo = () => {
         try {
             setSaving(true);
 
+            // 사업자 번호가 변경되었는지 확인하고 검증
+            const originalBusinessNumber = eventData.managerBusinessNumber || "";
+            const newBusinessNumber = formData.organizerBusinessNumber;
+            
+            if (newBusinessNumber && newBusinessNumber !== originalBusinessNumber) {
+                toast.info("사업자 등록번호가 변경되었습니다. 검증 중...");
+                const isVerified = await verifyBusinessNumber(newBusinessNumber);
+                if (!isVerified) {
+                    setSaving(false);
+                    return;
+                }
+            }
+
             const categoryIds = getCategoryIds(
                 formData.mainCategory,
                 formData.subCategory
             );
 
+            // 업로드된 배너 이미지 URL 확인
+            const bannerFile = getFileByUsage('banner_vertical');
+            const thumbnailUrl = bannerFile ? toCdnUrl(bannerFile.key) : undefined;
+
             const modificationRequest: EventDetailModificationRequestDto = {
                 titleKr: formData.eventNameKr || undefined,
                 titleEng: formData.eventNameEn || undefined,
                 address: formData.address || undefined,
-                placeName: searchKeyword || undefined,
+                placeName: formData.placeName || undefined,
                 latitude: formData.latitude || undefined,
                 longitude: formData.longitude || undefined,
                 locationDetail: formData.detailAddress || undefined,
                 hostName: formData.representativeName || undefined,
                 hostCompany: formData.hostCompany || undefined,
-                contactInfo: formData.organizerContact || undefined,
+                contactInfo: formData.contactInfo || undefined,
                 bio: formData.eventOutline || undefined,
                 content: formData.eventDetail || undefined,
                 policy: formData.policy || undefined,
-                officialUrl: externalLinks.some(l => l.url) ? JSON.stringify(externalLinks.filter((l) => l.url)) : undefined,
+                externalLinks: externalLinks.filter(l => l.url && l.url.trim() !== "").length > 0 ? externalLinks.filter((l) => l.url && l.url.trim() !== "").map(link => ({url: link.url, displayText: link.name})) : undefined,
+                officialUrl: formData.organizerWebsite || undefined,
                 eventTime: formData.viewingTime ? parseInt(formData.viewingTime) : undefined,
                 startDate: formData.startDate || undefined,
                 endDate: formData.endDate || undefined,
@@ -602,8 +670,17 @@ export const EditEventInfo = () => {
                 checkInAllowed: formData.checkInRequired,
                 checkOutAllowed: formData.exitScanRequired,
                 age: formData.viewingGrade === "청소년불가",
+                businessNumber: formData.organizerBusinessNumber || undefined,
+                verified: businessVerified,
+                managerName: formData.managerName || undefined,
+                managerPhone: formData.phone || undefined,
+                managerEmail: formData.email || undefined,
+                thumbnailUrl: thumbnailUrl,
                 tempFiles: getFileUploadDtos(),
             };
+
+            console.log('전송될 tempFiles:', getFileUploadDtos());
+            console.log('설정된 thumbnailUrl:', thumbnailUrl);
 
             await eventAPI.createEventModificationRequest(
                 eventData.eventId,
@@ -940,7 +1017,7 @@ export const EditEventInfo = () => {
                                                 <div className="space-y-2">
                                                     <p className="text-sm text-gray-500">현재 등록된 이미지</p>
                                                     <img
-                                                        src={eventData.thumbnailUrl}
+                                                        src={`${eventData.thumbnailUrl}?v=${Date.now()}`}
                                                         alt="현재 세로형 배너"
                                                         className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                     />
@@ -1172,7 +1249,7 @@ export const EditEventInfo = () => {
                                     링크 추가
                                 </button>
                                 <div className="space-y-4">
-                                    {externalLinks.map((link, index) => (
+                                    {(externalLinks.length > 0 ? externalLinks : [{name: "", url: ""}]).map((link, index) => (
                                         <div key={index} className="grid grid-cols-2 gap-8">
                                             <div>
                                                 <label className="block text-[15px] font-bold mb-1">외부 티켓 사이트명</label>
@@ -1227,15 +1304,37 @@ export const EditEventInfo = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[15px] font-bold mb-1">사업자 등록번호</label>
-                                        <input
-                                            type="text"
-                                            name="organizerBusinessNumber"
-                                            value={formData.organizerBusinessNumber}
-                                            onChange={handleInputChange}
-                                            placeholder="000-00-00000"
-                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerBusinessNumber ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                        />
+                                        <label className="block text-[15px] font-bold mb-1">
+                                            사업자 등록번호
+                                            {businessVerified === true && (
+                                                <span className="ml-2 text-sm text-green-600">✓ 확인됨</span>
+                                            )}
+                                            {businessVerified === false && (
+                                                <span className="ml-2 text-sm text-red-600">✗ 검증 실패</span>
+                                            )}
+                                        </label>
+                                        <div className="flex items-center space-x-2">
+                                            <input
+                                                type="text"
+                                                name="organizerBusinessNumber"
+                                                value={formData.organizerBusinessNumber}
+                                                onChange={(e) => {
+                                                    handleInputChange(e);
+                                                    setBusinessVerified(null); // 입력 시 검증 상태 초기화
+                                                }}
+                                                placeholder="0000000000"
+                                                maxLength={10}
+                                                className={`flex-1 h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.organizerBusinessNumber ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => verifyBusinessNumber(formData.organizerBusinessNumber)}
+                                                disabled={businessVerifying || !formData.organizerBusinessNumber || formData.organizerBusinessNumber.length !== 10}
+                                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                                            >
+                                                {businessVerifying ? '검증 중...' : '검증'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="mt-6">
@@ -1286,7 +1385,7 @@ export const EditEventInfo = () => {
                                     </div>
                                     <div>
                                         <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">연락처</label>
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자 연락처</label>
                                         <input
                                             type="text"
                                             name="phone"
@@ -1298,7 +1397,7 @@ export const EditEventInfo = () => {
                                     </div>
                                     <div>
                                         <label
-                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">이메일</label>
+                                            className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자 이메일</label>
                                         <input
                                             type="email"
                                             name="email"
@@ -1319,17 +1418,17 @@ export const EditEventInfo = () => {
                                 <div className="mb-12">
                                     <label
                                         className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                        상세정보
+                                        상세 정보
                                     </label>
                                     <div>
                                         <ReactQuill
                                             ref={inquiryRef}
                                             theme="snow"
-                                            value={formData.inquiryDetails || ""}
-                                            onChange={(html) => setFormData((p) => ({ ...p, inquiryDetails: html || "" }))}
+                                            value={formData.contactInfo || ""}
+                                            onChange={(html) => setFormData((p) => ({ ...p, contactInfo: html || "" }))}
                                             modules={inquiryModules}
                                             formats={quillFormats}
-                                            placeholder="문의처 상세정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
+                                            placeholder="문의처 상세 정보를 입력하세요 (문의시간, 추가 연락처, 주의사항 등)"
                                             style={{height: "150px"}}
                                         />
                                     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import RegistrationSuccessModal from "../../components/RegistrationSuccessModal";
 import WarningModal from "../../components/WarningModal";
 import { saveAttendee, getFormInfo } from "../../services/attendee";
@@ -8,19 +8,24 @@ import type {
     AttendeeSaveRequestDto,
     ShareTicketInfoResponseDto
 } from "../../services/types/attendeeType";
+interface Participant{
+    id: number;
+    name: string;
+    phone: string;
+    email: string;
+};
 
 export default function ParticipantForm(): JSX.Element {
-    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [formInfo, setFormInfo] = useState<ShareTicketInfoResponseDto | null>(null);
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
         email: "",
-        agreeToTerms: false
+        agreeToTerms: false,
     });
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-    const [registeredParticipant, setRegisteredParticipant] = useState<any>(null);
+    const [registeredParticipant, setRegisteredParticipant] = useState<Participant | null>(null);
     const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
     const [warningTitle, setWarningTitle] = useState("");
     const [warningMessage, setWarningMessage] = useState("");
@@ -121,25 +126,25 @@ export default function ParticipantForm(): JSX.Element {
             return;
         }
 
-        const data: AttendeeSaveRequestDto = {
+        const attendeeData: AttendeeSaveRequestDto = {
             name: formData.name,
             email: formData.email, 
-             phone: formData.phone,
-            birth: null
+            phone: formData.phone,
+            agreeToTerms: formData.agreeToTerms
         }
 
         const token = searchParams.get("token");
+        const res = await saveAttendee(token ?? "", attendeeData);
 
-        const res = await saveAttendee(token ?? "", data);
-        
-        const participant = {
+        const resParticipant: Participant = {
+            id: res.attendeeId,
             name: res.name,
+            phone: res.phone,
             email: res.email,
-            phone: res.phone
-        };
-    
+        }
+        
         // 성공 모달 표시
-        setRegisteredParticipant(participant);
+        setRegisteredParticipant(resParticipant);
         setIsSuccessModalOpen(true);
     };
 
@@ -147,12 +152,16 @@ export default function ParticipantForm(): JSX.Element {
     const handleSuccessModalClose = () => {
         setIsSuccessModalOpen(false);
         setRegisteredParticipant(null);
-        navigate("/mypage/tickets");
+        setFormData({
+            name: "",
+            phone: "",
+            email: "",
+            agreeToTerms: false,
+        });
     };
 
     const handleWarningModalClose = () => {
         setIsWarningModalOpen(false);
-        navigate("/mypage/tickets");
     };
 
 
@@ -177,7 +186,7 @@ export default function ParticipantForm(): JSX.Element {
             <TopNav />
             <div className="w-full flex flex-col items-center">
                 <div className="w-full max-w-[800px] mt-20 mb-8">
-                    <h1 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[54px] mb-8">참여자 정보 입력</h1>
+                    <h1 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[54px] mb-8">[{formInfo?.eventName}] 참여자 정보 입력</h1>
                     {/* 폼 컨테이너 시작 */}
                     <div className="bg-white">
                         {/* 개인정보 수집 및 이용 동의 섹션 */}
@@ -187,16 +196,16 @@ export default function ParticipantForm(): JSX.Element {
                             </h2>
                             <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto mb-4">
                                 <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm leading-6 tracking-[0]">
-                                    <p className="mb-2">1. 수집하는 개인정보 항목</p>
-                                    <p className="mb-2">- 필수항목: 이름, 연락처, 이메일</p>
-                                    <p className="mb-2">- 선택항목: 없음</p>
-                                    <p className="mb-2">2. 개인정보의 수집 및 이용목적</p>
-                                    <p className="mb-2">- 이벤트 참여자 관리 및 안내</p>
-                                    <p className="mb-2">- 이벤트 관련 정보 전달</p>
-                                    <p className="mb-2">3. 개인정보의 보유 및 이용기간</p>
-                                    <p className="mb-2">- 이벤트 종료 후 1년까지</p>
-                                    <p className="mb-2">4. 동의 거부권 및 거부에 따른 불이익</p>
-                                    <p>개인정보 수집 및 이용에 동의하지 않을 경우 이벤트 참여가 제한될 수 있습니다.</p>
+                                    <p className="mb-2 font-bold">1. 수집하는 개인정보 항목</p>
+                                    <p className="mb-2">• 필수항목: 이름, 연락처, 이메일</p>
+                                    <p className="mb-2">• 선택항목: 없음</p>
+                                    <p className="mb-2 font-bold">2. 개인정보의 수집 및 이용목적</p>
+                                    <p className="mb-2">• 이벤트 참여자 관리 및 안내</p>
+                                    <p className="mb-2">• 이벤트 관련 정보 전달</p>
+                                    <p className="mb-2 font-bold">3. 개인정보의 보유 및 이용기간</p>
+                                    <p className="mb-2">• 이벤트 종료 후 1년까지</p>
+                                    <p className="mb-2 font-bold">4. 동의 거부권 및 거부에 따른 불이익</p>
+                                    <p className="mb-2">• 개인정보 수집 및 이용에 동의하지 않을 경우 이벤트 참여가 제한될 수 있습니다.</p>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-2">

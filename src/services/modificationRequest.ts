@@ -1,4 +1,5 @@
 import api from '../api/axios';
+import type { EventDetailModificationRequestDto } from './types/eventType';
 
 // 수정 요청 관련 타입 정의
 export interface ModificationRequestListItem {
@@ -27,8 +28,8 @@ export interface ModificationRequestDetail {
     adminComment?: string;
     createdAt: string;
     updatedAt: string;
-    originalData: any;
-    modifiedData: any;
+    originalData: EventDetailModificationRequestDto;
+    modifiedData: EventDetailModificationRequestDto;
 }
 
 export interface ModificationApprovalRequest {

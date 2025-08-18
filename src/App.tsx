@@ -16,7 +16,7 @@ import ParticipantForm from "./pages/user_mypage/ParticipantForm";
 import ParticipantList from "./pages/user_mypage/ParticipantList";
 import EventOverview from "./pages/user_event/EventOverview";
 import EventDetail from "./pages/user_event/EventDetail";
-import { BookingPage } from "./pages/user_event/BookingPage";
+import { TicketReservation } from "./pages/user_event/TicketReservation";
 import { LoginPage } from "./pages/user_auth/LoginPage";
 import { SignUpPage } from "./pages/user_auth/SignUpPage";
 import { FindPassword } from "./pages/user_auth/FindPassword";
@@ -30,6 +30,7 @@ import ScheduleManagement from "./pages/host_event/ScheduleManagement";
 import EventVersionManagement from "./pages/host_event/EventVersionManagement";
 import { EventVersionDetail } from "./pages/host_event/EventVersionDetail";
 import { EventVersionComparison } from "./pages/host_event/EventVersionComparison";
+import AdvertisementApplication from "./pages/host_event/AdvertisementApplication";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
@@ -51,6 +52,7 @@ import EventEditRequests from "./pages/admin_event/EventEditRequests";
 import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
 import AccountRoles from "./pages/admin_account/AccountRoles";
 import VipBannerManagement from "./pages/admin_vip_banner/VipBannerManagement";
+import AdvertisementApplicationList from "./pages/admin_vip_banner/AdvertisementApplicationList";
 import SettlementManagement from "./pages/admin_settlement/SettlementManagement";
 import RemittanceHistory from "./pages/admin_settlement/RemittanceHistory";
 import ReservationStatistics from "./pages/admin_statistics/ReservationStatistics";
@@ -59,6 +61,10 @@ import IntegrationSettings from "./pages/admin_settings/IntegrationSettings";
 import MessageTemplates from "./pages/admin_settings/MessageTemplates";
 import AccessLogs from "./pages/admin_security/AccessLogs";
 import ChangeLogs from "./pages/admin_security/ChangeLogs";
+import { AdminProfile } from "./pages/admin_account/AdminProfile";
+import { HostProfile } from "./pages/host_account/HostProfile";
+import { BoothAdminProfile } from "./pages/booth_admin/BoothAdminProfile";
+import { BoothAdminRouteGuard } from "./components/BoothAdminRouteGuard";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -66,11 +72,11 @@ import { ThemeProvider } from './context/ThemeContext';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
-import AdminEventApproval from "./pages/admin/admin_event_apply";
-import AdminEventApprovalDetail from "./pages/admin/admin_event_apply_detail";
-import ModificationRequestList from "./pages/admin/ModificationRequestList";
-import ModificationRequestDetailPage from "./pages/admin/ModificationRequestDetail";
-// import EventEditRequestDetail from "./pages/admin_event/EventEditRequestDetail";
+import BoothExperienceList from "./pages/user_booth/BoothExperienceList";
+import MyBoothExperienceReservations from "./pages/user_booth/MyBoothExperienceReservations";
+import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagement";
+import BoothExperienceReserverManagement from "./pages/host_booth/BoothExperienceReserverManagement";
+import { OnlyQrTicketPage } from './pages/OnlyQrTicketPage';
 
 function AppContent() {
   useScrollToTop();
@@ -108,14 +114,16 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/participant-form" element={<ParticipantForm />} />
+          <Route path="/qr-ticket/participant" element={<OnlyQrTicketPage />} />          
           <Route path="/eventoverview" element={<EventOverview />} />
           <Route path="/eventdetail/:eventId" element={<EventDetail />} />
-          <Route path="/booking/:eventId" element={<BookingPage />} />
+          <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
           <Route path="/mypage/info" element={<MyPageInfo />} />
           <Route path="/mypage/account" element={<MyPageAccount />} />
           <Route path="/mypage/favorites" element={<MyPageFavorites />} />
           <Route path="/mypage/reservation" element={<Reservation />} />
           <Route path="/mypage/tickets" element={<MyTickets />} />
+          <Route path="/mypage/participant-form" element={<ParticipantForm />} />
           <Route path="/mypage/participant-list" element={<ParticipantList />} />
           <Route path="/mypage/write-review" element={<MyPageMyReview />} />
           <Route path="/mypage/my-review" element={<MyPageMyReview />} />
@@ -131,9 +139,10 @@ function AppContent() {
           <Route path="/host/round-management" element={<HostRouteGuard><ScheduleManagement /></HostRouteGuard>} />
           <Route path="/host/status-management" element={<HostRouteGuard><EventStatusBanner /></HostRouteGuard>} />
           <Route path="/host/event-version" element={<HostRouteGuard><EventVersionManagement /></HostRouteGuard>} />
-          <Route path="/host/event-version/:versionId" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
+          <Route path="/host/event-version/:versionNumber" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
           <Route path="/host/event-version/comparison" element={<HostRouteGuard><EventVersionComparison /></HostRouteGuard>} />
-          <Route path="/host/reservation-list" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
+          <Route path="/host/advertisement-application" element={<HostRouteGuard><AdvertisementApplication /></HostRouteGuard>} />
+          <Route path="/host/reservation-list/:eventId" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
           <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
           <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
           <Route path="/host/booth-applications" element={<HostRouteGuard><BoothApplicationList /></HostRouteGuard>} />
@@ -142,6 +151,7 @@ function AppContent() {
           <Route path="/host/revenue-summary" element={<HostRouteGuard><RevenueSummary /></HostRouteGuard>} />
           <Route path="/host/time-analysis" element={<HostRouteGuard><TimeAnalysis /></HostRouteGuard>} />
           <Route path="/host/qr-scan" element={<HostRouteGuard><QRScanPage /></HostRouteGuard>} />
+          <Route path="/host/profile" element={<HostRouteGuard><HostProfile /></HostRouteGuard>} />
           <Route path="/admin_dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
           <Route path="/admin_dashboard/event-comparison" element={<AdminRouteGuard><EventComparison /></AdminRouteGuard>} />
 
@@ -157,6 +167,7 @@ function AppContent() {
 
           {/* VIP 배너 광고 */}
           <Route path="/admin_dashboard/vip-banners" element={<AdminRouteGuard><VipBannerManagement /></AdminRouteGuard>} />
+          <Route path="/admin_dashboard/advertisement-applications" element={<AdminRouteGuard><AdvertisementApplicationList /></AdminRouteGuard>} />
 
           {/* 정산 관리 */}
           <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />
@@ -173,6 +184,12 @@ function AppContent() {
           {/* 로그/보안 */}
           <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
           <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
+
+          {/* 내 정보 관리 */}
+          <Route path="/admin_dashboard/profile" element={<AdminRouteGuard><AdminProfile /></AdminRouteGuard>} />
+
+          {/* 부스 관리자 전용 페이지 */}
+          <Route path="/booth-admin/profile" element={<BoothAdminRouteGuard><BoothAdminProfile /></BoothAdminRouteGuard>} />
           <Route path="/host/dashboard" element={<HostDashboard />} />
           <Route path="/host/edit-event-info" element={<EditEventInfo />} />
           <Route path="/host/ticket-management" element={<TicketManagement />} />
@@ -187,11 +204,13 @@ function AppContent() {
           <Route path="/host/revenue-summary" element={<RevenueSummary />} />
           <Route path="/host/time-analysis" element={<TimeAnalysis />} />
           <Route path="/host/qr-scan" element={<QRScanPage />} />
-          <Route path="/admin/event-applications" element={<AdminEventApproval />} />
-          <Route path="/admin/event-applications/:id" element={<AdminEventApprovalDetail />} />
-          <Route path="/admin/modification-requests" element={<ModificationRequestList />} />
-          <Route path="/admin/modification-requests/:requestId" element={<ModificationRequestDetailPage />} />
           <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+          
+          {/* 부스 체험 */}
+          <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
+          <Route path="/host/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
+          <Route path="/mypage/booth-experiences" element={<BoothExperienceList />} />
+          <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations />} />
         </Routes>
       </Suspense>
       <ToastContainer

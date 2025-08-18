@@ -1,24 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type {
-  ReviewResponseDto,
   ReviewForEventResponseDto,
-  ReviewWithOwnerDto,
-    ReviewDto,
-    Page,
-    PageableRequest
+  ReviewWithOwnerDto
 } from "../../services/types/reviewType";
-
-// interface Review {
-//   id: number; // 리뷰ID
-//   author: string; // 작성자
-//   rating: number; // 별점
-//   date: string; // 날짜
-//   content: string; // 내용
-//   likeCount: number; // 좋아요 갯수
-//   isHidden?: boolean; // 비공개 여부
-//   isLiked?: boolean; // 내가 좋아요한 리뷰인지
-// }
-
+import { updateReaction } from "../../services/review";
 
 interface ReviewsProps {
   data: ReviewForEventResponseDto | null;
@@ -26,20 +11,18 @@ interface ReviewsProps {
   onPageChange: (page: number) => void;
 }
 
+// 행사 상세페이지 리뷰 컴포넌트
 export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
-  // const [currentPage, setCurrentPage] = useState(1);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [reviews, setReviews] = useState<ReviewWithOwnerDto[]>(data?.reviews?.content ?? []);
   const totalPages = data?.reviews?.totalPages ?? 1;
 
-
-  // const reviewsPerPage = 10;
-  // const totalPages = Math.ceil(reviews.length / reviewsPerPage);
-  // const startIndex = (currentPage - 1) * reviewsPerPage;
-  // const endIndex = startIndex + reviewsPerPage;
-  // const currentReviews = reviews.slice(startIndex, endIndex);
+  // props로 전달된 리뷰 목록이 변경되면 동기화
+  useEffect(() => {
+    setReviews(data?.reviews?.content ?? []);
+  }, [data?.reviews?.content]);
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, index) => (
@@ -53,19 +36,39 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
     ));
   };
 
-  const handleLike = (reviewId: number) => {
-    setReviews(prevReviews =>
-      prevReviews.map(currentReview =>
-        currentReview.review.reviewId === reviewId
+  const handleLike = async (reviewId: number) => {
+    if (!localStorage.getItem("accessToken")) {
+      alert("로그인한 회원만 좋아요 반응을 할 수 있습니다. 로그인해주세요.");
+    }
+
+    if(reviews.find(review => review.review.reviewId === reviewId)?.owner) {
+      alert("본인이 작성한 관람평은 좋아요할 수 없습니다.");
+      return;
+    }
+
+    if (!reviews.find(review => review.review.reviewId === reviewId)?.review.visible) {
+      alert("비공개된 리뷰에는 좋아요를 할 수 없습니다.");
+      return;
+    }
+
+    const res = await updateReaction({ reviewId });
+    // 서버에서 내려준 최신 카운트로 동기화
+    setReviews(prev =>
+      prev.map(r =>
+        r.review.reviewId === res.reviewId
           ? {
-            ...currentReview,
-            isLiked: !currentReview.owner,
-            likeCount: currentReview.owner ? currentReview.review.reactions - 1 : currentReview.review.reactions + 1
-          }
-          : currentReview
-      )
-    );
+            ...r,
+            review: { ...r.review, reactions: res.count },
+            liked: !r.liked // 토글해줌
+          } : r
+  )
+);
   };
+
+  const formattedDate = (createdAt: string) => {
+    const formatted = createdAt.slice(0, 10).replace(/-/g, ". ");
+    return formatted;
+  }
 
   const handleReport = (reviewId: number) => {
     setSelectedReviewId(reviewId);
@@ -98,11 +101,10 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
 
   // 별점 평균 계산
   const calculateAverageRating = (): string => {
-    const visibleReviews = reviews.filter(currentReview => !currentReview.review.visible);
-    if (visibleReviews.length === 0) return "0.00";
+    if (reviews.length === 0) return "0.00";
 
-    const totalRating = visibleReviews.reduce((sum, currentReview) => sum + currentReview.review.reactions, 0);
-    return (totalRating / visibleReviews.length).toFixed(2);
+    const totalRating = reviews.reduce((sum, currentReview) => sum + currentReview.review.star, 0);
+    return (totalRating / reviews.length).toFixed(2);
   };
 
   const averageRating = calculateAverageRating();
@@ -156,19 +158,19 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <span className="text-base text-[#212121] font-normal">
-                  review.re
+                  {currentReview.review.nickname}
                 </span>
                 <div className="flex gap-1">
                   {renderStars(currentReview.review.star)}
                 </div>
               </div>
               <span className="text-sm text-[#00000099] font-normal">
-                {currentReview.review.createdAt}
+                {formattedDate(currentReview.review.createdAt)}
               </span>
             </div>
 
             <div className="mb-4">
-              {currentReview.review.visible ? (
+              {!currentReview.review.visible ? (
                 <p className="text-base text-[#00000080] font-normal">
                   비공개 처리된 관람평입니다.
                 </p>
@@ -183,13 +185,17 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => handleLike(currentReview.review.reviewId)}
-                  className={`flex items-center gap-2 text-sm font-normal transition-colors ${currentReview.owner
-                    ? "text-red-500"
-                    : "text-[#00000099] hover:text-red-500"
-                    }`}
+                  disabled={!currentReview.review.visible}
+                  className={`flex items-center gap-2 text-sm font-normal transition-colors
+                  ${currentReview.review.visible
+                    ? currentReview.liked
+                      ? "text-red-500 border border-red-500 hover:bg-red-50"
+                      : "text-[#00000099] border border-[#00000033] hover:text-red-500 hover:bg-gray-50" 
+                    : "text-gray-400 border border-gray-200 cursor-not-allowed" 
+                  }`}
                 >
                   <span className="text-lg">
-                    {currentReview.owner ? "❤️" : "🤍"}
+                    {currentReview.liked ? "❤️" : "🤍"}
                   </span>
                   <span>좋아요</span>
                   <span>{currentReview.review.reactions}</span>

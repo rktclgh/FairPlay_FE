@@ -34,7 +34,7 @@ export default function WarningModal({ isOpen, onClose, title, message }: Warnin
                 <div className="flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                        className="px-4 py-2 bg-gray-500 text-white rounded-[10px] hover:bg-gray-600 transition-colors text-sm"
                     >
                         확인
                     </button>

@@ -5,7 +5,7 @@ import 'react-quill/dist/quill.snow.css';
 // 1) 픽커 모듈 & CSS
 // 타입 선언이 없을 수 있어 any 처리
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const QuillBetterTablePicker: any = require('quill-better-table-picker');
+import QuillBetterTablePicker from 'quill-better-table-picker';
 // CSS 반드시 포함 (툴바 그리드 픽커 UI)
 import 'quill-better-table-picker/dist/quill-better-table-picker.css';
 

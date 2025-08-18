@@ -212,7 +212,7 @@ export const EventList: React.FC = () => {
                         <div className="flex justify-end mt-4">
                             <button
                                 onClick={handleReset}
-                                className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-[10px] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-[10px] hover:bg-gray-400 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-sm"
                             >
                                 초기화
                             </button>
@@ -223,13 +223,14 @@ export const EventList: React.FC = () => {
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* 테이블 헤더 */}
                         <div className="bg-gray-50 border-b border-gray-200 py-4 px-6">
-                            <div className="grid grid-cols-6 gap-4 text-sm font-bold text-gray-700" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr 1fr 1fr' }}>
+                            <div className="grid grid-cols-7 gap-4 text-sm font-bold text-gray-700" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr 1fr 1fr 0.8fr' }}>
                                 <div className="text-left">행사명</div>
                                 <div className="text-center">카테고리</div>
                                 <div className="text-center">등록일</div>
                                 <div className="text-center">행사 기간</div>
                                 <div className="text-center">지역</div>
                                 <div className="text-center">상태</div>
+                                <div className="text-center">공개여부</div>
                             </div>
                         </div>
 
@@ -248,8 +249,8 @@ export const EventList: React.FC = () => {
                                 currentData.map((event, index) => (
                                     <div
                                         key={event.id}
-                                        className={`grid grid-cols-6 gap-4 py-5 px-6 text-sm items-center ${index !== currentData.length - 1 ? "border-b border-gray-200" : ""}`}
-                                        style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr 1fr 1fr' }}
+                                        className={`grid grid-cols-7 gap-4 py-5 px-6 text-sm items-center ${index !== currentData.length - 1 ? "border-b border-gray-200" : ""}`}
+                                        style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr 1fr 1fr 0.8fr' }}
                                     >
                                         <div
                                             className="font-bold text-black text-left cursor-pointer hover:text-gray-700 hover:underline truncate"
@@ -280,6 +281,14 @@ export const EventList: React.FC = () => {
                                                 }`}>
                                                 {new Date(event.startDate) > new Date() ? '예정' :
                                                     new Date(event.endDate) < new Date() ? '종료됨' : '진행중'}
+                                            </span>
+                                        </div>
+                                        <div className="text-center">
+                                            <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${event.hidden
+                                                ? 'bg-red-100 text-red-800' // 숨김
+                                                : 'bg-green-100 text-green-800' // 공개
+                                                }`}>
+                                                {event.hidden ? '숨김' : '공개'}
                                             </span>
                                         </div>
                                     </div>

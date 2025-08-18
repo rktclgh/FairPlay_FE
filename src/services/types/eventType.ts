@@ -134,6 +134,11 @@ export interface EventDetailModificationRequestDto {
     checkInAllowed?: boolean;
     checkOutAllowed?: boolean;
     age?: boolean;
+    businessNumber?: string;    // 사업자 등록번호
+    verified?: boolean;         // 사업자 등록번호 검증 여부
+    managerName?: string;       // 담당자명
+    managerPhone?: string;      // 담당자 연락처
+    managerEmail?: string;      // 담당자 이메일
     tempFiles?: FileUploadDto[];
     deletedFileIds?: number[];  // 삭제할 파일 ID 목록
 }
@@ -336,4 +341,81 @@ export interface EventApplyDetail {
     bannerUrl: string;
     thumbnailUrl: string;
     updatedAt: string;
+}
+
+// Event Version Management Types
+export interface TicketSnapshotDto {
+    name: string;
+    price: number;
+    stock: number;
+}
+
+export interface ExternalLinkSnapshot {
+    url: string;
+    displayText: string;
+}
+
+export interface EventSnapshotDto {
+    eventCode: string;
+    titleKr: string;
+    titleEng: string;
+    hidden: boolean;
+    managerId?: number;
+    eventStatusCodeId?: number;
+    locationId?: number;
+    locationDetail?: string;
+    hostName?: string;
+    hostCompany?: string;
+    contactInfo?: string;
+    bio?: string;
+    content?: string;
+    policy?: string;
+    officialUrl?: string;
+    eventTime?: number;
+    thumbnailUrl?: string;
+    bannerUrl?: string;
+    startDate?: string;
+    endDate?: string;
+    reentryAllowed?: boolean;
+    checkInAllowed?: boolean;
+    checkOutAllowed?: boolean;
+    age?: boolean;
+    mainCategoryId?: number;
+    subCategoryId?: number;
+    regionCodeId?: number;
+    tickets: TicketSnapshotDto[];
+    externalLinks: ExternalLinkSnapshot[];
+}
+
+export interface EventVersionResponseDto {
+    versionId: number;
+    eventId: number;
+    versionNumber: number;
+    snapshot: EventSnapshotDto;
+    updatedBy: number;
+    updatedAt: string;
+}
+
+export interface EventVersionListDto {
+    versionId: number;
+    versionNumber: number;
+    titleKr: string;
+    titleEng: string;
+    updatedAt: string;
+    updatedBy: number;
+    modificationStatus?: string;
+}
+
+export interface EventVersionComparisonDto {
+    eventId: number;
+    version1: number;
+    version2: number;
+    snapshot1: EventSnapshotDto;
+    snapshot2: EventSnapshotDto;
+    fieldDifferences: Record<string, {
+        displayName: string;
+        oldValue: any;
+        newValue: any;
+        changeType: 'added' | 'removed' | 'modified';
+    }>;
 }

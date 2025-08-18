@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eventApi } from '../services/api';
 import axios from 'axios';
@@ -12,242 +12,311 @@ import { useTheme } from '../context/ThemeContext';
 
 
 interface TopNavProps {
-    className?: string;
+	className?: string;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
-    const { isDark, toggleDark } = useTheme();
-    const [activeMenu, setActiveMenu] = useState<string>('HOME');
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-    const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
+	const { isDark, toggleDark } = useTheme();
+	const [activeMenu, setActiveMenu] = useState<string>('HOME');
+	const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+	const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
+	const [mobileQuery, setMobileQuery] = useState<string>('');
 
-    const location = useLocation();
-    const navigate = useNavigate();
+	const location = useLocation();
+	const navigate = useNavigate();
 
-    // 웹소켓 기반 알림 시스템 사용
-    const { notifications, unreadCount, markAsRead, connect, disconnect } = useNotificationSocket();
+	// 웹소켓 기반 알림 시스템 사용
+	const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
 
-    const checkLoginStatus = useCallback(() => {
-        const loggedIn = isAuthenticated();
-        setIsLoggedIn(loggedIn);
-        if (loggedIn) {
-            connect(); // 로그인 시 웹소켓 연결
-        } else {
-            disconnect(); // 로그아웃 시 웹소켓 연결 해제
-        }
-    }, [connect, disconnect]);
+	const checkLoginStatus = useCallback(() => {
+		const loggedIn = isAuthenticated();
+		setIsLoggedIn(loggedIn);
+		if (loggedIn) {
+			connect(); // 로그인 시 웹소켓 연결
+		} else {
+			disconnect(); // 로그아웃 시 웹소켓 연결 해제
+		}
+	}, [connect, disconnect]);
 
-    useEffect(() => {
-        checkLoginStatus();
-        window.addEventListener('storage', checkLoginStatus); // 다른 탭에서 로그인/로그아웃 시 상태 동기화
-        return () => {
-            window.removeEventListener('storage', checkLoginStatus);
-            disconnect(); // 컴포넌트 언마운트 시 웹소켓 연결 해제
-        };
-    }, [checkLoginStatus, disconnect]);
+	useEffect(() => {
+		checkLoginStatus();
+		window.addEventListener('storage', checkLoginStatus); // 다른 탭에서 로그인/로그아웃 시 상태 동기화
+		return () => {
+			window.removeEventListener('storage', checkLoginStatus);
+			disconnect(); // 컴포넌트 언마운트 시 웹소켓 연결 해제
+		};
+	}, [checkLoginStatus, disconnect]);
 
-    useEffect(() => {
-        const path = location.pathname;
-        if (path === '/') setActiveMenu('HOME');
-        else if (path === '/eventoverview') setActiveMenu('EVENTS');
-        else if (path === '/register') setActiveMenu('REGISTER');
-        else if (path === '/event-registration-intro') setActiveMenu('REGISTER');
-        else setActiveMenu('');
-    }, [location.pathname]);
+	useEffect(() => {
+		const path = location.pathname;
+		if (path === '/') setActiveMenu('HOME');
+		else if (path === '/eventoverview') setActiveMenu('EVENTS');
+		else if (path === '/register') setActiveMenu('REGISTER');
+		else if (path === '/event-registration-intro') setActiveMenu('REGISTER');
+		else setActiveMenu('');
+	}, [location.pathname]);
 
-    const handleAuthClick = (e: React.MouseEvent) => {
-        if (isLoggedIn) {
-            e.preventDefault();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            clearCachedRoleCode();
-            setIsLoggedIn(false);
-            disconnect(); // 로그아웃 시 웹소켓 연결 해제
-            navigate('/');
-        }
-    };
+	const handleAuthClick = (e: React.MouseEvent) => {
+		if (isLoggedIn) {
+			e.preventDefault();
+			localStorage.removeItem('accessToken');
+			localStorage.removeItem('refreshToken');
+			clearCachedRoleCode();
+			setIsLoggedIn(false);
+			disconnect(); // 로그아웃 시 웹소켓 연결 해제
+			navigate('/');
+		}
+	};
 
-    const toggleNotification = () => {
-        if (!requireAuth(navigate, '알림')) {
-            return;
-        }
-        setIsNotificationOpen(prev => !prev);
-    };
+	const toggleNotification = () => {
+		if (!requireAuth(navigate, '알림')) {
+			return;
+		}
+		setIsNotificationOpen(prev => !prev);
+	};
 
-    const handleMarkAsRead = (notificationId: number) => {
-        markAsRead(notificationId); // 웹소켓을 통한 읽음 처리
-    };
+	const handleMarkAsRead = (notificationId: number) => {
+		markAsRead(notificationId); // 웹소켓을 통한 읽음 처리
+	};
 
-    const handleDeleteNotification = async (e: React.MouseEvent, notificationId: number) => {
-        e.stopPropagation(); // 이벤트 버블링 방지
-        await eventApi.deleteNotification(notificationId);
-        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
-    };
+	const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {
+		e.stopPropagation(); // 이벤트 버블링 방지
+		
+		console.log("🗑️ TopNav에서 알림 삭제:", notificationId);
+		
+		// 즉시 삭제 (아이폰 스타일)
+		const success = deleteNotification(notificationId);
+		if (!success) {
+			console.warn("WebSocket을 통한 알림 삭제 실패");
+		}
+	};
 
-    const handleDeleteAllRead = async () => {
-        const readNotificationIds = notifications.filter(n => n.isRead).map(n => n.notificationId);
-        if (readNotificationIds.length === 0) return;
+	const handleMobileSearchSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		const q = mobileQuery.trim();
+		if (q.length === 0) return;
+		navigate(`/eventoverview?q=${encodeURIComponent(q)}`);
+	};
 
-        await eventApi.deleteMultipleNotifications(readNotificationIds);
-        // 웹소켓으로 관리되므로 상태 업데이트는 자동으로 처리됨
-    };
+	// 운영자(전체 관리자) 문의 채팅방 생성/입장
+	const handleCustomerService = async () => {
+		if (!requireAuth(navigate, '고객센터 채팅')) {
+			return;
+		}
 
+		try {
+			const token = localStorage.getItem('accessToken');
+			const api = axios.create({
+				baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				}
+			});
 
+			// ADMIN 권한을 가진 사용자에게 연결하는 1:N 구조 (전용 API 사용)
+			const response = await api.post('/api/chat/admin-inquiry');
 
-    // 운영자(전체 관리자) 문의 채팅방 생성/입장
-    const handleCustomerService = async () => {
-        if (!requireAuth(navigate, '고객센터 채팅')) {
-            return;
-        }
+			const chatRoomId = response.data.chatRoomId;
+			openChatRoomGlobal(chatRoomId);
+		} catch (error) {
+			console.error('운영자 문의 채팅방 생성 실패:', error);
+		}
+	};
 
-        try {
-            const token = localStorage.getItem('accessToken');
-            const api = axios.create({
-                baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+	// 웹소켓에서 제공하는 unreadCount 사용
 
-            // ADMIN 권한을 가진 사용자에게 연결하는 1:N 구조 (전용 API 사용)
-            const response = await api.post('/api/chat/admin-inquiry');
+	return (
+		<>
+			{/* 모바일 고정 상단바: 로고 - 검색창 - 알림 (얇고 여백 최소화) */}
+			<div className={`md:hidden fixed top-0 left-0 right-0 h-12 ${isDark ? 'bg-black' : 'bg-white'} z-[300]`}>
+				<div className="flex items-center gap-2 px-3 h-full">
+					<Link to="/" className="shrink-0 inline-flex items-center justify-center h-9 w-9">
+						<img src="/images/FPlogo.png" alt="FairPlay Logo" className="block h-7 w-auto object-contain" />
+					</Link>
+					<form onSubmit={handleMobileSearchSubmit} className="flex-1">
+						<div className={`relative ${isDark ? 'bg-gray-800' : 'bg-gray-100'} rounded-full h-9`}>
+							<HiOutlineSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+							<input
+								type="search"
+								placeholder="검색"
+								value={mobileQuery}
+								onChange={(e) => setMobileQuery(e.target.value)}
+								className={`w-full h-full pl-9 pr-3 text-sm rounded-full outline-none focus:ring-2 ${isDark ? 'bg-gray-800 text-white focus:ring-gray-700' : 'bg-gray-100 text-black focus:ring-gray-300'}`}
+							/>
+						</div>
+					</form>
+					<button onClick={toggleNotification} aria-label="알림" className="relative shrink-0 inline-flex items-center justify-center h-10 w-10 appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none">
+						<HiOutlineBell className="block flex-none w-6 h-6 text-gray-500" aria-hidden="true" />
+						{isLoggedIn && unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+					</button>
+				</div>
+			</div>
 
-            const chatRoomId = response.data.chatRoomId;
-            openChatRoomGlobal(chatRoomId);
-        } catch (error) {
-            console.error('운영자 문의 채팅방 생성 실패:', error);
-        }
-    };
+			{/* 데스크톱 네비게이션: 웹 화면 유지 (기존 구조) */}
+			<div className={`hidden md:flex theme-surface theme-transition w-full flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
+				{/* 상단 유틸 바 */}
+				<div className="flex justify-end items-center px-6 py-0.5 gap-3">
+					<button
+						onClick={handleCustomerService}
+						className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
+					>
+						고객센터
+					</button>
+					<button
+						onClick={toggleNotification}
+						className={`relative p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
+					>
+						알림
+						{isLoggedIn && unreadCount > 0 && (
+							<span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+						)}
+					</button>
+					<Link
+						to={isLoggedIn ? "#" : "/login"}
+						className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} focus:outline-none focus:ring-0`}
+						onClick={handleAuthClick}
+					>
+						{isLoggedIn ? '로그아웃' : '로그인'}
+					</Link>
+				</div>
 
-    // 웹소켓에서 제공하는 unreadCount 사용
+				<div className="flex items-center justify-between px-6 py-2">
+					<Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
+					<div className="flex items-center space-x-6">
+						<nav className="flex items-center space-x-6">
+							<Link to="/" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
+							<Link to="/eventoverview" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
+							<Link to="/event-registration-intro" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
+						</nav>
+						<div className="flex items-center space-x-6">
+							<HiOutlineSearch className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
+							<HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={() => {
+								if (!requireAuth(navigate, '마이페이지')) {
+									return;
+								}
 
-    return (
-        <>
-            <div className={`theme-surface theme-transition w-full flex flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
-                <div className="flex justify-end items-center px-6 py-0.5 gap-3">
-                    <button
-                        onClick={handleCustomerService}
-                        className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
-                    >
-                        고객센터
-                    </button>
-                    <button
-                        onClick={toggleNotification}
-                        className={`relative p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
-                    >
-                        알림
-                        {isLoggedIn && unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                        )}
-                    </button>
-                    <Link
-                        to={isLoggedIn ? "#" : "/login"}
-                        className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} focus:outline-none focus:ring-0`}
-                        onClick={handleAuthClick}
-                    >
-                        {isLoggedIn ? '로그아웃' : '로그인'}
-                    </Link>
-                </div>
+								(async () => {
+									const role = await getRoleCode();
+									if (!role) { navigate('/login'); return; }
+									if (role === 'ADMIN') {
+										navigate('/admin_dashboard');
+									} else if (hasHostPermission(role)) {
+										navigate('/host/dashboard');
+									} else {
+										navigate('/mypage/info');
+									}
+								})();
+							}} />
+							<HiOutlineGlobeAlt className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
+							<button
+								className="theme-btn"
+								onClick={toggleDark}
+								title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
+							>
+								{isDark ? '🌙' : '☀️'}
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
 
-                <div className="flex items-center justify-between px-6 py-2">
-                    <Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
-                    <div className="flex items-center space-x-6">
-                        <nav className="hidden md:flex items-center space-x-6">
-                            <Link to="/" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
-                            <Link to="/eventoverview" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
-                            <Link to="/event-registration-intro" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
-                        </nav>
-                        <div className="flex items-center space-x-6">
-                            <HiOutlineSearch className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
-                            <HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={() => {
-                                if (!requireAuth(navigate, '마이페이지')) {
-                                    return;
-                                }
+			{/* 모바일 하단 고정 네비게이션: 항상 표시, 안전영역 고려, 균형 정렬 */}
+			<div className={`md:hidden fixed bottom-0 left-0 right-0 border-t ${isDark ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} z-[200] pb-safe`}>
+				<div className="grid grid-cols-5 h-16 items-center">
+					<Link to="/eventoverview" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
+						<HiOutlineCalendar className={`w-6 h-6 ${activeMenu === 'EVENTS' ? 'text-black dark:text-white' : 'text-gray-500'}`} />
+						<span className={`${activeMenu === 'EVENTS' ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>EVENT</span>
+					</Link>
+					<Link to="/event-registration-intro" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
+						<HiOutlinePencilAlt className="w-6 h-6 text-gray-500" />
+						<span className="text-gray-500">APPLY</span>
+					</Link>
+					<Link to="/" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
+						<HiOutlineHome className={`w-6 h-6 ${activeMenu === 'HOME' ? 'text-black dark:text-white' : 'text-gray-500'}`} />
+						<span className={`${activeMenu === 'HOME' ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>HOME</span>
+					</Link>
+					<Link to="/mypage/tickets" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
+						<HiOutlineTicket className="w-6 h-6 text-gray-500" />
+						<span className="text-gray-500">TICKET</span>
+					</Link>
+					<button
+						className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none"
+						onClick={() => {
+							if (!requireAuth(navigate, '마이페이지')) {
+								return;
+							}
+							(async () => {
+								const role = await getRoleCode();
+								if (!role) { navigate('/login'); return; }
+								if (role === 'ADMIN') {
+									navigate('/admin_dashboard');
+								} else if (hasHostPermission(role)) {
+									navigate('/host/dashboard');
+								} else {
+									navigate('/mypage/info');
+								}
+							})();
+						}}
+					>
+						<HiOutlineUser className="w-6 h-6 text-gray-500" />
+						<span className="text-gray-500">MY</span>
+					</button>
+				</div>
+			</div>
 
-                                (async () => {
-                                    const role = await getRoleCode();
-                                    if (!role) { navigate('/login'); return; }
-                                    if (role === 'ADMIN') {
-                                        navigate('/admin_dashboard');
-                                    } else if (hasHostPermission(role)) {
-                                        navigate('/host/dashboard');
-                                    } else {
-                                        navigate('/mypage/info');
-                                    }
-                                })();
-                            }} />
-                            <HiOutlineGlobeAlt className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
-                            <button
-                                className="theme-btn"
-                                onClick={toggleDark}
-                                title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
-                            >
-                                {isDark ? '🌙' : '☀️'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div className="pb-4"></div>
-            </div>
+			{/* 알림 팝업을 TopNav 밖으로 이동 */}
+			{isNotificationOpen && (
+				<div className="fixed inset-0 z-[9999]">
+					{/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
+					<div className="absolute inset-0 bg-black bg-opacity-50" onClick={toggleNotification} />
 
-            {/* 알림 팝업을 TopNav 밖으로 이동 */}
-            {isNotificationOpen && (
-                <div className="fixed inset-0 z-[9999]">
-                    {/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
-                    <div className="absolute inset-0 bg-black bg-opacity-50" onClick={toggleNotification} />
+					{/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
+					<div className="absolute right-0 top-0 h-full w-full md:w-auto md:left-[calc(100vw-420px)] left-0 bg-white shadow-2xl flex flex-col">
+						<div className="flex items-center justify-between p-4 border-b">
+							<h2 className="text-lg font-semibold">알림</h2>
+							<div className="flex items-center gap-2">
+								<button onClick={toggleNotification} className="p-1 bg-transparent border-none hover:bg-gray-100 rounded">
+									<HiOutlineX className="w-5 h-5" />
+								</button>
+							</div>
+						</div>
 
-                    {/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
-                    <div className="absolute right-0 top-0 h-full left-[calc(100vw-420px)] bg-white shadow-2xl flex flex-col">
-                        <div className="flex items-center justify-between p-4 border-b">
-                            <h2 className="text-lg font-semibold">알림</h2>
-                            <div className="flex items-center gap-2">
-                                {notifications.some(n => n.isRead) && (
-                                    <button onClick={handleDeleteAllRead} className="text-xs text-gray-500 hover:text-black p-1 rounded">
-                                        읽은 알림 삭제
-                                    </button>
-                                )}
-                                <button onClick={toggleNotification} className="p-1 bg-transparent border-none hover:bg-gray-100 rounded">
-                                    <HiOutlineX className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {notifications.length > 0 ? (
-                                <div className="space-y-3">
-                                    {notifications.map(n => (
-                                        <div
-                                            key={n.notificationId}
-                                            className={`p-3 rounded-lg border relative group ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
-                                            onClick={() => !n.isRead && handleMarkAsRead(n.notificationId)}
-                                        >
-                                            <div className={`flex-1 ${!n.isRead ? 'cursor-pointer' : ''}`}>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h4 className={`font-semibold text-sm ${n.isRead ? 'text-gray-600' : 'text-black'}`}>{n.title}</h4>
-                                                    {!n.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
-                                                </div>
-                                                <p className="text-sm text-gray-700 mb-2">{n.message}</p>
-                                                <span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
-                                            </div>
-                                            <button
-                                                onClick={(e) => handleDeleteNotification(e, n.notificationId)}
-                                                className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <HiOutlineX className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center h-full text-gray-500">
-                                    새로운 알림이 없습니다.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+						<div className="flex-1 overflow-y-auto p-4">
+							{notifications.length > 0 ? (
+								<div className="space-y-3">
+									{notifications.map(n => (
+										<div
+											key={n.notificationId}
+											className={`p-3 rounded-lg border relative group ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
+											onClick={() => !n.isRead && handleMarkAsRead(n.notificationId)}
+										>
+											<div className={`flex-1 ${!n.isRead ? 'cursor-pointer' : ''}`}>
+												<div className="flex items-center gap-2 mb-1">
+													<h4 className={`font-semibold text-sm ${n.isRead ? 'text-gray-600' : 'text-black'}`}>{n.title}</h4>
+													{!n.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
+												</div>
+												<p className="text-sm text-gray-700 mb-2">{n.message}</p>
+												<span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
+											</div>
+											<button
+												onClick={(e) => handleDeleteNotification(e, n.notificationId)}
+												className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none opacity-0 group-hover:opacity-100 transition-opacity"
+											>
+												<HiOutlineX className="w-4 h-4" />
+											</button>
+										</div>
+									))}
+								</div>
+							) : (
+								<div className="flex items-center justify-center h-full text-gray-500">
+									새로운 알림이 없습니다.
+								</div>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
+		</>
+	);
 };

@@ -8,15 +8,13 @@ import { VenueInfo } from "./VenueInfo";
 import { CancelPolicy } from "./CancelPolicy";
 import { Reviews } from "./Reviews";
 import { Expectations } from "./Expectations";
+import { ParticipatingBooths } from "./ParticipatingBooths";
 import ExternalLink from "./ExternalLink";
 import { eventAPI } from "../../services/event";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
 import api from "../../api/axios";
 import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 import type {
-    ReviewResponseDto,
-    ReviewDto,
-    Page,
     PageableRequest,
     ReviewForEventResponseDto
 } from "../../services/types/reviewType";
@@ -25,7 +23,19 @@ import {
 } from "../../services/review";
 type WishlistResponseDto = { eventId: number };
 
+import authManager from "../../utils/auth";
+import { toast } from 'react-toastify';
 
+// 회차 정보 인터페이스
+interface EventSchedule {
+    scheduleId: number;
+    date: string; // LocalDate (YYYY-MM-DD)
+    startTime: string; // LocalTime (HH:mm)
+    endTime: string; // LocalTime (HH:mm)
+    weekday: number; // 0 (일) ~ 6 (토)
+    hasActiveTickets: boolean;
+    soldTicketCount: number;
+}
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
@@ -42,8 +52,13 @@ const EventDetail = (): JSX.Element => {
 
     const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(2025);
     const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(7);
-    const [selectedDate, setSelectedDate] = useState<number | null>(26); // 첫 번째 날짜로 초기 설정
+    const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
     const [activeTab, setActiveTab] = useState<string>("detail");
+    const [eventDates, setEventDates] = useState<string[]>([]); // 이벤트 날짜 목록
+    const [availableSchedules, setAvailableSchedules] = useState<EventSchedule[]>([]); // 선택된 날짜의 회차 목록
+    const [allSchedules, setAllSchedules] = useState<EventSchedule[]>([]); // 전체 회차 목록
+    const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null); // 선택된 회차 ID
+    const [ticketPrices, setTicketPrices] = useState<{ name: string, price: number }[]>([]); // 티켓 가격 목록
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
     const [reviews, setReviews] = useState<ReviewForEventResponseDto | null>(null)
     const [currentPage, setCurrentPage] = useState(0);
@@ -215,333 +230,13 @@ const EventDetail = (): JSX.Element => {
 
         return calendar;
     };
-
-    // 이벤트 데이터 (ID에 따라 다른 데이터 반환)
-    // const getEventData = (eventId: string) => {
-    //     if (eventId === "1") {
-    //         // 포스트 말론 공연 데이터
-    //         return {
-    //             id: "1",
-    //             title: "포스트 말론 2025 내한 공연",
-    //             subtitle: "POST MALONE LIVE in SEOUL 2025",
-    //             venue: "고척스카이돔",
-    //             ageRating: "청소년관람불가",
-    //             schedule: "2025.08.25 - 2025.08.27 20:00",
-    //             introduction: "전 세계가 주목한 슈퍼스타와 서울에서 만나는 기회!",
-    //             description: [
-    //                 "포스트 말론(Post Malone)이 드디어 한국을 찾습니다. 그래미 어워드 후보에 10번 노미네이트되며 전 세계적으로 사랑받는 아티스트의 라이브 무대를 고척스카이돔에서 만나보세요.",
-    //                 "히트곡 'Circles', 'Sunflower', 'Rockstar' 등 수많은 명곡들을 라이브로 들을 수 있는 특별한 기회입니다. 포스트 말론만의 독특한 음악 스타일과 카리스마 넘치는 퍼포먼스를 직접 경험해보세요.",
-    //             ],
-    //             notices: [
-    //                 "본 공연은 청소년관람불가 등급입니다.",
-    //                 "공연 시작 후 입장이 제한될 수 있습니다.",
-    //                 "카메라, 캠코더 등 촬영장비 반입 금지",
-    //                 "음식물 반입 금지 (생수 제외)",
-    //             ],
-    //             pricingTiers: [
-    //                 { tier: "VIP석 (스탠딩 or 중앙 1층)", price: "250,000원" },
-    //                 { tier: "R석 (1층 좌석)", price: "200,000원" },
-    //                 { tier: "S석 (2층 중앙)", price: "160,000원" },
-    //                 { tier: "A석 (2~3층 측면)", price: "120,000원" },
-    //                 { tier: "B석 (고층 뒷줄)", price: "100,000원" },
-    //             ],
-    //             seatAvailability: [
-    //                 { type: "VIP석", status: "매진" },
-    //                 { type: "R석", status: "매진" },
-    //                 { type: "S석", status: "매진" },
-    //                 { type: "A석", status: "매진" },
-    //                 { type: "B석", status: "18 석" },
-    //             ],
-    //             schedules: [
-    //                 {
-    //                     round: 1,
-    //                     date: "2025.08.25 (월)",
-    //                     time: "오후 8시 00분",
-    //                     availableSeats: 156
-    //                 },
-    //                 {
-    //                     round: 2,
-    //                     date: "2025.08.26 (화)",
-    //                     time: "오후 8시 00분",
-    //                     availableSeats: 89
-    //                 },
-    //                 {
-    //                     round: 3,
-    //                     date: "2025.08.27 (수)",
-    //                     time: "오후 8시 00분",
-    //                     availableSeats: 234
-    //                 }
-    //             ],
-    //             image: "/images/malone.jpg",
-    //             bookingInfo: {
-    //                 qrTicketInfo: [
-    //                     "• 예매(결제) 완료 즉시, [마이페이지 > 나의 예매/QR]에서 QR 티켓을 확인하실 수 있습니다.",
-    //                     "• QR 티켓은 문자 또는 이메일로도 발송되며, 행사 당일 입장 시 해당 QR 코드를 제시해 주세요.",
-    //                     "• 티켓 출력 없이 스마트폰만으로 입장 가능합니다."
-    //                 ],
-    //                 entryMethod: [
-    //                     "• 행사 당일, 입장 게이트에서 QR 코드를 스캔하여 입장하실 수 있습니다.",
-    //                     "• 원활한 입장을 위해 공연 시작 30분 전까지 도착해주시기 바랍니다.",
-    //                     "• 네트워크 상황에 따라 QR 코드 로딩이 지연될 수 있으니, 미리 티켓을 캡처 또는 저장해두시는 것을 권장합니다."
-    //                 ],
-    //                 cancellationFees: [
-    //                     "• 예매 후 7일 이내: 무료 취소",
-    //                     "• 예매 후 8일~공연 10일 전: 티켓금액의 10%",
-    //                     "• 공연 9일 전~7일 전: 티켓금액의 20%",
-    //                     "• 공연 6일 전~3일 전: 티켓금액의 30%",
-    //                     "• 공연 2일 전~당일: 취소 불가"
-    //                 ],
-    //                 refundMethod: [
-    //                     "• 온라인 취소: 예매 사이트에서 직접 취소",
-    //                     "• 전화 취소: 예매처 고객센터 연락",
-    //                     "• 환불 기간: 취소 신청 후 3~5 영업일"
-    //                 ],
-    //                 importantNotices: [
-    //                     "• 티켓 분실 시 재발급이 불가능하니 주의하시기 바랍니다.",
-    //                     "• 공연 일정 및 출연진은 주최측 사정에 의해 변경될 수 있습니다."
-    //                 ]
-    //             }
-    //         };
-    //     } else if (eventId === "2") {
-    //         // 웨딩박람회 데이터
-    //         return {
-    //             id: "2",
-    //             title: "웨덱스 웨딩박람회 in COEX",
-    //             subtitle: "WEDEX Wedding Fair in COEX",
-    //             venue: "코엑스 Hall B",
-    //             ageRating: "전체 관람가",
-    //             schedule: "2025.07.26 - 2025.07.27 11:00",
-    //             introduction: "대한민국 대표 웨딩박람회!",
-    //             description: [
-    //                 "예비 신혼부부를 위한 국내 최대 규모의 웨딩박람회가 코엑스에서 개최됩니다.",
-    //                 "예식장, 스튜디오, 드레스, 메이크업, 허니문, 한복, 예물 등 국내외 100여 개 웨딩 관련 브랜드를 한자리에서 만나보세요.",
-    //                 "현장 계약 시 다양한 경품 이벤트와 혜택이 제공됩니다.",
-    //                 "올인원 웨딩 준비의 시작, 웨덱스에서 함께하세요."
-    //             ],
-    //             notices: [
-    //                 "본 박람회는 사전 예약자에 한해 무료 입장이 가능합니다.",
-    //                 "사전 등록 시 입장권과 웨딩 키트가 제공됩니다.",
-    //                 "일부 부스는 상담 예약이 필요할 수 있습니다.",
-    //                 "음식물 반입은 제한됩니다 (유아식 제외)"
-    //             ],
-    //             pricingTiers: [
-    //                 { tier: "일반 입장", price: "무료" },
-    //                 { tier: "사전 등록", price: "무료" },
-    //                 { tier: "VIP 패키지", price: "50,000원" },
-    //                 { tier: "컨설팅 패키지", price: "100,000원" }
-    //             ],
-    //             seatAvailability: [
-    //                 { type: "일반 입장", status: "예약 가능" },
-    //                 { type: "사전 등록", status: "예약 가능" },
-    //                 { type: "VIP 패키지", status: "예약 가능" },
-    //                 { type: "컨설팅 패키지", status: "예약 가능" }
-    //             ],
-    //             schedules: [
-    //                 {
-    //                     round: 1,
-    //                     date: "2025.07.26 (토)",
-    //                     time: "오전 11시 00분",
-    //                     availableSeats: 500
-    //                 },
-    //                 {
-    //                     round: 2,
-    //                     date: "2025.07.26 (토)",
-    //                     time: "오후 1시 00분",
-    //                     availableSeats: 500
-    //                 },
-    //                 {
-    //                     round: 3,
-    //                     date: "2025.07.26 (토)",
-    //                     time: "오후 3시 00분",
-    //                     availableSeats: 500
-    //                 },
-    //                 {
-    //                     round: 4,
-    //                     date: "2025.07.26 (토)",
-    //                     time: "오후 5시 00분",
-    //                     availableSeats: 500
-    //                 },
-    //                 {
-    //                     round: 5,
-    //                     date: "2025.07.27 (일)",
-    //                     time: "오전 11시 00분",
-    //                     availableSeats: 500
-    //                 },
-    //                 {
-    //                     round: 6,
-    //                     date: "2025.07.27 (일)",
-    //                     time: "오후 1시 00분",
-    //                     availableSeats: 500
-    //                 },
-    //                 {
-    //                     round: 7,
-    //                     date: "2025.07.27 (일)",
-    //                     time: "오후 3시 00분",
-    //                     availableSeats: 500
-    //                 },
-    //                 {
-    //                     round: 8,
-    //                     date: "2025.07.27 (일)",
-    //                     time: "오후 5시 00분",
-    //                     availableSeats: 500
-    //                 }
-    //             ],
-    //             image: "/images/wedding.png",
-    //             bookingInfo: {
-    //                 qrTicketInfo: [
-    //                     "• 사전 등록 완료 즉시, [마이페이지 > 나의 예매/QR]에서 QR 티켓을 확인하실 수 있습니다.",
-    //                     "• QR 티켓은 문자 또는 이메일로도 발송되며, 박람회 당일 입장 시 해당 QR 코드를 제시해 주세요.",
-    //                     "• 티켓 출력 없이 스마트폰만으로 입장 가능합니다."
-    //                 ],
-    //                 entryMethod: [
-    //                     "• 박람회 당일, 입장 게이트에서 QR 코드를 스캔하여 입장하실 수 있습니다.",
-    //                     "• 원활한 입장을 위해 박람회 시작 30분 전까지 도착해주시기 바랍니다.",
-    //                     "• 네트워크 상황에 따라 QR 코드 로딩이 지연될 수 있으니, 미리 티켓을 캡처 또는 저장해두시는 것을 권장합니다."
-    //                 ],
-    //                 cancellationFees: [
-    //                     "• 사전 등록 후 7일 이내: 무료 취소",
-    //                     "• 사전 등록 후 8일~박람회 10일 전: 등록비의 10%",
-    //                     "• 박람회 9일 전~7일 전: 등록비의 20%",
-    //                     "• 박람회 6일 전~3일 전: 등록비의 30%",
-    //                     "• 박람회 2일 전~당일: 취소 불가"
-    //                 ],
-    //                 refundMethod: [
-    //                     "• 온라인 취소: 예매 사이트에서 직접 취소",
-    //                     "• 전화 취소: 예매처 고객센터 연락",
-    //                     "• 환불 기간: 취소 신청 후 3~5 영업일"
-    //                 ],
-    //                 importantNotices: [
-    //                     "• QR 티켓 분실 시 재발급이 불가능하니 주의하시기 바랍니다.",
-    //                     "• 박람회 일정 및 참가업체는 주최측 사정에 의해 변경될 수 있습니다.",
-    //                     "• 사전 등록 시 제공되는 웨딩 키트는 현장에서 수령하실 수 있습니다."
-    //                 ]
-    //             }
-    //         };
-    //     }
-    //
-    //     // 기본 데이터 (기존 웨딩박람회 데이터)
-    //     return {
-    //         id: "2",
-    //         title: "웨덱스 웨딩박람회 in COEX",
-    //         subtitle: "WEDEX Wedding Fair in COEX",
-    //         venue: "코엑스 Hall B",
-    //         ageRating: "전체 관람가",
-    //         schedule: "2025.07.26 - 2025.07.27 11:00",
-    //         introduction: "대한민국 대표 웨딩박람회!",
-    //         description: [
-    //             "예비 신혼부부를 위한 국내 최대 규모의 웨딩박람회가 코엑스에서 개최됩니다.",
-    //             "예식장, 스튜디오, 드레스, 메이크업, 허니문, 한복, 예물 등 국내외 100여 개 웨딩 관련 브랜드를 한자리에서 만나보세요.",
-    //             "현장 계약 시 다양한 경품 이벤트와 혜택이 제공됩니다.",
-    //             "올인원 웨딩 준비의 시작, 웨덱스에서 함께하세요."
-    //         ],
-    //         notices: [
-    //             "본 박람회는 사전 예약자에 한해 무료 입장이 가능합니다.",
-    //             "사전 등록 시 입장권과 웨딩 키트가 제공됩니다.",
-    //             "일부 부스는 상담 예약이 필요할 수 있습니다.",
-    //             "음식물 반입은 제한됩니다 (유아식 제외)"
-    //         ],
-    //         pricingTiers: [
-    //             { tier: "일반 입장", price: "무료" },
-    //             { tier: "사전 등록", price: "무료" },
-    //             { tier: "VIP 패키지", price: "50,000원" },
-    //             { tier: "컨설팅 패키지", price: "100,000원" }
-    //         ],
-    //         seatAvailability: [
-    //             { type: "일반 입장", status: "예약 가능" },
-    //             { type: "사전 등록", status: "예약 가능" },
-    //             { type: "VIP 패키지", status: "예약 가능" },
-    //             { type: "컨설팅 패키지", status: "예약 가능" }
-    //         ],
-    //         schedules: [
-    //             {
-    //                 round: 1,
-    //                 date: "2025.07.26 (토)",
-    //                 time: "오전 11시 00분",
-    //                 availableSeats: 500
-    //             },
-    //             {
-    //                 round: 2,
-    //                 date: "2025.07.26 (토)",
-    //                 time: "오후 1시 00분",
-    //                 availableSeats: 500
-    //             },
-    //             {
-    //                 round: 3,
-    //                 date: "2025.07.26 (토)",
-    //                 time: "오후 3시 00분",
-    //                 availableSeats: 500
-    //             },
-    //             {
-    //                 round: 4,
-    //                 date: "2025.07.26 (토)",
-    //                 time: "오후 5시 00분",
-    //                 availableSeats: 500
-    //             },
-    //             {
-    //                 round: 5,
-    //                 date: "2025.07.27 (일)",
-    //                 time: "오전 11시 00분",
-    //                 availableSeats: 500
-    //             },
-    //             {
-    //                 round: 6,
-    //                 date: "2025.07.27 (일)",
-    //                 time: "오후 1시 00분",
-    //                 availableSeats: 500
-    //             },
-    //             {
-    //                 round: 7,
-    //                 date: "2025.07.27 (일)",
-    //                 time: "오후 3시 00분",
-    //                 availableSeats: 500
-    //             },
-    //             {
-    //                 round: 8,
-    //                 date: "2025.07.27 (일)",
-    //                 time: "오후 5시 00분",
-    //                 availableSeats: 500
-    //             }
-    //         ],
-    //         image: "/images/wedding.png",
-    //         bookingInfo: {
-    //             qrTicketInfo: [
-    //                 "• 사전 등록 완료 즉시, [마이페이지 > 나의 예매/QR]에서 QR 티켓을 확인하실 수 있습니다.",
-    //                 "• QR 티켓은 문자 또는 이메일로도 발송되며, 박람회 당일 입장 시 해당 QR 코드를 제시해 주세요.",
-    //                 "• 티켓 출력 없이 스마트폰만으로 입장 가능합니다."
-    //             ],
-    //             entryMethod: [
-    //                 "• 박람회 당일, 입장 게이트에서 QR 코드를 스캔하여 입장하실 수 있습니다.",
-    //                 "• 원활한 입장을 위해 박람회 시작 30분 전까지 도착해주시기 바랍니다.",
-    //                 "• 네트워크 상황에 따라 QR 코드 로딩이 지연될 수 있으니, 미리 티켓을 캡처 또는 저장해두시는 것을 권장합니다."
-    //             ],
-    //             cancellationFees: [
-    //                 "• 사전 등록 후 7일 이내: 무료 취소",
-    //                 "• 사전 등록 후 8일~박람회 10일 전: 등록비의 10%",
-    //                 "• 박람회 9일 전~7일 전: 등록비의 20%",
-    //                 "• 박람회 6일 전~3일 전: 등록비의 30%",
-    //                 "• 박람회 2일 전~당일: 취소 불가"
-    //             ],
-    //             refundMethod: [
-    //                 "• 온라인 취소: 예매 사이트에서 직접 취소",
-    //                 "• 전화 취소: 예매처 고객센터 연락",
-    //                 "• 환불 기간: 취소 신청 후 3~5 영업일"
-    //             ],
-    //             importantNotices: [
-    //                 "• QR 티켓 분실 시 재발급이 불가능하니 주의하시기 바랍니다.",
-    //                 "• 박람회 일정 및 참가업체는 주최측 사정에 의해 변경될 수 있습니다.",
-    //                 "• 사전 등록 시 제공되는 웨딩 키트는 현장에서 수령하실 수 있습니다."
-    //             ]
-    //         }
-    //     };
-    // };
-
+    
     // 이벤트 데이터 로드 (실제로는 API 호출)
     useEffect(() => {
         const loadEventData = async () => {
             try {
                 setLoading(true);
-                // 실제로는 API 호출: const data = await eventApi.getEventById(eventId);
-                // 지금은 임시 데이터 사용
+                // 이벤트 상세 정보 로드
                 const data = await eventAPI.getEventDetail(Number(eventId));
 
                 const params: PageableRequest = {
@@ -556,6 +251,40 @@ const EventDetail = (): JSX.Element => {
                     setReviews(reviewData);
                     setLoading(false);
                 }, 500);
+
+                // 이벤트 날짜 범위에서 날짜 목록 생성
+                if (data.startDate && data.endDate) {
+                    const startDate = new Date(data.startDate);
+                    const endDate = new Date(data.endDate);
+                    const dateList: string[] = [];
+
+                    const currentDate = new Date(startDate);
+                    while (currentDate <= endDate) {
+                        dateList.push(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD 형식
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+
+                    setEventDates(dateList);
+
+                    // 달력을 이벤트 시작 월로 설정
+                    setCurrentCalendarYear(startDate.getFullYear());
+                    setCurrentCalendarMonth(startDate.getMonth() + 1); // getMonth()는 0부터 시작하므로 +1
+
+                    // 전체 회차 데이터 로드
+                    await loadAllSchedules();
+
+                    // 티켓 가격 정보 로드
+                    await loadTicketPrices();
+
+                    // 첫 번째 날짜를 기본 선택
+                    if (dateList.length > 0) {
+                        setSelectedDate(dateList[0]);
+                        // loadSchedulesForDate 대신 전체 데이터에서 필터링
+                        filterSchedulesForDate(dateList[0]);
+                    }
+                }
+
+
             } catch (error) {
                 console.error('이벤트 데이터 로드 실패:', error);
                 setLoading(false);
@@ -566,6 +295,257 @@ const EventDetail = (): JSX.Element => {
             loadEventData();
         }
     }, [eventId]);
+
+    // 전체 회차 데이터 로드 함수
+    const loadAllSchedules = async () => {
+        try {
+            console.log('전체 회차 조회 시도...');
+            const response = await api.get(`/api/events/${eventId}/schedule`);
+
+            const scheduleList = response.data;
+            console.log('API로부터 받은 전체 회차 목록:', scheduleList);
+
+            // 전체 회차 데이터 포맷팅
+            const formattedSchedules = scheduleList.map((schedule: any) => ({
+                scheduleId: schedule.scheduleId,
+                date: schedule.date,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                weekday: schedule.weekday,
+                hasActiveTickets: schedule.hasActiveTickets || false,
+                soldTicketCount: schedule.soldTicketCount || 0
+            }));
+
+            setAllSchedules(formattedSchedules);
+            console.log('전체 회차 데이터 저장 완료:', formattedSchedules);
+
+        } catch (error) {
+            console.error('전체 회차 로드 실패:', error);
+            // 에러 발생 시에도 목업 데이터로 폴백
+            const mockAllSchedules = generateMockSchedulesForAllDates();
+            setAllSchedules(mockAllSchedules);
+            console.log('목업 전체 회차 데이터 사용:', mockAllSchedules);
+        }
+    };
+
+    // 선택된 날짜의 회차만 필터링하는 함수
+    const filterSchedulesForDate = (date: string) => {
+        const dateSchedules = allSchedules.filter(schedule => schedule.date === date);
+        setAvailableSchedules(dateSchedules);
+
+        // 첫 번째 회차를 기본 선택
+        if (dateSchedules.length > 0) {
+            setSelectedScheduleId(dateSchedules[0].scheduleId);
+        } else {
+            setSelectedScheduleId(null);
+        }
+
+        console.log(`${date} 날짜의 회차:`, dateSchedules);
+    };
+
+    // 목업 회차 데이터 생성 함수 (단일 날짜)
+    const generateMockSchedules = (date: string) => {
+        const schedules = [];
+        const times = [
+            { start: '14:00', end: '16:00' },
+            { start: '19:00', end: '21:00' }
+        ];
+
+        times.forEach((time, index) => {
+            schedules.push({
+                scheduleId: index + 1,
+                date: date,
+                startTime: time.start,
+                endTime: time.end,
+                weekday: new Date(date + 'T00:00:00').getDay(),
+                hasActiveTickets: true,
+                soldTicketCount: Math.floor(Math.random() * 50)
+            });
+        });
+
+        return schedules;
+    };
+
+    // 전체 날짜에 대한 목업 회차 데이터 생성 함수
+    const generateMockSchedulesForAllDates = () => {
+        const allSchedules: EventSchedule[] = [];
+        let scheduleIdCounter = 1;
+
+        eventDates.forEach(date => {
+            const times = [
+                { start: '14:00', end: '16:00' },
+                { start: '19:00', end: '21:00' }
+            ];
+
+            // 날짜에 따라 회차 수와 예매 가능 여부 결정
+            const dateHash = date.split('-').reduce((sum, part) => sum + parseInt(part), 0);
+            const hasSchedules = dateHash % 4 !== 0; // 75% 확률로 회차 존재
+
+            if (hasSchedules) {
+                times.forEach((time, index) => {
+                    const hasActiveTickets = (dateHash + index) % 3 !== 0; // 약 66% 확률로 예매 가능
+                    allSchedules.push({
+                        scheduleId: scheduleIdCounter++,
+                        date: date,
+                        startTime: time.start,
+                        endTime: time.end,
+                        weekday: new Date(date + 'T00:00:00').getDay(),
+                        hasActiveTickets: hasActiveTickets,
+                        soldTicketCount: Math.floor(Math.random() * 50)
+                    });
+                });
+            }
+        });
+
+        return allSchedules;
+    };
+
+    // 티켓 가격 정보 로드 함수
+    const loadTicketPrices = async () => {
+
+        try {
+            console.log('이벤트 티켓 정보 조회 시도...', { eventId });
+
+            const response = await api.get(`/api/events/${eventId}/tickets`);
+            const ticketList = response.data;
+            console.log('API로부터 받은 이벤트 티켓 목록:', ticketList);
+
+            if (!ticketList || ticketList.length === 0) {
+                console.log('조회된 티켓이 없습니다.');
+                setTicketPrices([]); // 빈 배열로 설정
+                return;
+            }
+
+            // 티켓 가격 목록 생성
+            const priceList = ticketList.map((ticket: any) => {
+                console.log('개별 티켓 데이터:', ticket);
+                return {
+                    name: ticket.name || ticket.ticketName || ticket.title || '이름 없음',
+                    price: ticket.price || 0
+                };
+            }).sort((a, b) => b.price - a.price); // 가격 높은 순으로 정렬
+
+            setTicketPrices(priceList);
+            console.log('이벤트 티켓 가격 목록:', priceList);
+
+        } catch (error) {
+            console.error('티켓 가격 로드 실패:', error);
+            console.error('에러 상세 정보:', {
+                message: error instanceof Error ? error.message : error,
+                stack: error instanceof Error ? error.stack : undefined,
+                eventId
+            });
+            // 에러 발생 시에도 빈 배열로 설정 (목업 데이터 사용하지 않음)
+            setTicketPrices([]);
+        }
+    };
+
+    // 달력 날짜 생성 함수
+    const generateCalendarDays = () => {
+        const year = currentCalendarYear;
+        const month = currentCalendarMonth;
+
+        // 해당 월의 첫째 날과 마지막 날
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+
+        // 첫째 날의 요일 (0: 일요일, 6: 토요일)
+        const firstDayOfWeek = firstDay.getDay();
+
+        // 마지막 날의 날짜
+        const lastDate = lastDay.getDate();
+
+        // 이전 달의 마지막 날들
+        const prevMonth = new Date(year, month - 2, 0);
+        const prevLastDate = prevMonth.getDate();
+
+        const days = [];
+
+        // 이전 달의 날짜들 (회색으로 표시)
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const date = prevLastDate - i;
+            const dateString = `${year}-${String(month - 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        // 현재 달의 날짜들
+        for (let date = 1; date <= lastDate; date++) {
+            const dateString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: true
+            });
+        }
+
+        // 다음 달의 날짜들 (달력을 6주로 맞추기 위해)
+        const remainingDays = 42 - days.length; // 6주 * 7일 = 42일
+        for (let date = 1; date <= remainingDays; date++) {
+            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        return days;
+    };
+
+    // 날짜 선택 핸들러
+    const handleDateSelect = (date: string) => {
+        setSelectedDate(date);
+        setSelectedScheduleId(null); // 기존 회차 선택 초기화
+        filterSchedulesForDate(date);
+    };
+
+    // 회차 선택 핸들러
+    const handleScheduleSelect = (scheduleId: number) => {
+        setSelectedScheduleId(scheduleId);
+    };
+
+    // 선택된 회차 정보 가져오기
+    const getSelectedSchedule = () => {
+        return availableSchedules.find(schedule => schedule.scheduleId === selectedScheduleId);
+    };
+
+    // 현재 날짜(오늘) 가져오기
+    const getTodayDateString = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // 날짜가 오늘 이후인지 확인 (오늘 포함)
+    const isDateInFuture = (date: string) => {
+        const todayString = getTodayDateString();
+        return date >= todayString;
+    };
+
+    // 특정 날짜의 예매 가능 여부 확인
+    const isDateBookable = (date: string) => {
+        // 오늘 이전 날짜는 예매 불가
+        if (!isDateInFuture(date)) {
+            return false;
+        }
+        
+        // 전체 회차 데이터에서 해당 날짜의 회차들을 찾아서 예매 가능 여부 확인
+        const dateSchedules = allSchedules.filter(schedule => schedule.date === date);
+
+        // 회차가 없으면 예매 불가능
+        if (dateSchedules.length === 0) {
+            return false;
+        }
+
+        // 하나라도 예매 가능한 회차가 있으면 예매 가능
+        return dateSchedules.some(schedule => schedule.hasActiveTickets);
+    };
 
     if (loading) {
         return (
@@ -661,27 +641,33 @@ const EventDetail = (): JSX.Element => {
 
                             <div className="flex items-start">
                                 <span className="text-base text-[#00000099] font-semibold w-20">가격</span>
-                                <div className="grid grid-cols-2 gap-x-4">
-                                    {/* TODO: 티켓 및 회차 연결 */}
-                                    <p>티켓 및 회차 연결</p>
-                                    {/*<div className="space-y-1">*/}
-                                    {/*    {eventData.pricingTiers.map((tier: any, index: number) => (*/}
-                                    {/*        <p key={index} className="text-base">*/}
-                                    {/*            {tier.tier}*/}
-                                    {/*        </p>*/}
-                                    {/*    ))}*/}
-                                    {/*</div>*/}
-                                    {/*<div className="space-y-1 font-semibold">*/}
-                                    {/*    {eventData.pricingTiers.map((tier: any, index: number) => (*/}
-                                    {/*        <p key={index} className="text-base">*/}
-                                    {/*            {tier.price}*/}
-                                    {/*        </p>*/}
-                                    {/*    ))}*/}
-                                    {/*</div>*/}
+                                <div className="flex-1">
+                                    {ticketPrices.length > 0 ? (
+                                        <div className="grid grid-cols-2 gap-x-4">
+                                            <div className="space-y-1">
+                                                {ticketPrices.map((ticket, index) => (
+                                                    <p key={index} className="text-base">
+                                                        {ticket.name}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                            <div className="space-y-1 font-semibold">
+                                                {ticketPrices.map((ticket, index) => (
+                                                    <p key={index} className="text-base">
+                                                        {ticket.price === 0 ? '무료' : `${ticket.price.toLocaleString()}원`}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-500 text-base">
+                                            티켓이 등록되지 않았습니다
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={handleInquiry}
-                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm"
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm ml-4"
                                 >
                                     담당자에게 문의하기
                                 </button>
@@ -692,71 +678,287 @@ const EventDetail = (): JSX.Element => {
 
                 {/* Date and Time Selection */}
                 <div className="mt-16 mb-8 border border-gray-200 rounded-lg">
-                    <div className="p-0 flex">
-                        <div className="flex-1 p-6">
-                            <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">
-                                날짜 선택
-                            </h3>
-                            <p>회차 연결</p>
-                            {/*    <div className="space-y-3">*/}
-                            {/*        {eventData.schedules?.filter((schedule: any) => {*/}
-                            {/*            // 선택된 날짜와 일치하는 회차만 필터링*/}
-                            {/*            const scheduleDate = schedule.date.split(' ')[0]; // "2025.07.26" 부분만 추출*/}
-                            {/*            const selectedDateStr = `${currentCalendarYear}.${String(currentCalendarMonth).padStart(2, '0')}.${String(selectedDate).padStart(2, '0')}`;*/}
-                            {/*            return scheduleDate === selectedDateStr;*/}
-                            {/*        }).map((schedule: any, index: number) => (*/}
-                            {/*            <div*/}
-                            {/*                key={index}*/}
-                            {/*                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedSchedule === schedule*/}
-                            {/*                    ? 'border-blue-500 bg-blue-50'*/}
-                            {/*                    : 'border-gray-200 hover:bg-gray-50'*/}
-                            {/*                    }`}*/}
-                            {/*                onClick={() => setSelectedSchedule(schedule)}*/}
-                            {/*            >*/}
-                            {/*                <div className="flex items-center gap-3">*/}
-                            {/*                    <span className="text-sm font-medium text-gray-600">*/}
-                            {/*                        {index + 1}회차*/}
-                            {/*                    </span>*/}
-                            {/*                    <span className="text-base font-semibold text-[#212121]">*/}
-                            {/*                        {schedule.time}*/}
-                            {/*                    </span>*/}
-                            {/*                </div>*/}
-                            {/*            </div>*/}
-                            {/*        ))}*/}
-                            {/*    </div>*/}
-                            {/*</div>*/}
+                    <div className="p-6">
+                        <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">
+                            날짜 및 회차 선택
+                        </h3>
 
-                            {/*/!* Seat Availability *!/*/}
-                            {/*<div className="w-[361px] bg-[#e7eaff] rounded-r-[10px]">*/}
-                            {/*    <div className="p-6">*/}
-                            {/*        <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">*/}
-                            {/*            예매 가능한 좌석*/}
-                            {/*        </h3>*/}
-                            {/*        <div className="space-y-4">*/}
-                            {/*            {selectedSchedule ? (*/}
-                            {/*                // 선택된 회차가 있을 때 해당 회차의 좌석 정보 표시*/}
-                            {/*                <div className="space-y-3">*/}
-                            {/*                    {eventData.seatAvailability.map((seat: any, index: number) => (*/}
-                            {/*                        <div*/}
-                            {/*                            key={index}*/}
-                            {/*                            className="flex justify-between items-center"*/}
-                            {/*                        >*/}
-                            {/*                            <span className="text-base font-semibold text-[#00000080]">*/}
-                            {/*                                {seat.type}*/}
-                            {/*                            </span>*/}
-                            {/*                            <span className="text-base font-semibold text-right">*/}
-                            {/*                                {seat.status}*/}
-                            {/*                            </span>*/}
-                            {/*                        </div>*/}
-                            {/*                    ))}*/}
-                            {/*                </div>*/}
-                            {/*            ) : (*/}
-                            {/*                // 선택된 회차가 없을 때 안내 메시지*/}
-                            {/*                <div className="text-center text-gray-500 py-8">*/}
-                            {/*                    시간을 선택해주세요*/}
-                            {/*                </div>*/}
-                            {/*            )}*/}
-                            {/*        </div>*/}
+                        <div className="flex gap-6">
+                            {/* 좌측: 달력 - 30% */}
+                            <div className="w-[30%]">
+                                <h4 className="text-base font-medium text-gray-900 mb-4">날짜 선택</h4>
+
+                                {/* 달력 헤더 */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <h5 className="text-sm font-medium text-gray-900">
+                                        {currentCalendarYear}년 {currentCalendarMonth}월
+                                    </h5>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => {
+                                                if (currentCalendarMonth === 1) {
+                                                    setCurrentCalendarMonth(12);
+                                                    setCurrentCalendarYear(currentCalendarYear - 1);
+                                                } else {
+                                                    setCurrentCalendarMonth(currentCalendarMonth - 1);
+                                                }
+                                            }}
+                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                        >
+                                            ◀
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (currentCalendarMonth === 12) {
+                                                    setCurrentCalendarMonth(1);
+                                                    setCurrentCalendarYear(currentCalendarYear + 1);
+                                                } else {
+                                                    setCurrentCalendarMonth(currentCalendarMonth + 1);
+                                                }
+                                            }}
+                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                        >
+                                            ▶
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 요일 헤더 */}
+                                <div className="grid grid-cols-7 gap-1 mb-1">
+                                    {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+                                        <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                                            }`}>
+                                            {day}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* 달력 날짜 그리드 */}
+                                <div className="grid grid-cols-7 gap-1">
+                                    {generateCalendarDays().map((day, index) => {
+                                        const isEventDate = eventDates.includes(day.dateString);
+                                        const isSelected = selectedDate === day.dateString;
+                                        const isCurrentMonth = day.isCurrentMonth;
+                                        const isBookable = isEventDate && isDateBookable(day.dateString);
+                                        const isPastDate = isEventDate && !isDateInFuture(day.dateString);
+
+                                        return (
+                                            <button
+                                                key={index}
+                                                onClick={() => (isEventDate && !isPastDate) ? handleDateSelect(day.dateString) : null}
+                                                disabled={!isEventDate || !isCurrentMonth || isPastDate}
+                                                className={`p-1.5 text-xs rounded transition-colors relative h-8 ${!isCurrentMonth
+                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                    : isPastDate
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                        : isSelected && isEventDate
+                                                            ? 'bg-blue-600 text-white'
+                                                            : isEventDate && isBookable
+                                                                ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer'
+                                                                : isEventDate && !isBookable
+                                                                    ? 'bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer'
+                                                                    : 'text-gray-400 cursor-not-allowed'
+                                                    }`}
+                                            >
+                                                {day.date}
+                                                {isEventDate && isCurrentMonth && (
+                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                                                        isPastDate 
+                                                            ? 'bg-gray-400' 
+                                                            : isBookable 
+                                                                ? 'bg-green-600' 
+                                                                : 'bg-pink-600'
+                                                        }`}></div>
+                                                )}
+                                                {isPastDate && isEventDate && isCurrentMonth && (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="w-4 h-0.5 bg-gray-400 rotate-45 absolute"></div>
+                                                        <div className="w-4 h-0.5 bg-gray-400 -rotate-45 absolute"></div>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* 중앙: 회차 목록 - 40% */}
+                            <div className="w-[40%]">
+                                <h4 className="text-base font-medium text-gray-900 mb-4">
+                                    회차 선택 {selectedDate && `(${selectedDate})`}
+                                </h4>
+
+                                <div className="space-y-2 max-h-80 overflow-y-auto">
+                                    {availableSchedules.length > 0 ? (
+                                        availableSchedules.map((schedule) => (
+                                            <div
+                                                key={schedule.scheduleId}
+                                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedScheduleId === schedule.scheduleId
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 hover:bg-gray-50'
+                                                    }`}
+                                                onClick={() => setSelectedScheduleId(schedule.scheduleId)}
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold text-[#212121]">
+                                                        {schedule.startTime} - {schedule.endTime}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {schedule.hasActiveTickets ? (
+                                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                            예매가능
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                                            매진
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center text-gray-500 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                                            {selectedDate ? (
+                                                <div>
+                                                    <p className="text-sm mb-1">회차가 없습니다</p>
+                                                    <p className="text-xs text-gray-400">다른 날짜를 선택해주세요</p>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="text-sm mb-1">날짜를 선택해주세요</p>
+                                                    <p className="text-xs text-gray-400">달력에서 날짜를 클릭하세요</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 우측: 예매 가능 여부 정보 - 30% */}
+                            <div className="w-[30%]">
+                                <h4 className="text-base font-medium text-gray-900 mb-4">행사 일별 예매 현황</h4>
+
+                                <div className="space-y-3">
+                                    {/* 범례 */}
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <h5 className="text-sm font-medium text-gray-900 mb-2">상태 표시</h5>
+                                        <div className="flex flex-wrap gap-4 text-xs">
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-green-100 rounded border border-green-300"></div>
+                                                <span>예매 가능</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-pink-100 rounded border border-pink-300"></div>
+                                                <span>예매 불가능</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-gray-300 rounded"></div>
+                                                <span>지난 날짜</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                                                <span>선택된 날짜</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 행사 일별 예매 현황 목록 */}
+                                    <div className="bg-white border rounded-lg">
+                                        <div className="p-3 border-b bg-gray-50">
+                                            <h5 className="text-sm font-medium text-gray-900">전체 행사일 현황</h5>
+                                        </div>
+                                        <div className="max-h-60 overflow-y-auto">
+                                            {eventDates.map((date) => {
+                                                const isBookable = isDateBookable(date);
+                                                const isSelected = selectedDate === date;
+                                                const isPastDate = !isDateInFuture(date);
+                                                const dateObj = new Date(date + 'T00:00:00');
+                                                const dayName = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
+
+                                                return (
+                                                    <div
+                                                        key={date}
+                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 ${
+                                                            isPastDate 
+                                                                ? 'cursor-not-allowed opacity-60' 
+                                                                : 'cursor-pointer hover:bg-gray-50'
+                                                            } ${isSelected ? 'bg-blue-50' : ''}`}
+                                                        onClick={() => !isPastDate ? handleDateSelect(date) : null}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-3 h-3 rounded ${
+                                                                isPastDate
+                                                                    ? 'bg-gray-300'
+                                                                    : isSelected
+                                                                        ? 'bg-blue-600'
+                                                                        : isBookable
+                                                                            ? 'bg-green-100 border border-green-300'
+                                                                            : 'bg-pink-100 border border-pink-300'
+                                                                }`}></div>
+                                                            <div>
+                                                                <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
+                                                                    {date}
+                                                                </span>
+                                                                <span className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                    ({dayName})
+                                                                </span>
+                                                                {isPastDate && (
+                                                                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
+                                                                        지난 날짜
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {isPastDate ? (
+                                                                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
+                                                                    예매 불가
+                                                                </span>
+                                                            ) : isBookable ? (
+                                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                                                    예매가능
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">
+                                                                    예매불가
+                                                                </span>
+                                                            )}
+                                                            {isSelected && (
+                                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                                                    선택됨
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 요약 정보 */}
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <div className="grid grid-cols-3 gap-3 text-center">
+                                            <div>
+                                                <div className="text-lg font-bold text-gray-900">{eventDates.length}</div>
+                                                <div className="text-xs text-gray-600">총 행사일</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-lg font-bold text-green-600">
+                                                    {eventDates.filter(date => isDateBookable(date)).length}
+                                                </div>
+                                                <div className="text-xs text-gray-600">예매가능일</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-lg font-bold text-pink-600">
+                                                    {eventDates.filter(date => !isDateBookable(date)).length}
+                                                </div>
+                                                <div className="text-xs text-gray-600">예매불가일</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -766,18 +968,23 @@ const EventDetail = (): JSX.Element => {
                     <button
                         onClick={() => {
                             if (eventData.mainCategory !== "공연") {
-                                // 콘서트가 아닌 경우 BookingPage로 이동
-                                navigate(`/booking/${eventId}`);
+                                // 회차가 선택되지 않았으면 경고
+                                if (!selectedScheduleId) {
+                                    toast.error('회차를 선택해주세요.');
+                                    return;
+                                }
+                                // 티켓 예매 페이지로 scheduleId와 함께 이동
+                                navigate(`/ticket-reservation/${eventId}?scheduleId=${selectedScheduleId}`);
                             } else {
                                 // 공연의 경우 외부 예매 링크 모달
                                 setIsExternalBookingOpen(true);
                             }
                         }}
-                    // disabled={!selectedDate || !selectedSchedule}
-                    // className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${selectedDate && selectedSchedule
-                    //     ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
-                    //     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    //     }`}
+                        disabled={eventData.mainCategory !== "공연" && !selectedScheduleId}
+                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${eventData.mainCategory === "공연" || selectedScheduleId
+                            ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
                     >
                         예매하기
                     </button>
@@ -793,7 +1000,8 @@ const EventDetail = (): JSX.Element => {
                                 { id: "location", name: "장소정보" },
                                 { id: "booking", name: "예매/취소안내" },
                                 { id: "review", name: "관람평" },
-                                { id: "expectation", name: "기대평" }
+                                { id: "expectation", name: "기대평" },
+                                ...(eventData.mainCategory === "박람회" ? [{ id: "booths", name: "참가부스" }] : [])
                             ].map((tab) => (
                                 <li
                                     key={tab.id}
@@ -871,6 +1079,12 @@ const EventDetail = (): JSX.Element => {
 
                         {activeTab === "expectation" && (
                             <Expectations />
+                        )}
+
+                        {activeTab === "booths" && (
+                            <div data-tab-content="booths">
+                                <ParticipatingBooths eventId={eventId} />
+                            </div>
                         )}
                     </div>
                 </div>

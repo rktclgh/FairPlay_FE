@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { hasEventManagerPermission } from "../utils/permissions";
 import { getCachedRoleCode } from "../utils/role";
+import authManager from "../utils/auth";
 
 interface HostSideNavProps {
     className?: string;
@@ -10,6 +11,27 @@ interface HostSideNavProps {
 export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
     const location = useLocation();
     const userRole = getCachedRoleCode();
+    const [managedEventId, setManagedEventId] = useState<number | null>(null);
+
+    //userId를 기준으로 담당 행사 정보 가져오기
+    useEffect(() => {
+        const fetchManagedEvent = async () => {
+            try {
+                if (userRole === 'EVENT_MANAGER') {
+                    const response = await authManager.authenticatedFetch('/api/events/manager/event');
+                    if (response.ok) {
+                        const eventId = await response.json();
+                        setManagedEventId(eventId);
+                        console.log('담당 행사 ID 조회 성공:', eventId);
+                    }
+                }
+            } catch (error) {
+                console.error('담당 행사 조회 실패:', error);
+            }
+        };
+
+        fetchManagedEvent();
+    }, [userRole]);
 
     return (
         <div className={`w-[240px] h-[800px] bg-white ${className}`}>
@@ -142,6 +164,25 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                             >
                                 회차 관리
                             </Link>
+                            <Link
+                                to="/host/advertisement-application"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/advertisement-application"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/host/advertisement-application" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/advertisement-application" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/advertisement-application" ? "black" : "#00000080";
+                                }}
+                            >
+                                광고 신청
+                            </Link>
                         </div>
                     </div>
 
@@ -150,8 +191,8 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">참가자 관리</h3>
                         <div className="space-y-1">
                             <Link
-                                to="/host/reservation-list"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/reservation-list"
+                                to={managedEventId ? `/host/reservation-list/${managedEventId}` : "/host/reservation-list"}
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname.startsWith("/host/reservation-list")
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                     : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
                                     }`}
@@ -233,6 +274,53 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     }}
                                 >
                                     부스 신청 목록
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 부스 체험 카테고리 - EVENT_MANAGER 권한 필요 */}
+                    {hasEventManagerPermission(userRole || '') && (
+                        <div className="mb-4 space-y-0">
+                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">부스 관리</h3>
+                            <div className="space-y-1">
+                                <Link
+                                    to="/host/booth-experience-management"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-experience-management"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booth-experience-management" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "//host/booth-experience-management" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-experience-management" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    체험 관리
+                                </Link>
+                                <Link
+                                    to="/host/booth-experience-reserver-management"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-applications"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booth-experience-reserver-management" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-experience-reserver-management" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-experience-reserver-management" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    체험 예약자 관리
                                 </Link>
                             </div>
                         </div>
@@ -329,6 +417,32 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                             </div>
                         </div>
                     )}
+
+                    {/* 내 정보 관리 */}
+                    <div className="mb-4 space-y-0">
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">내 정보 관리</h3>
+                        <div className="space-y-1">
+                            <Link
+                                to="/host/profile"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/profile"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/host/profile" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/profile" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/host/profile" ? "black" : "#00000080";
+                                }}
+                            >
+                                내 정보 조회
+                            </Link>
+                        </div>
+                    </div>
                 </nav>
             </div>
         </div>

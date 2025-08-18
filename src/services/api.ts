@@ -542,8 +542,10 @@ class EventApi {
     if (!accessToken) return false;
 
     try {
+      // @RequestParam으로 각각의 notificationIds를 보내기
+      const params = notificationIds.map(id => `notificationIds=${id}`).join('&');
       const response = await fetch(
-        `/api/notifications?notificationIds=${notificationIds.join(",")}`,
+        `/api/notifications?${params}`,
         {
           method: "DELETE",
           headers: {
