@@ -246,7 +246,7 @@ export const ReservationList: React.FC = () => {
                                     value={searchForm.name || ''}
                                     onChange={handleSearchChange}
                                     placeholder="예약자명 검색"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 />
                             </div>
@@ -258,7 +258,7 @@ export const ReservationList: React.FC = () => {
                                     value={searchForm.phone || ''}
                                     onChange={handleSearchChange}
                                     placeholder="연락처 검색"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 />
                             </div>
@@ -270,7 +270,7 @@ export const ReservationList: React.FC = () => {
                                     value={searchForm.reservationNumber || ''}
                                     onChange={handleSearchChange}
                                     placeholder="예약번호 검색 (RES-123)"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 />
                             </div>
@@ -280,7 +280,7 @@ export const ReservationList: React.FC = () => {
                                     name="reservationStatus"
                                     value={searchForm.reservationStatus || ''}
                                     onChange={handleSearchChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 >
                                     <option value="">전체</option>
@@ -373,7 +373,7 @@ export const ReservationList: React.FC = () => {
                                             </div>
                                             <div className="flex items-center justify-center text-center">
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${reservation.checkinStatusColor} ${reservation.checkinStatus === '입장완료' ? 'text-green-800' :
-                                                        reservation.checkinStatus === '취소' ? 'text-red-800' : 'text-gray-800'
+                                                    reservation.checkinStatus === '취소' ? 'text-red-800' : 'text-gray-800'
                                                     }`}>
                                                     {reservation.checkinStatus}
                                                 </span>
@@ -395,8 +395,8 @@ export const ReservationList: React.FC = () => {
                                         onClick={handlePrevPage}
                                         disabled={currentPage === 1 || loading}
                                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1 || loading
-                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         이전
@@ -413,8 +413,8 @@ export const ReservationList: React.FC = () => {
                                                 onClick={() => handlePageChange(page)}
                                                 disabled={loading}
                                                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === page
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                                     } ${loading ? 'cursor-not-allowed opacity-50' : ''}`}
                                             >
                                                 {page}
@@ -426,8 +426,8 @@ export const ReservationList: React.FC = () => {
                                         onClick={handleNextPage}
                                         disabled={currentPage === totalPages || loading}
                                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages || loading
-                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         다음

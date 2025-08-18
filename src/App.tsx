@@ -43,6 +43,8 @@ import { TimeAnalysis } from "./pages/host_analytics/TimeAnalysis";
 import QRScanPage from "./pages/QRScanPage";
 import { HostRouteGuard } from "./components/HostRouteGuard";
 import { AdminRouteGuard } from "./components/AdminRouteGuard";
+import BoothParticipants from "./pages/host_booth/BoothParticipants";
+import BoothParticipantDetail from "./pages/host_booth/BoothParticipantDetail";
 import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
 import EventComparison from "./pages/admin_dashboard/EventComparison";
 import EventList from "./pages/admin_event/EventList";
@@ -149,6 +151,8 @@ function AppContent() {
           <Route path="/host/payment-list" element={<HostRouteGuard><PaymentList /></HostRouteGuard>} />
           <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
           <Route path="/host/booth-applications" element={<HostRouteGuard><BoothApplicationList /></HostRouteGuard>} />
+          <Route path="/host/booth-participants" element={<HostRouteGuard><BoothParticipants /></HostRouteGuard>} />
+          <Route path="/host/booth-participants/:id" element={<HostRouteGuard><BoothParticipantDetail /></HostRouteGuard>} />
           <Route path="/host/booth-applications/:id" element={<HostRouteGuard><BoothApplicationDetail /></HostRouteGuard>} />
           <Route path="/host/booking-analysis" element={<HostRouteGuard><BookingAnalysis /></HostRouteGuard>} />
           <Route path="/host/revenue-summary" element={<HostRouteGuard><RevenueSummary /></HostRouteGuard>} />
@@ -203,6 +207,8 @@ function AppContent() {
           <Route path="/host/payment-list" element={<PaymentList />} />
           <Route path="/host/booth-type" element={<BoothTypeManagement />} />
           <Route path="/host/booth-applications" element={<BoothApplicationList />} />
+          <Route path="/host/booth-participants" element={<BoothParticipants />} />
+          <Route path="/host/booth-participants/:id" element={<BoothParticipantDetail />} />
           <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
           <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
           <Route path="/host/revenue-summary" element={<RevenueSummary />} />
