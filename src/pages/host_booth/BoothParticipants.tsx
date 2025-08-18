@@ -101,7 +101,7 @@ const BoothParticipants: React.FC = () => {
 
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
-                <div className="absolute left-64 top-[195px] w-[949px] pb-20">
+                <div className="ml-64 mt-[195px] w-[949px] pb-20">
                     {/* 검색 영역 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <h3 className="text-lg font-semibold mb-4">검색 조건</h3>
@@ -236,6 +236,7 @@ const BoothParticipants: React.FC = () => {
                         </div>
                     </div>
                 </div>
+                <div className="h-32 md:h-48" />
             </div>
         </div>
     );

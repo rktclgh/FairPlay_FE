@@ -232,7 +232,7 @@ export const ReservationList: React.FC = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[220px] w-[949px] pb-20">
+                <div className="ml-64 mt-[220px] w-[949px] pb-20">
 
                     {/* 검색 영역 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -437,6 +437,7 @@ export const ReservationList: React.FC = () => {
                         )}
                     </div>
                 </div>
+                <div className="h-32 md:h-48" />
             </div>
         </div>
     );

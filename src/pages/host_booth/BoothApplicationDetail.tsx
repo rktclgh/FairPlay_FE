@@ -123,7 +123,7 @@ export const BoothApplicationDetail = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px]">
+                <div className="absolute left-64 top-[195px] w-[949px] pb-24">
 
                     {/* 폼 컨테이너 시작 */}
                     <div className="bg-white">

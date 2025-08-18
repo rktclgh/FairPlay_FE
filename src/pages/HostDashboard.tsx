@@ -54,7 +54,7 @@ const InquiryCard: React.FC<{ title: string; date: string }> = ({ title, date })
 );
 
 // 실시간 예매 현황 그래프 컴포넌트
-const BookingTrendChart: React.FC<{ 
+const BookingTrendChart: React.FC<{
     dashboardStats: EventDashboardStatsDto | null;
 }> = ({ dashboardStats }) => {
     // 백엔드 데이터를 차트 형식으로 변환
@@ -150,24 +150,24 @@ export const HostDashboard = () => {
         const loadDashboardData = async () => {
             try {
                 setLoading(true);
-                
+
                 console.log('사용자 이벤트 목록 조회 시작...');
-                
+
                 // 사용자 담당 이벤트와 상세 정보 조회
                 const myEvent = await dashboardAPI.getMyEventWithDetails();
                 console.log('조회된 담당 이벤트:', myEvent);
-                
+
                 if (myEvent) {
                     setSelectedEvent(myEvent);
                     console.log('담당 이벤트 설정 완료:', myEvent);
-                    
+
                     // 선택된 이벤트의 통계 데이터 로드
                     console.log('통계 데이터 로드 시작...', {
                         eventId: myEvent.eventId,
                         startDate,
                         endDate
                     });
-                    
+
                     try {
                         const dashStats = await dashboardAPI.getEventDashboardStats(myEvent.eventId, startDate, endDate);
                         console.log('예약 통계 데이터:', dashStats);
@@ -176,7 +176,7 @@ export const HostDashboard = () => {
                         console.error('예약 통계 조회 실패:', dashError);
                         toast.error('예약 통계를 불러올 수 없습니다.');
                     }
-                    
+
                     try {
                         const salesData = await dashboardAPI.getSalesStatistics(myEvent.eventId, startDate, endDate);
                         console.log('매출 통계 데이터:', salesData);
@@ -193,7 +193,7 @@ export const HostDashboard = () => {
                 console.error('대시보드 데이터 로드 실패:', error);
                 console.error('오류 상세:', error.response?.data || error.message);
                 setHasError(true); // Set error state
-                
+
                 // 401 오류인 경우 로그인 페이지로 리다이렉트
                 if (error.response?.status === 401) {
                     toast.error('로그인이 필요합니다.');
@@ -218,7 +218,7 @@ export const HostDashboard = () => {
                         dashboardAPI.getEventDashboardStats(selectedEvent.eventId, startDate, endDate),
                         dashboardAPI.getSalesStatistics(selectedEvent.eventId, startDate, endDate)
                     ]);
-                    
+
                     setDashboardStats(dashStats);
                     setSalesStats(salesData);
                 } catch (error: any) {
@@ -244,7 +244,7 @@ export const HostDashboard = () => {
                 <div className="bg-white w-[1256px] min-h-screen relative">
                     <TopNav />
                     <HostSideNav className="!absolute !left-0 !top-[117px]" />
-                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
+                    <div className="ml-64 mt-[195px] w-[949px] flex items-center justify-center h-96">
                         <div className="text-lg text-gray-500">데이터를 불러오는 중...</div>
                     </div>
                 </div>
@@ -256,7 +256,7 @@ export const HostDashboard = () => {
                 <div className="bg-white w-[1256px] min-h-screen relative">
                     <TopNav />
                     <HostSideNav className="!absolute !left-0 !top-[117px]" />
-                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
+                    <div className="ml-64 mt-[195px] w-[949px] flex items-center justify-center h-96">
                         <div className="text-lg text-red-500">대시보드 데이터를 불러오는데 실패했습니다.</div>
                     </div>
                 </div>
@@ -268,7 +268,7 @@ export const HostDashboard = () => {
                 <div className="bg-white w-[1256px] min-h-screen relative">
                     <TopNav />
                     <HostSideNav className="!absolute !left-0 !top-[117px]" />
-                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-96">
+                    <div className="ml-64 mt-[195px] w-[949px] flex items-center justify-center h-96">
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
                             <div className="flex items-center">
                                 <div className="text-yellow-600 mr-3">
@@ -302,139 +302,139 @@ export const HostDashboard = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px] pb-20">
+                <div className="ml-64 mt-[195px] w-[949px] pb-24 md:pb-32">
 
                     {/* 통계 카드 섹션 - 담당 행사가 있는 경우에만 표시 */}
                     {selectedEvent && (
-                    <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <StatCard 
-                            title="행사명" 
-                            value={selectedEvent?.titleKr || '행사 없음'} 
-                        />
-                        <StatCard 
-                            title="행사 일정" 
-                            value={selectedEvent ? 
-                                `${new Date(selectedEvent.startDate).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\./g, '.').replace(/\s/g, '')} ~ ${new Date(selectedEvent.endDate).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\./g, '.').replace(/\s/g, '')}` : 
-                                '-'
-                            } 
-                        />
-                        <StatCard 
-                            title="장소" 
-                            value={selectedEvent?.placeName || selectedEvent?.address || '장소 정보 없음'} 
-                        />
-                        <StatCard 
-                            title="총 예약자 수" 
-                            value={totalReservations.toLocaleString()} 
-                            unit="명" 
-                        />
-                    </div>
-
-                    {/* 첫 번째 행: 실시간 예매 현황 + 매출 요약 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                        {/* 실시간 예매 현황 */}
-                        <BookingTrendChart dashboardStats={dashboardStats} />
-
-                        {/* 매출 요약 */}
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-6">매출 요약</h2>
-                            <RevenueCard 
-                                label="총 매출" 
-                                amount={salesStats?.summary?.totalSales?.toLocaleString() || '0'} 
-                            />
-                            <RevenueCard 
-                                label="취소 금액" 
-                                amount={salesStats?.summary?.cancelled?.amount?.toLocaleString() || '0'} 
-                                isNegative 
-                            />
-                            <RevenueCard 
-                                label="환불 금액" 
-                                amount={salesStats?.summary?.refunded?.amount?.toLocaleString() || '0'} 
-                                isNegative 
-                            />
-                            <div className="border-t pt-4">
-                                <RevenueCard 
-                                    label="순수익" 
-                                    amount={(() => {
-                                        const total = salesStats?.summary?.totalSales || 0;
-                                        const cancelled = salesStats?.summary?.cancelled?.amount || 0;
-                                        const refunded = salesStats?.summary?.refunded?.amount || 0;
-                                        return (total - cancelled - refunded).toLocaleString();
-                                    })()} 
-                                    isProfit 
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                <StatCard
+                                    title="행사명"
+                                    value={selectedEvent?.titleKr || '행사 없음'}
+                                />
+                                <StatCard
+                                    title="행사 일정"
+                                    value={selectedEvent ?
+                                        `${new Date(selectedEvent.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '.').replace(/\s/g, '')} ~ ${new Date(selectedEvent.endDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '.').replace(/\s/g, '')}` :
+                                        '-'
+                                    }
+                                />
+                                <StatCard
+                                    title="장소"
+                                    value={selectedEvent?.placeName || selectedEvent?.address || '장소 정보 없음'}
+                                />
+                                <StatCard
+                                    title="총 예약자 수"
+                                    value={totalReservations.toLocaleString()}
+                                    unit="명"
                                 />
                             </div>
-                        </div>
-                    </div>
 
-                    {/* 두 번째 행: 실시간 체크인 현황 + 최근 문의/신고 알림 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* 실시간 체크인 현황 */}
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-6">실시간 체크인 현황</h2>
+                            {/* 첫 번째 행: 실시간 예매 현황 + 매출 요약 */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                {/* 실시간 예매 현황 */}
+                                <BookingTrendChart dashboardStats={dashboardStats} />
 
-                            {/* 체크인 완료율 */}
-                            <div className="text-center mb-6">
-                                <div className="text-4xl font-bold text-blue-500 mb-2">{checkinRate}%</div>
-                                <div className="text-sm font-normal text-gray-500">체크인 완료율</div>
-                            </div>
-
-                            {/* 체크인 상세 현황 */}
-                            <div className="mb-6">
-                                <div className="flex justify-between items-center text-sm text-gray-500 mb-2">
-                                    <span>체크인 완료</span>
-                                    <span>{checkedIn.toLocaleString()} / {totalReservations.toLocaleString()} 명</span>
-                                </div>
-
-                                {/* 진행률 바 */}
-                                <div className="w-full h-2.5 bg-gray-100 rounded-full">
-                                    <div
-                                        className="h-2.5 bg-emerald-500 rounded-full"
-                                        style={{ width: `${checkinRate}%` }}
+                                {/* 매출 요약 */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-lg font-semibold text-gray-900 mb-6">매출 요약</h2>
+                                    <RevenueCard
+                                        label="총 매출"
+                                        amount={salesStats?.summary?.totalSales?.toLocaleString() || '0'}
                                     />
+                                    <RevenueCard
+                                        label="취소 금액"
+                                        amount={salesStats?.summary?.cancelled?.amount?.toLocaleString() || '0'}
+                                        isNegative
+                                    />
+                                    <RevenueCard
+                                        label="환불 금액"
+                                        amount={salesStats?.summary?.refunded?.amount?.toLocaleString() || '0'}
+                                        isNegative
+                                    />
+                                    <div className="border-t pt-4">
+                                        <RevenueCard
+                                            label="순수익"
+                                            amount={(() => {
+                                                const total = salesStats?.summary?.totalSales || 0;
+                                                const cancelled = salesStats?.summary?.cancelled?.amount || 0;
+                                                const refunded = salesStats?.summary?.refunded?.amount || 0;
+                                                return (total - cancelled - refunded).toLocaleString();
+                                            })()}
+                                            isProfit
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* 체크인 상태 카드 */}
-                            <div className="grid grid-cols-1 gap-3">
-                                <div className="bg-green-50 rounded-lg p-4 flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">체크인 완료</span>
-                                    <span className="text-xl font-semibold text-emerald-500">{checkedIn.toLocaleString()}</span>
-                                </div>
-                                <div className="bg-red-50 rounded-lg p-4 flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">미체크인</span>
-                                    <span className="text-xl font-semibold text-red-500">{notCheckedIn.toLocaleString()}</span>
-                                </div>
-                                <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">취소</span>
-                                    <span className="text-xl font-semibold text-gray-500">{(dashboardStats?.summary?.totalCancellations || 0).toLocaleString()}</span>
-                                </div>
-                                <div className="bg-orange-50 rounded-lg p-4 flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">노쇼</span>
-                                    <span className="text-xl font-semibold text-orange-500">{(dashboardStats?.summary?.totalNoShows || 0).toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
+                            {/* 두 번째 행: 실시간 체크인 현황 + 최근 문의/신고 알림 */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* 실시간 체크인 현황 */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-lg font-semibold text-gray-900 mb-6">실시간 체크인 현황</h2>
 
-                        {/* 최근 문의/신고 알림 */}
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-semibold text-gray-900">최근 문의 / 신고 알림</h2>
-                                <button className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors">
-                                    전체 문의 보기
-                                </button>
-                            </div>
+                                    {/* 체크인 완료율 */}
+                                    <div className="text-center mb-6">
+                                        <div className="text-4xl font-bold text-blue-500 mb-2">{checkinRate}%</div>
+                                        <div className="text-sm font-normal text-gray-500">체크인 완료율</div>
+                                    </div>
 
-                            <div className="space-y-4">
-                                <InquiryCard title="환불 문의 - 개인 사정으로 참석 불가" date="2024.12.10" />
-                                <InquiryCard title="좌석 변경 요청 - VIP석으로 업그레이드" date="2024.12.09" />
-                                <InquiryCard title="단체 할인 문의 - 20명 이상 예약" date="2024.12.08" />
-                                <InquiryCard title="주차장 이용 관련 문의" date="2024.12.07" />
-                                <InquiryCard title="식사 제공 여부 문의" date="2024.12.06" />
+                                    {/* 체크인 상세 현황 */}
+                                    <div className="mb-6">
+                                        <div className="flex justify-between items-center text-sm text-gray-500 mb-2">
+                                            <span>체크인 완료</span>
+                                            <span>{checkedIn.toLocaleString()} / {totalReservations.toLocaleString()} 명</span>
+                                        </div>
+
+                                        {/* 진행률 바 */}
+                                        <div className="w-full h-2.5 bg-gray-100 rounded-full">
+                                            <div
+                                                className="h-2.5 bg-emerald-500 rounded-full"
+                                                style={{ width: `${checkinRate}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* 체크인 상태 카드 */}
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="bg-green-50 rounded-lg p-4 flex justify-between items-center">
+                                            <span className="text-sm text-gray-600">체크인 완료</span>
+                                            <span className="text-xl font-semibold text-emerald-500">{checkedIn.toLocaleString()}</span>
+                                        </div>
+                                        <div className="bg-red-50 rounded-lg p-4 flex justify-between items-center">
+                                            <span className="text-sm text-gray-600">미체크인</span>
+                                            <span className="text-xl font-semibold text-red-500">{notCheckedIn.toLocaleString()}</span>
+                                        </div>
+                                        <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
+                                            <span className="text-sm text-gray-600">취소</span>
+                                            <span className="text-xl font-semibold text-gray-500">{(dashboardStats?.summary?.totalCancellations || 0).toLocaleString()}</span>
+                                        </div>
+                                        <div className="bg-orange-50 rounded-lg p-4 flex justify-between items-center">
+                                            <span className="text-sm text-gray-600">노쇼</span>
+                                            <span className="text-xl font-semibold text-orange-500">{(dashboardStats?.summary?.totalNoShows || 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 최근 문의/신고 알림 */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-lg font-semibold text-gray-900">최근 문의 / 신고 알림</h2>
+                                        <button className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors">
+                                            전체 문의 보기
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <InquiryCard title="환불 문의 - 개인 사정으로 참석 불가" date="2024.12.10" />
+                                        <InquiryCard title="좌석 변경 요청 - VIP석으로 업그레이드" date="2024.12.09" />
+                                        <InquiryCard title="단체 할인 문의 - 20명 이상 예약" date="2024.12.08" />
+                                        <InquiryCard title="주차장 이용 관련 문의" date="2024.12.07" />
+                                        <InquiryCard title="식사 제공 여부 문의" date="2024.12.06" />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    </>
+                        </>
                     )}
                 </div>
             </div>
