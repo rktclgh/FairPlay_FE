@@ -78,6 +78,8 @@ import MyBoothExperienceReservations from "./pages/user_booth/MyBoothExperienceR
 import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagement";
 import BoothExperienceReserverManagement from "./pages/host_booth/BoothExperienceReserverManagement";
 import { OnlyQrTicketPage } from './pages/OnlyQrTicketPage';
+import BoothPaymentPage from "./pages/booth/BoothPaymentPage";
+import BoothCancelPage from "./pages/booth/BoothCancelPage";
 
 function AppContent() {
   useScrollToTop();
@@ -209,6 +211,10 @@ function AppContent() {
           <Route path="/host/time-analysis" element={<TimeAnalysis />} />
           <Route path="/host/qr-scan" element={<QRScanPage />} />
           <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
+
+          {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
+          <Route path="/booth/payment" element={<BoothPaymentPage />} />
+          <Route path="/booth/cancel" element={<BoothCancelPage />} />
 
           {/* 부스 체험 */}
           <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
