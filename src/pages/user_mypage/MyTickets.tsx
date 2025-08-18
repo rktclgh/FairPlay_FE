@@ -14,10 +14,12 @@ import {
     getQrTicketForMypage,
 } from "../../services/qrTicket"
 import { getFormLink } from "../../services/attendee";
+import { useQrTicketSocket } from "../../utils/useQrTicketSocket";
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
     const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
+    const [qrTicketId, setQrTicketId] = useState(0);
     const [selectedTicketData, setSelectedTicketData] = useState<QrTicketData | null>(null);
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
     const [formLinks, setFormLinks] = useState<{ [key: number]: string }>({});
@@ -26,6 +28,13 @@ export default function MyTickets(): JSX.Element {
     const [updateIds, setUpdateIds] = useState({
         reservationId: 0,
         qrTicketId: 0
+    });
+
+      // ✅ 여기서 웹소켓 구독 시작
+    useQrTicketSocket(qrTicketId, (msg) => {
+        console.log("qrTicketId:" + qrTicketId);
+        alert(msg);
+        setIsQrTicketOpen(false); // 확인 클릭 시
     });
 
     useEffect(() => {
@@ -86,8 +95,8 @@ export default function MyTickets(): JSX.Element {
                 reservationId: reservation.reservationId,
                 qrTicketId: res.qrTicketId
             });
-
             setIsQrTicketOpen(true);
+            setQrTicketId(res.qrTicketId);
         } catch (error) {
             if (error.response) {
                 const { message } = error.response.data;
