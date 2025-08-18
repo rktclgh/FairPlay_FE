@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { eventApi } from '../services/api';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
@@ -9,7 +8,7 @@ import { requireAuth, isAuthenticated } from '../utils/authGuard';
 import { hasHostPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 import { useTheme } from '../context/ThemeContext';
-
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface TopNavProps {
 	className?: string;
@@ -21,6 +20,10 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 	const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
 	const [mobileQuery, setMobileQuery] = useState<string>('');
+	const [desktopQuery, setDesktopQuery] = useState<string>('');
+	const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+	const headerRef = useRef<HTMLDivElement>(null);
+	const [headerHeight, setHeaderHeight] = useState<number>(0);
 
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -56,6 +59,19 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		else setActiveMenu('');
 	}, [location.pathname]);
 
+	// 헤더 높이 측정
+	useEffect(() => {
+		const measure = () => {
+			if (headerRef.current) {
+				const r = headerRef.current.getBoundingClientRect();
+				setHeaderHeight(r.height);
+			}
+		};
+		measure();
+		window.addEventListener('resize', measure);
+		return () => window.removeEventListener('resize', measure);
+	}, []);
+
 	const handleAuthClick = (e: React.MouseEvent) => {
 		if (isLoggedIn) {
 			e.preventDefault();
@@ -81,9 +97,9 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
 	const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {
 		e.stopPropagation(); // 이벤트 버블링 방지
-		
+
 		console.log("🗑️ TopNav에서 알림 삭제:", notificationId);
-		
+
 		// 즉시 삭제 (아이폰 스타일)
 		const success = deleteNotification(notificationId);
 		if (!success) {
@@ -96,6 +112,14 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		const q = mobileQuery.trim();
 		if (q.length === 0) return;
 		navigate(`/eventoverview?q=${encodeURIComponent(q)}`);
+	};
+
+	const handleDesktopSearchSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		const q = desktopQuery.trim();
+		if (q.length === 0) return setIsSearchOpen(false);
+		navigate(`/eventoverview?q=${encodeURIComponent(q)}`);
+		setIsSearchOpen(false);
 	};
 
 	// 운영자(전체 관리자) 문의 채팅방 생성/입장
@@ -123,8 +147,6 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 			console.error('운영자 문의 채팅방 생성 실패:', error);
 		}
 	};
-
-	// 웹소켓에서 제공하는 unreadCount 사용
 
 	return (
 		<>
@@ -154,7 +176,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 			</div>
 
 			{/* 데스크톱 네비게이션: 웹 화면 유지 (기존 구조) */}
-			<div className={`hidden md:flex theme-surface theme-transition w-full flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 100, marginTop: '-32px' }}>
+			<div ref={headerRef} className={`hidden md:flex theme-surface theme-transition w-full flex-col ${className}`} style={{ position: 'sticky', top: 0, zIndex: 101, marginTop: '-32px' }}>
 				{/* 상단 유틸 바 */}
 				<div className="flex justify-end items-center px-6 py-0.5 gap-3">
 					<button
@@ -190,7 +212,12 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 							<Link to="/event-registration-intro" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
 						</nav>
 						<div className="flex items-center space-x-6">
-							<HiOutlineSearch className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
+							<HiOutlineSearch
+								className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`}
+								onClick={() => {
+									setIsSearchOpen(prev => !prev);
+								}}
+							/>
 							<HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={() => {
 								if (!requireAuth(navigate, '마이페이지')) {
 									return;
@@ -220,6 +247,36 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					</div>
 				</div>
 			</div>
+
+			{/* 데스크톱 검색 패널: 상단바는 유지, 아래로 여백이 부드럽게 펼쳐짐 */}
+			<AnimatePresence>
+				{isSearchOpen && (
+					<motion.div
+						key="desktop-search-panel"
+						initial={{ height: 0, opacity: 0 }}
+						animate={{ height: Math.max(0, (typeof window !== 'undefined' ? window.innerHeight : 0) - headerHeight), opacity: 1 }}
+						exit={{ height: 0, opacity: 0 }}
+						transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+						className={`${isDark ? 'bg-black/80' : 'bg-white/90'} backdrop-blur-sm hidden md:block overflow-hidden`}
+						style={{ position: 'fixed', left: 0, right: 0, top: headerHeight, zIndex: 90 }}
+					>
+						<div className="max-w-7xl mx-auto px-6">
+							<form onSubmit={handleDesktopSearchSubmit} className="py-8">
+								<div className={`flex items-center gap-3 border-b-2 pb-3 ${isDark ? 'border-white/70' : 'border-black/50'}`}>
+									<HiOutlineSearch className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'}`} />
+									<input
+										type="search"
+										placeholder="검색어를 입력해주세요."
+										value={desktopQuery}
+										onChange={(e) => setDesktopQuery(e.target.value)}
+										className={`flex-1 text-xl outline-none bg-transparent ${isDark ? 'text-white placeholder-gray-500' : 'text-black placeholder-gray-500'}`}
+									/>
+								</div>
+							</form>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 
 			{/* 모바일 하단 고정 네비게이션: 항상 표시, 안전영역 고려, 균형 정렬 */}
 			<div className={`md:hidden fixed bottom-0 left-0 right-0 border-t ${isDark ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} z-[200] pb-safe`}>
