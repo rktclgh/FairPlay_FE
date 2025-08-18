@@ -235,6 +235,21 @@ const AdvertisementApplicationList: React.FC = () => {
     }
   ]);
 
+  // 호스트에서 임시 저장한 신청 데이터 병합 표시 (테스트/더미용)
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('pendingAdApplications');
+      if (!raw) return;
+      const extra: AdvertisementApplication[] = JSON.parse(raw);
+      if (Array.isArray(extra) && extra.length > 0) {
+        setApplications(prev => [...extra, ...prev]);
+        localStorage.removeItem('pendingAdApplications');
+      }
+    } catch (e) {
+      console.error('임시 신청 병합 실패', e);
+    }
+  }, []);
+
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
