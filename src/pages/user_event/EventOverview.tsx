@@ -18,7 +18,6 @@ import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
 import EventMapPin from "../../components/EventMapPin";
 import { useTheme } from "../../context/ThemeContext";
-import { Footer } from "../../components/Footer";
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
@@ -1437,8 +1436,7 @@ export default function EventOverview() {
                         </div>
                     )}
 
-                    {/* Footer */}
-                    <Footer />
+
                 </div>
             </div>
         </div>

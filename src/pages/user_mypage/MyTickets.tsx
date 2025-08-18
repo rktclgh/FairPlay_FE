@@ -30,7 +30,7 @@ export default function MyTickets(): JSX.Element {
         qrTicketId: 0
     });
 
-      // ✅ 여기서 웹소켓 구독 시작
+    // ✅ 여기서 웹소켓 구독 시작
     useQrTicketSocket(qrTicketId, (msg) => {
         console.log("qrTicketId:" + qrTicketId);
         alert(msg);
@@ -77,7 +77,9 @@ export default function MyTickets(): JSX.Element {
                 ticketId: reservation.ticketId,
                 reservationId: reservation.reservationId
             };
-                // QR 티켓 정보 호출
+
+
+            // QR 티켓 정보 호출
             const res = await getQrTicketForMypage(qrTicketRequestDto);
             // 선택한 티켓 정보
             setSelectedTicketData({
@@ -106,11 +108,11 @@ export default function MyTickets(): JSX.Element {
                 console.error("서버 응답 없음:", error.request);
                 alert("서버 응답이 없습니다. 잠시 후 다시 시도해주세요.");
             } else {
-                    // 기타 오류
-                    console.error("알 수 없는 오류:", error.message);
-                    alert("알 수 없는 오류가 발생했습니다.");
+                // 기타 오류
+                console.error("알 수 없는 오류:", error.message);
+                alert("알 수 없는 오류가 발생했습니다.");
             }
-            
+
         }
     };
 
@@ -120,7 +122,7 @@ export default function MyTickets(): JSX.Element {
     };
 
     const handleParticipantListOpen = (reservation: ReservationResponseDto, bookingDate: string) => {
-        console.log("handleParticipantListOpen:"+reservation.createdAt)
+        console.log("handleParticipantListOpen:" + reservation.createdAt)
         navigate(`/mypage/participant-list`, {
             state: {
                 eventName: reservation.eventName,
@@ -146,11 +148,11 @@ export default function MyTickets(): JSX.Element {
             setFormLinks(prev => ({ ...prev, [reservationId]: link }));
 
             await navigator.clipboard.writeText(link);
-            toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");            
+            toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");
         } catch (error) {
             toast.error("폼 링크를 불러오는 중 오류가 발생했습니다.");
         }
-     }
+    }
 
     const formatDate = (dateStr: string | null) => {
         if (!dateStr) return "날짜 미정";
@@ -276,18 +278,19 @@ export default function MyTickets(): JSX.Element {
 
                                             <div className="absolute top-6 right-6 flex flex-col space-y-2">
                                                 <button
-                                                    onClick={() => handleQrTicketOpen(reservation)}
+                                                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                    onClick={(e) => { (e.currentTarget as HTMLButtonElement).blur(); e.stopPropagation(); handleQrTicketOpen(reservation); }}
                                                     disabled={!canUseQrTicket[index]} // ❗️여기서 QR 티켓 사용 가능 여부 제어
-                                                    className={`relative w-[140px] h-[56px] rounded-xl border-0 shadow-lg transition-all duration-200 flex items-center justify-center group focus:outline-none focus:ring-0
+                                                    className={`relative z-10 w-[140px] h-[56px] rounded-xl border-0 shadow-lg transition-all duration-200 flex items-center justify-center group focus:outline-none focus:ring-0
                                                         ${canUseQrTicket[index]
-                                                        ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-xl hover:scale-105 cursor-pointer"
-                                                        : "bg-gray-400 opacity-60 cursor-not-allowed"
+                                                            ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-xl cursor-pointer"
+                                                            : "bg-gray-400 opacity-60 cursor-not-allowed"
                                                         }`}
-                                                    >
+                                                >
                                                     <div className="flex items-center space-x-2">
                                                         <QrCode className="w-4 h-4 text-white" />
                                                         <span className="font-semibold text-white text-sm tracking-wide">
-                                                        QR 티켓
+                                                            QR 티켓
                                                         </span>
                                                     </div>
 
@@ -299,8 +302,9 @@ export default function MyTickets(): JSX.Element {
 
                                                 {reservation.quantity >= 2 && (
                                                     <button
-                                                        onClick={() => handleParticipantListOpen(reservation, reservation.createdAt)}
-                                                        className="w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                        onClick={(e) => { (e.currentTarget as HTMLButtonElement).blur(); e.stopPropagation(); handleParticipantListOpen(reservation, reservation.createdAt); }}
+                                                        className="w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
                                                     >
                                                         <span className="font-semibold text-white text-xs tracking-wide">
                                                             참여자 목록 확인

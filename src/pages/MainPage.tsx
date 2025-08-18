@@ -7,7 +7,6 @@ import {
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
-import { Footer } from "../components/Footer";
 import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
@@ -481,12 +480,12 @@ export const Main: React.FC = () => {
                         modules={[Navigation, Autoplay, EffectCoverflow]}
                         navigation
                         effect="coverflow"
-                        coverflowEffect={{ 
-                            rotate: 0, 
-                            stretch: -30, 
-                            depth: 220, 
-                            modifier: 1, 
-                            slideShadows: false 
+                        coverflowEffect={{
+                            rotate: 0,
+                            stretch: -30,
+                            depth: 220,
+                            modifier: 1,
+                            slideShadows: false
                         }}
                         slidesPerView="auto"
                         centeredSlides={true}
@@ -620,8 +619,7 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 푸터 */}
-            <Footer />
+
         </div>
     );
 }; 

@@ -91,7 +91,7 @@ export const PaymentList: React.FC = () => {
 
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
-                <div className="absolute left-64 top-[220px] w-[949px] pb-20">
+                <div className="ml-64 mt-[220px] w-[949px] pb-20">
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         <div className="bg-gray-50 border-b">
                             <div
@@ -136,6 +136,7 @@ export const PaymentList: React.FC = () => {
                         </div>
                     </div>
                 </div>
+                <div className="h-32 md:h-48" />
             </div>
         </div>
     );

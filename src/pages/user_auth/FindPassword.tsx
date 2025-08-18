@@ -174,24 +174,7 @@ export const FindPassword = () => {
                 {/* 토스트 알림 */}
                 {toast && <Toast message={toast} onClose={() => setToast("")} />}
 
-                {/* 푸터 등 기타 UI */}
-                <div className="absolute w-[1256px] h-[205px] top-[923px] left-0 bg-white border-t border-[#0000001f]">
-                    <p className="absolute top-[62px] left-[515px] font-normal text-[#666666] text-base text-center leading-6 whitespace-nowrap">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
-                    <div className="absolute top-[118px] left-[450px] font-normal text-[#666666] text-sm text-center leading-[21px] whitespace-nowrap">
-                        이용약관
-                    </div>
-                    <div className="absolute top-[118px] left-[534px] font-normal text-[#666666] text-sm text-center leading-[21px] whitespace-nowrap">
-                        개인정보처리방침
-                    </div>
-                    <div className="absolute top-[118px] left-[669px] font-normal text-[#666666] text-sm text-center leading-[21px] whitespace-nowrap">
-                        고객센터
-                    </div>
-                    <div className="absolute top-[118px] left-[752px] font-normal text-[#666666] text-sm text-center leading-[21px] whitespace-nowrap">
-                        회사소개
-                    </div>
-                </div>
+
             </div>
         </div>
     );

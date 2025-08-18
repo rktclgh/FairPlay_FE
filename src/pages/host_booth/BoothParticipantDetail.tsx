@@ -84,7 +84,7 @@ const BoothParticipantDetail = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px]">
+                <div className="ml-64 mt-[195px] w-[949px] pb-24">
                     <div className="bg-white">
                         {/* 기본 정보 섹션 */}
                         <div className="mb-8">
@@ -246,6 +246,7 @@ const BoothParticipantDetail = () => {
                         </div>
                     )}
                 </div>
+                <div className="h-32 md:h-48" />
             </div>
         </div>
     );
