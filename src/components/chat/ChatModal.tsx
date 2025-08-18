@@ -54,15 +54,36 @@ export default function ChatModal({
         }
     };
 
-    // 전체 관리자 문의하기
+    // 전체 관리자 문의하기 - 기존 채팅방 찾거나 생성
     const handleAdminInquiry = async () => {
         setLoading(true);
         try {
-            const response = await axios.post('/api/chat/admin-inquiry', {}, {
+            // 먼저 기존 관리자 문의 채팅방이 있는지 확인
+            const existingResponse = await axios.get('/api/chat/rooms', {
                 headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
             });
+            
+            const existingAdminRoom = existingResponse.data.find((room: any) => 
+                room.targetType === 'ADMIN' && !room.closedAt
+            );
 
-            const roomData = response.data;
+            let roomData;
+            if (existingAdminRoom) {
+                // 기존 채팅방으로 연결
+                roomData = {
+                    chatRoomId: existingAdminRoom.chatRoomId,
+                    eventTitle: existingAdminRoom.eventTitle
+                };
+                console.log('기존 관리자 문의 채팅방으로 연결:', roomData.chatRoomId);
+            } else {
+                // 새 채팅방 생성
+                const response = await axios.post('/api/chat/admin-inquiry', {}, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+                });
+                roomData = response.data;
+                console.log('새로운 관리자 문의 채팅방 생성:', roomData.chatRoomId);
+            }
+
             setSelectedRoomId(roomData.chatRoomId);
             setSelectedRoomInfo({
                 roomId: roomData.chatRoomId,
@@ -71,22 +92,43 @@ export default function ChatModal({
                 isAdminInquiry: true
             });
         } catch (error) {
-            console.error('전체 관리자 문의 생성 실패:', error);
-            alert('문의 채팅방 생성에 실패했습니다.');
+            console.error('전체 관리자 문의 처리 실패:', error);
+            alert('문의 채팅방 연결에 실패했습니다.');
         } finally {
             setLoading(false);
         }
     };
 
-    // AI 채팅 문의하기
+    // AI 채팅 문의하기 - 기존 채팅방 찾거나 생성
     const handleAiInquiry = async () => {
         setLoading(true);
         try {
-            const response = await axios.post('/api/chat/ai-inquiry', {}, {
+            // 먼저 기존 AI 채팅방이 있는지 확인
+            const existingResponse = await axios.get('/api/chat/rooms', {
                 headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
             });
+            
+            const existingAiRoom = existingResponse.data.find((room: any) => 
+                room.targetType === 'AI' && !room.closedAt
+            );
 
-            const roomData = response.data;
+            let roomData;
+            if (existingAiRoom) {
+                // 기존 채팅방으로 연결
+                roomData = {
+                    chatRoomId: existingAiRoom.chatRoomId,
+                    eventTitle: existingAiRoom.eventTitle
+                };
+                console.log('기존 AI 채팅방으로 연결:', roomData.chatRoomId);
+            } else {
+                // 새 채팅방 생성
+                const response = await axios.post('/api/chat/ai-inquiry', {}, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+                });
+                roomData = response.data;
+                console.log('새로운 AI 채팅방 생성:', roomData.chatRoomId);
+            }
+
             setSelectedRoomId(roomData.chatRoomId);
             setSelectedRoomInfo({
                 roomId: roomData.chatRoomId,
@@ -96,8 +138,8 @@ export default function ChatModal({
                 isAiChat: true
             });
         } catch (error) {
-            console.error('AI 채팅 생성 실패:', error);
-            alert('AI 채팅방 생성에 실패했습니다.');
+            console.error('AI 채팅 처리 실패:', error);
+            alert('AI 채팅방 연결에 실패했습니다.');
         } finally {
             setLoading(false);
         }
