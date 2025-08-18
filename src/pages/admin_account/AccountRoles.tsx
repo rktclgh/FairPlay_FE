@@ -12,15 +12,27 @@ interface AdminUser {
     role?: number | string; // 0/1/2 또는 문자열("전체관리자" 등)
     authList?: string[]; // 현재 권한(영문 코드)
 }
+interface FunctionNameDto {
+    functionName: string;
+    functionNameKr: string;
+}
 
 interface PermissionOption {
     functionName: string;
     functionNameKr: string;
     enabled?: boolean;
 }
+// const accessToken = localStorage.getItem("accessToken");
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // ===== [DUMMY-START] AccountRoles 테스트 더미 데이터 (나중에 전체 블록 삭제해도 무방) =====
-const USE_DUMMY_ACCOUNT_ROLES = true; // 더미 사용: true / 실제 API 사용: false
+const USE_DUMMY_ACCOUNT_ROLES = false; // 더미 사용: true / 실제 API 사용: false
 
 const DUMMY_ADMINS: AdminUser[] = [
     {
@@ -96,7 +108,7 @@ export const AccountRoles: React.FC = () => {
             }
             // 백엔드에서 관리자 목록 + 현재 권한 배열 전달
             // 예시 응답: [{ userId, role, nickname, email, authList: ["getBoothExperiences", ...] }]
-            const res = await api.get("/api/admin/accounts");
+            const res = await api.get("/api/super-admin/get-admins");
             const list: AdminUser[] = Array.isArray(res.data) ? res.data : (res.data?.data || []);
             setAdmins(list);
         } catch (err) {
@@ -116,7 +128,7 @@ export const AccountRoles: React.FC = () => {
                     upsertPermissionMap(DUMMY_PERMISSION_OPTIONS);
                     return;
                 }
-                const res = await api.get('/api/admin/permissions'); // 존재하지 않으면 catch로 무시
+                const res = await api.get('/api/super-admin/get-auth-list');
                 const allOptions: PermissionOption[] = Array.isArray(res.data) ? res.data : (res.data?.data || []);
                 if (allOptions?.length) upsertPermissionMap(allOptions);
             } catch {
@@ -124,39 +136,35 @@ export const AccountRoles: React.FC = () => {
             }
         })();
     }, []);
-
-    const openEditModal = useCallback(async (user: AdminUser) => {
-        setSelectedUser(user);
-        setPermissionOptions([]);
-        setSelectedPermissions(new Set(user.authList || []));
-        setModalOpen(true);
-        try {
-            setModalLoading(true);
-            // 더미 모드
-            if (USE_DUMMY_ACCOUNT_ROLES) {
-                setPermissionOptions(DUMMY_PERMISSION_OPTIONS);
-                upsertPermissionMap(DUMMY_PERMISSION_OPTIONS);
-                const enabledFromDummy = DUMMY_PERMISSION_OPTIONS.filter(o => o.enabled).map(o => o.functionName);
-                setSelectedPermissions(new Set(enabledFromDummy));
-                return;
-            }
-            // 예시 응답: [{ functionName, functionNameKr, enabled }]
-            const res = await api.get(`/api/admin/accounts/${user.userId}/permissions`);
-            const options: PermissionOption[] = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-            setPermissionOptions(options);
-            if (options?.length) upsertPermissionMap(options);
-            // enabled가 함께 온다면 그것으로 초기화 우선
-            const enabledFromApi = options.filter(o => o.enabled).map(o => o.functionName);
-            if (enabledFromApi.length > 0) {
-                setSelectedPermissions(new Set(enabledFromApi));
-            }
-        } catch (err) {
-            console.error("권한 옵션 조회 실패:", err);
-            toast.error("권한 목록을 불러오지 못했습니다.");
-        } finally {
-            setModalLoading(false);
-        }
-    }, []);
+const openEditModal = useCallback(async (user: AdminUser) => {
+    setSelectedUser(user);
+    setPermissionOptions([]);
+    setSelectedPermissions(new Set(user.authList || []));
+    setModalOpen(true);
+    try {
+        setModalLoading(true);
+        // 백엔드에서 권한 목록 가져오기
+        const res = await api.get('/api/super-admin/get-auth-list');
+        const options: PermissionOption[] = Array.isArray(res.data)
+    ? (res.data as FunctionNameDto[]).map(fn => ({
+        functionName: fn.functionName,
+        functionNameKr: fn.functionNameKr,
+        enabled: user.authList?.includes(fn.functionName)
+    }))
+    : [];
+        setPermissionOptions(options);
+        // 체크된 권한 초기화
+        const enabledFromApi = options.filter(o => o.enabled).map(o => o.functionName);
+        setSelectedPermissions(new Set(enabledFromApi));
+        // 한글 매핑 갱신
+        if (options?.length) upsertPermissionMap(options);
+    } catch (err) {
+        console.error("권한 옵션 조회 실패:", err);
+        toast.error("권한 목록을 불러오지 못했습니다.");
+    } finally {
+        setModalLoading(false);
+    }
+}, []);
 
     const togglePermission = (fnName: string) => {
         setSelectedPermissions(prev => {
@@ -168,36 +176,29 @@ export const AccountRoles: React.FC = () => {
     };
 
     const handleSave = async () => {
-        if (!selectedUser) return;
-        try {
-            setSaving(true);
-            // 더미 모드
-            if (USE_DUMMY_ACCOUNT_ROLES) {
-                // 로컬 목록에도 즉시 반영
-                const updated = Array.from(selectedPermissions);
-                setAdmins(prev => prev.map(u => u.userId === selectedUser.userId ? { ...u, authList: updated } : u));
-                toast.success("권한이 저장되었습니다. (더미)");
-                setModalOpen(false);
-                setSelectedUser(null);
-                return;
-            }
-            const payload = { permissions: Array.from(selectedPermissions) };
-            await api.post(`/api/admin/accounts/${selectedUser.userId}/permissions`, payload);
-            toast.success("권한이 저장되었습니다.");
-            // 서버 저장 성공 후, 로컬 목록도 즉시 반영 (낙관적 업데이트)
-            const updated = Array.from(selectedPermissions);
-            setAdmins(prev => prev.map(u => u.userId === selectedUser.userId ? { ...u, authList: updated } : u));
-            setModalOpen(false);
-            setSelectedUser(null);
-            // 저장 후 목록 갱신
-            fetchAdmins();
-        } catch (err) {
-            console.error("권한 저장 실패:", err);
-            toast.error("권한 저장에 실패했습니다.");
-        } finally {
-            setSaving(false);
-        }
-    };
+    if (!selectedUser) return;
+    try {
+        setSaving(true);
+        const payload = Array.from(selectedPermissions); // List<String> 형태
+        console.log(selectedUser.userId);
+        console.log("selectedUser.userId:", selectedUser.userId);
+console.log("payload:", payload);
+        await api.post(`/api/super-admin/modify-auth/${Number(selectedUser.userId)}`, payload);
+        console.log("권한 저장 성공");
+        toast.success("권한이 저장되었습니다.");
+        // 로컬에도 즉시 반영
+        const updated = Array.from(selectedPermissions);
+        setAdmins(prev => prev.map(u => u.userId === selectedUser.userId ? { ...u, authList: updated } : u));
+        setModalOpen(false);
+        setSelectedUser(null);
+        fetchAdmins(); // 목록 갱신
+    } catch (err) {
+        console.error("권한 저장 실패:", err);
+        toast.error("권한 저장에 실패했습니다.");
+    } finally {
+        setSaving(false);
+    }
+};
 
     const getPermissionLabel = useCallback((code: string) => permissionNameMap[code] || code, [permissionNameMap]);
 
