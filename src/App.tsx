@@ -33,6 +33,7 @@ import { EventVersionComparison } from "./pages/host_event/EventVersionCompariso
 import AdvertisementApplication from "./pages/host_event/AdvertisementApplication";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
+import PaymentList from "./pages/host_reservation/PaymentList";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
 import { BoothApplicationList } from "./pages/host_booth/BoothApplicationList";
 import { BoothApplicationDetail } from "./pages/host_booth/BoothApplicationDetail";
@@ -114,7 +115,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/participant-form" element={<ParticipantForm />} />
-          <Route path="/qr-ticket/participant" element={<OnlyQrTicketPage />} />          
+          <Route path="/qr-ticket/participant" element={<OnlyQrTicketPage />} />
           <Route path="/eventoverview" element={<EventOverview />} />
           <Route path="/eventdetail/:eventId" element={<EventDetail />} />
           <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
@@ -144,6 +145,8 @@ function AppContent() {
           <Route path="/host/advertisement-application" element={<HostRouteGuard><AdvertisementApplication /></HostRouteGuard>} />
           <Route path="/host/reservation-list/:eventId" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
           <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
+          {/* 결제 목록은 이벤트 컨텍스트 내부에서 처리하며 경로는 단일화 */}
+          <Route path="/host/payment-list" element={<HostRouteGuard><PaymentList /></HostRouteGuard>} />
           <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
           <Route path="/host/booth-applications" element={<HostRouteGuard><BoothApplicationList /></HostRouteGuard>} />
           <Route path="/host/booth-applications/:id" element={<HostRouteGuard><BoothApplicationDetail /></HostRouteGuard>} />
@@ -197,6 +200,7 @@ function AppContent() {
           <Route path="/host/status-management" element={<EventStatusBanner />} />
           <Route path="/host/reservation-list" element={<ReservationList />} />
           <Route path="/host/reservation-stats" element={<ReservationStats />} />
+          <Route path="/host/payment-list" element={<PaymentList />} />
           <Route path="/host/booth-type" element={<BoothTypeManagement />} />
           <Route path="/host/booth-applications" element={<BoothApplicationList />} />
           <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
@@ -205,7 +209,7 @@ function AppContent() {
           <Route path="/host/time-analysis" element={<TimeAnalysis />} />
           <Route path="/host/qr-scan" element={<QRScanPage />} />
           <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
-          
+
           {/* 부스 체험 */}
           <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
           <Route path="/host/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
