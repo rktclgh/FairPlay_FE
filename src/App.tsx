@@ -34,7 +34,6 @@ import { EventVersionComparison } from "./pages/host_event/EventVersionCompariso
 import AdvertisementApplication from "./pages/host_event/AdvertisementApplication";
 import { ReservationList } from "./pages/host_reservation/ReservationList";
 import { ReservationStats } from "./pages/host_reservation/ReservationStats";
-import PaymentList from "./pages/host_reservation/PaymentList";
 import { BoothTypeManagement } from "./pages/host_booth/BoothTypeManagement";
 import { BoothApplicationList } from "./pages/host_booth/BoothApplicationList";
 import { BoothApplicationDetail } from "./pages/host_booth/BoothApplicationDetail";
@@ -78,7 +77,8 @@ import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
 import { RefundList } from "./pages/user_refund/RefundList";
 import RefundManagement from "./pages/admin_refund/RefundManagement";
-import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
+import PaymentManagement from "./pages/admin_payment/PaymentManagement";
+import HostPaymentManagement from "./pages/host_event/host_payment/HostPaymentManagement";
 import BoothExperienceList from "./pages/user_booth/BoothExperienceList";
 import MyBoothExperienceReservations from "./pages/user_booth/MyBoothExperienceReservations";
 import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagement";
@@ -91,6 +91,7 @@ import FAQ from "./pages/footer/FAQ";
 import PrivacyPolicy from "./pages/footer/PrivacyPolicy";
 import TermsOfUse from "./pages/footer/TermsOfUse";
 import Policy from "./pages/footer/Policy";
+import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 
 function AppContent() {
   useScrollToTop();
@@ -174,8 +175,8 @@ function AppContent() {
             <Route path="/host/advertisement-application" element={<HostRouteGuard><AdvertisementApplication /></HostRouteGuard>} />
             <Route path="/host/reservation-list/:eventId" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
             <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
-            {/* 결제 목록은 이벤트 컨텍스트 내부에서 처리하며 경로는 단일화 */}
-            <Route path="/host/payment-list" element={<HostRouteGuard><PaymentList /></HostRouteGuard>} />
+            <Route path="/host/payment-management" element={<HostRouteGuard><HostPaymentManagement /></HostRouteGuard>} />
+            <Route path="/host/refund-management" element={<HostRouteGuard><HostRefundManagement /></HostRouteGuard>} />
             <Route path="/host/booth-type" element={<HostRouteGuard><BoothTypeManagement /></HostRouteGuard>} />
             <Route path="/host/booth-applications" element={<HostRouteGuard><BoothApplicationList /></HostRouteGuard>} />
             <Route path="/host/booth-participants" element={<HostRouteGuard><BoothParticipants /></HostRouteGuard>} />
@@ -210,6 +211,9 @@ function AppContent() {
             {/* 환불 관리 */}
             <Route path="/admin_dashboard/refunds" element={<AdminRouteGuard><RefundManagement /></AdminRouteGuard>} />
 
+            {/* 결제 관리 */}
+            <Route path="/admin_dashboard/payments" element={<AdminRouteGuard><PaymentManagement /></AdminRouteGuard>} />
+
             {/* 통합 통계 */}
             <Route path="/admin_dashboard/analytics/reservations" element={<AdminRouteGuard><ReservationStatistics /></AdminRouteGuard>} />
             <Route path="/admin_dashboard/analytics/popular" element={<AdminRouteGuard><PopularEvents /></AdminRouteGuard>} />
@@ -230,11 +234,9 @@ function AppContent() {
             <Route path="/host/dashboard" element={<HostDashboard />} />
             <Route path="/host/edit-event-info" element={<EditEventInfo />} />
             <Route path="/host/ticket-management" element={<TicketManagement />} />
-            {/*<Route path="/host/round-management" element={<RoundManagement />} />*/}
             <Route path="/host/status-management" element={<EventStatusBanner />} />
             <Route path="/host/reservation-list" element={<ReservationList />} />
             <Route path="/host/reservation-stats" element={<ReservationStats />} />
-            <Route path="/host/payment-list" element={<PaymentList />} />
             <Route path="/host/booth-type" element={<BoothTypeManagement />} />
             <Route path="/host/booth-applications" element={<BoothApplicationList />} />
             <Route path="/host/booth-participants" element={<BoothParticipants />} />
