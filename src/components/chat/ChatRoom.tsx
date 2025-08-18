@@ -36,7 +36,11 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     const [isSending, setIsSending] = useState(false); // 전송 중 상태
     const [pendingMessage, setPendingMessage] = useState<string | null>(null); // 대기 중인 메시지
     const [lastAiMessageId, setLastAiMessageId] = useState<number | null>(null); // 마지막 AI 메시지 ID 추적
+    const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true); // 더 많은 메시지가 있는지
+    const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false); // 추가 메시지 로딩 중
+    const [oldestMessageId, setOldestMessageId] = useState<number | null>(null); // 가장 오래된 메시지 ID
     const bottomRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     const getInitials = (name: string): string => {
         if (!name) return "U";
@@ -82,6 +86,9 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                 return prev;
             }
             
+            // 새 메시지가 수신되었으므로 자동 스크롤 활성화
+            setShouldScrollToBottom(true);
+            
             // 새 메시지 추가 후 시간순 정렬
             const newMessages = [...prev, msg];
             return newMessages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
@@ -99,20 +106,113 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         }
     }, [isAiChat]);
 
+    // 더 많은 메시지 로드 (버튼 클릭 시)
+    const loadMoreMessages = useCallback(async () => {
+        if (!hasMoreMessages || isLoadingMore || !oldestMessageId) {
+            console.log('🙅 더 이상 로드할 메시지가 없거나 로딩 중:', { hasMoreMessages, isLoadingMore, oldestMessageId });
+            return;
+        }
+        
+        // 현재 스크롤 위치 저장 (새 메시지 추가 후 위치 복원용)
+        const container = messagesContainerRef.current;
+        const previousScrollHeight = container?.scrollHeight || 0;
+        const previousScrollTop = container?.scrollTop || 0;
+        
+        setIsLoadingMore(true);
+        console.log(`🔄 추가 메시지 로드 시작 - lastMessageId: ${oldestMessageId}`);
+        
+        try {
+            const response = await axios.get(`/api/chat/messages/cursor?chatRoomId=${roomId}&lastMessageId=${oldestMessageId}&size=20`, {
+                headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
+            });
+            
+            const data = response.data;
+            const newMessages = data.messages || [];
+            
+            if (newMessages.length > 0) {
+                const sortedNewMessages = newMessages.sort((a: ChatMessageDto, b: ChatMessageDto) => 
+                    new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+                );
+                
+                // 이전 메시지들을 앞에 추가
+                setMessages(prev => {
+                    const combined = [...sortedNewMessages, ...prev];
+                    // 중복 제거
+                    const uniqueMessages = combined.filter((msg, index, arr) => 
+                        arr.findIndex(m => m.chatMessageId === msg.chatMessageId) === index
+                    );
+                    return uniqueMessages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+                });
+                
+                // 다음 페이지를 위한 커서 업데이트 (백엔드에서 제공하는 nextCursor 사용)
+                if (data.nextCursor) {
+                    setOldestMessageId(data.nextCursor);
+                } else if (sortedNewMessages.length > 0) {
+                    // nextCursor가 없으면 가장 오래된 메시지 ID 사용
+                    setOldestMessageId(sortedNewMessages[0].chatMessageId);
+                }
+                
+                // 이전 메시지 로드 시에는 자동 스크롤 비활성화
+                setShouldScrollToBottom(false);
+                
+                // 스크롤 위치 복원 (사용자의 현재 위치를 유지)
+                setTimeout(() => {
+                    if (container) {
+                        const newScrollHeight = container.scrollHeight;
+                        const scrollDiff = newScrollHeight - previousScrollHeight;
+                        container.scrollTop = previousScrollTop + scrollDiff;
+                        console.log(`📍 스크롤 위치 복원: ${previousScrollTop + scrollDiff}`);
+                    }
+                }, 50); // DOM 업데이트 대기
+                
+                console.log(`📨 추가 메시지 로드 완료: ${newMessages.length}개, 더보기 가능: ${data.hasNext}`);
+                console.log('📨 로드된 메시지 ID 범위:', sortedNewMessages.length > 0 ? `${sortedNewMessages[0].chatMessageId} ~ ${sortedNewMessages[sortedNewMessages.length-1].chatMessageId}` : 'none');
+                console.log('📨 다음 커서:', data.nextCursor);
+            } else {
+                console.log('📨 추가 메시지 없음');
+            }
+            
+            // 다음 페이지 존재 여부 업데이트
+            setHasMoreMessages(data.hasNext || false);
+            
+        } catch (error) {
+            console.error('추가 메시지 로드 실패:', error);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }, [roomId, hasMoreMessages, isLoadingMore, oldestMessageId]);
+
+    // 이전 메시지 불러오기 버튼 클릭 핸들러
+    const handleLoadMoreClick = useCallback(() => {
+        console.log('🔄 이전 메시지 불러오기 버튼 클릭');
+        loadMoreMessages();
+    }, [loadMoreMessages]);
+    
+    // 새 메시지 수신 시에만 아래로 스크롤 (기존 메시지 로드 시에는 스크롤 안함)
+    const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+
     const { send } = useChatSocket(roomId, handleMessage);
 
     // 최초 진입 시 기존 메시지 내역 조회
     useEffect(() => {
-        // 메시지 목록 가져오기
-        axios.get(`/api/chat/messages?chatRoomId=${roomId}`, {
+        // 페이징 API로 메시지 목록 가져오기 (최신 20개)
+        axios.get(`/api/chat/messages/cursor?chatRoomId=${roomId}&size=20`, {
             headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
         }).then(res => {
-            const messageData = res.data || [];
+            const data = res.data;
+            const messageData = data.messages || [];
+            
             // 메시지를 시간순으로 정렬 (오래된 것부터)
             const sortedMessages = messageData.sort((a: ChatMessageDto, b: ChatMessageDto) => 
                 new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
             );
             setMessages(sortedMessages);
+            
+            // 페이징 상태 설정
+            setHasMoreMessages(data.hasNext || false);
+            if (sortedMessages.length > 0) {
+                setOldestMessageId(sortedMessages[0].chatMessageId);
+            }
             
             // 메시지에서 상대방 userId 추출 (내가 아닌 다른 발신자)
             if (messageData.length > 0 && myUserId) {
@@ -124,6 +224,12 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
             
             // 메시지를 불러온 후 읽음 처리
             markMessagesAsRead();
+            
+            // 초기 로드이므로 아래로 스크롤 활성화
+            setShouldScrollToBottom(true);
+            
+            console.log(`📨 메시지 로드 완료: ${messageData.length}개, 더보기 가능: ${data.hasNext}`);
+            console.log(`📨 가장 오래된 메시지 ID: ${sortedMessages.length > 0 ? sortedMessages[0].chatMessageId : 'none'}`);
         }).catch(err => {
             console.warn("메시지 목록 가져오기 실패:", err);
             setMessages([]);
@@ -164,10 +270,12 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         });
     };
 
-    // 스크롤 자동 아래로 내림
+    // 새 메시지 수신 시에만 아래로 스크롤 (이전 메시지 로드 시에는 스크롤 안함)
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        if (shouldScrollToBottom) {
+            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages, shouldScrollToBottom]);
 
     // AI 챗봇 최초 진입 시 읽음 처리
     useEffect(() => {
@@ -193,6 +301,9 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         }
         
         send(message);
+        
+        // 메시지 전송 후에는 아래로 스크롤되도록 설정
+        setShouldScrollToBottom(true);
     };
 
 
@@ -213,7 +324,39 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                     )}
                 </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-white min-h-0">
+            <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 bg-white min-h-0"
+            >
+                {/* 이전 메시지 불러오기 버튼 */}
+                {hasMoreMessages && (
+                    <div className="flex justify-center py-3 mb-2">
+                        <button
+                            onClick={handleLoadMoreClick}
+                            disabled={isLoadingMore}
+                            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 transform ${
+                                isLoadingMore 
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                    : 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 hover:from-blue-100 hover:to-indigo-100 active:scale-95 shadow-sm border border-blue-200 hover:shadow-md'
+                            }`}
+                        >
+                            {isLoadingMore ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                                    이전 메시지 로딩 중...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-4 h-4 transform transition-transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                    이전 메시지 불러오기
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
+                {/* 채팅 메시지 목록 */}
                 {messages.map(msg => {
                     const isMyMessage = msg.senderId === myUserId;
                     const otherName = userName || "운영자";
@@ -257,6 +400,15 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                     );
                 })}
                 <div ref={bottomRef} />
+                
+                {/* 더 이상 메시지가 없을 때 표시 */}
+                {!hasMoreMessages && messages.length > 20 && (
+                    <div className="flex justify-center py-2 mb-2">
+                        <div className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
+                            🎉 첫 메시지입니다
+                        </div>
+                    </div>
+                )}
             </div>
             <div className="flex items-center gap-2 p-3 border-t bg-white flex-none">
                 <input

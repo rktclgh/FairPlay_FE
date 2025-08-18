@@ -24,10 +24,23 @@ export function useChatSocket(
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000; // 3초
   const pendingMessages = useRef<string[]>([]); // 연결 전 대기 중인 메시지들
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+  const initRef = useRef(false);
 
   // onMessage는 이미 ChatRoom에서 useCallback으로 메모이제이션됨
 
   useEffect(() => {
+    // 초기화 체크 (React StrictMode 대응) - cleanup에서 false로 설정되는 것을 방지
+    isMountedRef.current = true;
+    if (!initRef.current) {
+      initRef.current = true;
+      console.log('🔄 useChatSocket 첫 초기화');
+    } else {
+      console.log('🔄 useChatSocket 재초기화 (StrictMode)');
+    }
+    
     // 룸 ID가 변경된 경우에만 처리
     if (currentRoomIdRef.current !== roomId) {
       console.log(`Room changed from ${currentRoomIdRef.current} to ${roomId}`);
@@ -56,22 +69,13 @@ export function useChatSocket(
       console.log(`Opening WebSocket for room ${roomId}...`);
       isConnectedRef.current = true;
 
-      // Native WebSocket을 먼저 시도, 실패시 SockJS fallback
+      // SockJS를 통한 WebSocket 연결
       const token = localStorage.getItem("accessToken");
-      let wsUrl =
-        window.location.hostname === "localhost"
-          ? `ws://localhost:8080/ws/chat`
-          : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/chat`;
-
-      if (token) {
-        wsUrl += `?token=${token}`;
-      }
-
-      console.log(`WebSocket connecting to: ${wsUrl}`);
-
-      // SockJS 직접 사용 (더 안정적)
+      
+      // 환경변수에서 백엔드 URL 가져오기 (포트 불일치 문제 해결)
+      const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080';
       const sockjsUrl = window.location.hostname === "localhost"
-        ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat-sockjs`
+        ? `${backendUrl}/ws/chat-sockjs`
         : `${window.location.protocol}//${window.location.host}/ws/chat-sockjs`;
       
       console.log(`SockJS connecting to: ${sockjsUrl}`);
@@ -80,9 +84,22 @@ export function useChatSocket(
       const stomp = Stomp.over(sock);
 
       // 배포환경 최적화 설정
-      stomp.heartbeat.outgoing = 25000; // 25초
-      stomp.heartbeat.incoming = 25000; // 25초
-      stomp.debug = () => {};
+      stomp.heartbeat.outgoing = 20000; // 20초 (더 짧게 설정하여 연결 안정성 확보)
+      stomp.heartbeat.incoming = 20000; // 20초
+      stomp.debug = () => {}; // 프로덕션에서는 debug 비활성화
+      
+      // 연결 타임아웃 설정
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+      }
+      connectionTimeoutRef.current = setTimeout(() => {
+        if (!stomp.connected && isMountedRef.current) {
+          console.warn('WebSocket 연결 타임아웃 (10초)');
+          if (stomp.ws) {
+            stomp.ws.close();
+          }
+        }
+      }, 10000); // 10초 타임아웃
       clientRef.current = stomp;
 
       // STOMP CONNECT 헤더에 토큰 추가
@@ -94,8 +111,32 @@ export function useChatSocket(
       stomp.connect(
         connectHeaders,
         () => {
+          if (!isMountedRef.current) return;
+          
           console.log(`Connected to WebSocket for room ${roomId}`);
           reconnectAttempts.current = 0; // 연결 성공 시 재연결 시도 횟수 초기화
+          isConnectedRef.current = true;
+          
+          // 연결 타임아웃 해제
+          if (connectionTimeoutRef.current) {
+            clearTimeout(connectionTimeoutRef.current);
+            connectionTimeoutRef.current = null;
+          }
+          
+          // 하트비트 모니터링 시작
+          if (heartbeatIntervalRef.current) {
+            clearInterval(heartbeatIntervalRef.current);
+          }
+          heartbeatIntervalRef.current = setInterval(() => {
+            if (stomp && stomp.connected) {
+              // 연결 상태 확인을 위한 ping
+              try {
+                stomp.send('/app/ping', {}, '');
+              } catch (error) {
+                console.warn('하트비트 ping 실패:', error);
+              }
+            }
+          }, 30000); // 30초마다 ping
 
           // 새로운 룸 구독
           if (!subscriptionRef.current) {
@@ -130,8 +171,22 @@ export function useChatSocket(
           });
         },
         (error) => {
+          if (!isMountedRef.current) return;
+          
           console.error("WebSocket connection failed:", error);
           isConnectedRef.current = false;
+          
+          // 연결 타임아웃 해제
+          if (connectionTimeoutRef.current) {
+            clearTimeout(connectionTimeoutRef.current);
+            connectionTimeoutRef.current = null;
+          }
+          
+          // 하트비트 정리
+          if (heartbeatIntervalRef.current) {
+            clearInterval(heartbeatIntervalRef.current);
+            heartbeatIntervalRef.current = null;
+          }
 
           // 인증 오류인지 확인 (401, 403 등)
           const isAuthError = error && (
@@ -162,8 +217,26 @@ export function useChatSocket(
 
             setTimeout(() => {
               // 재연결 전 다시 한번 인증 상태 확인
-              if (isAuthenticated()) {
+              if (isAuthenticated() && isMountedRef.current) {
+                console.log(`실제 재연결 시도 ${reconnectAttempts.current}/${maxReconnectAttempts}`);
                 isConnectedRef.current = false; // 재연결을 위해 상태 초기화
+                
+                // 기존 연결 정리
+                if (clientRef.current) {
+                  try {
+                    if (clientRef.current.connected) {
+                      clientRef.current.disconnect(() => {
+                        console.log('기존 연결 정리 완료, 재연결 시작');
+                      });
+                    }
+                  } catch (e) {
+                    console.warn('기존 연결 정리 중 오류:', e);
+                  }
+                  clientRef.current = null;
+                }
+                
+                // 구독도 초기화
+                subscriptionRef.current = null;
               }
             }, reconnectDelay);
           } else {
@@ -200,14 +273,93 @@ export function useChatSocket(
     }
 
     return () => {
-      // 구독만 해제하고 연결은 유지
+      // 구독 해제만 (연결은 유지)
       if (subscriptionRef.current) {
         console.log(`Unsubscribing from room ${roomId}`);
-        subscriptionRef.current.unsubscribe();
+        try {
+          subscriptionRef.current.unsubscribe();
+        } catch (error) {
+          console.warn('구독 해제 중 오류:', error);
+        }
         subscriptionRef.current = null;
+      }
+      
+      // 타임아웃 정리
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      
+      // 하트비트 정리
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
       }
     };
   }, [roomId, onMessage]);
+  
+  // 컴포넌트 언마운트 시 전체 정리
+  useEffect(() => {
+    return () => {
+      console.log('useChatSocket cleanup 시작');
+      
+      // initRef를 false로 설정하여 재초기화 방지
+      initRef.current = false;
+      
+      // 타임아웃 정리 먼저
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
+      }
+      
+      // 구독 해제 (연결 종료 전에)
+      if (subscriptionRef.current) {
+        try {
+          subscriptionRef.current.unsubscribe();
+          subscriptionRef.current = null;
+        } catch (error) {
+          console.warn('구독 해제 중 오류:', error);
+        }
+      }
+      
+      // React StrictMode 대응: 지연된 정리 시에도 재초기화를 고려
+      setTimeout(() => {
+        // 만약 이미 재초기화되었다면 정리하지 않음 (StrictMode 대응)
+        if (initRef.current) {
+          console.log('🛑 컴포넌트가 재초기화되어 정리 건너뜀');
+          return;
+        }
+        
+        console.log('🧹 useChatSocket 최종 정리 시작');
+        isMountedRef.current = false;
+        
+        // 연결 완전 종료
+        if (clientRef.current) {
+          try {
+            if (clientRef.current.connected) {
+              clientRef.current.disconnect(() => {
+                console.log('채팅 WebSocket 연결 종료');
+              });
+            }
+          } catch (error) {
+            console.warn('WebSocket 연결 종료 중 오류:', error);
+          }
+          clientRef.current = null;
+        }
+        
+        // 모든 상태 초기화
+        isConnectedRef.current = false;
+        currentRoomIdRef.current = null;
+        reconnectAttempts.current = 0;
+        pendingMessages.current = [];
+      }, 100); // 100ms 지연
+    };
+  }, []);
 
   // 내부 메시지 전송 함수
   const sendMessageInternal = useCallback((content: string, stomp: Stomp.Client) => {
@@ -252,14 +404,36 @@ export function useChatSocket(
 
       const stomp = clientRef.current;
 
+      // 강제로 mount 상태 확인 및 복구
+      if (!isMountedRef.current && initRef.current) {
+        console.log('⚠️ isMountedRef가 false이지만 컴포넌트는 활성 상태 - 복구 시도');
+        isMountedRef.current = true;
+      }
+      
+      console.log('📨 메시지 전송 시도:', {
+        content: content.trim(),
+        isMounted: isMountedRef.current,
+        hasClient: !!stomp,
+        isConnected: stomp?.connected,
+        hasSubscription: !!subscriptionRef.current,
+        initRef: initRef.current
+      });
+
       // WebSocket이 연결되어 있고 구독되어 있는 경우 즉시 전송
       if (stomp && stomp.connected && subscriptionRef.current) {
-        console.log("WebSocket 연결 상태, 즉시 전송:", content.trim());
+        console.log("✅ WebSocket 연결 상태, 즉시 전송:", content.trim());
+        sendMessageInternal(content.trim(), stomp);
+      } else if (stomp && stomp.connected) {
+        console.warn("⚠️ WebSocket 연결됨, 하지만 구독 안됨");
         sendMessageInternal(content.trim(), stomp);
       } else {
-        // 연결되지 않은 경우 대기 큐에 추가
-        console.log("WebSocket 연결 대기 중, 메시지 큐에 추가:", content.trim());
-        pendingMessages.current.push(content.trim());
+        // 연결되지 않은 경우 대기 큐에 추가 (최대 10개만 보관)
+        if (pendingMessages.current.length < 10) {
+          console.log("⏳ WebSocket 연결 대기 중, 메시지 큐에 추가:", content.trim());
+          pendingMessages.current.push(content.trim());
+        } else {
+          console.warn('❌ 대기 메시지 큐 초과, 전송 실패:', content.trim());
+        }
       }
     },
     [sendMessageInternal]
