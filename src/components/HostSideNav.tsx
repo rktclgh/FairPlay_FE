@@ -296,14 +296,34 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                 >
                                     부스 신청 목록
                                 </Link>
+                                <Link
+                                    to="/host/booth-participants"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-participants"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booth-participants" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-participants" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-participants" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    참가 부스 목록
+                                </Link>
                             </div>
                         </div>
                     )}
 
-                    {/* 부스 체험 카테고리 - EVENT_MANAGER 권한 필요 */}
+                    {/* 부스 체험 카테고리 - EVENT_MANAGER 권한 필요 */
+                    }
                     {hasEventManagerPermission(userRole || '') && (
                         <div className="mb-4 space-y-0">
-                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">부스 관리</h3>
+                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">부스 체험</h3>
                             <div className="space-y-1">
                                 <Link
                                     to="/host/booth-experience-management"
@@ -316,7 +336,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                         color: location.pathname === "/host/booth-experience-management" ? "black" : "#00000080"
                                     }}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = location.pathname === "//host/booth-experience-management" ? "black" : "#00000080";
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-experience-management" ? "black" : "#00000080";
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.color = location.pathname === "/host/booth-experience-management" ? "black" : "#00000080";
@@ -326,7 +346,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                 </Link>
                                 <Link
                                     to="/host/booth-experience-reserver-management"
-                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-applications"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-experience-reserver-management"
                                         ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                         : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
                                         }`}

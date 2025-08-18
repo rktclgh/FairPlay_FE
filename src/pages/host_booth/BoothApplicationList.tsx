@@ -24,7 +24,7 @@ interface BoothApplication {
 
 export const BoothApplicationList = () => {
     const navigate = useNavigate();
-    
+
     const [searchForm, setSearchForm] = useState({
         applicationNumber: "",
         boothName: "",
@@ -321,13 +321,13 @@ export const BoothApplicationList = () => {
 
     // 검색된 데이터 필터링
     const filteredApplications = applications.filter(application => {
-        const matchesApplicationNumber = !searchForm.applicationNumber || 
+        const matchesApplicationNumber = !searchForm.applicationNumber ||
             application.applicationNumber.toLowerCase().includes(searchForm.applicationNumber.toLowerCase());
-        const matchesBoothName = !searchForm.boothName || 
+        const matchesBoothName = !searchForm.boothName ||
             application.boothName.toLowerCase().includes(searchForm.boothName.toLowerCase());
-        const matchesBoothType = !searchForm.boothType || 
+        const matchesBoothType = !searchForm.boothType ||
             application.boothType === searchForm.boothType;
-        
+
         return matchesApplicationNumber && matchesBoothName && matchesBoothType;
     });
 
@@ -392,9 +392,9 @@ export const BoothApplicationList = () => {
 
         // 파일명 생성 (현재 날짜 포함)
         const today = new Date();
-        const dateString = today.getFullYear() + 
-                          String(today.getMonth() + 1).padStart(2, '0') + 
-                          String(today.getDate()).padStart(2, '0');
+        const dateString = today.getFullYear() +
+            String(today.getMonth() + 1).padStart(2, '0') +
+            String(today.getDate()).padStart(2, '0');
         const fileName = `부스신청목록_${dateString}.xlsx`;
 
         // 파일 다운로드
@@ -420,7 +420,7 @@ export const BoothApplicationList = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20">
-                    
+
                     {/* 검색 영역 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <h3 className="text-lg font-semibold mb-4">검색 조건</h3>
@@ -433,7 +433,7 @@ export const BoothApplicationList = () => {
                                     value={searchForm.applicationNumber}
                                     onChange={handleSearchChange}
                                     placeholder="신청번호 검색"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
                             <div>
@@ -444,7 +444,7 @@ export const BoothApplicationList = () => {
                                     value={searchForm.boothName}
                                     onChange={handleSearchChange}
                                     placeholder="부스명 검색"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
                             <div>
@@ -453,7 +453,7 @@ export const BoothApplicationList = () => {
                                     name="boothType"
                                     value={searchForm.boothType}
                                     onChange={handleSearchChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 >
                                     <option value="">전체</option>
                                     <option value="스탠다드 부스">스탠다드 부스</option>
@@ -461,7 +461,7 @@ export const BoothApplicationList = () => {
                                 </select>
                             </div>
                         </div>
-                        
+
                         {/* 엑셀 다운로드 버튼 */}
                         <div className="flex justify-end">
                             <button
@@ -538,11 +538,10 @@ export const BoothApplicationList = () => {
                                 <button
                                     onClick={handlePrevPage}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                        currentPage === 1
+                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                 >
                                     이전
                                 </button>
@@ -551,11 +550,10 @@ export const BoothApplicationList = () => {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                            currentPage === page
+                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === page
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                            }`}
                                     >
                                         {page}
                                     </button>
@@ -564,11 +562,10 @@ export const BoothApplicationList = () => {
                                 <button
                                     onClick={handleNextPage}
                                     disabled={currentPage === totalPages}
-                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                        currentPage === totalPages
+                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                 >
                                     다음
                                 </button>

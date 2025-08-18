@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, Calendar, Clock, Users, Edit, Eye, Trash2, 
+import {
+  Plus, Search, Calendar, Clock, Users, Edit, Eye, Trash2,
   Filter, RefreshCw, AlertCircle, CheckCircle, XCircle
 } from 'lucide-react';
 import {
@@ -21,11 +21,11 @@ const BoothExperienceManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingExperience, setEditingExperience] = useState<BoothExperience | null>(null);
-  
+
   // 필터 상태
   const [searchTitle, setSearchTitle] = useState('');
   const [searchDate, setSearchDate] = useState('');
-  
+
   // 권한 기반으로 관리 가능한 모든 부스 체험을 조회
 
   useEffect(() => {
@@ -54,7 +54,7 @@ const BoothExperienceManagement: React.FC = () => {
 
     // 체험명 및 부스명 검색
     if (searchTitle.trim()) {
-      filtered = filtered.filter(exp => 
+      filtered = filtered.filter(exp =>
         exp.title.toLowerCase().includes(searchTitle.toLowerCase()) ||
         (exp.boothName && exp.boothName.toLowerCase().includes(searchTitle.toLowerCase()))
       );
@@ -156,7 +156,7 @@ const BoothExperienceManagement: React.FC = () => {
                   <input
                     type="text"
                     placeholder="체험명 또는 부스명으로 검색"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={searchTitle}
                     onChange={(e) => setSearchTitle(e.target.value)}
                   />
@@ -170,7 +170,7 @@ const BoothExperienceManagement: React.FC = () => {
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="date"
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={searchDate}
                     onChange={(e) => setSearchDate(e.target.value)}
                   />
@@ -313,9 +313,8 @@ const BoothExperienceManagement: React.FC = () => {
                             ) : (
                               <XCircle className="w-5 h-5 text-red-500 mr-2" />
                             )}
-                            <span className={`text-sm font-medium ${
-                              experience.isReservationEnabled ? 'text-green-600' : 'text-red-600'
-                            }`}>
+                            <span className={`text-sm font-medium ${experience.isReservationEnabled ? 'text-green-600' : 'text-red-600'
+                              }`}>
                               {experience.isReservationEnabled ? '예약 활성' : '예약 비활성'}
                             </span>
                           </div>
@@ -362,12 +361,12 @@ const BoothExperienceManagement: React.FC = () => {
 
       {/* 체험 추가/수정 모달 */}
       {showFormModal && (
-          <BoothExperienceFormModal
-              boothId={editingExperience ? editingExperience.boothId : undefined}
-              experience={editingExperience}
-              onClose={() => setShowFormModal(false)}
-              onSuccess={handleFormSubmitSuccess}
-          />
+        <BoothExperienceFormModal
+          boothId={editingExperience ? editingExperience.boothId : undefined}
+          experience={editingExperience}
+          onClose={() => setShowFormModal(false)}
+          onSuccess={handleFormSubmitSuccess}
+        />
       )}
     </div>
   );
