@@ -24,12 +24,23 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 	const headerRef = useRef<HTMLDivElement>(null);
 	const [headerHeight, setHeaderHeight] = useState<number>(0);
+	const searchInputRef = useRef<HTMLInputElement>(null);
 
 	const location = useLocation();
 	const navigate = useNavigate();
 
 	// 웹소켓 기반 알림 시스템 사용
 	const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
+
+	// 검색 패널이 열릴 때 자동으로 입력폼에 포커스
+	useEffect(() => {
+		if (isSearchOpen && searchInputRef.current) {
+			// 약간의 지연을 두어 애니메이션이 시작된 후 포커스
+			setTimeout(() => {
+				searchInputRef.current?.focus();
+			}, 100);
+		}
+	}, [isSearchOpen]);
 
 	const checkLoginStatus = useCallback(() => {
 		const loggedIn = isAuthenticated();
@@ -270,6 +281,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 										value={desktopQuery}
 										onChange={(e) => setDesktopQuery(e.target.value)}
 										className={`flex-1 text-xl outline-none bg-transparent ${isDark ? 'text-white placeholder-gray-500' : 'text-black placeholder-gray-500'}`}
+										ref={searchInputRef}
 									/>
 								</div>
 							</form>

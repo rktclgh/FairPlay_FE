@@ -5,7 +5,7 @@ import {
     Map as MapIcon,
 } from "lucide-react";
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
@@ -35,11 +35,10 @@ const fetchCalendarGrouped = (year: number, month: number) =>
         headers: authHeaders(),
     });
 
-
-
 export default function EventOverview() {
     const { isDark } = useTheme();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
+    const [filteredEvents, setFilteredEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
@@ -89,8 +88,29 @@ export default function EventOverview() {
     const mapRef = React.useRef<HTMLDivElement>(null);
     const markersRef = React.useRef<any[]>([]);
 
-
     const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const searchQuery = searchParams.get('q') || '';
+
+    // 검색어에 따른 이벤트 필터링
+    React.useEffect(() => {
+        if (!searchQuery.trim()) {
+            setFilteredEvents(events);
+            return;
+        }
+
+        const filtered = events.filter(event => {
+            const query = searchQuery.toLowerCase();
+            return (
+                event.title.toLowerCase().includes(query) ||
+                event.mainCategory.toLowerCase().includes(query) ||
+                event.location.toLowerCase().includes(query) ||
+                event.region.toLowerCase().includes(query)
+            );
+        });
+
+        setFilteredEvents(filtered);
+    }, [searchQuery, events]);
 
     // 좋아요 토글 함수
     const toggleWish = async (eventId: number) => {
@@ -411,10 +431,6 @@ export default function EventOverview() {
         const end = new Date(eventEnd);
         return start <= endDate && end >= startDate;
     };
-
-    const filteredEvents = events.filter((event) => {
-        return isEventInDateRange(event.startDate, event.endDate);
-    });
 
     // MD PICK 우선 노출 인식: 로컬스토리지에서 오늘 날짜의 ID/제목을 모두 읽는다
     // [백엔드 연동 필요]
@@ -1058,62 +1074,89 @@ export default function EventOverview() {
                         </div>
                     </div>
 
+                    {/* 검색 결과 표시 */}
+                    {searchQuery && (
+                        <div className="mt-6 px-6">
+                            <div className="flex items-center gap-2 text-gray-600">
+                                <span className="font-medium">검색 결과:</span>
+                                <span className="text-blue-600 font-semibold">"{searchQuery}"</span>
+                                <span className="text-gray-500">({displayEvents.length}개)</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Event Grid */}
                     {viewMode === "list" && (
                         <div className="grid grid-cols-4 gap-6 mt-10 px-6">
-                            {displayEvents.map((event) => (
-                                <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
-                                    <div className="relative group">
-                                        {/* MD PICK 스티커 */}
-                                        {hasMdPickInCurrentList && isEventMdPick(event) && (
-                                            <div className="absolute top-2 left-2 z-10">
-                                                <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
-                                                    <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
-                                                    <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+                            {displayEvents.length > 0 ? (
+                                displayEvents.map((event) => (
+                                    <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
+                                        <div className="relative group">
+                                            {/* MD PICK 스티커 */}
+                                            {hasMdPickInCurrentList && isEventMdPick(event) && (
+                                                <div className="absolute top-2 left-2 z-10">
+                                                    <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+                                                        <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+                                                        <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <img
+                                                className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
+                                                alt={event.title}
+                                                src={event.thumbnailUrl || "/images/NoImage.png"}
+                                            />
+                                            <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                            <FaHeart
+                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleWish(event.id);
+                                                }}
+                                            />
+
+
+                                        </div>
+                                        <div className="mt-4 text-left">
+                                            <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
+                                                {event.mainCategory}
+                                            </span>
+                                            <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
+                                            <div className="text-sm text-gray-600 mb-2">
+                                                <div className="font-bold">{event.location}</div>
+                                                <div>
+                                                    {event.startDate === event.endDate
+                                                        ? new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')
+                                                        : `${new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')} ~ ${new Date(event.endDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')}`
+                                                    }
                                                 </div>
                                             </div>
-                                        )}
-                                        <img
-                                            className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
-                                            alt={event.title}
-                                            src={event.thumbnailUrl || "/images/NoImage.png"}
-                                        />
-                                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                toggleWish(event.id);
-                                            }}
-                                        />
-
-
-                                    </div>
-                                    <div className="mt-4 text-left">
-                                        <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
-                                            {event.mainCategory}
-                                        </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
-                                            <div className="font-bold">{event.location}</div>
-                                            <div>
-                                                {event.startDate === event.endDate
-                                                    ? new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')
-                                                    : `${new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')} ~ ${new Date(event.endDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')}`
-                                                }
-                                            </div>
+                                            <p className="font-bold text-lg text-[#ff6b35]">
+                                                {event.minPrice == null
+                                                    ? "가격 정보 없음"
+                                                    : event.minPrice === 0
+                                                        ? "무료"
+                                                        : `${event.minPrice.toLocaleString()}원 ~`}
+                                            </p>
                                         </div>
-                                        <p className="font-bold text-lg text-[#ff6b35]">
-                                            {event.minPrice == null
-                                                ? "가격 정보 없음"
-                                                : event.minPrice === 0
-                                                    ? "무료"
-                                                    : `${event.minPrice.toLocaleString()}원 ~`}
-                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-4 text-center py-20">
+                                    <div className="text-gray-500">
+                                        {searchQuery ? (
+                                            <>
+                                                <p className="text-lg font-medium mb-2">검색 결과가 없습니다</p>
+                                                <p className="text-sm">"{searchQuery}"에 대한 검색 결과를 찾을 수 없습니다.</p>
+                                                <p className="text-sm text-gray-400 mt-1">다른 검색어를 시도해보세요.</p>
+                                            </>
+                                        ) : (
+                                            <p className="text-lg">이벤트가 없습니다</p>
+                                        )}
                                     </div>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     )}
 
