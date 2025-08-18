@@ -406,6 +406,62 @@ export const Main: React.FC = () => {
     // Hot Picks 데이터 (백엔드 연결 후 hotPicks로 교체)
     const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
 
+    // MD PICK 우선 노출 인식: 로컬스토리지에서 오늘 날짜의 ID/제목을 모두 읽는다
+    // [백엔드 연동 필요]
+    // - 오늘 노출할 MD PICK 이벤트 ID 목록을 API로 전달받아 사용하세요.
+    // - 현재는 로컬스토리지 키 'mdpick:YYYY-MM-DD'에서 읽도록 남겨두었습니다. API 적용 시 이 함수들을 대체하세요.
+    const getMdPickIdsForToday = () => {
+        const todayKey = `mdpick:${new Date().toISOString().split('T')[0]}`;
+        try {
+            const raw = localStorage.getItem(todayKey);
+            if (raw) {
+                const arr = JSON.parse(raw) as number[];
+                if (Array.isArray(arr)) return new Set(arr.slice(0, 2));
+            }
+        } catch (_) { }
+        return new Set<number>();
+    };
+    // [백엔드 연동 필요]
+    // - 임시 보조: 제목 기반 매칭용 키입니다. 백엔드가 ID를 제공하면 제거해도 됩니다.
+    const getMdPickTitlesForToday = () => {
+        const todayKey = `mdpick_titles:${new Date().toISOString().split('T')[0]}`;
+        try {
+            const raw = localStorage.getItem(todayKey);
+            if (raw) {
+                const arr = JSON.parse(raw) as string[];
+                if (Array.isArray(arr)) return new Set(arr.slice(0, 2));
+            }
+        } catch (_) { }
+        return new Set<string>();
+    };
+    const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
+
+    const mdPickIds = getMdPickIdsForToday();
+    const mdPickTitles = getMdPickTitlesForToday();
+    const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
+
+    // [백엔드 연동 필요]
+    // - API에서 받은 MD PICK 세트를 기준으로 판단하도록 바꾸세요.
+    const isEventMdPick = (e: EventSummaryDto) => {
+        if (mdPickIds.has(e.id)) return true;
+        if (mdPickTitleNorms.size > 0) {
+            const nt = normalize(e.title);
+            for (const t of mdPickTitleNorms) {
+                if (nt.includes(t)) return true;
+            }
+        }
+        return false;
+    };
+
+    const hasMdPickInCurrentList = events.some(e => isEventMdPick(e));
+    const displayEvents = hasMdPickInCurrentList
+        ? [...events].sort((a, b) => {
+            const aPick = isEventMdPick(a) ? 1 : 0;
+            const bPick = isEventMdPick(b) ? 1 : 0;
+            return bPick - aPick;
+        })
+        : events;
+
     if (loading) {
         return (
             <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
@@ -571,10 +627,19 @@ export const Main: React.FC = () => {
 
                     {/* 행사 카드들 */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {events.map((event) => (
+                        {displayEvents.map((event) => (
                             <div key={event.id} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
                                     <div className="relative group">
+                                        {/* MD PICK 스티커 */}
+                                        {hasMdPickInCurrentList && isEventMdPick(event) && (
+                                            <div className="absolute top-2 left-2 z-10">
+                                                <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+                                                    <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+                                                    <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+                                                </div>
+                                            </div>
+                                        )}
                                         <img
                                             className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}

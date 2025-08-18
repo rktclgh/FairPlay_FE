@@ -8,7 +8,7 @@ const AdvertisementApplication: React.FC = () => {
     mainBanner: false,
     searchTop: false
   });
-  
+
   const [mainBannerForm, setMainBannerForm] = useState<{
     date: string;
     rank: string;
@@ -18,7 +18,7 @@ const AdvertisementApplication: React.FC = () => {
     date: '',
     rank: ''
   });
-  
+
   const [searchTopForm, setSearchTopForm] = useState({
     startDate: '',
     endDate: ''
@@ -27,56 +27,176 @@ const AdvertisementApplication: React.FC = () => {
   // 검색 상단 고정 가격 계산 함수
   const calculateSearchTopPrice = () => {
     if (!searchTopForm.startDate || !searchTopForm.endDate) return 0;
-    
+
     const startDate = new Date(searchTopForm.startDate);
     const endDate = new Date(searchTopForm.endDate);
-    
+
     if (startDate > endDate) return 0;
-    
-    const timeDiff = endDate.getTime() - startDate.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // 시작일 포함
-    
-    return daysDiff * 500000; // 일당 500,000원
+
+    // 실제 신청 가능한 날짜만 계산
+    let availableDays = 0;
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      if (isMdPickAvailable(dateString)) {
+        availableDays++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return availableDays * 500000; // 일당 500,000원
   };
 
-  // 검색 상단 고정 총 일수 계산
+  // 검색 상단 고정 총 일수 계산 (전체 선택 기간)
   const getSearchTopDays = () => {
     if (!searchTopForm.startDate || !searchTopForm.endDate) return 0;
-    
+
     const startDate = new Date(searchTopForm.startDate);
     const endDate = new Date(searchTopForm.endDate);
-    
+
     if (startDate > endDate) return 0;
-    
+
     const timeDiff = endDate.getTime() - startDate.getTime();
     return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // 시작일 포함
   };
 
-  // 달력 상태 추가
+  // 실제 신청 가능한 일수 계산
+  const getAvailableDays = () => {
+    if (!searchTopForm.startDate || !searchTopForm.endDate) return 0;
+
+    const startDate = new Date(searchTopForm.startDate);
+    const endDate = new Date(searchTopForm.endDate);
+
+    if (startDate > endDate) return 0;
+
+    let availableDays = 0;
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      if (isMdPickAvailable(dateString)) {
+        availableDays++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return availableDays;
+  };
+
+  // 신청 가능한 날짜 목록 반환
+  const getAvailableDates = () => {
+    if (!searchTopForm.startDate || !searchTopForm.endDate) return [];
+
+    const startDate = new Date(searchTopForm.startDate);
+    const endDate = new Date(searchTopForm.endDate);
+    const availableDates: string[] = [];
+
+    if (startDate > endDate) return availableDates;
+
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      if (isMdPickAvailable(dateString)) {
+        availableDates.push(dateString);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return availableDates;
+  };
+
+  // MD PICK 광고 상태 관리 (실제로는 서버에서 가져와야 함)
+  const [mdPickAdvertisements, setMdPickAdvertisements] = useState<{
+    [date: string]: {
+      count: number;
+      events: Array<{
+        id: number;
+        eventName: string;
+        startDate: string;
+        endDate: string;
+      }>;
+    };
+  }>({});
+
+  // MD PICK 광고 데이터 초기화 (더미 데이터)
+  React.useEffect(() => {
+    const generateMdPickData = () => {
+      const data: {
+        [date: string]: {
+          count: number;
+          events: Array<{
+            id: number;
+            eventName: string;
+            startDate: string;
+            endDate: string;
+          }>;
+        };
+      } = {};
+      const today = new Date();
+
+      // 향후 30일간의 MD PICK 광고 상태 생성
+      for (let i = 1; i <= 30; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const dateString = date.toISOString().split('T')[0];
+
+        // 랜덤하게 0~2개의 광고가 있는 상태 생성
+        const randomCount = Math.floor(Math.random() * 3);
+        const events = [];
+
+        if (randomCount > 0) {
+          for (let j = 0; j < randomCount; j++) {
+            events.push({
+              id: j + 1,
+              eventName: `MD PICK 이벤트 ${j + 1}`,
+              startDate: dateString,
+              endDate: dateString
+            });
+          }
+        }
+
+        data[dateString] = {
+          count: randomCount,
+          events: events
+        };
+      }
+
+      setMdPickAdvertisements(data);
+    };
+
+    generateMdPickData();
+  }, []);
+
+  // 메인 배너 광고용 달력 상태 (MD PICK과 별개)
   const [currentCalendarYear, setCurrentCalendarYear] = useState(new Date().getFullYear());
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date().getMonth() + 1);
 
-  // 각 날짜별 순위 상품의 재고 상태 (실제로는 서버에서 가져와야 함)
+  // 메인 배너 광고용 재고 상태 (MD PICK과 별개)
   const [inventoryStatus, setInventoryStatus] = useState<{
     [date: string]: {
       [rank: string]: 'available' | 'sold' | 'reserved'
     }
   }>({});
 
-  // 더미 데이터로 재고 상태 초기화 (실제로는 서버에서 가져와야 함)
+  // 메인 배너 광고용 재고 상태 초기화 (더미 데이터)
   React.useEffect(() => {
     const generateInventoryStatus = () => {
-      const status: any = {};
+      const status: {
+        [date: string]: {
+          [rank: string]: 'available' | 'sold' | 'reserved'
+        }
+      } = {};
       const today = new Date();
-      
+
       // 향후 30일간의 재고 상태 생성
       for (let i = 1; i <= 30; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
         const dateString = date.toISOString().split('T')[0];
-        
+
         status[dateString] = {};
-        
+
         // 각 순위별로 랜덤하게 재고 상태 설정
         for (let rank = 1; rank <= 10; rank++) {
           const random = Math.random();
@@ -89,10 +209,10 @@ const AdvertisementApplication: React.FC = () => {
           }
         }
       }
-      
+
       setInventoryStatus(status);
     };
-    
+
     generateInventoryStatus();
   }, []);
 
@@ -131,7 +251,81 @@ const AdvertisementApplication: React.FC = () => {
     }
   };
 
-  const { uploadedFiles, isUploading, uploadFile, removeFile } = useFileUpload();
+  // 특정 날짜에 MD PICK 광고 신청 가능 여부 확인
+  const isMdPickAvailable = (date: string) => {
+    const adData = mdPickAdvertisements[date];
+    return !adData || adData.count < 2;
+  };
+
+  // 선택된 날짜 범위에서 MD PICK 광고 신청 가능 여부 확인
+  const isMdPickRangeAvailable = () => {
+    if (!searchTopForm.startDate || !searchTopForm.endDate) return false;
+
+    const startDate = new Date(searchTopForm.startDate);
+    const endDate = new Date(searchTopForm.endDate);
+
+    if (startDate > endDate) return false;
+
+    // 선택된 날짜 범위의 모든 날짜를 확인
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      if (!isMdPickAvailable(dateString)) {
+        return false;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return true;
+  };
+
+  // 선택된 날짜 범위에서 MD PICK 광고가 이미 있는 날짜들 찾기
+  const getConflictDates = () => {
+    if (!searchTopForm.startDate || !searchTopForm.endDate) return [];
+
+    const startDate = new Date(searchTopForm.startDate);
+    const endDate = new Date(searchTopForm.endDate);
+    const conflictDates: string[] = [];
+
+    if (startDate > endDate) return conflictDates;
+
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      if (!isMdPickAvailable(dateString)) {
+        conflictDates.push(dateString);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return conflictDates;
+  };
+
+  // MD PICK 광고 신청 가능한 날짜 표시
+  const getMdPickStatusText = (date: string) => {
+    const adData = mdPickAdvertisements[date];
+    if (!adData) return '신청 가능';
+
+    if (adData.count === 0) return '신청 가능';
+    if (adData.count === 1) return '1개 신청됨';
+    if (adData.count >= 2) return '매진';
+
+    return '신청 가능';
+  };
+
+  // MD PICK 광고 상태에 따른 스타일 클래스 반환
+  const getMdPickStatusClass = (date: string) => {
+    const adData = mdPickAdvertisements[date];
+    if (!adData) return 'bg-green-100 text-green-800';
+
+    if (adData.count === 0) return 'bg-green-100 text-green-800';
+    if (adData.count === 1) return 'bg-yellow-100 text-yellow-800';
+    if (adData.count >= 2) return 'bg-red-100 text-red-800';
+
+    return 'bg-green-100 text-green-800';
+  };
+
+  const { uploadedFiles, uploadFile, removeFile } = useFileUpload();
 
   const handleTypeChange = (type: 'mainBanner' | 'searchTop') => {
     setSelectedTypes(prev => ({
@@ -159,7 +353,7 @@ const AdvertisementApplication: React.FC = () => {
     if (currentSelection.date && currentSelection.rank) {
       // 이미 같은 날짜에 다른 순위가 선택되어 있는지 확인
       const existingIndex = mainBannerForm.findIndex(item => item.date === currentSelection.date);
-      
+
       if (existingIndex !== -1) {
         // 기존 선택을 업데이트
         const updatedForm = [...mainBannerForm];
@@ -169,7 +363,7 @@ const AdvertisementApplication: React.FC = () => {
         // 새로운 선택 추가
         setMainBannerForm(prev => [...prev, { ...currentSelection }]);
       }
-      
+
       // 재고 상태를 'reserved'로 변경
       setInventoryStatus(prev => ({
         ...prev,
@@ -178,7 +372,7 @@ const AdvertisementApplication: React.FC = () => {
           [currentSelection.rank]: 'reserved'
         }
       }));
-      
+
       // 현재 선택 초기화
       setCurrentSelection({ date: '', rank: '' });
     }
@@ -196,7 +390,7 @@ const AdvertisementApplication: React.FC = () => {
         }
       }));
     }
-    
+
     setMainBannerForm(prev => prev.filter(item => item.date !== date));
   };
 
@@ -229,15 +423,14 @@ const AdvertisementApplication: React.FC = () => {
     const year = currentCalendarYear;
     const month = currentCalendarMonth;
     const firstDay = new Date(year, month - 1, 1);
-    const lastDay = new Date(year, month, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
+
     const days = [];
     for (let i = 0; i < 42; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      
+
       days.push({
         date: date.getDate(),
         dateString: date.toISOString().split('T')[0],
@@ -293,9 +486,9 @@ const AdvertisementApplication: React.FC = () => {
                 {/* 예시 이미지 및 권장 크기 */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-gray-800">예시</h4>
-                  <img 
-                    src="/images/ex1.png" 
-                    alt="메인 배너 예시" 
+                  <img
+                    src="/images/ex1.png"
+                    alt="메인 배너 예시"
                     className="w-full h-64 object-contain rounded"
                   />
                   <div className="text-sm text-gray-600">
@@ -307,7 +500,7 @@ const AdvertisementApplication: React.FC = () => {
                 {/* 이미지 업로드 폼 */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-gray-800">광고 이미지 업로드</h4>
-                  <div 
+                  <div
                     className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative h-64 flex items-center justify-center"
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -330,9 +523,9 @@ const AdvertisementApplication: React.FC = () => {
                       <div className="space-y-2">
                         {Array.from(uploadedFiles.values()).map((file, index) => (
                           <div key={index}>
-                            <img 
-                              src={file.url} 
-                              alt="광고 이미지 미리보기" 
+                            <img
+                              src={file.url}
+                              alt="광고 이미지 미리보기"
                               className="mx-auto max-h-48 max-w-full object-contain rounded"
                             />
                             <p className="text-xs text-green-600">✓ {file.name}</p>
@@ -494,7 +687,7 @@ const AdvertisementApplication: React.FC = () => {
                           const isAvailable = currentSelection.date ? isRankAvailable(currentSelection.date, rank.toString()) : false;
                           const statusText = currentSelection.date ? getInventoryStatusText(currentSelection.date, rank.toString()) : '구매가능';
                           const statusClass = currentSelection.date ? getInventoryStatusClass(currentSelection.date, rank.toString()) : 'bg-green-100 text-green-800';
-                          
+
                           // 순위별 가격 설정 (1순위가 가장 비싸고 순위가 낮을수록 할인)
                           const getPrice = (rank: number) => {
                             switch (rank) {
@@ -515,24 +708,21 @@ const AdvertisementApplication: React.FC = () => {
                           return (
                             <div
                               key={rank}
-                              className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
-                                isSelected && isAvailable
-                                  ? 'border-blue-500 bg-blue-50 cursor-pointer'
-                                  : isAvailable
-                                    ? 'border-gray-200 hover:bg-gray-50 cursor-pointer'
-                                    : 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-60'
-                              }`}
+                              className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${isSelected && isAvailable
+                                ? 'border-blue-500 bg-blue-50 cursor-pointer'
+                                : isAvailable
+                                  ? 'border-gray-200 hover:bg-gray-50 cursor-pointer'
+                                  : 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-60'
+                                }`}
                               onClick={() => isAvailable ? handleMainBannerChange('rank', rank.toString()) : null}
                             >
                               <div className="flex flex-col">
-                                <span className={`text-sm font-semibold ${
-                                  isAvailable ? 'text-[#212121]' : 'text-gray-500'
-                                }`}>
+                                <span className={`text-sm font-semibold ${isAvailable ? 'text-[#212121]' : 'text-gray-500'
+                                  }`}>
                                   {rank}순위
                                 </span>
-                                <span className={`text-xs ${
-                                  isAvailable ? 'text-gray-500' : 'text-gray-400'
-                                }`}>
+                                <span className={`text-xs ${isAvailable ? 'text-gray-500' : 'text-gray-400'
+                                  }`}>
                                   {rank === 1 ? '최우선 노출' : rank <= 3 ? '우선 노출' : '일반 노출'}
                                 </span>
                               </div>
@@ -540,9 +730,8 @@ const AdvertisementApplication: React.FC = () => {
                                 <span className={`text-xs px-2 py-1 rounded font-medium ${statusClass}`}>
                                   {statusText}
                                 </span>
-                                <span className={`text-xs ${
-                                  isAvailable ? 'text-green-600' : 'text-gray-400'
-                                }`}>
+                                <span className={`text-xs ${isAvailable ? 'text-green-600' : 'text-gray-400'
+                                  }`}>
                                   {getPrice(rank)}
                                 </span>
                               </div>
@@ -663,13 +852,13 @@ const AdvertisementApplication: React.FC = () => {
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">재고:</span>
                                     <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-medium">
-                                       예약됨
-                                     </span>
+                                      예약됨
+                                    </span>
                                   </div>
                                 </div>
                               </div>
                             ))}
-                            
+
                             {/* 총액 계산 */}
                             <div className="bg-gray-50 rounded-lg p-3 border-t">
                               <div className="flex justify-between">
@@ -720,27 +909,32 @@ const AdvertisementApplication: React.FC = () => {
                     className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="searchTop" className="text-lg font-semibold text-gray-800">
-                    검색 상단 고정
+                    검색 상단 고정 (MD PICK)
                   </label>
                 </div>
               </div>
 
               <p className="text-gray-600 mb-4">
-                검색 페이지의 첫번째와 두번째 카드에 랜덤으로 노출되어 사용자에게 더 자주 노출됩니다.
+                메인화면 EVENTS 섹션과 이벤트오버뷰 페이지의 행사목록 최상단에 MD PICK 스티커와 함께 우선노출됩니다.
+                <span className="font-semibold text-red-600">최대 2개 행사만 동시 노출 가능</span>합니다.
               </p>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 예시 이미지 및 가격 */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-gray-800">예시</h4>
-                  <img 
-                    src="/images/ex2.png" 
-                    alt="검색 상단 고정 예시" 
+                  <img
+                    src="/images/ex2.png"
+                    alt="검색 상단 고정 예시"
                     className="w-full h-64 object-contain rounded"
                   />
+                  <div className="text-sm text-gray-600">
+                    <p className="font-medium">MD PICK 스티커가 부착되어 최상단에 노출</p>
+                    <p className="text-xs text-gray-500 mt-1">1번, 2번 순서로 우선 노출</p>
+                  </div>
                 </div>
 
-                {/* 날짜 선택 */}
+                {/* 날짜 선택 및 상태 확인 */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-gray-800">노출 기간 설정</h4>
                   <div className="space-y-3">
@@ -769,17 +963,112 @@ const AdvertisementApplication: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
-                  {/* 가격 정보 - 카드 우측 하단에 배치 */}
+
+                  {/* MD PICK 상태 확인 */}
+                  {searchTopForm.startDate && searchTopForm.endDate && (
+                    <div className="mt-4 p-4 border rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-800 mb-3">선택 기간 MD PICK 상태</h5>
+
+                      {/* 충돌 날짜가 있는 경우 경고 표시 */}
+                      {!isMdPickRangeAvailable() && (
+                        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm font-medium text-red-800">신청 불가능한 날짜가 포함되어 있습니다</span>
+                          </div>
+                          <div className="mt-2 text-xs text-red-700">
+                            <p>다음 날짜에 이미 2개의 MD PICK 광고가 있습니다:</p>
+                            <div className="mt-1 space-y-1">
+                              {getConflictDates().map((date, index) => (
+                                <div key={index} className="flex items-center justify-between">
+                                  <span>{date}</span>
+                                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                                    매진
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 선택 가능한 경우 성공 표시 */}
+                      {isMdPickRangeAvailable() && (
+                        <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm font-medium text-green-800">선택한 기간에 신청 가능합니다</span>
+                          </div>
+                          <div className="mt-2 text-xs text-green-700">
+                            <p>해당 기간에 MD PICK 광고 신청이 가능합니다.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 날짜별 상세 상태 */}
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {(() => {
+                          if (!searchTopForm.startDate || !searchTopForm.endDate) return null;
+
+                          const startDate = new Date(searchTopForm.startDate);
+                          const endDate = new Date(searchTopForm.endDate);
+                          const dates = [];
+
+                          if (startDate > endDate) return null;
+
+                          const currentDate = new Date(startDate);
+                          while (currentDate <= endDate) {
+                            const dateString = currentDate.toISOString().split('T')[0];
+                            dates.push(dateString);
+                            currentDate.setDate(currentDate.getDate() + 1);
+                          }
+
+                          return dates.map((date, index) => {
+                            const statusText = getMdPickStatusText(date);
+                            const statusClass = getMdPickStatusClass(date);
+                            const adData = mdPickAdvertisements[date];
+
+                            return (
+                              <div key={index} className="flex items-center justify-between text-xs">
+                                <span className="text-gray-600">{date}</span>
+                                <span className={`px-2 py-1 rounded font-medium ${statusClass}`}>
+                                  {statusText}
+                                </span>
+                                {adData && adData.count > 0 && (
+                                  <span className="text-xs text-gray-500">
+                                    ({adData.count}/2)
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 가격 정보 */}
                   <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                     <div className="text-right space-y-2">
                       <p className="text-lg font-medium text-gray-700">가격: 500,000원 / 일</p>
                       {searchTopForm.startDate && searchTopForm.endDate && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <div className="text-sm text-blue-800 space-y-1">
+                        <div className={`border rounded-lg p-3 ${isMdPickRangeAvailable()
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-red-50 border-red-200'
+                          }`}>
+                          <div className={`text-sm space-y-1 ${isMdPickRangeAvailable() ? 'text-blue-800' : 'text-red-800'
+                            }`}>
                             <div className="flex justify-between">
-                              <span>선택 기간:</span>
+                              <span>전체 선택 기간:</span>
                               <span className="font-medium">{getSearchTopDays()}일</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>실제 신청 가능:</span>
+                              <span className="font-medium">{getAvailableDays()}일</span>
                             </div>
                             <div className="flex justify-between">
                               <span>시작일:</span>
@@ -790,14 +1079,31 @@ const AdvertisementApplication: React.FC = () => {
                               <span className="font-medium">{searchTopForm.endDate}</span>
                             </div>
                           </div>
-                          <div className="border-t border-blue-200 mt-2 pt-2">
+                          <div className={`border-t mt-2 pt-2 ${isMdPickRangeAvailable() ? 'border-blue-200' : 'border-red-200'
+                            }`}>
                             <div className="flex justify-between items-center">
-                              <span className="text-sm font-semibold text-blue-900">총 금액:</span>
-                              <span className="text-xl font-bold text-green-600">
+                              <span className="text-sm font-semibold">총 금액:</span>
+                              <span className={`text-xl font-bold ${isMdPickRangeAvailable() ? 'text-green-600' : 'text-red-600'
+                                }`}>
                                 {calculateSearchTopPrice().toLocaleString()}원
                               </span>
                             </div>
                           </div>
+                          {/* 신청 가능한 날짜 목록 */}
+                          {getAvailableDays() > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <div className="text-xs text-gray-600">
+                                <p className="mb-2">신청 가능한 날짜:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {getAvailableDates().map((date, index) => (
+                                    <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                                      {date}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
