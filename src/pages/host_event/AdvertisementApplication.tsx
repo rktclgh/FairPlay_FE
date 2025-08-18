@@ -3,6 +3,53 @@ import { TopNav } from '../../components/TopNav';
 import { HostSideNav } from '../../components/HostSideNav';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
+
+// ---- 서버 enum/타입 매핑 ----
+type BannerSlotType = "HERO" | "SEARCH_TOP";
+type BannerSlotStatus = "AVAILABLE" | "LOCKED" | "SOLD";
+
+export interface SlotResponseDto {
+  slotDate: string;            // YYYY-MM-DD
+  priority: number | null;     // 1 | 2 (SEARCH_TOP)
+  status: BannerSlotStatus;    // AVAILABLE | LOCKED | SOLD
+  price: number;               // 원/일
+}
+
+interface LockSlotsRequestDto {
+  typeCode: BannerSlotType;    // 'SEARCH_TOP' | 'HERO'
+  items: { slotDate: string; priority: number }[];
+  holdHours?: number | null;   // 생략 시 서버 기본(48h)
+}
+interface LockSlotsResponseDto {
+  slotIds: number[];
+  totalAmount: number;
+  lockedUntil: string;         // ISO LocalDateTime
+}
+
+// ---- axios 인스턴스 ----
+const api = axios.create({
+  baseURL: import.meta.env.VITE_BACKEND_BASE_URL ?? "http://localhost:8080",
+  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+const token =
+    localStorage.getItem("access_token") ||
+    localStorage.getItem("accessToken");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ---- API 함수 ----
+async function getSlots(params: { type: BannerSlotType; from: string; to: string }): Promise<SlotResponseDto[]> {
+  const { data } = await api.get("/api/banner/slots", { params: { type: params.type, from: params.from, to: params.to } });
+  return data;
+}
+async function lockSlots(body: LockSlotsRequestDto): Promise<LockSlotsResponseDto> {
+  const { data } = await api.post("/api/banner/slots/lock", body);
+  return data;
+}
 
 const AdvertisementApplication: React.FC = () => {
   const navigate = useNavigate();
@@ -26,149 +73,43 @@ const AdvertisementApplication: React.FC = () => {
     endDate: ''
   });
 
-  // 검색 상단 고정 가격 계산 함수
-  const calculateSearchTopPrice = () => {
-    if (!searchTopForm.startDate || !searchTopForm.endDate) return 0;
 
-    const startDate = new Date(searchTopForm.startDate);
-    const endDate = new Date(searchTopForm.endDate);
 
-    if (startDate > endDate) return 0;
+// 슬롯 기반 상태(서버 연동)
+const [slotsByDate, setSlotsByDate] = useState<Record<string, SlotResponseDto[]>>({});
+const [loadingAvailability, setLoadingAvailability] = useState(false);
+const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
-    // 실제 신청 가능한 날짜만 계산
-    let availableDays = 0;
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const dateString = currentDate.toISOString().split('T')[0];
-      if (isMdPickAvailable(dateString)) {
-        availableDays++;
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return availableDays * 500000; // 일당 500,000원
-  };
-
-  // 검색 상단 고정 총 일수 계산 (전체 선택 기간)
-  const getSearchTopDays = () => {
-    if (!searchTopForm.startDate || !searchTopForm.endDate) return 0;
-
-    const startDate = new Date(searchTopForm.startDate);
-    const endDate = new Date(searchTopForm.endDate);
-
-    if (startDate > endDate) return 0;
-
-    const timeDiff = endDate.getTime() - startDate.getTime();
-    return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // 시작일 포함
-  };
-
-  // 실제 신청 가능한 일수 계산
-  const getAvailableDays = () => {
-    if (!searchTopForm.startDate || !searchTopForm.endDate) return 0;
-
-    const startDate = new Date(searchTopForm.startDate);
-    const endDate = new Date(searchTopForm.endDate);
-
-    if (startDate > endDate) return 0;
-
-    let availableDays = 0;
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const dateString = currentDate.toISOString().split('T')[0];
-      if (isMdPickAvailable(dateString)) {
-        availableDays++;
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return availableDays;
-  };
-
-  // 신청 가능한 날짜 목록 반환
-  const getAvailableDates = () => {
-    if (!searchTopForm.startDate || !searchTopForm.endDate) return [];
-
-    const startDate = new Date(searchTopForm.startDate);
-    const endDate = new Date(searchTopForm.endDate);
-    const availableDates: string[] = [];
-
-    if (startDate > endDate) return availableDates;
-
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateString = currentDate.toISOString().split('T')[0];
-      if (isMdPickAvailable(dateString)) {
-        availableDates.push(dateString);
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return availableDates;
-  };
-
-  // MD PICK 광고 상태 관리 (실제로는 서버에서 가져와야 함)
-  const [mdPickAdvertisements, setMdPickAdvertisements] = useState<{
-    [date: string]: {
-      count: number;
-      events: Array<{
-        id: number;
-        eventName: string;
-        startDate: string;
-        endDate: string;
-      }>;
-    };
-  }>({});
-
-  // MD PICK 광고 데이터 초기화 (더미 데이터)
+// 선택한 기간 슬롯 조회 (서버)
   React.useEffect(() => {
-    const generateMdPickData = () => {
-      const data: {
-        [date: string]: {
-          count: number;
-          events: Array<{
-            id: number;
-            eventName: string;
-            startDate: string;
-            endDate: string;
-          }>;
-        };
-      } = {};
-      const today = new Date();
-
-      // 향후 30일간의 MD PICK 광고 상태 생성
-      for (let i = 1; i <= 30; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        const dateString = date.toISOString().split('T')[0];
-
-        // 랜덤하게 0~2개의 광고가 있는 상태 생성
-        const randomCount = Math.floor(Math.random() * 3);
-        const events = [];
-
-        if (randomCount > 0) {
-          for (let j = 0; j < randomCount; j++) {
-            events.push({
-              id: j + 1,
-              eventName: `MD PICK 이벤트 ${j + 1}`,
-              startDate: dateString,
-              endDate: dateString
-            });
-          }
+    const fetch = async () => {
+      if (!searchTopForm.startDate || !searchTopForm.endDate) return;
+      const from = searchTopForm.startDate;
+      const to = searchTopForm.endDate;
+      if (new Date(from) > new Date(to)) return;
+      try {
+        setLoadingAvailability(true);
+        setAvailabilityError(null);
+        const list = await getSlots({ type: "SEARCH_TOP", from, to });
+        const grouped: Record<string, SlotResponseDto[]> = {};
+        for (const s of list) {
+          const d = s.slotDate;
+          (grouped[d] ??= []).push(s);
         }
-
-        data[dateString] = {
-          count: randomCount,
-          events: events
-        };
+        Object.values(grouped).forEach(arr =>
+          arr.sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99))
+        );
+        setSlotsByDate(grouped);
+      } catch (e) {
+        console.error(e);
+        setAvailabilityError("가용 정보를 가져오지 못했어요.");
+        setSlotsByDate({});
+      } finally {
+        setLoadingAvailability(false);
       }
-
-      setMdPickAdvertisements(data);
     };
-
-    generateMdPickData();
-  }, []);
+    fetch();
+  }, [searchTopForm.startDate, searchTopForm.endDate]);
 
   // 메인 배너 광고용 달력 상태 (MD PICK과 별개)
   const [currentCalendarYear, setCurrentCalendarYear] = useState(new Date().getFullYear());
@@ -253,79 +194,89 @@ const AdvertisementApplication: React.FC = () => {
     }
   };
 
-  // 특정 날짜에 MD PICK 광고 신청 가능 여부 확인
-  const isMdPickAvailable = (date: string) => {
-    const adData = mdPickAdvertisements[date];
-    return !adData || adData.count < 2;
-  };
 
-  // 선택된 날짜 범위에서 MD PICK 광고 신청 가능 여부 확인
-  const isMdPickRangeAvailable = () => {
-    if (!searchTopForm.startDate || !searchTopForm.endDate) return false;
+// 슬롯 기반 헬퍼
+const getDateSlots = (date: string) => slotsByDate[date] ?? [];
+const getBookedCount = (date: string) =>
+  getDateSlots(date).filter(s => s.status !== "AVAILABLE").length;
+const isMdPickAvailable = (date: string) =>
+  getDateSlots(date).some(s => s.status === "AVAILABLE");
+const chooseSlotForDate = (date: string) => {
+  const available = getDateSlots(date).filter(s => s.status === "AVAILABLE");
+  if (!available.length) return null;
+  available.sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99));
+  return { priority: available[0].priority ?? 1, price: available[0].price };
+};
 
-    const startDate = new Date(searchTopForm.startDate);
-    const endDate = new Date(searchTopForm.endDate);
+const getMdPickStatusText = (date: string) => {
+  const slots = getDateSlots(date); // slotsByDate[date] ?? []
+  if (!slots.length) return "신청 가능"; // 데이터 없으면 가용으로 간주
+  const booked = slots.filter(s => s.status !== "AVAILABLE").length;
+  if (booked === 0) return "신청 가능";
+  if (booked === 1) return "1개 신청됨";
+  return "매진";
+};
 
-    if (startDate > endDate) return false;
+const getMdPickStatusClass = (date: string) => {
+  const text = getMdPickStatusText(date);
+  if (text === "신청 가능") return "bg-green-100 text-green-800";
+  if (text === "1개 신청됨") return "bg-yellow-100 text-yellow-800";
+  return "bg-red-100 text-red-800";
+};
 
-    // 선택된 날짜 범위의 모든 날짜를 확인
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateString = currentDate.toISOString().split('T')[0];
-      if (!isMdPickAvailable(dateString)) {
-        return false;
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
+const getAvailableDates = () => {
+  if (!searchTopForm.startDate || !searchTopForm.endDate) return [];
+  const s = new Date(searchTopForm.startDate);
+  const e = new Date(searchTopForm.endDate);
+  if (s > e) return [];
+  const out: string[] = [];
+  const cur = new Date(s);
+  while (cur <= e) {
+    const d = cur.toISOString().split("T")[0];
+    if (isMdPickAvailable(d)) out.push(d);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+};
+const calculateSearchTopPrice = () =>
+  getAvailableDates().reduce((sum, d) => sum + (chooseSlotForDate(d)?.price ?? 0), 0);
 
-    return true;
-  };
-
-  // 선택된 날짜 범위에서 MD PICK 광고가 이미 있는 날짜들 찾기
-  const getConflictDates = () => {
-    if (!searchTopForm.startDate || !searchTopForm.endDate) return [];
-
-    const startDate = new Date(searchTopForm.startDate);
-    const endDate = new Date(searchTopForm.endDate);
-    const conflictDates: string[] = [];
-
-    if (startDate > endDate) return conflictDates;
-
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateString = currentDate.toISOString().split('T')[0];
-      if (!isMdPickAvailable(dateString)) {
-        conflictDates.push(dateString);
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return conflictDates;
-  };
-
-  // MD PICK 광고 신청 가능한 날짜 표시
-  const getMdPickStatusText = (date: string) => {
-    const adData = mdPickAdvertisements[date];
-    if (!adData) return '신청 가능';
-
-    if (adData.count === 0) return '신청 가능';
-    if (adData.count === 1) return '1개 신청됨';
-    if (adData.count >= 2) return '매진';
-
-    return '신청 가능';
-  };
-
-  // MD PICK 광고 상태에 따른 스타일 클래스 반환
-  const getMdPickStatusClass = (date: string) => {
-    const adData = mdPickAdvertisements[date];
-    if (!adData) return 'bg-green-100 text-green-800';
-
-    if (adData.count === 0) return 'bg-green-100 text-green-800';
-    if (adData.count === 1) return 'bg-yellow-100 text-yellow-800';
-    if (adData.count >= 2) return 'bg-red-100 text-red-800';
-
-    return 'bg-green-100 text-green-800';
-  };
+const getSearchTopDays = () => {
+  if (!searchTopForm.startDate || !searchTopForm.endDate) return 0;
+  const s = new Date(searchTopForm.startDate);
+  const e = new Date(searchTopForm.endDate);
+  if (s > e) return 0;
+  return Math.ceil((e.getTime() - s.getTime()) / (1000 * 3600 * 24)) + 1;
+};
+const getAvailableDays = () => getAvailableDates().length;
+const getConflictDates = () => {
+  if (!searchTopForm.startDate || !searchTopForm.endDate) return [];
+  const s = new Date(searchTopForm.startDate);
+  const e = new Date(searchTopForm.endDate);
+  if (s > e) return [];
+  const out: string[] = [];
+  const cur = new Date(s);
+  while (cur <= e) {
+    const d = cur.toISOString().split("T")[0];
+    const slots = getDateSlots(d);
+    if (slots.length && slots.every(s => s.status !== "AVAILABLE")) out.push(d);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+};
+const isMdPickRangeAvailable = () => {
+  if (!searchTopForm.startDate || !searchTopForm.endDate) return false;
+  const s = new Date(searchTopForm.startDate);
+  const e = new Date(searchTopForm.endDate);
+  if (s > e) return false;
+  const cur = new Date(s);
+  while (cur <= e) {
+    const d = cur.toISOString().split("T")[0];
+    if (!isMdPickAvailable(d)) return false;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return true;
+};
 
   const { uploadedFiles, uploadFile, removeFile } = useFileUpload();
 
@@ -408,84 +359,31 @@ const AdvertisementApplication: React.FC = () => {
     await uploadFile(file, usage);
   };
 
-  const handleSubmit = () => {
-    // 신청 데이터 구성
-    const payload: any[] = [];
-
-    // 메인 배너 신청 항목
-    if (selectedTypes.mainBanner && mainBannerForm.length > 0) {
-      const selections = mainBannerForm.map(it => ({ date: it.date, rank: `${it.rank}순위` }));
-      // 순위별 금액
-      const getPrice = (rank: number) => {
-        switch (rank) {
-          case 1: return 2500000;
-          case 2: return 2200000;
-          case 3: return 2000000;
-          case 4: return 1800000;
-          case 5: return 1600000;
-          case 6: return 1400000;
-          case 7: return 1200000;
-          case 8: return 1000000;
-          case 9: return 800000;
-          case 10: return 600000;
-          default: return 600000;
-        }
-      };
-      const totalAmount = mainBannerForm.reduce((sum, it) => sum + getPrice(parseInt(it.rank)), 0);
-
-      payload.push({
-        id: `host-${Date.now()}-mb`,
-        hostName: 'Host User',
-        eventTitle: uploadedFiles.size > 0 ? '메인 배너 광고' : '메인 배너 광고',
-        type: 'mainBanner',
-        status: 'pending',
-        submittedAt: new Date().toISOString().split('T')[0],
-        requestedDates: mainBannerForm.map(it => it.date),
-        totalAmount,
-        imageUrl: Array.from(uploadedFiles.values())[0]?.url,
-        paymentStatus: 'pending',
-        exposurePeriod: undefined,
-        mainBannerRanks: mainBannerForm.map(it => `${it.rank}순위`),
-        mainBannerSelections: selections
-      });
-    }
-
-    // 검색 상단 고정 신청 항목
-    if (selectedTypes.searchTop && searchTopForm.startDate && searchTopForm.endDate) {
-      const requestedDates = getAvailableDates();
-      if (requestedDates.length > 0) {
-        payload.push({
-          id: `host-${Date.now()}-st`,
-          hostName: 'Host User',
-          eventTitle: '검색 상단 고정 (MD PICK)',
-          type: 'searchTop',
-          status: 'pending',
-          submittedAt: new Date().toISOString().split('T')[0],
-          requestedDates,
-          totalAmount: calculateSearchTopPrice(),
-          imageUrl: undefined,
-          paymentStatus: 'pending',
-          exposurePeriod: {
-            startDate: searchTopForm.startDate,
-            endDate: searchTopForm.endDate
-          }
-        });
-      }
-    }
-
-    // 저장 및 이동
+  const handleSubmit = async () => {
     try {
-      if (payload.length > 0) {
-        const key = 'pendingAdApplications';
-        const prevRaw = localStorage.getItem(key);
-        const prev = prevRaw ? JSON.parse(prevRaw) : [];
-        localStorage.setItem(key, JSON.stringify([...payload, ...prev]));
+      if (selectedTypes.searchTop && searchTopForm.startDate && searchTopForm.endDate) {
+        const dates = getAvailableDates();
+        if (!dates.length) {
+          alert("선택한 기간에 신청 가능한 날짜가 없습니다.");
+          return;
+        }
+        const items = dates.map(d => {
+          const chosen = chooseSlotForDate(d);
+          if (!chosen) return null;
+          return { slotDate: d, priority: chosen.priority };
+        }).filter(Boolean) as { slotDate: string; priority: number }[];
+        if (!items.length) {
+          alert("잠글 수 있는 슬롯이 없습니다.");
+          return;
+        }
+        const res = await lockSlots({ typeCode: "SEARCH_TOP", items });
+        alert(`신청이 완료되었습니다.\n잠금 슬롯: ${res.slotIds.length}개\n총액: ${res.totalAmount.toLocaleString()}원\n만료: ${res.lockedUntil}`);
       }
-      alert('신청이 완료되었습니다.');
-      navigate('/admin_dashboard/advertisement-applications');
+      // 메인 배너는 이후 /api/banner/applications(CreateApplicationRequestDto)로 별도 연동 예정
+      navigate("/admin_dashboard/advertisement-applications");
     } catch (e) {
-      alert('신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
       console.error(e);
+      alert("신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -1108,18 +1006,17 @@ const AdvertisementApplication: React.FC = () => {
                           return dates.map((date, index) => {
                             const statusText = getMdPickStatusText(date);
                             const statusClass = getMdPickStatusClass(date);
-                            const adData = mdPickAdvertisements[date];
-
+const totalSlots = getDateSlots(date).length || 2; // 서버가 주는 슬롯 수, 없으면 2로 표기
+const booked = getBookedCount(date);
                             return (
                               <div key={index} className="flex items-center justify-between text-xs">
                                 <span className="text-gray-600">{date}</span>
                                 <span className={`px-2 py-1 rounded font-medium ${statusClass}`}>
                                   {statusText}
                                 </span>
-                                {adData && adData.count > 0 && (
-                                  <span className="text-xs text-gray-500">
-                                    ({adData.count}/2)
-                                  </span>
+                                {totalSlots > 0 && (
+    <span className="text-xs text-gray-500">({booked}/{totalSlots})</span>
+
                                 )}
                               </div>
                             );
