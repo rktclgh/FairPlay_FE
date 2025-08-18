@@ -2,6 +2,7 @@ import api from "../api/axios";
 import type {
     QrTicketRequestDto,
     QrTicketResponseDto,
+    QrTicketGuestResponseDto,
     QrTicketReissueMemberRequestDto,
     QrTicketReissueGuestRequestDto,
     QrTicketReissueRequestDto,
@@ -20,8 +21,8 @@ export const getQrTicketForMypage = async (data: QrTicketRequestDto): Promise<Qr
 }
 
 // 비회원 QR 티켓 링크를 통한 조회
-export const getQrTicketForLink = async (token: string): Promise<QrTicketResponseDto> => {
-    const res = await api.get<QrTicketResponseDto>(`/api/qr-tickets/${token}`);
+export const getQrTicketForLink = async (token: string): Promise<QrTicketGuestResponseDto> => {
+    const res = await api.get<QrTicketGuestResponseDto>(`/api/qr-tickets/${token}`);
     return res.data;
 }
 

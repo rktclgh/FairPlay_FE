@@ -68,6 +68,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { useScrollToTop } from './hooks/useScrollToTop';
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
+import { OnlyQrTicketPage } from './pages/OnlyQrTicketPage';
 
 function AppContent() {
   useScrollToTop();
@@ -105,6 +106,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/participant-form" element={<ParticipantForm />} />
+          <Route path="/qr-ticket/participant" element={<OnlyQrTicketPage />} />          
           <Route path="/eventoverview" element={<EventOverview />} />
           <Route path="/eventdetail/:eventId" element={<EventDetail />} />
           <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
