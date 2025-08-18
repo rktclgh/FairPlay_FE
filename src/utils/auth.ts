@@ -87,27 +87,31 @@ class AuthManager {
     }
 
     // 토큰 갱신 시도
-    this.refreshPromise = this.performTokenRefresh(refreshToken);
+    this.refreshPromise = this.performTokenRefresh();
     const success = await this.refreshPromise;
     this.refreshPromise = null;
 
     return success;
   }
 
-  private async performTokenRefresh(refreshToken: string): Promise<boolean> {
+  private async performTokenRefresh(): Promise<boolean> {
     try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refreshToken }),
+        body: JSON.stringify({
+          refreshToken: refreshToken,
+        }),
       });
 
       if (response.ok) {
         const data: TokenRefreshResponse = await response.json();
         
-        // 새 토큰 저장
+        // 새 토큰들을 localStorage에 저장
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
         
@@ -127,8 +131,19 @@ class AuthManager {
 
   // 로그아웃 처리
   logout(): void {
+    // localStorage에서 토큰 삭제
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    
+    // 서버에 로그아웃 요청
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }).catch(error => {
+      console.error('로그아웃 요청 실패:', error);
+    });
     
     // 로그아웃 알림 메시지
     this.showLogoutMessage();

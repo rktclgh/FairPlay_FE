@@ -7,14 +7,14 @@ import { Link } from "react-router-dom";
 
 
 interface WishlistEvent {
-    eventId: number;
-    eventTitle: string;
-    categoryName: string;
-    location: string;
-    startDate: string;
-    endDate: string;
-    price: number;
-    thumbnailUrl: string;
+  eventId: number;
+  eventTitle: string;
+  categoryName: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+  thumbnailUrl: string;
 }
 
 const fmtDate = (d: string) =>
@@ -26,13 +26,13 @@ export const MyPageFavorites = () => {
   const [events, setEvents] = useState<WishlistEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-   
-const fetchWishlist = async () => {
+
+  const fetchWishlist = async () => {
     try {
       setLoading(true);
-      const res = await api.get<WishlistEvent[]>("/api/wishlist",{
-      withCredentials: true,
-    });
+      const res = await api.get<WishlistEvent[]>("/api/wishlist", {
+        withCredentials: true,
+      });
       setEvents(res.data || []);
     } catch (e) {
       console.error("위시리스트 조회 실패:", e);
@@ -46,7 +46,7 @@ const fetchWishlist = async () => {
   useEffect(() => {
     fetchWishlist();
   }, []);
-  
+
 
   // 찜 취소
   const removeWishlist = async (eventId: number) => {
@@ -60,7 +60,7 @@ const fetchWishlist = async () => {
 
 
 
-   return (
+  return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-[1256px] min-h-[1407px] relative">
         <TopNav />
@@ -107,18 +107,18 @@ const fetchWishlist = async () => {
                         {event.categoryName}
                       </span>
                       <h3
-  className="text-lg font-extrabold text-black mb-2 truncate"
-  style={{ fontWeight: 800 }}
->
-  <Link
-    to={`/eventdetail/${event.eventId}`}
-    onClick={(e) => e.stopPropagation()}
-    className="block no-underline text-black visited:text-black hover:underline hover:text-black"
-    style={{ fontWeight: 800 }}
-  >
-    {event.eventTitle}
-  </Link>
-</h3>
+                        className="text-lg font-extrabold text-black mb-2 truncate"
+                        style={{ fontWeight: 800 }}
+                      >
+                        <Link
+                          to={`/eventdetail/${event.eventId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="block no-underline text-black visited:text-black hover:underline hover:text-black"
+                          style={{ fontWeight: 800 }}
+                        >
+                          {event.eventTitle}
+                        </Link>
+                      </h3>
 
 
 
@@ -146,26 +146,7 @@ const fetchWishlist = async () => {
           </div>
         </div>
 
-        <div className="absolute w-full h-[205px] bottom-0 bg-white border-t [border-top-style:solid] border-[#0000001f]">
-          <p className="absolute top-[62px] left-1/2 transform -translate-x-1/2 [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-            간편하고 안전한 행사 관리 솔루션
-          </p>
 
-          <div className="absolute top-[118px] left-1/2 transform -translate-x-1/2 flex space-x-8">
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              이용약관
-            </div>
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              개인정보처리방침
-            </div>
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              고객센터
-            </div>
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              회사소개
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

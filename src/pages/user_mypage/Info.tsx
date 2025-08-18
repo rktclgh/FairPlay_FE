@@ -26,7 +26,7 @@ const formatPhoneNumber = (phoneNumber: string) => {
     if (!phoneNumber) return "";
     // 전화번호가 이미 포맷팅되어 있으면 그대로 반환
     if (phoneNumber.includes('-')) return phoneNumber;
-    
+
     const cleaned = phoneNumber.replace(/[^0-9]/g, '');
     if (cleaned.length === 11) {
         return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 7)}-${cleaned.substring(7)}`;
@@ -348,27 +348,7 @@ export const MyPageInfo = () => {
                     </div>
                 </div>
 
-                <div className="absolute w-[1256px] h-[205px] top-[1002px] left-0 bg-white border-t [border-top-style:solid] border-[#0000001f]">
-                    <p className="absolute top-[62px] left-[515px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
 
-                    <div className="absolute top-[118px] left-[450px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        이용약관
-                    </div>
-
-                    <div className="absolute top-[118px] left-[534px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        개인정보처리방침
-                    </div>
-
-                    <div className="absolute top-[118px] left-[669px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        고객센터
-                    </div>
-
-                    <div className="absolute top-[118px] left-[752px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        회사소개
-                    </div>
-                </div>
 
                 {/* 개인정보 수정 모달 */}
                 <EditProfileModal

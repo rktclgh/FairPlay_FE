@@ -49,7 +49,7 @@ export const getUserIdFromToken = (): number | null => {
   
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return parseInt(payload.sub);
+    return parseInt(payload.sub || payload.userId);
   } catch (error) {
     return null;
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     Calendar,
     MapPin,
@@ -19,6 +19,8 @@ import type {
     QrTicketResponseDto
 } from "../services/types/qrTicketType";
 import { useSearchParams } from "react-router-dom";
+import { useQrTicketSocket } from "../utils/useQrTicketSocket";
+
 
 // 스크롤바 숨기기 CSS
 const scrollbarHideStyles = `
@@ -36,12 +38,28 @@ export const OnlyQrTicketPage = () => {
     const [searchParam] = useSearchParams();
     const token = searchParam.get("token");
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
+    const [qrTicketId, setQrTicketId] = useState(0);
     const [qrCode, setQrCode] = useState(""); // QR 코드 상태
     const [manualCode, setManualCode] = useState(""); // 수동 코드 상태
     const [resData, setResData] = useState<QrTicketGuestResponseDto | null>(null);
+    const [isTicketUsed, setIsTicketUsed] = useState(false);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [successMessage, setSuccessMessage] = useState("");
     const [updateIds, setUpdateIds] = useState({
         reservationId: 0,
         qrTicketId: 0
+    });
+
+        // ✅ 여기서 웹소켓 구독 시작
+    useQrTicketSocket(qrTicketId, (msg) => {
+        console.log("qrTicketId:" + qrTicketId);
+        alert(msg);
+        setSuccessMessage(msg);
+        // 타이머 멈추기
+        if (timerRef.current) clearInterval(timerRef.current);
+
+        // 입장 완료 상태로 변경
+        setIsTicketUsed(true);
     });
 
     // QR 코드와 수동 코드 초기화 + 모달 오픈 시 타이머 시작
@@ -50,17 +68,16 @@ export const OnlyQrTicketPage = () => {
 
         // 타이머 시작
         setTimeLeft(300); // 5분 초기화
-        const timer = setInterval(() => {
+        timerRef.current = setInterval(() => {
             setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    return 0;
-                }
+                if (timerRef.current) clearInterval(timerRef.current);
                 return prev - 1;
             });
         }, 1000);
 
-        return () => clearInterval(timer); // 컴포넌트 언마운트 시 타이머 정리
+       return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+    };// 컴포넌트 언마운트 시 타이머 정리
     }, [resData]);
     
     useEffect(() => {
@@ -74,6 +91,7 @@ export const OnlyQrTicketPage = () => {
                 setResData(data);
                 setQrCode(data.qrCode);
                 setManualCode(data.manualCode);
+                setQrTicketId(data.qrTicketId);
             } catch (error) {
                if (error.response) {
                 const { message } = error.response.data;
@@ -141,6 +159,12 @@ export const OnlyQrTicketPage = () => {
 
                 {/* QR 코드 섹션 */}
                 <div className="p-2 sm:p-3 md:p-4">
+                    {isTicketUsed && (
+                        <div className="text-center mb-4 p-2 bg-green-100 text-green-800 font-semibold rounded-lg">
+                                ✅ {successMessage}
+                        </div>
+                    )}
+
                     <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-center mb-2">
                             <div className="w-24 h-24 sm:w-28 md:w-36 sm:h-24 md:h-36 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
@@ -162,7 +186,9 @@ export const OnlyQrTicketPage = () => {
                         </div>
 
                         <div className="text-center">
-                            <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">{manualCode}</p>
+                            {!isTicketUsed && (
+                                <p className="text-xs sm:text-sm font-mono text-gray-600 mb-2">{manualCode}</p>
+                            )}
                             <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">TicketNo.{resData?.ticketNo}</p>
                             <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>

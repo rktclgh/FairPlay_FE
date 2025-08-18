@@ -1,11 +1,13 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { Link } from 'react-router-dom';
+import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 
 export const Footer: React.FC = () => {
     const { isDark } = useTheme();
 
     return (
-        <footer className={`w-full py-8 md:py-16 px-4 md:px-8 theme-surface theme-transition border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+        <footer className={`w-full mt-10 md:mt-16 py-8 md:py-16 px-4 md:px-8 theme-surface theme-transition border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
             <div className="max-w-7xl mx-auto relative">
                 {/* 우측 상단 소셜 아이콘 - 상단바 아이콘 사이즈/간격 매칭 (모바일에서는 숨김) */}
                 <div className="hidden md:flex absolute right-0 top-0 items-center space-x-6">
@@ -79,19 +81,49 @@ export const Footer: React.FC = () => {
                         <div>
                             <h3 className={`font-bold text-sm mb-4 ${isDark ? 'text-white' : 'text-black'}`}>고객지원</h3>
                             <ul className="space-y-2">
-                                <li><a href="#" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>공지사항</a></li>
-                                <li><a href="#" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>자주 묻는 질문</a></li>
-                                <li><a href="#" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>이용약관</a></li>
-                                <li><a href="#" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>개인정보처리방침</a></li>
+                                <li><Link to="/support/notices" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>공지사항</Link></li>
+                                <li><Link to="/support/faq" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>자주 묻는 질문</Link></li>
+                                <li>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                const token = localStorage.getItem('accessToken');
+                                                if (!token) {
+                                                    window.location.href = '/login';
+                                                    return;
+                                                }
+                                                const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/chat/admin-inquiry`, {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${token}`,
+                                                        'Content-Type': 'application/json'
+                                                    }
+                                                });
+                                                if (!res.ok) throw new Error('admin-inquiry 실패');
+                                                const data = await res.json();
+                                                const chatRoomId = data?.chatRoomId;
+                                                if (chatRoomId != null) {
+                                                    openChatRoomGlobal(chatRoomId);
+                                                }
+                                            } catch (e) {
+                                                console.error('푸터 고객센터 채팅 오픈 실패', e);
+                                            }
+                                        }}
+                                        className={`text-left p-0 bg-transparent border-none cursor-pointer text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}
+                                    >
+                                        고객센터
+                                    </button>
+                                </li>
                             </ul>
                         </div>
                     </div>
                     <div className="mt-12 pt-8 flex justify-between items-center">
                         <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>© 2025 FairPlay. All rights reserved.</p>
                         <div className="flex space-x-6 items-center">
-                            <a href="#" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>개인정보처리방침</a>
-                            <a href="#" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>이용약관</a>
-                            <a href="#" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>운영정책</a>
+                            <Link to="/legal/privacy" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>개인정보처리방침</Link>
+                            <Link to="/legal/terms" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>이용약관</Link>
+                            <Link to="/legal/policy" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>운영정책</Link>
                         </div>
                     </div>
                 </div>

@@ -7,7 +7,6 @@ import {
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
-import { Footer } from "../components/Footer";
 import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
@@ -176,68 +175,69 @@ export const Main: React.FC = () => {
             // const ads = await eventApi.getPaidAdvertisements();
 
             // 임시 데이터 (백엔드 연동 전까지 사용)
+            // 실제 행사 ID로 매핑 (events 배열에서 제목으로 찾기)
             const tempAds: PaidAdvertisement[] = [
                 {
-                    id: 1,
+                    id: 19, // G-DRAGON 행사 ID
                     title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
                     imageUrl: "/images/gd1.png",
                     thumbnailUrl: "/images/gd2.png",
-                    linkUrl: "/event/1",
+                    linkUrl: "/event/19",
                     startDate: "2025-05-25",
                     endDate: "2025-05-25",
                     isActive: true,
                     priority: 1
                 },
                 {
-                    id: 2,
+                    id: 20, // YE LIVE IN KOREA 행사 ID
                     title: "YE LIVE IN KOREA",
                     imageUrl: "/images/YE3.png",
                     thumbnailUrl: "/images/YE3.png",
-                    linkUrl: "/event/2",
+                    linkUrl: "/event/20",
                     startDate: "2025-06-15",
                     endDate: "2025-06-15",
                     isActive: true,
                     priority: 2
                 },
                 {
-                    id: 3,
+                    id: 21, // Post Malone Concert 행사 ID
                     title: "Post Malone Concert",
                     imageUrl: "/images/malone1.jpg",
                     thumbnailUrl: "/images/malone.jpg",
-                    linkUrl: "/event/3",
+                    linkUrl: "/event/21",
                     startDate: "2025-07-20",
                     endDate: "2025-07-20",
                     isActive: true,
                     priority: 3
                 },
                 {
-                    id: 4,
-                    title: "Event 4",
+                    id: 22, // THE ROSE 행사 ID
+                    title: "THE ROSE 2025 LIVE IN SEOUL",
                     imageUrl: "/images/therose2.png",
                     thumbnailUrl: "/images/therose1.png",
-                    linkUrl: "/event/4",
+                    linkUrl: "/event/22",
                     startDate: "2025-08-10",
                     endDate: "2025-08-10",
                     isActive: true,
                     priority: 4
                 },
                 {
-                    id: 5,
-                    title: "Event 5",
+                    id: 23, // eaJ 행사 ID
+                    title: "eaJ LIVE IN SEOUL",
                     imageUrl: "/images/eaj2.jpg",
                     thumbnailUrl: "/images/eaj1.jpg",
-                    linkUrl: "/event/5",
+                    linkUrl: "/event/23",
                     startDate: "2025-09-05",
                     endDate: "2025-09-05",
                     isActive: true,
                     priority: 5
                 },
                 {
-                    id: 6,
-                    title: "Event 6",
+                    id: 24, // 사이버 보안 컨퍼런스 행사 ID
+                    title: "사이버 보안 컨퍼런스 2025",
                     imageUrl: "/images/cyber2.png",
                     thumbnailUrl: "/images/cyber.png",
-                    linkUrl: "/event/6",
+                    linkUrl: "/event/24",
                     startDate: "2025-10-15",
                     endDate: "2025-10-15",
                     isActive: true,
@@ -321,9 +321,10 @@ export const Main: React.FC = () => {
     const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
 
     // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
+    // 실제 행사 ID로 매핑 (events 배열에서 제목으로 찾기)
     const tempHotPicks: HotPick[] = [
         {
-            id: 1,
+            id: 19, // G-DRAGON 행사 ID
             title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
             date: "2025.05.25",
             location: "KYOCERA DOME OSAKA",
@@ -331,7 +332,7 @@ export const Main: React.FC = () => {
             image: "/images/gd2.png",
         },
         {
-            id: 2,
+            id: 20, // YE LIVE IN KOREA 행사 ID
             title: "YE LIVE IN KOREA",
             date: "2025.06.15",
             location: "인천문학경기장",
@@ -339,7 +340,7 @@ export const Main: React.FC = () => {
             image: "/images/YE3.png",
         },
         {
-            id: 3,
+            id: 25, // 명원 세계 차 박람회 행사 ID
             title: "2025 명원 세계 차 박람회",
             date: "2025-09-11 ~ 2025-09-14",
             location: "코엑스 B2홀",
@@ -347,7 +348,7 @@ export const Main: React.FC = () => {
             image: "/images/tea.png",
         },
         {
-            id: 4,
+            id: 24, // 사이버 보안 컨퍼런스 행사 ID
             title: "사이버 보안 컨퍼런스 2025",
             date: "2025-09-10 ~ 2025-09-12",
             location: "코엑스 D홀",
@@ -355,7 +356,7 @@ export const Main: React.FC = () => {
             image: "/images/cyber.png",
         },
         {
-            id: 5,
+            id: 22, // THE ROSE 행사 ID
             title: "THE ROSE 2025 LIVE IN SEOUL",
             date: "2025.09.20",
             location: "KSPO DOME",
@@ -363,7 +364,7 @@ export const Main: React.FC = () => {
             image: "/images/therose1.png",
         },
         {
-            id: 6,
+            id: 23, // eaJ 행사 ID
             title: "eaJ LIVE IN SEOUL",
             date: "2025.09.25",
             location: "YES24 라이브홀",
@@ -371,7 +372,7 @@ export const Main: React.FC = () => {
             image: "/images/eaj1.jpg",
         },
         {
-            id: 7,
+            id: 26, // 한가위 명절선물전 행사 ID
             title: "2025 한가위 명절선물전",
             date: "2025-08-25 ~ 2025-08-28",
             location: "COEX 컨벤션홀",
@@ -379,7 +380,7 @@ export const Main: React.FC = () => {
             image: "/images/coex.png",
         },
         {
-            id: 8,
+            id: 27, // 케이펫페어 서울 행사 ID
             title: "2025 케이펫페어 서울",
             date: "2025-08-13 ~ 2025-08-16",
             location: "킨텍스 제1전시장",
@@ -387,7 +388,7 @@ export const Main: React.FC = () => {
             image: "/images/pet.jpg",
         },
         {
-            id: 9,
+            id: 28, // JOYURI FAN-CON 행사 ID
             title: "2025 JOYURI FAN-CON",
             date: "추후 공개",
             location: "추후 공개",
@@ -395,7 +396,7 @@ export const Main: React.FC = () => {
             image: "/images/joyuri.jpg",
         },
         {
-            id: 10,
+            id: 29, // IU HEREH WORLD TOUR CONCERT 행사 ID
             title: "IU HEREH WORLD TOUR CONCERT",
             date: "추후 공개",
             location: "추후 공개",
@@ -406,6 +407,62 @@ export const Main: React.FC = () => {
 
     // Hot Picks 데이터 (백엔드 연결 후 hotPicks로 교체)
     const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
+
+    // MD PICK 우선 노출 인식: 로컬스토리지에서 오늘 날짜의 ID/제목을 모두 읽는다
+    // [백엔드 연동 필요]
+    // - 오늘 노출할 MD PICK 이벤트 ID 목록을 API로 전달받아 사용하세요.
+    // - 현재는 로컬스토리지 키 'mdpick:YYYY-MM-DD'에서 읽도록 남겨두었습니다. API 적용 시 이 함수들을 대체하세요.
+    const getMdPickIdsForToday = () => {
+        const todayKey = `mdpick:${new Date().toISOString().split('T')[0]}`;
+        try {
+            const raw = localStorage.getItem(todayKey);
+            if (raw) {
+                const arr = JSON.parse(raw) as number[];
+                if (Array.isArray(arr)) return new Set(arr.slice(0, 2));
+            }
+        } catch (_) { }
+        return new Set<number>();
+    };
+    // [백엔드 연동 필요]
+    // - 임시 보조: 제목 기반 매칭용 키입니다. 백엔드가 ID를 제공하면 제거해도 됩니다.
+    const getMdPickTitlesForToday = () => {
+        const todayKey = `mdpick_titles:${new Date().toISOString().split('T')[0]}`;
+        try {
+            const raw = localStorage.getItem(todayKey);
+            if (raw) {
+                const arr = JSON.parse(raw) as string[];
+                if (Array.isArray(arr)) return new Set(arr.slice(0, 2));
+            }
+        } catch (_) { }
+        return new Set<string>();
+    };
+    const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
+
+    const mdPickIds = getMdPickIdsForToday();
+    const mdPickTitles = getMdPickTitlesForToday();
+    const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
+
+    // [백엔드 연동 필요]
+    // - API에서 받은 MD PICK 세트를 기준으로 판단하도록 바꾸세요.
+    const isEventMdPick = (e: EventSummaryDto) => {
+        if (mdPickIds.has(e.id)) return true;
+        if (mdPickTitleNorms.size > 0) {
+            const nt = normalize(e.title);
+            for (const t of mdPickTitleNorms) {
+                if (nt.includes(t)) return true;
+            }
+        }
+        return false;
+    };
+
+    const hasMdPickInCurrentList = events.some(e => isEventMdPick(e));
+    const displayEvents = hasMdPickInCurrentList
+        ? [...events].sort((a, b) => {
+            const aPick = isEventMdPick(a) ? 1 : 0;
+            const bPick = isEventMdPick(b) ? 1 : 0;
+            return bPick - aPick;
+        })
+        : events;
 
     if (loading) {
         return (
@@ -434,14 +491,19 @@ export const Main: React.FC = () => {
                 >
                     {paidAdvertisements.map((ad) => (
                         <SwiperSlide key={ad.id}>
-                            <img
-                                src={ad.imageUrl}
-                                alt={ad.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    console.log('히어로 이미지 로드 실패:', e);
-                                }}
-                            />
+                            <div
+                                className="w-full h-full cursor-pointer"
+                                onClick={() => navigate(`/eventdetail/${ad.id}`)}
+                            >
+                                <img
+                                    src={ad.imageUrl}
+                                    alt={ad.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        console.log('히어로 이미지 로드 실패:', e);
+                                    }}
+                                />
+                            </div>
                         </SwiperSlide>
                     ))}
                 </Swiper>
@@ -481,12 +543,12 @@ export const Main: React.FC = () => {
                         modules={[Navigation, Autoplay, EffectCoverflow]}
                         navigation
                         effect="coverflow"
-                        coverflowEffect={{ 
-                            rotate: 0, 
-                            stretch: -30, 
-                            depth: 220, 
-                            modifier: 1, 
-                            slideShadows: false 
+                        coverflowEffect={{
+                            rotate: 0,
+                            stretch: -30,
+                            depth: 220,
+                            modifier: 1,
+                            slideShadows: false
                         }}
                         slidesPerView="auto"
                         centeredSlides={true}
@@ -505,7 +567,10 @@ export const Main: React.FC = () => {
                     >
                         {allHotPicks.map((item, index) => (
                             <SwiperSlide key={item.id} className="hotpick-slide">
-                                <div className="group relative w-full rounded-[10px] overflow-hidden">
+                                <div
+                                    className="group relative w-full rounded-[10px] overflow-hidden cursor-pointer"
+                                    onClick={() => navigate(`/eventdetail/${item.id}`)}
+                                >
                                     <img
                                         src={item.image}
                                         alt={`Hot Pick ${index + 1}`}
@@ -572,10 +637,19 @@ export const Main: React.FC = () => {
 
                     {/* 행사 카드들 */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {events.map((event) => (
+                        {displayEvents.map((event) => (
                             <div key={event.id} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
                                     <div className="relative group">
+                                        {/* MD PICK 스티커 */}
+                                        {hasMdPickInCurrentList && isEventMdPick(event) && (
+                                            <div className="absolute top-2 left-2 z-10">
+                                                <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+                                                    <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+                                                    <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+                                                </div>
+                                            </div>
+                                        )}
                                         <img
                                             className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}
@@ -620,8 +694,7 @@ export const Main: React.FC = () => {
                 </div>
             </div>
 
-            {/* 푸터 */}
-            <Footer />
+
         </div>
     );
 }; 

@@ -5,7 +5,7 @@ import {
     Map as MapIcon,
 } from "lucide-react";
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
@@ -18,7 +18,6 @@ import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
 import EventMapPin from "../../components/EventMapPin";
 import { useTheme } from "../../context/ThemeContext";
-import { Footer } from "../../components/Footer";
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
@@ -36,11 +35,10 @@ const fetchCalendarGrouped = (year: number, month: number) =>
         headers: authHeaders(),
     });
 
-
-
 export default function EventOverview() {
     const { isDark } = useTheme();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
+    const [filteredEvents, setFilteredEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
     const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
@@ -90,8 +88,29 @@ export default function EventOverview() {
     const mapRef = React.useRef<HTMLDivElement>(null);
     const markersRef = React.useRef<any[]>([]);
 
-
     const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const searchQuery = searchParams.get('q') || '';
+
+    // 검색어에 따른 이벤트 필터링
+    React.useEffect(() => {
+        if (!searchQuery.trim()) {
+            setFilteredEvents(events);
+            return;
+        }
+
+        const filtered = events.filter(event => {
+            const query = searchQuery.toLowerCase();
+            return (
+                event.title.toLowerCase().includes(query) ||
+                event.mainCategory.toLowerCase().includes(query) ||
+                event.location.toLowerCase().includes(query) ||
+                event.region.toLowerCase().includes(query)
+            );
+        });
+
+        setFilteredEvents(filtered);
+    }, [searchQuery, events]);
 
     // 좋아요 토글 함수
     const toggleWish = async (eventId: number) => {
@@ -361,99 +380,6 @@ export default function EventOverview() {
         ]
     };
 
-    // const events = [
-    //     {
-    //         id: 1,
-    //         title: "2025 AI & 로봇 박람회",
-    //         category: "박람회",
-    //         date: "2025-08-15 ~ 2025-08-17",
-    //         location: "코엑스 A홀",
-    //         price: "15,000원 ~",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 2,
-    //         title: "서울 국제 도서전",
-    //         category: "박람회",
-    //         date: "2025-08-22 ~ 2025-08-25",
-    //         location: "코엑스 B홀",
-    //         price: "무료",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 3,
-    //         title: "BTS 월드투어 서울",
-    //         category: "공연",
-    //         date: "2025-08-28 ~ 2025-08-30",
-    //         location: "올림픽공원",
-    //         price: "120,000원 ~",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 4,
-    //         title: "블랙핑크 월드투어",
-    //         category: "공연",
-    //         date: "2025-09-01 ~ 2025-09-03",
-    //         location: "고척스카이돔",
-    //         price: "150,000원 ~",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 5,
-    //         title: "스타트업 투자 세미나",
-    //         category: "강연/세미나",
-    //         date: "2025-08-15",
-    //         location: "강남구 컨벤션센터",
-    //         price: "무료",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 6,
-    //         title: "AI 기술 컨퍼런스",
-    //         category: "강연/세미나",
-    //         date: "2025-09-10",
-    //         location: "삼성동 코엑스",
-    //         price: "80,000원 ~",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 7,
-    //         title: "현대미술 특별전",
-    //         category: "전시/행사",
-    //         date: "2025-09-05 ~ 2025-09-30",
-    //         location: "국립현대미술관",
-    //         price: "12,000원 ~",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 8,
-    //         title: "디자인 페어 서울",
-    //         category: "전시/행사",
-    //         date: "2025-09-10 ~ 2025-09-15",
-    //         location: "예술의전당",
-    //         price: "25,000원 ~",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 9,
-    //         title: "서울 국제 영화제",
-    //         category: "축제",
-    //         date: "2025-09-05 ~ 2025-09-15",
-    //         location: "여의도 한강공원",
-    //         price: "무료",
-    //         image: "",
-    //     },
-    //     {
-    //         id: 10,
-    //         title: "서울 라이트 페스티벌",
-    //         category: "축제",
-    //         date: "2025-09-20 ~ 2025-09-25",
-    //         location: "남산타워",
-    //         price: "무료",
-    //         image: "",
-    //     },
-    // ];
-
     const fetchEvents = async () => {
         try {
             const params: {
@@ -499,31 +425,6 @@ export default function EventOverview() {
         fetchEvents();
     }, [selectedCategory, selectedSubCategory, selectedRegion, startDate, endDate]);
 
-    // 날짜 범위 필터링 함수
-    // const isEventInDateRange = (eventDate: string) => {
-    //     if (!startDate || !endDate) return true; // 날짜 범위가 설정되지 않았으면 모든 이벤트 표시
-    //
-    //     // 이벤트 날짜 파싱 (예: "2025-08-15 ~ 2025-08-17" 또는 "2025-08-15")
-    //     const dateParts = eventDate.split(' ~ ');
-    //     const eventStartDate = new Date(dateParts[0]);
-    //     const eventEndDate = dateParts.length > 1 ? new Date(dateParts[1]) : eventStartDate;
-    //
-    //     // 선택된 범위와 이벤트 날짜가 겹치는지 확인
-    //     return eventStartDate <= endDate && eventEndDate >= startDate;
-    // };
-
-    // 카테고리별 이벤트 필터링 함수
-    // const filteredEvents = events.filter(event => {
-    //     // 카테고리 필터링
-    //     const categoryMatch = selectedCategory === "all" ||
-    //         event.mainCategory === categories.find(cat => cat.id === selectedCategory)?.name;
-    //
-    //     // 날짜 범위 필터링 (리스트형에서만 적용)
-    //     const dateMatch = viewMode === "list" ? isEventInDateRange(event.date) : true;
-    //
-    //     return categoryMatch && dateMatch;
-    // });
-
     const isEventInDateRange = (eventStart: string, eventEnd: string) => {
         if (!startDate || !endDate) return true;
         const start = new Date(eventStart);
@@ -531,9 +432,61 @@ export default function EventOverview() {
         return start <= endDate && end >= startDate;
     };
 
-    const filteredEvents = events.filter((event) => {
-        return isEventInDateRange(event.startDate, event.endDate);
-    });
+    // MD PICK 우선 노출 인식: 로컬스토리지에서 오늘 날짜의 ID/제목을 모두 읽는다
+    // [백엔드 연동 필요]
+    // - 오늘 노출할 MD PICK 이벤트 ID 목록을 API로 전달받아 사용하세요.
+    // - 현재는 로컬스토리지 키 'mdpick:YYYY-MM-DD'에서 읽도록 남겨두었습니다. API 적용 시 이 함수들을 대체하세요.
+    const getMdPickIdsForToday = () => {
+        const todayKey = `mdpick:${new Date().toISOString().split('T')[0]}`;
+        try {
+            const raw = localStorage.getItem(todayKey);
+            if (raw) {
+                const arr = JSON.parse(raw) as number[];
+                if (Array.isArray(arr)) return new Set(arr.slice(0, 2));
+            }
+        } catch (_) { }
+        return new Set<number>();
+    };
+    // [백엔드 연동 필요]
+    // - 임시 보조: 제목 기반 매칭용 키입니다. 백엔드가 ID를 제공하면 제거해도 됩니다.
+    const getMdPickTitlesForToday = () => {
+        const todayKey = `mdpick_titles:${new Date().toISOString().split('T')[0]}`;
+        try {
+            const raw = localStorage.getItem(todayKey);
+            if (raw) {
+                const arr = JSON.parse(raw) as string[];
+                if (Array.isArray(arr)) return new Set(arr.slice(0, 2));
+            }
+        } catch (_) { }
+        return new Set<string>();
+    };
+    const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
+
+    const mdPickIds = getMdPickIdsForToday();
+    const mdPickTitles = getMdPickTitlesForToday();
+    const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
+
+    // [백엔드 연동 필요]
+    // - API에서 받은 MD PICK 세트를 기준으로 판단하도록 바꾸세요.
+    const isEventMdPick = (e: EventSummaryDto) => {
+        if (mdPickIds.has(e.id)) return true;
+        if (mdPickTitleNorms.size > 0) {
+            const nt = normalize(e.title);
+            for (const t of mdPickTitleNorms) {
+                if (nt.includes(t)) return true;
+            }
+        }
+        return false;
+    };
+
+    const hasMdPickInCurrentList = filteredEvents.some(e => isEventMdPick(e));
+    const displayEvents = hasMdPickInCurrentList
+        ? [...filteredEvents].sort((a, b) => {
+            const aPick = isEventMdPick(a) ? 1 : 0;
+            const bPick = isEventMdPick(b) ? 1 : 0;
+            return bPick - aPick;
+        })
+        : filteredEvents;
 
     // 지도 초기화 함수
     const initializeMap = React.useCallback(() => {
@@ -1272,53 +1225,89 @@ export default function EventOverview() {
                         </div>
                     </div>
 
+                    {/* 검색 결과 표시 */}
+                    {searchQuery && (
+                        <div className="mt-6 px-6">
+                            <div className="flex items-center gap-2 text-gray-600">
+                                <span className="font-medium">검색 결과:</span>
+                                <span className="text-blue-600 font-semibold">"{searchQuery}"</span>
+                                <span className="text-gray-500">({displayEvents.length}개)</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Event Grid */}
                     {viewMode === "list" && (
                         <div className="grid grid-cols-4 gap-6 mt-10 px-6">
-                            {filteredEvents.map((event) => (
-                                <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
-                                    <div className="relative group">
-                                        <img
-                                            className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
-                                            alt={event.title}
-                                            src={event.thumbnailUrl || "/images/NoImage.png"}
-                                        />
-                                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                toggleWish(event.id);
-                                            }}
-                                        />
+                            {displayEvents.length > 0 ? (
+                                displayEvents.map((event) => (
+                                    <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
+                                        <div className="relative group">
+                                            {/* MD PICK 스티커 */}
+                                            {hasMdPickInCurrentList && isEventMdPick(event) && (
+                                                <div className="absolute top-2 left-2 z-10">
+                                                    <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+                                                        <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+                                                        <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <img
+                                                className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
+                                                alt={event.title}
+                                                src={event.thumbnailUrl || "/images/NoImage.png"}
+                                            />
+                                            <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                            <FaHeart
+                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleWish(event.id);
+                                                }}
+                                            />
 
 
-                                    </div>
-                                    <div className="mt-4 text-left">
-                                        <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
-                                            {event.mainCategory}
-                                        </span>
-                                        <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                        <div className="text-sm text-gray-600 mb-2">
-                                            <div className="font-bold">{event.location}</div>
-                                            <div>
-                                                {event.startDate === event.endDate
-                                                    ? new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')
-                                                    : `${new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')} ~ ${new Date(event.endDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')}`
-                                                }
-                                            </div>
                                         </div>
-                                        <p className="font-bold text-lg text-[#ff6b35]">
-                                            {event.minPrice == null
-                                                ? "가격 정보 없음"
-                                                : event.minPrice === 0
-                                                    ? "무료"
-                                                    : `${event.minPrice.toLocaleString()}원 ~`}
-                                        </p>
+                                        <div className="mt-4 text-left">
+                                            <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
+                                                {event.mainCategory}
+                                            </span>
+                                            <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
+                                            <div className="text-sm text-gray-600 mb-2">
+                                                <div className="font-bold">{event.location}</div>
+                                                <div>
+                                                    {event.startDate === event.endDate
+                                                        ? new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')
+                                                        : `${new Date(event.startDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')} ~ ${new Date(event.endDate).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\s/g, '')}`
+                                                    }
+                                                </div>
+                                            </div>
+                                            <p className="font-bold text-lg text-[#ff6b35]">
+                                                {event.minPrice == null
+                                                    ? "가격 정보 없음"
+                                                    : event.minPrice === 0
+                                                        ? "무료"
+                                                        : `${event.minPrice.toLocaleString()}원 ~`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-4 text-center py-20">
+                                    <div className="text-gray-500">
+                                        {searchQuery ? (
+                                            <>
+                                                <p className="text-lg font-medium mb-2">검색 결과가 없습니다</p>
+                                                <p className="text-sm">"{searchQuery}"에 대한 검색 결과를 찾을 수 없습니다.</p>
+                                                <p className="text-sm text-gray-400 mt-1">다른 검색어를 시도해보세요.</p>
+                                            </>
+                                        ) : (
+                                            <p className="text-lg">이벤트가 없습니다</p>
+                                        )}
                                     </div>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     )}
 
@@ -1748,8 +1737,7 @@ export default function EventOverview() {
                         </div>
                     )}
 
-                    {/* Footer */}
-                    <Footer />
+
                 </div>
             </div>
         </div>

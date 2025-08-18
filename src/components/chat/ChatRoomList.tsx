@@ -45,13 +45,19 @@ export default function ChatRoomList({ onSelect }: Props) {
             const allRooms = response.data;
             console.log("백엔드에서 반환된 채팅방 수:", allRooms.length);
 
+            // AI 챗봇과 FairPlay 상담센터 채팅방을 리스트에서 제외
+            const filteredRooms = allRooms.filter((room: ChatRoomDto) => 
+                room.targetType !== 'AI' && room.targetType !== 'ADMIN'
+            );
+            console.log("필터링 후 채팅방 수:", filteredRooms.length);
+
             // 채팅방 생성 시간을 기본으로 사용 (메시지 조회하지 않음)
             const messageTimesMap: Record<number, string> = {};
-            allRooms.forEach((room: ChatRoomDto) => {
+            filteredRooms.forEach((room: ChatRoomDto) => {
                 messageTimesMap[room.chatRoomId] = room.createdAt;
             });
             setLastMessageTimes(messageTimesMap);
-            setRooms(allRooms);
+            setRooms(filteredRooms);
         } catch (error) {
             console.error("채팅방 조회 실패:", error);
             setRooms([]);
