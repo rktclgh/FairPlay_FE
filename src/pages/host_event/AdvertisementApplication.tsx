@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { HostSideNav } from '../../components/HostSideNav';
 import { useFileUpload } from '../../hooks/useFileUpload';
+import { useNavigate } from 'react-router-dom';
 
 const AdvertisementApplication: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedTypes, setSelectedTypes] = useState({
     mainBanner: false,
     searchTop: false
@@ -407,8 +409,84 @@ const AdvertisementApplication: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    // 광고 신청 로직 구현
-    console.log('광고 신청:', { selectedTypes, mainBannerForm, searchTopForm, uploadedFiles });
+    // 신청 데이터 구성
+    const payload: any[] = [];
+
+    // 메인 배너 신청 항목
+    if (selectedTypes.mainBanner && mainBannerForm.length > 0) {
+      const selections = mainBannerForm.map(it => ({ date: it.date, rank: `${it.rank}순위` }));
+      // 순위별 금액
+      const getPrice = (rank: number) => {
+        switch (rank) {
+          case 1: return 2500000;
+          case 2: return 2200000;
+          case 3: return 2000000;
+          case 4: return 1800000;
+          case 5: return 1600000;
+          case 6: return 1400000;
+          case 7: return 1200000;
+          case 8: return 1000000;
+          case 9: return 800000;
+          case 10: return 600000;
+          default: return 600000;
+        }
+      };
+      const totalAmount = mainBannerForm.reduce((sum, it) => sum + getPrice(parseInt(it.rank)), 0);
+
+      payload.push({
+        id: `host-${Date.now()}-mb`,
+        hostName: 'Host User',
+        eventTitle: uploadedFiles.size > 0 ? '메인 배너 광고' : '메인 배너 광고',
+        type: 'mainBanner',
+        status: 'pending',
+        submittedAt: new Date().toISOString().split('T')[0],
+        requestedDates: mainBannerForm.map(it => it.date),
+        totalAmount,
+        imageUrl: Array.from(uploadedFiles.values())[0]?.url,
+        paymentStatus: 'pending',
+        exposurePeriod: undefined,
+        mainBannerRanks: mainBannerForm.map(it => `${it.rank}순위`),
+        mainBannerSelections: selections
+      });
+    }
+
+    // 검색 상단 고정 신청 항목
+    if (selectedTypes.searchTop && searchTopForm.startDate && searchTopForm.endDate) {
+      const requestedDates = getAvailableDates();
+      if (requestedDates.length > 0) {
+        payload.push({
+          id: `host-${Date.now()}-st`,
+          hostName: 'Host User',
+          eventTitle: '검색 상단 고정 (MD PICK)',
+          type: 'searchTop',
+          status: 'pending',
+          submittedAt: new Date().toISOString().split('T')[0],
+          requestedDates,
+          totalAmount: calculateSearchTopPrice(),
+          imageUrl: undefined,
+          paymentStatus: 'pending',
+          exposurePeriod: {
+            startDate: searchTopForm.startDate,
+            endDate: searchTopForm.endDate
+          }
+        });
+      }
+    }
+
+    // 저장 및 이동
+    try {
+      if (payload.length > 0) {
+        const key = 'pendingAdApplications';
+        const prevRaw = localStorage.getItem(key);
+        const prev = prevRaw ? JSON.parse(prevRaw) : [];
+        localStorage.setItem(key, JSON.stringify([...payload, ...prev]));
+      }
+      alert('신청이 완료되었습니다.');
+      navigate('/admin_dashboard/advertisement-applications');
+    } catch (e) {
+      alert('신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+      console.error(e);
+    }
   };
 
   // 내일부터 선택 가능한 날짜 계산
