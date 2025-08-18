@@ -30,7 +30,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     const [myUserId, setMyUserId] = useState<number>(0);
     const [myName, setMyName] = useState<string>("나");
     const [roomTitle, setRoomTitle] = useState<string>(
-        isAiChat ? "AI 챗봇" : (isAdminInquiry ? "FairPlay 운영자 문의" : (userName || eventTitle || "채팅방"))
+        isAiChat ? "AI 상담사 페어링" : (isAdminInquiry ? "FairPlay 운영자 문의" : (userName || eventTitle || "채팅방"))
     );
     const [detectedOtherUserId, setDetectedOtherUserId] = useState<number | null>(null);
     const [isSending, setIsSending] = useState(false); // 전송 중 상태
@@ -374,7 +374,13 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
                                     <div className={`w-7 h-7 rounded-full text-white flex items-center justify-center text-[10px] font-semibold ${
                                         isAiChat ? "bg-gradient-to-br from-blue-500 to-purple-600" : "bg-gradient-to-br from-blue-600 to-indigo-600"
                                     }`}>
-                                        {isAiChat ? "AI" : initials}
+                                        {isAiChat ? (
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 2L2 7V10C2 16 6 20.9 12 22C18 20.9 22 16 22 10V7L12 2Z"/>
+                                                <path d="M12 4L4 8V10C4 14.9 7.1 18.7 12 19.8C16.9 18.7 20 14.9 20 10V8L12 4Z" fill="rgba(255,255,255,0.3)"/>
+                                                <circle cx="12" cy="12" r="2" fill="white"/>
+                                            </svg>
+                                        ) : initials}
                                     </div>
                                     {/* 상대방 메시지의 온라인 상태 표시 */}
                                     {isAiChat ? (
