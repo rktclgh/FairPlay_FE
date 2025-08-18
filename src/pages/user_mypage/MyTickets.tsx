@@ -13,12 +13,14 @@ import type {
 import {
     getQrTicketForMypage,
 } from "../../services/qrTicket"
+import { getFormLink } from "../../services/attendee";
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
     const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
     const [selectedTicketData, setSelectedTicketData] = useState<QrTicketData | null>(null);
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
+    const [formLinks, setFormLinks] = useState<{ [key: number]: string }>({});
     const [loading, setLoading] = useState(true);
     const [canUseQrTicket, setCanUseQrTicketList] = useState<boolean[]>([]);
     const [updateIds, setUpdateIds] = useState({
@@ -66,8 +68,7 @@ export default function MyTickets(): JSX.Element {
                 ticketId: reservation.ticketId,
                 reservationId: reservation.reservationId
             };
-
-            // QR 티켓 정보 호출
+                // QR 티켓 정보 호출
             const res = await getQrTicketForMypage(qrTicketRequestDto);
             // 선택한 티켓 정보
             setSelectedTicketData({
@@ -87,18 +88,20 @@ export default function MyTickets(): JSX.Element {
             });
 
             setIsQrTicketOpen(true);
-            
-        } catch (error: any) {
-
-            const data = error.response?.data;
-
-            if (data) {
-                toast.error(`${data.code} : ${data.message}`)
+        } catch (error) {
+            if (error.response) {
+                const { message } = error.response.data;
+                alert(message);
             } else if (error.request) {
-                toast.error("서버 응답이 없습니다. 네트워크를 확인하세요.")
+                // 요청은 됐지만 응답 없음
+                console.error("서버 응답 없음:", error.request);
+                alert("서버 응답이 없습니다. 잠시 후 다시 시도해주세요.");
             } else {
-                toast.error("알 수 없는 오류가 발생했습니다.");
+                    // 기타 오류
+                    console.error("알 수 없는 오류:", error.message);
+                    alert("알 수 없는 오류가 발생했습니다.");
             }
+            
         }
     };
 
@@ -107,24 +110,48 @@ export default function MyTickets(): JSX.Element {
         setSelectedTicketData(null);
     };
 
-    const handleParticipantListOpen = (reservation: ReservationResponseDto) => {
+    const handleParticipantListOpen = (reservation: ReservationResponseDto, bookingDate: string) => {
+        console.log("handleParticipantListOpen:"+reservation.createdAt)
         navigate(`/mypage/participant-list`, {
             state: {
                 eventName: reservation.eventName,
-                reservationId: reservation.reservationId
+                reservationId: reservation.reservationId,
+                reservationDate: bookingDate,
+                scheduleDate: reservation.scheduleDate
             }
         });
     };
 
+    const handleShowFormLink = async (reservationId: number) => {
+
+        if (formLinks[reservationId]) {
+            await navigator.clipboard.writeText(formLinks[reservationId]);
+            toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");
+            return;
+        }
+
+        try {
+            const res = await getFormLink(reservationId);
+            const link = `${import.meta.env.VITE_FRONTEND_BASE_URL}/participant-form?token=${res.token}`;
+
+            setFormLinks(prev => ({ ...prev, [reservationId]: link }));
+
+            await navigator.clipboard.writeText(link);
+            toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");            
+        } catch (error) {
+            toast.error("폼 링크를 불러오는 중 오류가 발생했습니다.");
+        }
+     }
+
     const formatDate = (dateStr: string | null) => {
-            if (!dateStr) return "날짜 미정";
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        };
+        if (!dateStr) return "날짜 미정";
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
 
     // 시간 포맷팅: HH:MM:SS를 HH:MM으로 변환
     const formatTime = (timeStr: string | null) => {
@@ -227,7 +254,7 @@ export default function MyTickets(): JSX.Element {
                                                             </div>
                                                             <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-6 tracking-[0] whitespace-nowrap">
                                                                 <button
-                                                                    onClick={() => window.open(`/mypage/participant-form?token=${encodeURIComponent(reservation.eventName)}`, '_blank')}
+                                                                    onClick={() => handleShowFormLink(reservation.reservationId)}
                                                                     className="text-blue-600 hover:text-blue-800 underline bg-transparent border-none cursor-pointer p-0 font-normal text-base focus:outline-none"
                                                                 >
                                                                     참여자 정보 입력
@@ -263,7 +290,7 @@ export default function MyTickets(): JSX.Element {
 
                                                 {reservation.quantity >= 2 && (
                                                     <button
-                                                        onClick={() => handleParticipantListOpen(reservation)}
+                                                        onClick={() => handleParticipantListOpen(reservation, reservation.createdAt)}
                                                         className="w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
                                                     >
                                                         <span className="font-semibold text-white text-xs tracking-wide">

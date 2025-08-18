@@ -3,6 +3,15 @@
   --bg-main: #ffffff;
 }
 
+/* 숨김 스크롤바 유틸 */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
 /* Dark mode root override */
 body.dark-mode {
   --bg-main: #0d1117; /* 기존 #0a0a0f → GitHub Dark */
@@ -53,6 +62,13 @@ body.dark-mode [class*="bg-white/"] {
   margin: 0 auto;
   padding: 2rem;
   text-align: left;
+}
+
+/* 모바일 하단 네비게이션과 콘텐츠 겹침 방지 */
+@media (max-width: 768px) {
+  main, .page-container, .theme-surface {
+    padding-bottom: 64px; /* 하단 바 높이만큼 여백 */
+  }
 }
 
 /* Quill 테이블 버튼 스타일 */
@@ -136,6 +152,19 @@ body.dark-mode [class*="bg-white/"] {
   opacity: 0.55;
 }
 
+/* 모바일에서 Hotpick 슬라이드 크기 조정 */
+@media (max-width: 768px) {
+  .hotpick-swiper .swiper-slide {
+    width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hotpick-swiper .swiper-slide {
+    width: 160px;
+  }
+}
+
 .hotpick-swiper .swiper-slide-active {
   transform: scale(1.03);
   opacity: 1;
@@ -190,4 +219,122 @@ body.dark-mode [class*="bg-white/"] {
 .theme-btn:focus {
   outline: none;
   box-shadow: none;
+}
+
+/* 모바일 반응형 추가 스타일 */
+@media (max-width: 768px) {
+  /* 모바일에서 버튼 클릭 시 아웃라인 제거 */
+  button:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  
+  /* 모바일에서 링크 클릭 시 아웃라인 제거 */
+  a:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  
+  /* 모바일에서 이미지 최적화 */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* 모바일에서 터치 최적화 */
+@media (max-width: 768px) {
+  .hotpick-swiper .swiper-button-next,
+  .hotpick-swiper .swiper-button-prev {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .hotpick-swiper .swiper-button-next:after,
+  .hotpick-swiper .swiper-button-prev:after {
+    font-size: 16px;
+  }
+}
+
+/* 메인화면 모바일 반응형 추가 스타일 */
+@media (max-width: 768px) {
+  /* 모바일에서 히어로 섹션 최적화 */
+  .hero-section {
+    height: 400px;
+  }
+  
+  /* 모바일에서 카드 그리드 최적화 */
+  .event-grid {
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1rem;
+  }
+  
+  /* 모바일에서 필터 버튼 최적화 */
+  .filter-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  /* 모바일에서 Hot Picks 섹션 최적화 */
+  .hotpicks-section {
+    padding: 2rem 1rem;
+  }
+  
+  /* 모바일에서 이벤트 섹션 최적화 */
+  .events-section {
+    padding: 2rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 작은 모바일에서 추가 최적화 */
+  .hero-section {
+    height: 350px;
+  }
+  
+  .event-grid {
+    gap: 0.75rem;
+  }
+  
+  .filter-buttons {
+    gap: 0.25rem;
+  }
+  
+  .hotpicks-section {
+    padding: 1.5rem 0.5rem;
+  }
+  
+  .events-section {
+    padding: 1.5rem 0.5rem;
+  }
+}
+
+/* 모바일에서 스와이퍼 네비게이션 최적화 */
+@media (max-width: 768px) {
+  .swiper-button-next,
+  .swiper-button-prev {
+    display: none !important;
+  }
+  
+  /* 모바일에서 스와이퍼 터치 제스처 최적화 */
+  .swiper-wrapper {
+    touch-action: pan-y pinch-zoom;
+  }
+}
+
+/* 모바일에서 텍스트 가독성 향상 */
+@media (max-width: 768px) {
+  h1, h2, h3 {
+    line-height: 1.2;
+  }
+  
+  p {
+    line-height: 1.5;
+  }
+  
+  /* 모바일에서 버튼 터치 영역 확대 */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

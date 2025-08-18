@@ -7,6 +7,8 @@ import { eventApi } from "../../services/api";
 import authManager from "../../utils/auth";
 import paymentService from "../../services/paymentService";
 import ticketReservationService from "../../services/ticketReservationService";
+import { saveAttendeeAndShareTicket } from "../../services/attendee";
+import type { ShareTicketSaveRequestDto } from "../../services/types/attendeeType";
 
 // 이벤트 회차 정보
 interface EventSchedule {
@@ -311,6 +313,13 @@ export const TicketReservation = () => {
                 totalAmount,
                 reservationData
             );
+
+            // 참석자 저장 및 폼 생성
+            const shareTicketData: ShareTicketSaveRequestDto = {
+                reservationId:result.targetId,
+                totalAllowed:ticketReservationForm.quantity 
+            }
+            await saveAttendeeAndShareTicket(shareTicketData);
 
             console.log('결제 및 예약 성공:', result);
             toast.success("결제 및 예매가 완료되었습니다!");
