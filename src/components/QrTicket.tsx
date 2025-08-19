@@ -76,17 +76,19 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
             return;
         }
 
-        const timer = setInterval(() => {
-            setTimeLeft((prevTime) => {
-                if (prevTime <= 1) {
-                    clearInterval(timer);
+        timerRef.current = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    if (timerRef.current) clearInterval(timerRef.current); // 0이 되면 멈춤
                     return 0;
                 }
-                return prevTime - 1;
+                return prev - 1;
             });
         }, 1000);
 
-        return () => clearInterval(timer);
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
     }, [isOpen, qrCode]);
 
     // 새로고침 함수
@@ -159,7 +161,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                                 <div className="text-center text-gray-500">
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
                                         <QRCodeCanvas
-                                            value={qrCode ?? ""}
+                                            value={qrCode}
                                             size={116}
                                             fgColor={'#000'}
                                             style={{

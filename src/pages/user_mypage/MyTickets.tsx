@@ -34,7 +34,6 @@ export default function MyTickets(): JSX.Element {
     // ✅ 여기서 웹소켓 구독 시작
     useQrTicketSocket(qrTicketId, (msg) => {
         console.log("qrTicketId:" + qrTicketId);
-        alert(msg);
         setSuccessMessage(msg);   // 메시지를 state에 저장
     });
 

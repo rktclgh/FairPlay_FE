@@ -18,7 +18,7 @@ import type {
     QrTicketGuestResponseDto,
     QrTicketResponseDto
 } from "../services/types/qrTicketType";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQrTicketSocket } from "../utils/useQrTicketSocket";
 
 
@@ -36,6 +36,7 @@ const scrollbarHideStyles = `
 // 비회원 QR 티켓 조회 페이지
 export const OnlyQrTicketPage = () => {
     const [searchParam] = useSearchParams();
+    const navigate = useNavigate();
     const token = searchParam.get("token");
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
     const [qrTicketId, setQrTicketId] = useState(0);
@@ -70,7 +71,10 @@ export const OnlyQrTicketPage = () => {
         setTimeLeft(300); // 5분 초기화
         timerRef.current = setInterval(() => {
             setTimeLeft((prev) => {
-                if (timerRef.current) clearInterval(timerRef.current);
+                if (prev <= 1) {
+                    if (timerRef.current) clearInterval(timerRef.current); // 0이 되면 멈춤
+                    return 0;
+                }
                 return prev - 1;
             });
         }, 1000);
@@ -92,18 +96,24 @@ export const OnlyQrTicketPage = () => {
                 setQrCode(data.qrCode);
                 setManualCode(data.manualCode);
                 setQrTicketId(data.qrTicketId);
-            } catch (error) {
-               if (error.response) {
-                const { message } = error.response.data;
-                alert(message);
-            } else if (error.request) {
-                // 요청은 됐지만 응답 없음
-                console.error("서버 응답 없음:", error.request);
-                alert("서버 응답이 없습니다. 잠시 후 다시 시도해주세요.");
-            } else {
-                // 기타 오류
-                console.error("알 수 없는 오류:", error.message);
-                alert("알 수 없는 오류가 발생했습니다.");
+                console.log(data);
+            } catch (error: any) {
+                if (error.response) {  
+                    const { message } = error.response.data;
+                    navigate(`/qr-ticket/participant/error`, {
+                        state: {
+                            title: "죄송합니다",
+                            message: message,
+                    }
+                });
+                } else if (error.request) {
+                    // 요청은 됐지만 응답 없음
+                    console.error("서버 응답 없음:", error.request);
+                    alert("서버 응답이 없습니다. 잠시 후 다시 시도해주세요.");
+                } else {
+                    // 기타 오류
+                    console.error("알 수 없는 오류:", error.message);
+                    alert("알 수 없는 오류가 발생했습니다.");
                 }
             }
         };

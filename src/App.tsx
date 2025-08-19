@@ -84,6 +84,7 @@ import MyBoothExperienceReservations from "./pages/user_booth/MyBoothExperienceR
 import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagement";
 import BoothExperienceReserverManagement from "./pages/host_booth/BoothExperienceReserverManagement";
 import { OnlyQrTicketPage } from './pages/OnlyQrTicketPage';
+import { OnlyQrTicketErrorPage } from './pages/OnlyQrTicketErrorPage';
 import { Footer } from "./components/Footer";
 import AppLayout from "./components/AppLayout";
 import Notices from "./pages/footer/Notices";
@@ -147,6 +148,7 @@ function AppContent() {
             <Route path="/" element={<Main />} />
             <Route path="/participant-form" element={<ParticipantForm />} />
             <Route path="/qr-ticket/participant" element={<OnlyQrTicketPage />} />
+            <Route path="/qr-ticket/participant/error" element={<OnlyQrTicketErrorPage />} />            
             <Route path="/eventoverview" element={<EventOverview />} />
             <Route path="/eventdetail/:eventId" element={<EventDetail />} />
             <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
