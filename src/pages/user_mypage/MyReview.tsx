@@ -25,7 +25,7 @@ export const MyPageMyReview = () => {
     /** 초기 세팅 데이터 */
     const [savedReview, setSavedReviews] = useState<ReviewResponseDto[] | null>(null); // 작성한 리뷰
     const [writeReviewsState, setWriteReviewsState] = useState<PossibleReviewResponseDto[] | null>(null) // 리뷰 작성 가능한 이벤트 
-    
+
     /** 선택 항목 */
     const [selectAll, setSelectAll] = useState(false);
     const [selectedReviews, setSelectedReviews] = useState<number[]>([]); // 선택한 리뷰들
@@ -46,7 +46,7 @@ export const MyPageMyReview = () => {
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
     const [currentPage, setCurrentPage] = useState(0); // 리뷰 현재 페이지
-    
+
     // 초기 로딩
     useEffect(() => {
         // 작성 가능한 행사 조회
@@ -104,7 +104,7 @@ export const MyPageMyReview = () => {
         if (deleteTargetId == null) {
             return;
         }
-        
+
         const res = await deleteReview(deleteTargetId)
 
         setSavedReviews((savedReview ?? []).filter(review => review.review.reviewId !== res.reviewId));
@@ -120,11 +120,11 @@ export const MyPageMyReview = () => {
     };
 
     const handleEventClick = (event: EventDto, reservationId: number) => {
-        
+
         if (savedReview?.some(review => review.reservationId === reservationId)) {
             alert("이미 리뷰 작성이 완료된 행사입니다.");
             return;
-       }
+        }
 
         setSelectedEvent(event);
         setSelectReservationId(reservationId)
@@ -139,7 +139,7 @@ export const MyPageMyReview = () => {
     const handleEditReview = (data: ReviewResponseDto) => {
         // 수정할 리뷰 설정
         setEditingReview(data.review);
-        
+
         // 수정할 리뷰의 이벤트
         const reviewEvent: EventDto = {
             title: data.event.title,
@@ -149,7 +149,7 @@ export const MyPageMyReview = () => {
             eventScheduleInfo: data.event.eventScheduleInfo,
             viewingScheduleInfo: data.event.viewingScheduleInfo
         }
-            
+
         // 이벤트 설정
         setSelectedEvent(reviewEvent);
 
@@ -185,7 +185,7 @@ export const MyPageMyReview = () => {
 
     // 리뷰 저장 및 제출 
     const handleSubmitReview = async () => {
-        
+
         // 수정 모드 O 수정하려고 선택한 리뷰 정보
         if (isEditMode && editingReview) {
 
@@ -195,13 +195,13 @@ export const MyPageMyReview = () => {
             }
             // 수정 모드: 기존 리뷰 업데이트
             const reviewUpdateRequestDto: ReviewUpdateRequestDto = {
-                    star: rating,
-                    comment: reviewText,
-                    visible: !isPrivate
+                star: rating,
+                comment: reviewText,
+                visible: !isPrivate
             }
 
             const res = await updateReview(editingReview.reviewId, reviewUpdateRequestDto);
-            
+
             setSavedReviews(prev =>
                 (prev ?? []).map(data =>
                     data.review.reviewId === editingReview.reviewId
@@ -266,10 +266,10 @@ export const MyPageMyReview = () => {
         ));
     };
 
-      const formattedDate = (createdAt: string) => {
+    const formattedDate = (createdAt: string) => {
         const formatted = createdAt.slice(0, 10).replace(/-/g, ". ");
         return formatted;
-  }
+    }
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -314,7 +314,7 @@ export const MyPageMyReview = () => {
                     </div>
                 </div>
 
-                                    <TopNav />
+                <TopNav />
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
 
@@ -328,7 +328,7 @@ export const MyPageMyReview = () => {
                                     <div
                                         key={item.reservationId}
                                         className="flex gap-6 cursor-pointer p-4 rounded-lg"
-                                        onClick={() => handleEventClick(item.event,item.reservationId)}
+                                        onClick={() => handleEventClick(item.event, item.reservationId)}
                                     >
                                         <img
                                             src={item.event.thumbnail}
@@ -366,7 +366,7 @@ export const MyPageMyReview = () => {
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">장소</div>
-                                                <div className="text-sm text-[#000000b2]">{item.event.buildingName !== null ? item.event.buildingName : item.event.address }</div>
+                                                <div className="text-sm text-[#000000b2]">{item.event.buildingName !== null ? item.event.buildingName : item.event.address}</div>
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="text-sm text-black font-semibold w-12">관람일</div>
@@ -405,16 +405,16 @@ export const MyPageMyReview = () => {
                                         <p className="text-lg font-semibold">{selectedEvent.title}</p>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">일시</div>
-                                                <div className="text-sm text-[#000000b2]">{selectedEvent.eventScheduleInfo.startDate} ~ { selectedEvent.eventScheduleInfo.endDate}</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.eventScheduleInfo.startDate} ~ {selectedEvent.eventScheduleInfo.endDate}</div>
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">장소</div>
-                                            <div className="text-sm text-[#000000b2]">{selectedEvent.buildingName !== null ? selectedEvent.buildingName : selectedEvent.address }</div>
+                                            <div className="text-sm text-[#000000b2]">{selectedEvent.buildingName !== null ? selectedEvent.buildingName : selectedEvent.address}</div>
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-sm text-black font-semibold w-12">관람일</div>
-                                                <div className="text-sm text-[#000000b2]">
-                                                    {selectedEvent.viewingScheduleInfo.date} ({selectedEvent.viewingScheduleInfo.dayOfWeek}) {selectedEvent.viewingScheduleInfo.startTime}
+                                            <div className="text-sm text-[#000000b2]">
+                                                {selectedEvent.viewingScheduleInfo.date} ({selectedEvent.viewingScheduleInfo.dayOfWeek}) {selectedEvent.viewingScheduleInfo.startTime}
                                             </div>
                                         </div>
                                     </div>
@@ -431,14 +431,14 @@ export const MyPageMyReview = () => {
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <button
                                                     key={star}
-                                                    onClick={() => { 
-                                                        if (star === rating) { 
+                                                    onClick={() => {
+                                                        if (star === rating) {
                                                             setRating(star - 1);
                                                         } else {
                                                             setRating(star);
                                                         }
 
-                                                    } }
+                                                    }}
                                                     className="w-[27px] h-[26px] p-0 bg-transparent border-none focus:outline-none"
                                                 >
                                                     <Star
