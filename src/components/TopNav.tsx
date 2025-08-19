@@ -184,7 +184,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					</form>
 					<button onClick={toggleNotification} aria-label={t('common.notification')} className="relative shrink-0 inline-flex items-center justify-center h-10 w-10 appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none">
 						<HiOutlineBell className="block flex-none w-6 h-6 text-gray-500" aria-hidden="true" />
-						{isLoggedIn && unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+						{isLoggedIn && unreadCount > 0 && <span className="absolute top-2 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
 					</button>
 				</div>
 			</div>
@@ -205,7 +205,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					>
 						{t('common.notification')}
 						{isLoggedIn && unreadCount > 0 && (
-							<span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+							<span className="absolute top-0 -right-1 w-1 h-1 bg-red-500 rounded-full"></span>
 						)}
 					</button>
 					<Link
