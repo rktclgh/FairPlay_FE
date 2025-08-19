@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => {
       __VITE_KAKAO_MAP_ID__: JSON.stringify(env.VITE_KAKAO_MAP_ID),
     },
     server: {
+      host: true,
+      port: 5173,
+      strictPort: false,
+      cors: true,
       proxy: {
         "/api": {
           target: env.VITE_BACKEND_BASE_URL || "http://localhost:8080",

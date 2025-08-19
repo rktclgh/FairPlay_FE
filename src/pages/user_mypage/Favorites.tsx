@@ -4,38 +4,48 @@ import { TopNav } from "../../components/TopNav";
 import { FaHeart } from "react-icons/fa";
 import api from "../../api/axios";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 
 interface WishlistEvent {
-    eventId: number;
-    eventTitle: string;
-    categoryName: string;
-    location: string;
-    startDate: string;
-    endDate: string;
-    price: number;
-    thumbnailUrl: string;
+  eventId: number;
+  eventTitle: string;
+  categoryName: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+  thumbnailUrl: string;
 }
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("ko-KR").replace(/\s/g, "");
 const fmtRange = (s: string, e: string) => `${fmtDate(s)} ~ ${fmtDate(e)}`;
-const fmtPrice = (p: number) => (p === 0 ? "무료" : `${p.toLocaleString("ko-KR")}원 ~`);
+const fmtPrice = (p: number, t: any) => {
+  if (p === 0) return t('mypage.favorites.free');
+  const currentLang = t('language.korean') === '한국어' ? 'ko' : 'en';
+  if (currentLang === 'ko') {
+    return `${p.toLocaleString("ko-KR")}원 ~`;
+  } else {
+    return `$${Math.round(p / 1000)} ~`;
+  }
+};
 
 export const MyPageFavorites = () => {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<WishlistEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-   
-const fetchWishlist = async () => {
+
+  const fetchWishlist = async () => {
     try {
       setLoading(true);
-      const res = await api.get<WishlistEvent[]>("/api/wishlist",{
-      withCredentials: true,
-    });
+      const res = await api.get<WishlistEvent[]>("/api/wishlist", {
+        withCredentials: true,
+      });
       setEvents(res.data || []);
     } catch (e) {
-      console.error("위시리스트 조회 실패:", e);
+      console.error(t('mypage.favorites.loadError'), e);
       setEvents([]);
     } finally {
       setLoading(false);
@@ -46,7 +56,7 @@ const fetchWishlist = async () => {
   useEffect(() => {
     fetchWishlist();
   }, []);
-  
+
 
   // 찜 취소
   const removeWishlist = async (eventId: number) => {
@@ -54,18 +64,18 @@ const fetchWishlist = async () => {
       await api.delete(`/api/wishlist/${eventId}`);
       setEvents((prev) => prev.filter((e) => e.eventId !== eventId));
     } catch (e) {
-      console.error("찜 취소 실패:", e);
+      console.error(t('mypage.favorites.removeError'), e);
     }
   };
 
 
 
-   return (
+  return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-[1256px] min-h-[1407px] relative">
         <TopNav />
         <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-          관심
+          {t('mypage.favorites.title')}
         </div>
 
         <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
@@ -74,12 +84,12 @@ const fetchWishlist = async () => {
         <div className="absolute top-[239px] left-64 right-0">
           <div className="px-8">
             {loading ? (
-              <div className="text-center py-20 text-gray-500">불러오는 중…</div>
+              <div className="text-center py-20 text-gray-500">{t('mypage.favorites.loading')}</div>
             ) : events.length === 0 ? (
               <div className="text-center py-20">
-                <div className="text-gray-500 text-lg mb-4">아직 관심 행사가 없습니다</div>
+                <div className="text-gray-500 text-lg mb-4">{t('mypage.favorites.empty')}</div>
                 <div className="text-gray-400 text-sm">
-                  홈화면이나 행사 목록에서 하트를 눌러 관심 행사를 추가해보세요
+                  {t('mypage.favorites.emptyDescription')}
                 </div>
               </div>
             ) : (
@@ -98,7 +108,7 @@ const fetchWishlist = async () => {
                           e.stopPropagation();
                           removeWishlist(event.eventId);
                         }}
-                        title="찜 취소"
+                        title={t('mypage.favorites.removeFromWishlist')}
                       />
                     </div>
 
@@ -107,18 +117,18 @@ const fetchWishlist = async () => {
                         {event.categoryName}
                       </span>
                       <h3
-  className="text-lg font-extrabold text-black mb-2 truncate"
-  style={{ fontWeight: 800 }}
->
-  <Link
-    to={`/eventdetail/${event.eventId}`}
-    onClick={(e) => e.stopPropagation()}
-    className="block no-underline text-black visited:text-black hover:underline hover:text-black"
-    style={{ fontWeight: 800 }}
-  >
-    {event.eventTitle}
-  </Link>
-</h3>
+                        className="text-lg font-extrabold text-black mb-2 truncate"
+                        style={{ fontWeight: 800 }}
+                      >
+                        <Link
+                          to={`/eventdetail/${event.eventId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="block no-underline text-black visited:text-black hover:underline hover:text-black"
+                          style={{ fontWeight: 800 }}
+                        >
+                          {event.eventTitle}
+                        </Link>
+                      </h3>
 
 
 
@@ -127,7 +137,7 @@ const fetchWishlist = async () => {
                         <div>{fmtRange(event.startDate, event.endDate)}</div>
                       </div>
                       <p className="font-bold text-lg text-[#ff6b35]">
-                        {fmtPrice(event.price)}
+                        {fmtPrice(event.price, t)}
                       </p>
                     </div>
                   </div>
@@ -139,33 +149,14 @@ const fetchWishlist = async () => {
             {events.length > 0 && (
               <div className="text-center mt-12">
                 <button className="px-4 py-2 rounded-[10px] text-sm border bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold">
-                  전체보기
+                  {t('mypage.favorites.viewAll')}
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        <div className="absolute w-full h-[205px] bottom-0 bg-white border-t [border-top-style:solid] border-[#0000001f]">
-          <p className="absolute top-[62px] left-1/2 transform -translate-x-1/2 [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-            간편하고 안전한 행사 관리 솔루션
-          </p>
 
-          <div className="absolute top-[118px] left-1/2 transform -translate-x-1/2 flex space-x-8">
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              이용약관
-            </div>
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              개인정보처리방침
-            </div>
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              고객센터
-            </div>
-            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-              회사소개
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface AttendeeSideNavProps {
     className?: string;
@@ -7,6 +8,7 @@ interface AttendeeSideNavProps {
 
 export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = "" }) => {
     const location = useLocation();
+    const { t } = useTranslation();
 
     return (
         <div className={`w-[240px] h-[800px] bg-white ${className}`}>
@@ -16,7 +18,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                 <nav className="text-left">
                     {/* 예매 정보 카테고리 */}
                     <div className="mb-4 space-y-0">
-                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">예매 정보</h3>
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">{t('mypage.navigation.bookingInfo')}</h3>
                         <div className="space-y-1">
                             <Link
                                 to="/mypage/reservation"
@@ -35,7 +37,26 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/reservation" ? "black" : "#00000080";
                                 }}
                             >
-                                예약/결제
+                                {t('mypage.navigation.reservationPayment')}
+                            </Link>
+                            <Link
+                                to="/mypage/refund"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/refund"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/refund" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/refund" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/refund" ? "black" : "#00000080";
+                                }}
+                            >
+                                {t('mypage.navigation.cancelRefund')}
                             </Link>
                             <Link
                                 to="/mypage/tickets"
@@ -54,15 +75,14 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/tickets" ? "black" : "#00000080";
                                 }}
                             >
-                                내 티켓
+                                {t('mypage.navigation.myTickets')}
                             </Link>
-                            <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] whitespace-nowrap">취소/환불</div>
                         </div>
                     </div>
 
                     {/* 내 정보 카테고리 */}
                     <div className="mb-4 space-y-0">
-                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">내 정보</h3>
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">{t('mypage.navigation.myInfo')}</h3>
                         <div className="space-y-1">
                             <Link
                                 to="/mypage/info"
@@ -81,7 +101,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/info" ? "black" : "#00000080";
                                 }}
                             >
-                                내 정보 조회
+                                {t('mypage.navigation.myInfoView')}
                             </Link>
                             <Link
                                 to="/mypage/account"
@@ -100,7 +120,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/account" ? "black" : "#00000080";
                                 }}
                             >
-                                환불계좌정보
+                                {t('mypage.navigation.refundAccount')}
                             </Link>
                             <Link
                                 to="/mypage/favorites"
@@ -119,7 +139,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/favorites" ? "black" : "#00000080";
                                 }}
                             >
-                                관심
+                                {t('mypage.navigation.interests')}
                             </Link>
                             <Link
                                 to="/mypage/write-review"
@@ -138,14 +158,14 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = (location.pathname === "/mypage/write-review" || location.pathname === "/mypage/my-review") ? "black" : "#00000080";
                                 }}
                             >
-                                관람평
+                                {t('mypage.navigation.reviews')}
                             </Link>
                         </div>
                     </div>
 
                     {/* 부스 체험 */}
                     <div className="mb-4 space-y-0">
-                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">부스 체험</h3>
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">{t('mypage.navigation.boothExperience')}</h3>
                         <div className="space-y-1">
                             <Link
                                 to="/mypage/booth-experiences"
@@ -164,7 +184,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/booth-experiences" ? "black" : "#00000080";
                                 }}
                             >
-                                체험 목록 조회
+                                {t('mypage.navigation.experienceList')}
                             </Link>
                             <Link
                                 to="/mypage/booth-experiences-reservation"
@@ -183,7 +203,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/booth-experiences-reservation" ? "black" : "#00000080";
                                 }}
                             >
-                                체험 예약 현황
+                                {t('mypage.navigation.experienceReservation')}
                             </Link>
                         </div>
                     </div>

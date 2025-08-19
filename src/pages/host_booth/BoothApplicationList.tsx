@@ -419,7 +419,7 @@ export const BoothApplicationList = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px] pb-20">
+                <div className="ml-64 mt-[195px] w-[949px] pb-20">
 
                     {/* 검색 영역 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -539,8 +539,8 @@ export const BoothApplicationList = () => {
                                     onClick={handlePrevPage}
                                     disabled={currentPage === 1}
                                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                         }`}
                                 >
                                     이전
@@ -551,8 +551,8 @@ export const BoothApplicationList = () => {
                                         key={page}
                                         onClick={() => handlePageChange(page)}
                                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === page
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         {page}
@@ -563,8 +563,8 @@ export const BoothApplicationList = () => {
                                     onClick={handleNextPage}
                                     disabled={currentPage === totalPages}
                                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                         }`}
                                 >
                                     다음
