@@ -29,3 +29,25 @@ export const getEventStatusStyle = (statusCode: string): string => {
             return 'bg-gray-100 text-gray-800';
     }
 };
+
+/**
+ * 날짜를 기준으로 행사 상태 계산
+ */
+export const calculateEventStatus = (startDate: string, endDate: string): 'UPCOMING' | 'ONGOING' | 'ENDED' => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // 시간 정보 제거하고 날짜만 비교
+    now.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    if (now < start) {
+        return 'UPCOMING';
+    } else if (now >= start && now <= end) {
+        return 'ONGOING';
+    } else {
+        return 'ENDED';
+    }
+};
