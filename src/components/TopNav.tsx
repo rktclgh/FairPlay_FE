@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineUser, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { requireAuth, isAuthenticated } from '../utils/authGuard';
-import { hasHostPermission } from '../utils/permissions';
+import { hasHostPermission, hasBoothManagerPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 import { useTheme } from '../context/ThemeContext';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -244,6 +244,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 										navigate('/admin_dashboard');
 									} else if (hasHostPermission(role)) {
 										navigate('/host/dashboard');
+									} else if (hasBoothManagerPermission(role)) {
+										navigate('/booth-admin/dashboard');
 									} else {
 										navigate('/mypage/info');
 									}
@@ -325,6 +327,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 									navigate('/admin_dashboard');
 								} else if (hasHostPermission(role)) {
 									navigate('/host/dashboard');
+								} else if (hasBoothManagerPermission(role)) {
+									navigate('/booth-admin/dashboard');
 								} else {
 									navigate('/mypage/info');
 								}

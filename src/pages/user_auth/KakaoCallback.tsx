@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { toast } from 'react-toastify';
-import { hasHostPermission } from '../../utils/permissions';
+import { hasHostPermission, hasBoothManagerPermission } from '../../utils/permissions';
 
 const KakaoCallback = () => {
     const location = useLocation();
@@ -37,6 +37,8 @@ const KakaoCallback = () => {
                     // 권한별 리다이렉션
                     if (hasHostPermission(userRole)) {
                         navigate("/host/dashboard");
+                    } else if (hasBoothManagerPermission(userRole)) {
+                        navigate("/booth-admin/dashboard");
                     } else {
                         navigate("/");
                     }
