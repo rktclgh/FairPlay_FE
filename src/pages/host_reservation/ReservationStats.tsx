@@ -129,7 +129,6 @@ export const ReservationStats = () => {
       const monthlyArray = Object.entries(monthlyMap).map(([month, reservations]) => ({
           date: month,
           reservations
-
       // 3. 월 순서대로 정렬 (01월, 02월, ... 12월)
       return monthlyArray.sort((a, b) => {
         const monthA = parseInt(a.date.replace('월', ''));
