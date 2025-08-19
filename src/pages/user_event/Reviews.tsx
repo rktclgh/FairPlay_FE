@@ -17,11 +17,12 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [reviews, setReviews] = useState<ReviewWithOwnerDto[]>(data?.reviews?.content ?? []);
-  const totalPages = data?.reviews?.totalPages ?? 1;
+  const [totalPages, setTotalPages] = useState(1);
 
   // props로 전달된 리뷰 목록이 변경되면 동기화
   useEffect(() => {
     setReviews(data?.reviews?.content ?? []);
+    setTotalPages(data?.reviews?.totalPages ?? 1);
   }, [data?.reviews?.content]);
 
   const renderStars = (rating: number) => {

@@ -46,24 +46,32 @@ export const MyPageMyReview = () => {
     const [deleteType, setDeleteType] = useState<'bulk' | 'single'>('bulk');
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    const [writePage, setWritePage] = useState(0);
+    const [writeTotalPages, setWriteTotalPages] = useState(1);
+    const [myPage, setMyPage] = useState(0);
+    const [myTotalPages, setMyTotalPages] = useState(1);
 
-    // 초기 로딩
     useEffect(() => {
-        // 작성 가능한 행사 조회
-        const fetchWriteReviews = async () => {
-            const res = await getPossibleSaveReview(0); // currentPage를 0으로 변경
-            setWriteReviewsState(res?.content ?? null);
+        if (activeTab === 'write') {
+            const fetchWriteReviews = async () => {
+                const res = await getPossibleSaveReview(writePage); // currentPage를 0으로 변경
+                setWriteReviewsState(res?.content ?? null);
+                setWriteTotalPages(res?.totalPages);
+            }
+            fetchWriteReviews();
         }
+    }, [activeTab, writePage]);
 
-        // 작성한 리뷰 조회
-        const fetchUserReviews = async () => {
-            const res = await getReviewsByMember(0); // currentPage를 0으로 변경
-            setSavedReviews(res?.content ?? null);
+    useEffect(() => {
+        if (activeTab === 'my') {
+                const fetchUserReviews = async () => {
+                    const res = await getReviewsByMember(myPage); // currentPage를 0으로 변경
+                    setSavedReviews(res?.content ?? null);
+                    setMyTotalPages(res?.totalPages);
+                }
+                fetchUserReviews();
         }
-        fetchWriteReviews();
-        fetchUserReviews();
-    }, []);
-
+    }, [activeTab, myPage]);
 
     const handleSelectAll = (checked: boolean) => {
         setSelectAll(checked);
@@ -434,6 +442,48 @@ export const MyPageMyReview = () => {
                                         </div>
                                     </div>
                                 ))}
+                                {/* 페이지네이션 */}
+                                {writeTotalPages >= 0 && (
+                                    <div className="flex justify-center mt-8">
+                                    <div className="flex items-center gap-2">
+                                        {/* 이전 페이지 버튼 */}
+                                        <button
+                                        onClick={() =>  setWritePage(writePage -1)}
+                                        disabled={writePage === 0}
+                                        className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === 1
+                                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                            : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                            }`}
+                                        >
+                                        &lt;
+                                        </button>
+                                        {/* 페이지 번호 버튼 */}
+                                        {Array.from({ length: writeTotalPages }, (_, page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() =>  setWritePage(page)} // 0-based
+                                            className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === page
+                                            ? "bg-black text-white border-black"
+                                            : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            {page + 1}
+                                        </button>
+                                        ))}
+                                        {/* 다음 페이지 버튼 */}
+                                        <button
+                                        onClick={() =>  setWritePage(writePage + 1 )}
+                                        disabled={writePage === writeTotalPages - 1}
+                                        className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === writeTotalPages
+                                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                            : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                            }`}
+                                        >
+                                        &gt;
+                                        </button>
+                                    </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             // 관람평 작성 폼
@@ -726,6 +776,48 @@ export const MyPageMyReview = () => {
                                     </div>
                                 </div>
                             ))}
+                            {/* 페이지네이션 */}
+                            {myTotalPages >= 0 && (
+                                <div className="flex justify-center mt-8">
+                                <div className="flex items-center gap-2">
+                                    {/* 이전 페이지 버튼 */}
+                                    <button
+                                    onClick={() =>  setMyPage(myPage -1)}
+                                    disabled={myPage === 0}
+                                    className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === 1
+                                        ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                        }`}
+                                    >
+                                    &lt;
+                                    </button>
+                                    {/* 페이지 번호 버튼 */}
+                                    {Array.from({ length: myTotalPages }, (_, page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() =>  setMyPage(page)} // 0-based
+                                        className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === page
+                                        ? "bg-black text-white border-black"
+                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                        }`}
+                                    >
+                                        {page + 1}
+                                    </button>
+                                    ))}
+                                    {/* 다음 페이지 버튼 */}
+                                    <button
+                                    onClick={() =>  setMyPage(myPage + 1 )}
+                                    disabled={myPage === myTotalPages - 1}
+                                    className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === myTotalPages
+                                        ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                        }`}
+                                    >
+                                    &gt;
+                                    </button>
+                                </div>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
