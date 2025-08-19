@@ -76,17 +76,16 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
             return;
         }
 
-        const timer = setInterval(() => {
-            setTimeLeft((prevTime) => {
-                if (prevTime <= 1) {
-                    clearInterval(timer);
-                    return 0;
-                }
-                return prevTime - 1;
+        timerRef.current = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (timerRef.current) clearInterval(timerRef.current);
+                return prev - 1;
             });
         }, 1000);
 
-        return () => clearInterval(timer);
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
     }, [isOpen, qrCode]);
 
     // 새로고침 함수
