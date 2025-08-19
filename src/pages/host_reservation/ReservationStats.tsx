@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { HostSideNav } from "../../components/HostSideNav";
 import { TopNav } from "../../components/TopNav";
 import { HiChevronDown } from 'react-icons/hi';
-import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto } from "../../services/dashboard";
+import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto,EventBasicInfo } from "../../services/dashboard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from "react-toastify";
 import dayjs from 'dayjs';
@@ -229,9 +229,9 @@ export const ReservationStats = () => {
                         <h3 className="text-sm font-medium text-gray-500 mb-2">전체 예약</h3>
                         <div className="flex items-baseline justify-between">
                           <p className="text-2xl font-bold text-gray-900">{totalReservations}</p>
-                          <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {dashboardStats?.summary?.totalReservationsChange}%
-                          </span>
+                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
+                          </span>  */}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">누적 예약 수</p>
                       </div>
@@ -241,9 +241,9 @@ export const ReservationStats = () => {
                         <h3 className="text-sm font-medium text-gray-500 mb-2">체크인</h3>
                         <div className="flex items-baseline justify-between">
                           <p className="text-2xl font-bold text-gray-900">{checkedIn}</p>
-                          <span className={`text-sm font-medium ${dashboardStats?.summary?.totalCheckinsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {dashboardStats?.summary?.totalCheckinsChange}%
-                          </span>
+                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
+                          </span> */}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">실제 행사 참석 수</p>
                       </div>
@@ -253,9 +253,9 @@ export const ReservationStats = () => {
                         <h3 className="text-sm font-medium text-gray-500 mb-2">취소</h3>
                         <div className="flex items-baseline justify-between">
                           <p className="text-2xl font-bold text-gray-900">{cancellations}</p>
-                          <span className={`text-sm font-medium ${dashboardStats?.summary?.totalCancellationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {dashboardStats?.summary?.totalCancellationsChange}%
-                          </span>
+                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
+                                                    </span> */}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">예약 취소 수</p>
                       </div>
@@ -265,9 +265,9 @@ export const ReservationStats = () => {
                         <h3 className="text-sm font-medium text-gray-500 mb-2">노쇼</h3>
                         <div className="flex items-baseline justify-between">
                           <p className="text-2xl font-bold text-gray-900">{noShows}</p>
-                          <span className={`text-sm font-medium ${dashboardStats?.summary?.totalNoShowsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {dashboardStats?.summary?.totalNoShowsChange}%
-                          </span>
+                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
+                                                    </span> */}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">예약 후 미참석</p>
                       </div>
