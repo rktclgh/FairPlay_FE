@@ -49,6 +49,7 @@ export const EventList: React.FC = () => {
                 mainCategoryId?: number;
                 fromDate?: string;
                 toDate?: string;
+                includeHidden: boolean;
                 page?: number;
                 size?: number;
             } = {
@@ -71,6 +72,8 @@ export const EventList: React.FC = () => {
             if (endDate) {
                 params.toDate = endDate;
             }
+
+            params.includeHidden = true;
 
             const response = await eventAPI.getEventList(params);
             setEventData(response.events || []);
