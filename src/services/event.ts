@@ -12,9 +12,21 @@ import type {
     Page, PageResponse, EventApplyListItem, EventApplyDetail
 } from './types/eventType';
 
-
+export interface HotPick {
+  id: number;
+  title: string;
+  date: string;
+  location: string;
+  category: string;
+  image: string;
+}
 
 export const eventAPI = {
+
+    getHotPicks: async ({ size = 10 }: { size?: number }) => {
+    const res = await api.get<HotPick[]>("/api/banner/hot-picks", { params: { size } });
+    return res.data;
+  },
 
     /**
      * [CREATE] 행사 생성
