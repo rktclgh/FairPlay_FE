@@ -17,7 +17,7 @@ import EditParticipantModal from "../../components/EditParticipantModal";
 export default function ParticipantList(): JSX.Element {
     const navigate = useNavigate();
     const location = useLocation();
-    const { eventName, reservationId, reservationDate, scheduleDate } = location.state || {};
+    const { eventName, reservationId, reservationDate, scheduleDate, startTime } = location.state || {};
     const [participants, setParticipants] = useState<AttendeeInfoResponseDto[]>([]);
     const [isPossibleEdit, setIsPossibleEdit] = useState<boolean>(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,16 +26,16 @@ export default function ParticipantList(): JSX.Element {
 
     useEffect(() => {
         const fetchParticipant = async () => {
+            
+            if (!isOneDayBeforeEvent(scheduleDate)) {
+                alert("종료된 행사이므로 참석자 폼을 작성, 수정할 수 없습니다.");
+                setIsPossibleEdit(false);
+            }
             const res = await getAttendeesReservation(Number(reservationId));
             setParticipants(res.attendees);
             console.log("setParticipants 완료");
             console.log("reservationDate:"+reservationDate);
             console.log("scheduleDate:"+scheduleDate);
-
-            if (!isOneDayBeforeEvent(scheduleDate)) {
-                console.log("isOneDayBeforeEvent 완료");
-                setIsPossibleEdit(false);
-            }
         }
         fetchParticipant();
     }, []);
@@ -43,6 +43,10 @@ export default function ParticipantList(): JSX.Element {
 
     const isOneDayBeforeEvent = (dateStr: string | null) => {
         if (!dateStr) return false;
+
+        const nowTime = new Date(); // 현재 날짜와 시간
+        // 행사 시작 시각 (scheduleDate + startTime)
+        const eventStart = new Date(`${scheduleDate}T${startTime}`);
 
         const eventDate = new Date(dateStr);
         eventDate.setHours(0, 0, 0, 0); // 시분초 초기화
@@ -72,7 +76,18 @@ export default function ParticipantList(): JSX.Element {
             return true;
         }
 
-        // 2. 그 외 → 행사 이틀 전까지만 가능
+        // 2. 예약날짜가 행사 당일일 경우 -> 행사 당일 + 시작시간까지 수정 가능
+        if ((reservationDateObj.getDate() == today.getDate()) &&  (nowTime < eventStart) ) {
+            setPossibleDate(today.toLocaleDateString("ko-KR",
+                {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit"
+                })
+            );
+        }
+
+        // 3. 그 외 → 행사 이틀 전까지만 가능
         if (reservationDateObj.getTime() <= twoDaysBefore.getTime()) {
             setPossibleDate(twoDaysBefore.toLocaleDateString("ko-KR",
                 {
@@ -85,8 +100,6 @@ export default function ParticipantList(): JSX.Element {
 
             return true;
         }
-
-        // 3. 행사 하루 전 당일은 수정 불가
         return false;
     };
 

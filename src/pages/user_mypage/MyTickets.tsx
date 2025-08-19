@@ -69,12 +69,11 @@ export default function MyTickets(): JSX.Element {
 
     const handleQrTicketOpen = async (reservation: ReservationResponseDto) => {
         try {
-            //QR 티켓 당일 조회할 시 alert알림으로 api 호출 차단
-            // const today = format(new Date(), 'yyyy-mm-dd');
-            // if (reservation.scheduleDate && reservation.scheduleDate !== today) {
-            //     alert("QR티켓은 당일에만 조회할 수 있습니다.");
-            //     return;
-            // }
+            const today = format(new Date(), 'yyyy-mm-dd');
+            if (reservation.scheduleDate && reservation.scheduleDate !== today) {
+                alert("QR티켓은 당일에만 조회할 수 있습니다.");
+                return;
+            }
             const eventDate = `${formatDate(reservation.scheduleDate ?? null)} ${formatTime(reservation.startTime ?? null)} - ${formatTime(reservation.endTime ?? null)}`;
 
             const qrTicketRequestDto: QrTicketRequestDto = {
@@ -91,7 +90,7 @@ export default function MyTickets(): JSX.Element {
             setSelectedTicketData({
                 eventName: reservation.eventName || t('mypage.tickets.eventNameTbd'),
                 eventDate: eventDate,
-                venue: res.buildingName ?? res.address, // TODO: 실제 장소 정보가 필요하면 Event 엔티티에서 가져와야 함
+                venue: res.buildingName ?? res.address,
                 seatInfo: reservation.ticketName || t('mypage.tickets.noTicketInfo'),
                 ticketNumber: res.ticketNo,
                 bookingDate: formatDateTime(reservation.createdAt),
@@ -134,12 +133,27 @@ export default function MyTickets(): JSX.Element {
                 eventName: reservation.eventName,
                 reservationId: reservation.reservationId,
                 reservationDate: bookingDate,
-                scheduleDate: reservation.scheduleDate
+                scheduleDate: reservation.scheduleDate,
+                startTime: reservation.startTime
             }
         });
     };
 
     const handleShowFormLink = async (reservationId: number) => {
+
+        const reservation = reservations.find(r => r.reservationId === reservationId);
+        if (!reservation) {
+            alert("예약 정보를 찾을 수 없습니다.");
+            return;
+        }
+
+        const eventDateTime = new Date(`${reservation.scheduleDate}T${reservation.startTime}`);
+        const now = new Date();
+
+        if (eventDateTime < now) {
+            alert("이미 지난 예약은 조회할 수 없습니다.");
+            return;
+        }
 
         if (formLinks[reservationId]) {
             await navigator.clipboard.writeText(formLinks[reservationId]);
