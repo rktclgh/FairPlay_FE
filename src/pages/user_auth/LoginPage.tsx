@@ -135,7 +135,7 @@ export const LoginPage = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="비밀번호를 입력하세요"
+                            placeholder={t('auth.passwordPlaceholder')}
                             className="absolute w-[350px] h-[21px] top-[13px] left-[15px] text-black placeholder:text-gray-400 text-base bg-transparent border-none outline-none pr-12"
                             style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
                         />
@@ -207,7 +207,7 @@ export const LoginPage = () => {
                             {/* 이메일 입력 */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">
-                                    이메일
+                                    {t('common.email')}
                                 </label>
                                 <div className="border-b border-gray-300 pb-2">
                                     <input
@@ -215,7 +215,7 @@ export const LoginPage = () => {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="이메일을 입력하세요"
+                                        placeholder={t('auth.emailPlaceholder')}
                                         className="w-full text-black placeholder:text-gray-400 text-base bg-transparent border-none outline-none"
                                         style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
                                     />
@@ -225,7 +225,7 @@ export const LoginPage = () => {
                             {/* 비밀번호 입력 */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">
-                                    비밀번호
+                                    {t('common.password')}
                                 </label>
                                 <div className="border-b border-gray-300 pb-2 relative">
                                     <input
@@ -233,7 +233,7 @@ export const LoginPage = () => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="비밀번호를 입력하세요"
+                                        placeholder={t('auth.passwordPlaceholder')}
                                         className="w-full text-black placeholder:text-gray-400 text-base bg-transparent border-none outline-none pr-12"
                                         style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
                                     />
@@ -262,7 +262,7 @@ export const LoginPage = () => {
                                 onClick={handleLogin}
                             >
                                 <div className="font-normal text-base text-center leading-6">
-                                    {loading ? "로그인 중..." : "로그인"}
+                                    {loading ? t('auth.loginLoading') : t('common.login')}
                                 </div>
                             </button>
 
@@ -273,17 +273,17 @@ export const LoginPage = () => {
                             >
                                 <div className="flex items-center space-x-2">
                                     <RiKakaoTalkFill size={20} color="#000000" />
-                                    <span className="text-black font-semibold text-base">카카오 로그인</span>
+                                    <span className="text-black font-semibold text-base">{t('auth.kakaoLogin')}</span>
                                 </div>
                             </button>
 
                             {/* 하단 링크들 */}
                             <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                                 <Link to="/signup" className="text-black text-sm hover:text-gray-600">
-                                    회원가입
+                                    {t('common.register')}
                                 </Link>
                                 <Link to="/find-password" className="text-black text-sm hover:text-gray-600">
-                                    비밀번호 찾기
+                                    {t('auth.findPassword')}
                                 </Link>
                             </div>
                         </div>

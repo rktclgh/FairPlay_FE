@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
@@ -38,15 +39,16 @@ const fetchCalendarGrouped = (year: number, month: number) =>
 
 export default function EventOverview() {
     const { isDark } = useTheme();
+    const { t, i18n } = useTranslation();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [filteredEvents, setFilteredEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
-    const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
+    const [selectedSubCategory, setSelectedSubCategory] = React.useState(() => t('eventOverview.allCategories'));
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
     const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
-    const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
+    const [selectedRegion, setSelectedRegion] = React.useState(() => t('eventOverview.allRegions'));
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
-    const [selectedStatus, setSelectedStatus] = React.useState("전체");
+    const [selectedStatus, setSelectedStatus] = React.useState(() => t('eventOverview.allStatuses'));
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = React.useState(false);
 
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {

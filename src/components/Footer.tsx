@@ -50,7 +50,7 @@ export const Footer: React.FC = () => {
                 {/* 모바일 간결한 푸터 */}
                 <div className="md:hidden">
                     <img src="/images/FPlogo.png" alt="FairPlay Logo" className={`h-7 mb-3 ${isDark ? 'filter brightness-0 invert' : ''}`} />
-                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>© 2025 FairPlay</p>
+                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('footer.copyright_simple')}</p>
                 </div>
 
                 {/* 데스크톱 기존 푸터 */}
@@ -121,7 +121,7 @@ export const Footer: React.FC = () => {
                         </div>
                     </div>
                     <div className="mt-12 pt-8 flex justify-between items-center">
-                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>© 2025 FairPlay. All rights reserved.</p>
+                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('footer.copyright_full')}</p>
                         <div className="flex space-x-6 items-center">
                             <Link to="/legal/privacy" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>{t('auth.privacyPolicy')}</Link>
                             <Link to="/legal/terms" className={`text-xs hover:underline ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>{t('auth.termsOfService')}</Link>

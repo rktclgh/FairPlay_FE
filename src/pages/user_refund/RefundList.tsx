@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "../user_mypage/AttendeeSideNav";
 import { Plus, Download, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import RefundRequestModal from "./RefundRequestModal";
 import authManager from "../../utils/auth";
 
@@ -54,6 +55,7 @@ interface RefundFilters {
 }
 
 export const RefundList = () => {
+    const { t } = useTranslation();
     const [refunds, setRefunds] = useState<RefundData[]>([]);
     const [loading, setLoading] = useState(false);
     const [totalPages, setTotalPages] = useState(0);
@@ -205,7 +207,7 @@ export const RefundList = () => {
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    내 환불 내역
+                    {t('refund.title')}
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />

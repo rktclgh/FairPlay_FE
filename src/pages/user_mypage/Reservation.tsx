@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import reservationService, { ReservationResponseDto } from "../../services/reservationService";
 
 export default function Reservation(): JSX.Element {
+    const { t } = useTranslation();
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -19,7 +21,7 @@ export default function Reservation(): JSX.Element {
                 setReservations(data);
             } catch (error) {
                 console.error('예약 목록 로드 실패:', error);
-                toast.error('예약 목록을 불러오는 중 오류가 발생했습니다.');
+                toast.error(t('mypage.reservation.loadReservationsError'));
             } finally {
                 setLoading(false);
             }
@@ -52,7 +54,7 @@ export default function Reservation(): JSX.Element {
 
     // 날짜 포맷팅
     const formatDate = (dateTimeStr: string | null) => {
-        if (!dateTimeStr) return "날짜 미정";
+        if (!dateTimeStr) return t('mypage.reservation.dateTbd');
         const date = new Date(dateTimeStr);
         return date.toLocaleDateString('ko-KR', {
             year: 'numeric',
@@ -64,14 +66,14 @@ export default function Reservation(): JSX.Element {
     // 금액 포맷팅
     const formatAmount = (price: number, quantity: number) => {
         const total = price * quantity;
-        return total === 0 ? "무료" : `${total.toLocaleString()}원`;
+        return total === 0 ? t('mypage.reservation.free') : `${total.toLocaleString()}${t('mypage.reservation.won')}`;
     };
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    예약/결제 내역
+                    {t('mypage.reservation.title')}
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
@@ -80,11 +82,11 @@ export default function Reservation(): JSX.Element {
                 <div className="absolute top-[239px] left-64 right-0">
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
-                            <div className="text-lg">로딩 중...</div>
+                            <div className="text-lg">{t('mypage.reservation.loading')}</div>
                         </div>
                     ) : reservations.length === 0 ? (
                         <div className="flex items-center justify-center h-64">
-                            <div className="text-gray-500">예약 내역이 없습니다.</div>
+                            <div className="text-gray-500">{t('mypage.reservation.noReservations')}</div>
                         </div>
                     ) : (
                         <div className="space-y-[30px]">
@@ -111,7 +113,7 @@ export default function Reservation(): JSX.Element {
                                             <div className="mb-[15px] flex gap-[100px]">
                                                 <div>
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        예매일
+                                                        {t('mypage.reservation.bookingDate')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
                                                         {formatDate(reservation.createdAt)}
@@ -122,7 +124,7 @@ export default function Reservation(): JSX.Element {
                                                 {reservation.scheduleDate && (
                                                     <div>
                                                         <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                            행사 정보
+                                                            {t('mypage.reservation.eventInfo')}
                                                         </div>
                                                         <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6">
                                                             <div>{formatDate(reservation.scheduleDate)}</div>
@@ -139,7 +141,7 @@ export default function Reservation(): JSX.Element {
                                             <div className="flex gap-[100px]">
                                                 <div>
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        결제 금액
+                                                        {t('mypage.reservation.paymentAmount')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
                                                         {formatAmount(reservation.price, reservation.quantity)}
@@ -151,16 +153,16 @@ export default function Reservation(): JSX.Element {
 
                                                 <div>
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        결제 수단
+                                                        {t('mypage.reservation.paymentMethod')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                        {reservation.paymentMethod || (reservation.price === 0 ? "무료" : "미결제")}
+                                                        {reservation.paymentMethod || (reservation.price === 0 ? t('mypage.reservation.free') : t('mypage.reservation.unpaid'))}
                                                     </div>
                                                 </div>
 
                                                 <div>
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        티켓 정보
+                                                        {t('mypage.reservation.ticketInfo')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
                                                         {reservation.ticketName} (₩{reservation.ticketPrice.toLocaleString()})
@@ -174,7 +176,7 @@ export default function Reservation(): JSX.Element {
                                                 className={`${getPaymentStatusColor(reservation.paymentStatus)} text-white border-none rounded h-[27px] px-1.5 flex items-center justify-center`}
                                             >
                                                 <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-xs tracking-[0] leading-[18px]">
-                                                    {reservation.paymentStatus || "결제 대기"}
+                                                    {reservation.paymentStatus || t('mypage.reservation.paymentPending')}
                                                 </span>
                                             </div>
                                         </div>
