@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
 import { Star } from "lucide-react";
+import { toast } from "react-toastify";
 import type {
     ReviewSaveRequestDto,
     PossibleReviewResponseDto,
@@ -23,7 +24,7 @@ import { useTranslation } from "react-i18next";
 export const MyPageMyReview = () => {
     const { t } = useTranslation();
     /** 초기 세팅 데이터 */
-    const [savedReview, setSavedReviews] = useState<ReviewResponseDto[] | null>(null); // 작성한 리뷰
+    const [savedReviews, setSavedReviews] = useState<ReviewResponseDto[] | null>(null); // 작성한 리뷰
     const [writeReviewsState, setWriteReviewsState] = useState<PossibleReviewResponseDto[] | null>(null) // 리뷰 작성 가능한 이벤트 
 
     /** 선택 항목 */
@@ -45,19 +46,18 @@ export const MyPageMyReview = () => {
     const [deleteType, setDeleteType] = useState<'bulk' | 'single'>('bulk');
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-    const [currentPage, setCurrentPage] = useState(0); // 리뷰 현재 페이지
 
     // 초기 로딩
     useEffect(() => {
         // 작성 가능한 행사 조회
         const fetchWriteReviews = async () => {
-            const res = await getPossibleSaveReview(currentPage);
+            const res = await getPossibleSaveReview(0); // currentPage를 0으로 변경
             setWriteReviewsState(res?.content ?? null);
         }
 
         // 작성한 리뷰 조회
         const fetchUserReviews = async () => {
-            const res = await getReviewsByMember(currentPage);
+            const res = await getReviewsByMember(0); // currentPage를 0으로 변경
             setSavedReviews(res?.content ?? null);
         }
         fetchWriteReviews();
@@ -68,7 +68,7 @@ export const MyPageMyReview = () => {
     const handleSelectAll = (checked: boolean) => {
         setSelectAll(checked);
         if (checked) {
-            setSelectedReviews(savedReview?.map(data => data.review.reviewId) ?? []);
+            setSelectedReviews(savedReviews?.map(data => data.review.reviewId) ?? []);
         } else {
             setSelectedReviews([]);
         }
@@ -107,7 +107,7 @@ export const MyPageMyReview = () => {
 
         const res = await deleteReview(deleteTargetId)
 
-        setSavedReviews((savedReview ?? []).filter(review => review.review.reviewId !== res.reviewId));
+        setSavedReviews((savedReviews ?? []).filter(review => review.review.reviewId !== res.reviewId));
         console.log(res.message);
         // 모달 닫기
         setShowDeleteModal(false);
@@ -121,7 +121,7 @@ export const MyPageMyReview = () => {
 
     const handleEventClick = (event: EventDto, reservationId: number) => {
 
-        if (savedReview?.some(review => review.reservationId === reservationId)) {
+        if (savedReviews?.some(review => review.reservationId === reservationId)) {
             alert("이미 리뷰 작성이 완료된 행사입니다.");
             return;
         }
@@ -179,79 +179,115 @@ export const MyPageMyReview = () => {
             // 스크롤을 맨 위로 올림
             window.scrollTo(0, 0);
         } else {
-            setActiveTab('write')
+            // 새로 작성한 관람평의 경우 내 관람평 탭으로 이동
+            setActiveTab('my');
+            // 스크롤을 맨 위로 올림
+            window.scrollTo(0, 0);
         }
     };
 
     // 리뷰 저장 및 제출 
     const handleSubmitReview = async () => {
-
-        // 수정 모드 O 수정하려고 선택한 리뷰 정보
-        if (isEditMode && editingReview) {
-
-            if (!savedReview?.some(data => data.review.reviewId === editingReview.reviewId)) {
-                alert("해당 리뷰는 저장되지 않은 리뷰입니다.");
-                return;
-            }
-            // 수정 모드: 기존 리뷰 업데이트
-            const reviewUpdateRequestDto: ReviewUpdateRequestDto = {
-                star: rating,
-                comment: reviewText,
-                visible: !isPrivate
-            }
-
-            const res = await updateReview(editingReview.reviewId, reviewUpdateRequestDto);
-
-            setSavedReviews(prev =>
-                (prev ?? []).map(data =>
-                    data.review.reviewId === editingReview.reviewId
-                        ? { ...data, review: { ...data.review, ...res } }
-                        : data
-                )
-            );
-        } else {
-            // 리뷰 저장
-            if (selectReservationId == null) {
-                return;
-            }
-
-            if (selectedEvent == null) {
-                return;
-            }
-
-            const saveReviewRequest: ReviewSaveRequestDto = {
-                reservationId: selectReservationId,
-                star: rating,
-                visible: !isPrivate,
-                comment: reviewText
-            };
-            const res = await saveReview(saveReviewRequest);
-
-            const reviewDto: ReviewDto = {
-                reviewId: res.reviewId,
-                userId: null,
-                nickname: res.nickname,
-                star: res.star,
-                reactions: 0,
-                comment: res.comment,
-                visible: res.visible,
-                createdAt: res.createdAt.toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }).replace(/\. /g, '.').replace('.', '')
-            }
-            const reviewResponse: ReviewResponseDto = {
-                reservationId: selectReservationId,
-                event: selectedEvent,
-                review: reviewDto,
-                owner: true
-            }
-            setSavedReviews([reviewResponse, ...(savedReview ?? [])]);
+        // 입력 검증
+        if (rating === 0) {
+            toast.error("별점을 선택해주세요.");
+            return;
         }
 
-        // 제출 후 리스트로 돌아가기
-        handleBackToList();
+        if (!reviewText.trim()) {
+            toast.error("관람평 내용을 입력해주세요.");
+            return;
+        }
+
+        try {
+            // 수정 모드 O 수정하려고 선택한 리뷰 정보
+            if (isEditMode && editingReview) {
+
+                if (!savedReviews?.some(data => data.review.reviewId === editingReview.reviewId)) {
+                    toast.error("해당 리뷰는 저장되지 않은 리뷰입니다.");
+                    return;
+                }
+                // 수정 모드: 기존 리뷰 업데이트
+                const reviewUpdateRequestDto: ReviewUpdateRequestDto = {
+                    star: rating,
+                    comment: reviewText,
+                    visible: !isPrivate
+                }
+
+                const res = await updateReview(editingReview.reviewId, reviewUpdateRequestDto);
+
+                setSavedReviews(prev =>
+                    (prev ?? []).map(data =>
+                        data.review.reviewId === editingReview.reviewId
+                            ? { ...data, review: { ...data.review, ...res } }
+                            : data
+                    )
+                );
+                toast.success("관람평이 수정되었습니다.");
+            } else {
+                // 리뷰 저장
+                if (selectReservationId == null) {
+                    toast.error("예약 정보를 찾을 수 없습니다.");
+                    return;
+                }
+
+                if (selectedEvent == null) {
+                    toast.error("이벤트 정보를 찾을 수 없습니다.");
+                    return;
+                }
+
+                const saveReviewRequest: ReviewSaveRequestDto = {
+                    reservationId: selectReservationId,
+                    star: rating,
+                    visible: !isPrivate,
+                    comment: reviewText
+                };
+                const res = await saveReview(saveReviewRequest);
+
+                const reviewDto: ReviewDto = {
+                    reviewId: res.reviewId,
+                    userId: null,
+                    nickname: res.nickname,
+                    star: res.star,
+                    reactions: 0,
+                    comment: res.comment,
+                    visible: res.visible,
+                    createdAt: res.createdAt.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    }).replace(/\. /g, '.').replace('.', '')
+                }
+                const reviewResponse: ReviewResponseDto = {
+                    reservationId: selectReservationId,
+                    event: selectedEvent,
+                    review: reviewDto,
+                    owner: true
+                }
+                setSavedReviews(prev => {
+                    const currentReviews = prev ?? [];
+                    return [reviewResponse, ...currentReviews];
+                });
+
+                // 작성 가능한 행사 목록에서 해당 행사를 제거하거나 hasReview를 true로 업데이트
+                setWriteReviewsState(prev =>
+                    prev ? prev.filter(item => item.reservationId !== selectReservationId) : null
+                );
+
+                toast.success("관람평이 등록되었습니다.");
+            }
+
+            // 제출 후 리스트로 돌아가기
+            handleBackToList();
+        } catch (error: unknown) {
+            console.error("관람평 저장/수정 실패:", error);
+
+            // 실제 에러가 발생한 경우 에러 메시지 표시
+            toast.error("관람평 저장에 실패했습니다. 다시 시도해주세요.");
+
+            // 에러 발생 시 UI 업데이트하지 않음
+            return;
+        }
     };
 
     const renderStars = (rating: number) => {
@@ -578,7 +614,7 @@ export const MyPageMyReview = () => {
 
                         {/* Review Cards */}
                         <div className="absolute top-[334px] left-64 space-y-4 pb-20">
-                            {savedReview?.map((data) => (
+                            {savedReviews?.map((data) => (
                                 <div key={data.review.reviewId} className="w-[947px] rounded-lg border border-[#0000001f] bg-white p-5 relative">
                                     {/* Checkbox */}
                                     <input
