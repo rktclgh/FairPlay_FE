@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
     Calendar,
     MapPin,
@@ -51,17 +51,21 @@ export const OnlyQrTicketPage = () => {
         qrTicketId: 0
     });
 
-        // ✅ 여기서 웹소켓 구독 시작
-    useQrTicketSocket(qrTicketId, (msg) => {
-        console.log("qrTicketId:" + qrTicketId);
+    // 웹소켓 메시지 핸들러를 useCallback으로 메모이제이션
+    const handleWebSocketMessage = useCallback((msg: string) => {
+        console.log("QR 웹소켓 메시지 수신:", msg);
         alert(msg);
         setSuccessMessage(msg);
+        
         // 타이머 멈추기
         if (timerRef.current) clearInterval(timerRef.current);
 
         // 입장 완료 상태로 변경
         setIsTicketUsed(true);
-    });
+    }, []);
+
+    // ✅ 웹소켓 구독 (qrTicketId가 유효할 때만)
+    useQrTicketSocket(qrTicketId > 0 ? qrTicketId : 0, handleWebSocketMessage);
 
     // QR 코드와 수동 코드 초기화 + 모달 오픈 시 타이머 시작
     useEffect(() => {

@@ -1,36 +1,42 @@
 import api from './axios';
 import {
     Booth,
+    BoothSummary,
+    BoothDetailResponse,
+    BoothSummaryForManager,
     BoothApplication,
+    BoothApplicationList,
     BoothApplicationStatusUpdate,
     BoothPaymentStatusUpdate,
     BoothType,
-    BoothUpdateRequest
-} from '../types/booth'; // Assuming types are defined in '../types/booth'
+    BoothUpdateRequest,
+    BoothAdminRequest,
+    BoothAdminResponse
+} from '../types/booth';
 
 // ==================== Booth APIs ====================
 
-export const getBooths = (eventId: number): Promise<Booth[]> => {
+export const getBooths = (eventId: number): Promise<BoothSummary[]> => {
     return api.get(`/api/events/${eventId}/booths`).then(res => res.data);
 };
 
-export const getAllBoothsForHost = (eventId: number): Promise<Booth[]> => {
+export const getAllBoothsForHost = (eventId: number): Promise<BoothSummaryForManager[]> => {
     return api.get(`/api/events/${eventId}/booths/host`).then(res => res.data);
 };
 
-export const getBoothDetails = (eventId: number, boothId: number): Promise<Booth> => {
+export const getBoothDetails = (eventId: number, boothId: number): Promise<BoothDetailResponse> => {
     return api.get(`/api/events/${eventId}/booths/${boothId}`).then(res => res.data);
 };
 
-export const updateBooth = (eventId: number, boothId: number, data: BoothUpdateRequest): Promise<Booth> => {
+export const updateBooth = (eventId: number, boothId: number, data: BoothUpdateRequest): Promise<BoothDetailResponse> => {
     return api.patch(`/api/events/${eventId}/booths/${boothId}`, data).then(res => res.data);
 };
 
-export const deleteBooth = (eventId: number, boothId: number): Promise<void> => {
+export const deleteBooth = (eventId: number, boothId: number): Promise<string> => {
     return api.delete(`/api/events/${eventId}/booths/${boothId}`).then(res => res.data);
 };
 
-export const updateBoothAdminInfo = (eventId: number, boothId: number, data: any): Promise<any> => {
+export const updateBoothAdminInfo = (eventId: number, boothId: number, data: BoothAdminRequest): Promise<BoothAdminResponse> => {
     return api.patch(`/api/events/${eventId}/booths/${boothId}/manager`, data).then(res => res.data);
 };
 
@@ -58,7 +64,7 @@ export const applyForBooth = (eventId: number, data: any): Promise<BoothApplicat
     return api.post(`/api/events/${eventId}/booths/apply`, data).then(res => res.data);
 };
 
-export const getBoothApplications = (eventId: number): Promise<BoothApplication[]> => {
+export const getBoothApplications = (eventId: number): Promise<BoothApplicationList[]> => {
     return api.get(`/api/events/${eventId}/booths/apply`).then(res => res.data);
 };
 

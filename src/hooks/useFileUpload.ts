@@ -18,16 +18,33 @@ export const useFileUpload = (): UseFileUploadResult => {
     const [isUploading, setIsUploading] = useState(false);
 
     const uploadFile = async (file: File, usage: string): Promise<FileUploadResponse | null> => {
+        console.log(`파일 업로드 시작: ${file.name}, 크기: ${file.size} bytes, 용도: ${usage}`);
+        
         // 용도별 파일 크기 제한 설정
         let maxSizeMB = 10; // 기본값
         let maxSizeLabel = '10MB';
         
         if (usage === 'banner' || usage === 'thumbnail') {
-            maxSizeMB = 5; // 이미지 파일은 5MB
-            maxSizeLabel = '5MB';
+            maxSizeMB = 10; // 이미지 파일은 10MB
+            maxSizeLabel = '10MB';
         } else if (usage === 'application_file' || usage === 'file') {
             maxSizeMB = 20; // 문서 파일은 20MB
             maxSizeLabel = '20MB';
+        }
+        
+        console.log(`설정된 제한: ${maxSizeLabel} (${maxSizeMB}MB)`);
+        
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        console.log(`파일 크기: ${fileSizeMB}MB`);
+        
+        // 파일 MIME 타입 확인
+        console.log(`파일 타입: ${file.type}`);
+        console.log(`파일 확장자: ${file.name.split('.').pop()?.toLowerCase()}`);
+        
+        if (file.size === 0) {
+            console.error('파일 크기가 0입니다.');
+            toast.error('빈 파일은 업로드할 수 없습니다.');
+            return null;
         }
 
         // 파일 크기 검증

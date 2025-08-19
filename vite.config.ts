@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: false,
       cors: true,
+      historyApiFallback: true,
       proxy: {
         "/api": {
           target: env.VITE_BACKEND_BASE_URL || "http://localhost:8080",
@@ -29,5 +30,20 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      outDir: "dist",
+      rollupOptions: {
+        // SPA 라우팅을 위한 히스토리 API 폴백 지원
+        input: {
+          main: "./index.html"
+        }
+      }
+    },
+    preview: {
+      // 빌드된 앱 미리보기에서도 히스토리 API 폴백 적용
+      port: 4173,
+      strictPort: true,
+      historyApiFallback: true
+    }
   };
 });

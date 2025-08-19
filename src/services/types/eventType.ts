@@ -37,6 +37,7 @@ export interface EventSummaryDto {
     endDate: string;
     thumbnailUrl: string;
     region: string;
+    eventStatusCode?: string; // 행사 상태 코드 추가
 }
 
 export interface EventSummaryResponseDto {
