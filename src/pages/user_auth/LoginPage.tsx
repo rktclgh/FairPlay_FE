@@ -5,7 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { RiKakaoTalkFill } from "react-icons/ri";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { hasHostPermission, hasEventManagerPermission, hasAdminPermission } from "../../utils/permissions";
+import { hasHostPermission, hasEventManagerPermission, hasAdminPermission, hasBoothManagerPermission } from "../../utils/permissions";
 import { setCachedRoleCode } from "../../utils/role";
 import { useTranslation } from "react-i18next";
 
@@ -59,6 +59,9 @@ export const LoginPage = () => {
                 } else if (hasHostPermission(userRole)) {
                     console.log("행사관리자 권한으로 /host/dashboard로 이동");
                     navigate("/host/dashboard");
+                } else if (hasBoothManagerPermission(userRole)) {
+                    console.log("부스관리자 권한으로 /booth-admin/dashboard로 이동");
+                    navigate("/booth-admin/dashboard");
                 } else {
                     console.log("일반사용자 권한으로 /로 이동");
                     navigate("/");
