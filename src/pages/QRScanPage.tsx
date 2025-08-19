@@ -114,7 +114,7 @@ const QRScanPage: React.FC = () => {
         setScanResult(res.message);
     };
 
-    // QR 코드 스캔 처리 (실제 구현에서는 QR 코드 라이브러리 사용)
+
     const handleQRScan = async () => {
         if (!videoRef.current) return;
         
@@ -154,6 +154,7 @@ const QRScanPage: React.FC = () => {
         };
     }, []);
 
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
@@ -183,6 +184,16 @@ const QRScanPage: React.FC = () => {
                             `}
                         >
                             체크아웃
+                        </button>
+                        <button
+                            onClick={() => setCheckType("booth")}
+                            className={`px-4 py-2 rounded-[10px] font-medium text-sm 
+                                hover:text-white hover:bg-purple-600 hover:border-purple-600 
+                                active:border-purple-600 focus:border-purple-600 focus:outline-none
+                                ${checkType === "booth" ? "bg-purple-500 text-white bg-purple-500" : "bg-gray-200 text-gray-700"}
+                            `}
+                        >
+                            부스 체크인
                         </button>
                     </div>
 
@@ -228,7 +239,10 @@ const QRScanPage: React.FC = () => {
                                     </div>
                                 )}
                             </div>
-
+                                                        <div className="font-bold text-center text-sm text-gray-600 mb-4">
+                                QR 코드가 가까이 있으면 인식이 어려울 수 있습니다. <br />
+                                카메라에서 20~30cm 떨어져서 QR 코드를 보여주세요.
+                            </div>
                             {/* 카메라 제어 버튼 */}
                             <div className="text-center">
                                 {isCameraActive ? (
