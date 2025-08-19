@@ -26,6 +26,7 @@ interface TicketReservationOption {
     ticketId: number;
     name: string;
     price: number;
+    maxPurchase?: number; // 1인 최대 구매 수량
     saleQuantity: number; // 판매 가능 수량
     salesStartAt?: string; // LocalDateTime
     salesEndAt?: string; // LocalDateTime
@@ -193,6 +194,7 @@ export const TicketReservation = () => {
                 ticketId: ticket.ticketId,
                 name: ticket.name,
                 price: ticket.price || 0,
+                maxPurchase: ticket.maxPurchase, // 1인 최대 구매 수량 추가
                 saleQuantity: ticket.saleQuantity || 0,
                 remainingStock: ticket.remainingStock || 0,
                 salesStartAt: ticket.salesStartAt,
@@ -216,6 +218,34 @@ export const TicketReservation = () => {
         return ticketReservationOptions.find(option => option.ticketId.toString() === ticketReservationForm.selectedOption);
     };
 
+    // 최대 구매 가능 수량 계산
+    const getMaxQuantity = (ticket: TicketReservationOption | undefined) => {
+        if (!ticket) return 1;
+        
+        // 1인 최대 구매 수량이 설정되어 있으면 해당 수량과 재고 중 작은 값
+        if (ticket.maxPurchase && ticket.maxPurchase > 0) {
+            return Math.min(ticket.maxPurchase, ticket.saleQuantity);
+        }
+        // 1인 최대 구매 수량이 설정되어 있지 않으면 무조건 1장만
+        return Math.min(1, ticket.saleQuantity);
+    };
+
+    // 수량 제한 안내 텍스트
+    const getQuantityLimitText = (ticket: TicketReservationOption | undefined) => {
+        if (!ticket) return "";
+        
+        if (ticket.maxPurchase && ticket.maxPurchase > 0) {
+            const effectiveMax = Math.min(ticket.maxPurchase, ticket.saleQuantity);
+            if (effectiveMax === ticket.maxPurchase) {
+                return `1인 최대 ${ticket.maxPurchase}매까지 구매 가능`;
+            } else {
+                return `재고 부족으로 최대 ${effectiveMax}매까지 구매 가능 (1인 제한: ${ticket.maxPurchase}매)`;
+            }
+        }
+        // 1인 제한이 설정되지 않은 경우
+        return `1인 최대 구매 수량이 1매로 제한되어 있습니다`;
+    };
+
     // 티켓 선택 핸들러
     const handleOptionSelect = (ticketId: number) => {
         setTicketReservationForm(prev => ({ ...prev, selectedOption: ticketId.toString() }));
@@ -223,7 +253,9 @@ export const TicketReservation = () => {
 
     // 수량 선택
     const handleQuantityChange = (newQuantity: number) => {
-        const maxQuantity = getSelectedTicket()?.saleQuantity || 10;
+        const selectedTicket = getSelectedTicket();
+        const maxQuantity = getMaxQuantity(selectedTicket);
+        
         if (newQuantity >= 1 && newQuantity <= maxQuantity) {
             setTicketReservationForm(prev => ({ ...prev, quantity: newQuantity }));
         }
@@ -519,14 +551,14 @@ export const TicketReservation = () => {
                                         </span>
                                         <button
                                             onClick={() => handleQuantityChange(ticketReservationForm.quantity + 1)}
-                                            disabled={ticketReservationForm.quantity >= (getSelectedTicket()?.saleQuantity || 10)}
+                                            disabled={ticketReservationForm.quantity >= getMaxQuantity(getSelectedTicket())}
                                             className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center disabled:opacity-50"
                                         >
                                             +
                                         </button>
                                     </div>
                                     <p className="text-sm text-gray-600 mt-2">
-                                        최대 {getSelectedTicket()?.saleQuantity || 10}매까지 구매 가능
+                                        {getQuantityLimitText(getSelectedTicket())}
                                     </p>
                                 </div>
                             )}

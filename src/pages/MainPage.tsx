@@ -930,7 +930,11 @@ const generateCalendarDays = () => {
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                         </div>
-                                        <p className="font-bold text-base md:text-lg text-[#ff6b35]">{event.minPrice}</p>
+                                        <p className="font-bold text-base md:text-lg text-[#ff6b35]">{event.minPrice == null
+                                            ? "가격 정보 없음"
+                                            : event.minPrice === 0
+                                                ? "무료"
+                                                : `${event.minPrice.toLocaleString()}원 ~`}</p>
                                     </div>
                                 </Link>
                             </div>
