@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { HostSideNav } from "../../components/HostSideNav";
 import { TopNav } from "../../components/TopNav";
 import { HiChevronDown } from 'react-icons/hi';
-import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto,EventBasicInfo } from "../../services/dashboard";
+import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto,EventDetailResponseDto } from "../../services/dashboard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from "react-toastify";
 import dayjs from 'dayjs';
@@ -11,12 +11,12 @@ export const ReservationStats = () => {
     const [selectedPeriod, setSelectedPeriod] = React.useState('일별');
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
     const [dashboardStats, setDashboardStats] = useState<EventDashboardStatsDto | null>(null);
-    const [selectedEvent, setSelectedEvent] = useState<EventBasicInfo | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
     const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // 데이터 로드
         useEffect(() => {
