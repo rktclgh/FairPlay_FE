@@ -91,9 +91,9 @@ import FAQ from "./pages/footer/FAQ";
 import PrivacyPolicy from "./pages/footer/PrivacyPolicy";
 import TermsOfUse from "./pages/footer/TermsOfUse";
 import Policy from "./pages/footer/Policy";
-import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 import BoothPaymentPage from "./pages/booth/BoothPaymentPage";
 import BoothCancelPage from "./pages/booth/BoothCancelPage";
+import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 
 function AppContent() {
     useScrollToTop();
@@ -270,6 +270,7 @@ function AppContent() {
                         <Route path="/admin_dashboard/profile"
                                element={<AdminRouteGuard><AdminProfile/></AdminRouteGuard>}/>
 
+
                         {/* 부스 관리자 전용 페이지 */}
                         <Route path="/booth-admin/profile"
                                element={<BoothAdminRouteGuard><BoothAdminProfile/></BoothAdminRouteGuard>}/>
@@ -302,53 +303,59 @@ function AppContent() {
                         <Route path="/host/qr-scan" element={<QRScanPage/>}/>
                         <Route path="/auth/kakao/callback" element={<KakaoCallback/>}/>
 
-              {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
-              <Route path="/booth/payment" element={<BoothPaymentPage />} />
-              <Route path="/booth/cancel" element={<BoothCancelPage />} />
+                        {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
+                        <Route path="/booth/payment" element={<BoothPaymentPage/>}/>
+                        <Route path="/booth/cancel" element={<BoothCancelPage/>}/>
 
-              {/* 부스 체험 */}
-              <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
-              <Route path="/host/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
-              <Route path="/mypage/booth-experiences" element={<BoothExperienceList />} />
-              <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations />} />
-              {/* Footer pages */}
-              <Route path="/support/notices" element={<Notices />} />
-              <Route path="/support/faq" element={<FAQ />} />
-              <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-              <Route path="/legal/terms" element={<TermsOfUse />} />
-              <Route path="/legal/policy" element={<Policy />} />
-            </Routes>
-          </Suspense>
-        </main>
-        <ToastContainer
-            position="bottom-right"
-            autoClose={2500}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-        />
-        {!hideFooter && <Footer />}
-      </div>
+                        {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
+                        <Route path="/booth/payment" element={<BoothPaymentPage/>}/>
+                        <Route path="/booth/cancel" element={<BoothCancelPage/>}/>
+
+                        {/* 부스 체험 */}
+                        <Route path="/host/booth-experience-reserver-management"
+                               element={<HostRouteGuard><BoothExperienceReserverManagement/></HostRouteGuard>}/>
+                        <Route path="/host/booth-experience-management"
+                               element={<HostRouteGuard><BoothExperienceManagement/></HostRouteGuard>}/>
+                        <Route path="/mypage/booth-experiences" element={<BoothExperienceList/>}/>
+                        <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations/>}/>
+                        {/* Footer pages */}
+                        <Route path="/support/notices" element={<Notices/>}/>
+                        <Route path="/support/faq" element={<FAQ/>}/>
+                        <Route path="/legal/privacy" element={<PrivacyPolicy/>}/>
+                        <Route path="/legal/terms" element={<TermsOfUse/>}/>
+                        <Route path="/legal/policy" element={<Policy/>}/>
+                    </Routes>
+                </Suspense>
+            </main>
+            <ToastContainer
+                position="bottom-right"
+                autoClose={2500}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+            />
+            {!hideFooter && <Footer/>}
+        </div>
     );
 }
 
 function App() {
-    return (
-        <BrowserRouter>
-            <ThemeProvider>
-                <AppLayout>
-                    <AppContent/>
-                </AppLayout>
-                {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
-                <ChatFloatingModal/>
-            </ThemeProvider>
-        </BrowserRouter>
-    );
+  return (
+      <BrowserRouter>
+        <ThemeProvider>
+          <AppLayout>
+            <AppContent />
+          </AppLayout>
+          {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
+          <ChatFloatingModal />
+        </ThemeProvider>
+      </BrowserRouter>
+  );
 }
 
 export default App;

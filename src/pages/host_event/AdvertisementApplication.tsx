@@ -5,6 +5,23 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
+// 유틸 
+const fmtKST = (iso: string) => {
+  const d = new Date(iso);
+  const pad = (n:number)=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+const dateRangeOf = (from: string, to: string) => `${from} ~ ${to}`;
+
+// 유틸 
+const toLocalDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`; // 로컬 기준 YYYY-MM-DD
+};
+
+
 // ---- 서버 enum/타입 매핑 ----
 type BannerSlotType = "HERO" | "SEARCH_TOP";
 type BannerSlotStatus = "AVAILABLE" | "LOCKED" | "SOLD";
@@ -25,6 +42,22 @@ interface LockSlotsResponseDto {
   slotIds: number[];
   totalAmount: number;
   lockedUntil: string;         // ISO LocalDateTime
+}
+
+// [추가] 백엔드 CreateApplicationRequestDto에 맞춘 타입
+interface CreateApplicationItem {
+  date: string;       // YYYY-MM-DD
+  priority: number;   // 1..N
+}
+
+interface CreateApplicationRequestDto {
+  eventId: number;
+  bannerType: BannerSlotType;   // "HERO" | "SEARCH_TOP"
+  title: string;
+  imageUrl: string;
+  linkUrl?: string;
+  items: CreateApplicationItem[];
+  lockMinutes?: number;         // 옵션(기본 2880)
 }
 
 // ---- axios 인스턴스 ----
@@ -51,6 +84,12 @@ async function lockSlots(body: LockSlotsRequestDto): Promise<LockSlotsResponseDt
   return data;
 }
 
+// [추가] 신청 생성 API
+async function createApplication(body: CreateApplicationRequestDto): Promise<number> {
+  const { data } = await api.post("/api/banner/applications", body);
+  return data as number; // application id
+}
+
 const AdvertisementApplication: React.FC = () => {
   const navigate = useNavigate();
   const [selectedTypes, setSelectedTypes] = useState({
@@ -73,6 +112,12 @@ const AdvertisementApplication: React.FC = () => {
     endDate: ''
   });
 
+// [추가] 메인 배너 신청에 필요한 입력값 (백엔드 DTO 필수 필드)
+  const [heroMeta, setHeroMeta] = useState<{
+    eventId: string;
+    title: string;
+    linkUrl: string;
+  }>({ eventId: '', title: '', linkUrl: '' });
 
 
 // 슬롯 기반 상태(서버 연동)
@@ -122,42 +167,38 @@ const [availabilityError, setAvailabilityError] = useState<string | null>(null);
     }
   }>({});
 
-  // 메인 배너 광고용 재고 상태 초기화 (더미 데이터)
+  
+
+   // [추가] 현재 달 범위 ISO 계산
+  const monthRange = React.useMemo(() => {
+    const first = new Date(currentCalendarYear, currentCalendarMonth - 1, 1);
+    const last = new Date(currentCalendarYear, currentCalendarMonth, 0);
+    return { from: toLocalDateStr(first), to: toLocalDateStr(last) };
+  }, [currentCalendarYear, currentCalendarMonth]);
+
+  // [추가] HERO 슬롯을 서버에서 불러와 재고상태 반영
   React.useEffect(() => {
-    const generateInventoryStatus = () => {
-      const status: {
-        [date: string]: {
-          [rank: string]: 'available' | 'sold' | 'reserved'
+    (async () => {
+      try {
+        const list = await getSlots({ type: "HERO", from: monthRange.from, to: monthRange.to });
+        // 같은 날짜의 여러 priority 상태를 맵으로 변환
+        const next: Record<string, Record<string, 'available'|'reserved'|'sold'>> = {};
+        for (const s of list) {
+          const d = s.slotDate;
+          const r = String(s.priority ?? 0);
+          if (!next[d]) next[d] = {};
+          next[d][r] =
+            s.status === "AVAILABLE" ? "available" :
+            s.status === "LOCKED"    ? "reserved"  :
+            "sold";
         }
-      } = {};
-      const today = new Date();
-
-      // 향후 30일간의 재고 상태 생성
-      for (let i = 1; i <= 30; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        const dateString = date.toISOString().split('T')[0];
-
-        status[dateString] = {};
-
-        // 각 순위별로 랜덤하게 재고 상태 설정
-        for (let rank = 1; rank <= 10; rank++) {
-          const random = Math.random();
-          if (random < 0.3) {
-            status[dateString][rank] = 'sold'; // 30% 확률로 매진
-          } else if (random < 0.6) {
-            status[dateString][rank] = 'reserved'; // 30% 확률로 예약됨
-          } else {
-            status[dateString][rank] = 'available'; // 40% 확률로 구매가능
-          }
-        }
+        setInventoryStatus(next);
+      } catch (e) {
+        console.error("HERO slots load failed", e);
+        setInventoryStatus({});
       }
-
-      setInventoryStatus(status);
-    };
-
-    generateInventoryStatus();
-  }, []);
+    })();
+  }, [monthRange.from, monthRange.to]);
 
   // 특정 날짜의 특정 순위가 구매 가능한지 확인
   const isRankAvailable = (date: string, rank: string) => {
@@ -232,7 +273,7 @@ const getAvailableDates = () => {
   const out: string[] = [];
   const cur = new Date(s);
   while (cur <= e) {
-    const d = cur.toISOString().split("T")[0];
+    const d = toLocalDateStr(cur); 
     if (isMdPickAvailable(d)) out.push(d);
     cur.setDate(cur.getDate() + 1);
   }
@@ -257,13 +298,14 @@ const getConflictDates = () => {
   const out: string[] = [];
   const cur = new Date(s);
   while (cur <= e) {
-    const d = cur.toISOString().split("T")[0];
+const d = toLocalDateStr(cur); 
     const slots = getDateSlots(d);
     if (slots.length && slots.every(s => s.status !== "AVAILABLE")) out.push(d);
     cur.setDate(cur.getDate() + 1);
   }
   return out;
 };
+
 const isMdPickRangeAvailable = () => {
   if (!searchTopForm.startDate || !searchTopForm.endDate) return false;
   const s = new Date(searchTopForm.startDate);
@@ -271,7 +313,7 @@ const isMdPickRangeAvailable = () => {
   if (s > e) return false;
   const cur = new Date(s);
   while (cur <= e) {
-    const d = cur.toISOString().split("T")[0];
+const d = toLocalDateStr(cur); 
     if (!isMdPickAvailable(d)) return false;
     cur.setDate(cur.getDate() + 1);
   }
@@ -359,39 +401,95 @@ const isMdPickRangeAvailable = () => {
     await uploadFile(file, usage);
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (selectedTypes.searchTop && searchTopForm.startDate && searchTopForm.endDate) {
-        const dates = getAvailableDates();
-        if (!dates.length) {
-          alert("선택한 기간에 신청 가능한 날짜가 없습니다.");
-          return;
-        }
-        const items = dates.map(d => {
-          const chosen = chooseSlotForDate(d);
-          if (!chosen) return null;
-          return { slotDate: d, priority: chosen.priority };
-        }).filter(Boolean) as { slotDate: string; priority: number }[];
-        if (!items.length) {
-          alert("잠글 수 있는 슬롯이 없습니다.");
-          return;
-        }
-        const res = await lockSlots({ typeCode: "SEARCH_TOP", items });
-        alert(`신청이 완료되었습니다.\n잠금 슬롯: ${res.slotIds.length}개\n총액: ${res.totalAmount.toLocaleString()}원\n만료: ${res.lockedUntil}`);
+  // handleSubmit 전체
+const handleSubmit = async () => {
+  try {
+    // 1) MD PICK(SEARCH_TOP)만 처리
+    if (selectedTypes.searchTop && searchTopForm.startDate && searchTopForm.endDate) {
+      const dates = getAvailableDates();
+      if (!dates.length) {
+        alert("선택한 기간에 신청 가능한 날짜가 없습니다.");
+        return;
       }
-      // 메인 배너는 이후 /api/banner/applications(CreateApplicationRequestDto)로 별도 연동 예정
-      navigate("/admin_dashboard/advertisement-applications");
-    } catch (e) {
-      console.error(e);
-      alert("신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      const items = dates
+        .map(d => {
+          const chosen = chooseSlotForDate(d);
+          return chosen ? { slotDate: d, priority: chosen.priority } : null;
+        })
+        .filter(Boolean) as { slotDate: string; priority: number }[];
+
+      if (!items.length) {
+        alert("신청 가능한 날짜가 없습니다.");
+        return;
+      }
+
+      const res = await lockSlots({ typeCode: "SEARCH_TOP", items });
+
+      
+const appliedFrom = searchTopForm.startDate;
+const appliedTo = searchTopForm.endDate;
+const appliedDays = getAvailableDays();
+
+      alert(
+  [
+    "MD PICK 신청이 완료되었습니다.",
+    `신청한 기간: ${dateRangeOf(appliedFrom, appliedTo)}`,
+    `신청일수: ${appliedDays}일`,
+    `총 결제 금액: ${res.totalAmount.toLocaleString()}원`,
+    `신청 유지 만료: ${fmtKST(res.lockedUntil)}`
+  ].join("\n")
+);
     }
-  };
+
+    // 2) 메인 배너(HERO)만 처리
+    if (selectedTypes.mainBanner && mainBannerForm.length > 0) {
+      const uploaded = Array.from(uploadedFiles.values())[0];
+      if (!uploaded) {
+        alert("메인 배너 이미지를 업로드해주세요.");
+        return;
+      }
+      if (!heroMeta.eventId || !heroMeta.title) {
+        alert("이벤트 ID와 제목을 입력해주세요.");
+        return;
+      }
+
+      const imageUrl =
+        `${import.meta.env.VITE_BACKEND_BASE_URL ?? window.location.origin}${uploaded.url}`;
+
+      const items = mainBannerForm.map(({ date, rank }) => ({
+        date,
+        priority: Number(rank),
+      }));
+
+      const appId = await createApplication({
+        eventId: Number(heroMeta.eventId),
+        bannerType: "HERO",
+        title: heroMeta.title,
+        imageUrl,
+        linkUrl: heroMeta.linkUrl || undefined,
+        items,
+        // lockMinutes: 2880,
+      });
+
+      alert(`메인 배너 신청이 접수되었습니다. 신청번호: ${appId}`);
+    }
+
+    // 둘 중 하나라도 성공했으면 목록으로 이동
+    if (selectedTypes.mainBanner || selectedTypes.searchTop) {
+      navigate("/admin_dashboard/advertisement-applications");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+  }
+};
+
 
   // 내일부터 선택 가능한 날짜 계산
   const getMinDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return toLocalDateStr(tomorrow);           
   };
 
   // 달력 날짜 생성 함수
@@ -409,7 +507,7 @@ const isMdPickRangeAvailable = () => {
 
       days.push({
         date: date.getDate(),
-        dateString: date.toISOString().split('T')[0],
+      dateString: toLocalDateStr(date),         
         isCurrentMonth: date.getMonth() === month - 1
       });
     }
@@ -471,8 +569,39 @@ const isMdPickRangeAvailable = () => {
                     <p className="font-medium">권장 크기: 1920 x 400px</p>
                     <p className="text-xs text-gray-500 mt-1">웹/모바일 반응형 대응</p>
                   </div>
+
+                  {/* [추가] 메인 배너 신청 메타 정보 입력 */}
+                  <div className="space-y-2 pt-2">
+                    <label className="block text-sm text-gray-700">이벤트 ID</label>
+                    <input
+                      type="number"
+                      value={heroMeta.eventId}
+                      onChange={(e) => setHeroMeta(v => ({ ...v, eventId: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="예: 123"
+                    />
+                    <label className="block text-sm text-gray-700 mt-3">배너 제목</label>
+                    <input
+                      type="text"
+                      value={heroMeta.title}
+                      onChange={(e) => setHeroMeta(v => ({ ...v, title: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="노출될 제목"
+                    />
+                    <label className="block text-sm text-gray-700 mt-3">링크 URL (선택)</label>
+                    <input
+                      type="url"
+                      value={heroMeta.linkUrl}
+                      onChange={(e) => setHeroMeta(v => ({ ...v, linkUrl: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
                 </div>
 
+
+                
                 {/* 이미지 업로드 폼 */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-gray-800">광고 이미지 업로드</h4>
@@ -998,7 +1127,7 @@ const isMdPickRangeAvailable = () => {
 
                           const currentDate = new Date(startDate);
                           while (currentDate <= endDate) {
-                            const dateString = currentDate.toISOString().split('T')[0];
+                            const dateString = toLocalDateStr(currentDate);
                             dates.push(dateString);
                             currentDate.setDate(currentDate.getDate() + 1);
                           }
@@ -1103,7 +1232,6 @@ const booked = getBookedCount(date);
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

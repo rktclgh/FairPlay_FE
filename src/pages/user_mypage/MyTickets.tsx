@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import QrTicket from "../../components/QrTicket";
@@ -29,12 +29,13 @@ export default function MyTickets(): JSX.Element {
         reservationId: 0,
         qrTicketId: 0
     });
+    const [successMessage, setSuccessMessage] = useState("");
 
     // ✅ 여기서 웹소켓 구독 시작
     useQrTicketSocket(qrTicketId, (msg) => {
         console.log("qrTicketId:" + qrTicketId);
         alert(msg);
-        setIsQrTicketOpen(false); // 확인 클릭 시
+        setSuccessMessage(msg);   // 메시지를 state에 저장
     });
 
     useEffect(() => {
@@ -327,6 +328,7 @@ export default function MyTickets(): JSX.Element {
                 onClose={handleQrTicketClose}
                 ticketData={selectedTicketData}
                 updateIds={updateIds}
+                message={successMessage}
             />
         </div>
     );
