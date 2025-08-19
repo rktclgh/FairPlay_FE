@@ -72,6 +72,9 @@ import { AdminProfile } from "./pages/admin_account/AdminProfile";
 import { HostProfile } from "./pages/host_account/HostProfile";
 import { BoothAdminProfile } from "./pages/booth_admin/BoothAdminProfile";
 import BoothAdminDashboard from "./pages/booth_admin/BoothAdminDashboard";
+import BoothAdminDashboard from "./pages/booth_admin/BoothAdminDashboard";
+import BoothQRScanPage from "./pages/booth_admin/BoothQRScanPage";
+import ExperienceDetailPage from "./pages/booth_admin/ExperienceDetailPage";
 import { BoothAdminRouteGuard } from "./components/BoothAdminRouteGuard";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -86,8 +89,8 @@ import PaymentManagement from "./pages/admin_payment/PaymentManagement";
 import HostPaymentManagement from "./pages/host_event/host_payment/HostPaymentManagement";
 import BoothExperienceList from "./pages/user_booth/BoothExperienceList";
 import MyBoothExperienceReservations from "./pages/user_booth/MyBoothExperienceReservations";
-import BoothExperienceManagement from "./pages/host_booth/BoothExperienceManagement";
-import BoothExperienceReserverManagement from "./pages/host_booth/BoothExperienceReserverManagement";
+import BoothExperienceManagement from "./pages/booth_admin/BoothExperienceManagement";
+import BoothExperienceReserverManagement from "./pages/booth_admin/BoothExperienceReserverManagement";
 import { OnlyQrTicketPage } from './pages/OnlyQrTicketPage';
 import { OnlyQrTicketErrorPage } from './pages/OnlyQrTicketErrorPage';
 import { Footer } from "./components/Footer";
@@ -143,6 +146,7 @@ function AppContent() {
         pathname.startsWith("/admin_settlement") ||
         pathname.startsWith("/admin_statistics") ||
         pathname.startsWith("/admin_vip_banner") ||
+        pathname.startsWith("/booth-admin") ||
         pathname === "/register" ||
         pathname === "/event-registration-intro" ||
         pathname.startsWith("/mypage")
@@ -260,6 +264,11 @@ function AppContent() {
                         {/* 부스 관리자 전용 페이지 */}
                         <Route path="/booth-admin/dashboard" element={<BoothAdminRouteGuard><BoothAdminDashboard /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/profile" element={<BoothAdminRouteGuard><BoothAdminProfile /></BoothAdminRouteGuard>} />
+                        <Route path="/booth-admin/dashboard" element={<BoothAdminRouteGuard><BoothAdminDashboard /></BoothAdminRouteGuard>} />
+                        <Route path="/booth-admin/qr-scan" element={<BoothAdminRouteGuard><BoothQRScanPage /></BoothAdminRouteGuard>} />
+                        <Route path="/booth-admin/experience-management" element={<BoothAdminRouteGuard><BoothExperienceManagement /></BoothAdminRouteGuard>} />
+                        <Route path="/booth-admin/experience-reserver-management" element={<BoothAdminRouteGuard><BoothExperienceReserverManagement /></BoothAdminRouteGuard>} />
+                        <Route path="/booth-admin/experience-detail/:experienceId" element={<BoothAdminRouteGuard><ExperienceDetailPage /></BoothAdminRouteGuard>} />
                         <Route path="/host/dashboard" element={<HostDashboard />} />
                         <Route path="/host/edit-event-info" element={<EditEventInfo />} />
                         <Route path="/host/ticket-management" element={<TicketManagement />} />
@@ -280,11 +289,7 @@ function AppContent() {
                         <Route path="/booth/payment" element={<BoothPaymentPage />} />
                         <Route path="/booth/cancel" element={<BoothCancelPage />} />
 
-                        {/* 부스 체험 */}
-                        <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
-                        <Route path="/host/events/:eventId/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
-                        <Route path="/host/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
-                        <Route path="/host/events/:eventId/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
+                        {/* 부스 체험 (행사관리자) 라우트 제거됨 */}
                         <Route path="/events/:eventId/booth-experiences" element={<BoothExperienceList />} />
                         <Route path="/mypage/booth-experiences" element={<BoothExperienceList />} />
                         <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations />} />

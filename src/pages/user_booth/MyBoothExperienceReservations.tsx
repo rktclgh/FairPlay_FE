@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Clock, Users, MapPin, Calendar, X, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   getMyReservations,
   cancelReservation,
@@ -12,6 +13,7 @@ import { TopNav } from "../../components/TopNav";
 import authManager from '../../utils/auth';
 
 const MyBoothExperienceReservations: React.FC = () => {
+  const { t } = useTranslation();
   const [reservations, setReservations] = useState<BoothExperienceReservation[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<BoothExperienceReservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ const MyBoothExperienceReservations: React.FC = () => {
       setReservations(data);
     } catch (error) {
       console.error('예약 목록 로딩 실패:', error);
-      toast.error('예약 목록을 불러오는데 실패했습니다.');
+      toast.error(t('boothExperience.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -83,13 +85,13 @@ const MyBoothExperienceReservations: React.FC = () => {
 
     try {
       await cancelReservation(selectedReservationId);
-      toast.success('예약이 취소되었습니다.');
+      toast.success(t('boothExperience.cancelSuccess'));
       setShowCancelModal(false);
       setSelectedReservationId(null);
       loadReservations(); // 목록 새로고침
     } catch (error) {
       console.error('예약 취소 실패:', error);
-      toast.error('예약 취소에 실패했습니다.');
+      toast.error(t('boothExperience.cancelFailed'));
     }
   };
 
@@ -133,7 +135,7 @@ const MyBoothExperienceReservations: React.FC = () => {
 
           {/* 페이지 제목 */}
           <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-            내 부스 체험 예약
+            {t('boothExperience.title')}
           </div>
 
           {/* 사이드바 */}
@@ -143,21 +145,21 @@ const MyBoothExperienceReservations: React.FC = () => {
           <div className="ml-64 mt-[195px] w-[949px] pb-28 md:pb-36">
             {/* 헤더 */}
             <div className="mb-6">
-              <p className="text-gray-600">예약한 부스 체험 목록을 확인하고 관리하세요</p>
+              <p className="text-gray-600">{t('boothExperience.description')}</p>
             </div>
 
             {/* 검색 및 필터 */}
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">검색 조건</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('boothExperience.searchConditions')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 검색 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">체험명/부스명</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.experienceOrBoothName')}</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder="체험명 또는 부스명 검색..."
+                      placeholder={t('boothExperience.experienceOrBoothNamePlaceholder')}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}

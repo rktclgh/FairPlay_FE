@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { HiOutlineSearch, HiOutlineUser, HiOutlineGlobeAlt, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineUser, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { requireAuth, isAuthenticated } from '../utils/authGuard';
-import { hasHostPermission } from '../utils/permissions';
+import { hasHostPermission, hasBoothManagerPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 import { useTheme } from '../context/ThemeContext';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -99,7 +99,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	};
 
 	const toggleNotification = () => {
-		if (!requireAuth(navigate, '알림')) {
+		if (!requireAuth(navigate, t('common.notification'))) {
 			return;
 		}
 		setIsNotificationOpen(prev => !prev);
@@ -138,7 +138,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
 	// 운영자(전체 관리자) 문의 채팅방 생성/입장
 	const handleCustomerService = async () => {
-		if (!requireAuth(navigate, '고객센터 채팅')) {
+		if (!requireAuth(navigate, t('common.customerService'))) {
 			return;
 		}
 
@@ -233,7 +233,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 								}}
 							/>
 							<HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={() => {
-								if (!requireAuth(navigate, '마이페이지')) {
+								if (!requireAuth(navigate, t('navigation.mypage'))) {
 									return;
 								}
 
@@ -244,6 +244,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 										navigate('/admin_dashboard');
 									} else if (hasHostPermission(role)) {
 										navigate('/host/dashboard');
+									} else if (hasBoothManagerPermission(role)) {
+										navigate('/booth-admin/dashboard');
 									} else {
 										navigate('/mypage/info');
 									}
@@ -298,24 +300,24 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 				<div className="grid grid-cols-5 h-16 items-center">
 					<Link to="/eventoverview" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
 						<HiOutlineCalendar className={`w-6 h-6 ${activeMenu === 'EVENTS' ? 'text-black dark:text-white' : 'text-gray-500'}`} />
-						<span className={`${activeMenu === 'EVENTS' ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>EVENT</span>
+						<span className={`${activeMenu === 'EVENTS' ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>{t('navigation.events')}</span>
 					</Link>
 					<Link to="/event-registration-intro" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
 						<HiOutlinePencilAlt className="w-6 h-6 text-gray-500" />
-						<span className="text-gray-500">APPLY</span>
+						<span className="text-gray-500">{t('navigation.apply')}</span>
 					</Link>
 					<Link to="/" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
 						<HiOutlineHome className={`w-6 h-6 ${activeMenu === 'HOME' ? 'text-black dark:text-white' : 'text-gray-500'}`} />
-						<span className={`${activeMenu === 'HOME' ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>HOME</span>
+						<span className={`${activeMenu === 'HOME' ? (isDark ? 'text-white' : 'text-black') : 'text-gray-500'}`}>{t('navigation.home')}</span>
 					</Link>
 					<Link to="/mypage/tickets" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
 						<HiOutlineTicket className="w-6 h-6 text-gray-500" />
-						<span className="text-gray-500">TICKET</span>
+						<span className="text-gray-500">{t('ticket.title')}</span>
 					</Link>
 					<button
 						className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none"
 						onClick={() => {
-							if (!requireAuth(navigate, '마이페이지')) {
+							if (!requireAuth(navigate, t('navigation.mypage'))) {
 								return;
 							}
 							(async () => {
@@ -325,6 +327,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 									navigate('/admin_dashboard');
 								} else if (hasHostPermission(role)) {
 									navigate('/host/dashboard');
+								} else if (hasBoothManagerPermission(role)) {
+									navigate('/booth-admin/dashboard');
 								} else {
 									navigate('/mypage/info');
 								}
@@ -332,7 +336,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 						}}
 					>
 						<HiOutlineUser className="w-6 h-6 text-gray-500" />
-						<span className="text-gray-500">MY</span>
+						<span className="text-gray-500">{t('navigation.mypage')}</span>
 					</button>
 				</div>
 			</div>

@@ -241,7 +241,7 @@ const EventDetail = (): JSX.Element => {
                 const data = await eventAPI.getEventDetail(Number(eventId));
 
                 const params: PageableRequest = {
-                    page: 0,
+                    page: currentPage,
                     size: 10,
                     sort: 'createdAt,desc'
                 }
@@ -565,25 +565,25 @@ const EventDetail = (): JSX.Element => {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white pb-8 md:pb-0">
             <TopNav />
 
             {/* Event Content */}
-            <section className="pt-10">
+            <section className="pt-6 md:pt-10 px-4 md:px-0">
                 {/* Event Header */}
-                <div className="flex gap-8">
-                    <div className="relative">
+                <div className="flex flex-col lg:flex-row gap-4 md:gap-8">
+                    <div className="relative w-full lg:w-auto">
                         <img
                             src={eventData.thumbnailUrl}
                             alt={eventData.titleKr}
-                            className="w-[438px] h-[526px] object-cover"
+                            className="w-full max-w-[438px] h-auto max-h-[526px] object-cover mx-auto lg:mx-0"
                         />
                     </div>
 
                     <div className="flex-1">
                         <div className="text-left">
-                            <div className="flex items-center gap-4">
-                                <h1 className="text-[32px] font-semibold leading-tight">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                                <h1 className="text-2xl md:text-[32px] font-semibold leading-tight">
                                     {eventData.titleKr}
                                 </h1>
                                 {eventData.eventStatusCode && (
@@ -617,7 +617,7 @@ const EventDetail = (): JSX.Element => {
                         <hr className="h-[3px] my-6 bg-black" />
 
                         <div className="space-y-4">
-                            <div className="flex items-center gap-32">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-32">
                                 <div className="flex items-center">
                                     <span className="text-base text-[#00000099] font-semibold w-20">장소</span>
                                     <span className="text-base inline-block">
@@ -645,11 +645,11 @@ const EventDetail = (): JSX.Element => {
                                 <div className="text-base" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
                             </div>
 
-                            <div className="flex items-start">
+                            <div className="flex flex-col lg:flex-row items-start gap-4">
                                 <span className="text-base text-[#00000099] font-semibold w-20">가격</span>
                                 <div className="flex-1">
                                     {ticketPrices.length > 0 ? (
-                                        <div className="grid grid-cols-2 gap-x-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                                             <div className="space-y-1">
                                                 {ticketPrices.map((ticket, index) => (
                                                     <p key={index} className="text-base">
@@ -673,7 +673,7 @@ const EventDetail = (): JSX.Element => {
                                 </div>
                                 <button
                                     onClick={handleInquiry}
-                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm ml-4"
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm lg:ml-4 w-full lg:w-auto"
                                 >
                                     담당자에게 문의하기
                                 </button>
@@ -684,14 +684,14 @@ const EventDetail = (): JSX.Element => {
 
                 {/* Date and Time Selection */}
                 <div className="mt-16 mb-8 border border-gray-200 rounded-lg">
-                    <div className="p-6">
-                        <h3 className="text-[20.3px] font-semibold text-[#212121] mb-6">
+                    <div className="p-4 md:p-6">
+                        <h3 className="text-lg md:text-[20.3px] font-semibold text-[#212121] mb-4 md:mb-6">
                             날짜 및 회차 선택
                         </h3>
 
-                        <div className="flex gap-6">
-                            {/* 좌측: 달력 - 30% */}
-                            <div className="w-[30%]">
+                        <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+                            {/* 좌측: 달력 - 모바일에서는 전체 너비, 데스크톱에서는 30% */}
+                            <div className="w-full lg:w-[30%]">
                                 <h4 className="text-base font-medium text-gray-900 mb-4">날짜 선택</h4>
 
                                 {/* 달력 헤더 */}
@@ -709,7 +709,7 @@ const EventDetail = (): JSX.Element => {
                                                     setCurrentCalendarMonth(currentCalendarMonth - 1);
                                                 }
                                             }}
-                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                            className="p-2 hover:bg-gray-200 rounded text-xs"
                                         >
                                             ◀
                                         </button>
@@ -722,7 +722,7 @@ const EventDetail = (): JSX.Element => {
                                                     setCurrentCalendarMonth(currentCalendarMonth + 1);
                                                 }
                                             }}
-                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                            className="p-2 hover:bg-gray-200 rounded text-xs"
                                         >
                                             ▶
                                         </button>
@@ -753,7 +753,7 @@ const EventDetail = (): JSX.Element => {
                                                 key={index}
                                                 onClick={() => (isEventDate && !isPastDate) ? handleDateSelect(day.dateString) : null}
                                                 disabled={!isEventDate || !isCurrentMonth || isPastDate}
-                                                className={`p-1.5 text-xs rounded transition-colors relative h-8 ${!isCurrentMonth
+                                                className={`p-2 md:p-1.5 text-xs rounded transition-colors relative h-10 md:h-8 ${!isCurrentMonth
                                                     ? 'text-gray-300 cursor-not-allowed'
                                                     : isPastDate
                                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -769,10 +769,10 @@ const EventDetail = (): JSX.Element => {
                                                 {day.date}
                                                 {isEventDate && isCurrentMonth && (
                                                     <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${isPastDate
-                                                            ? 'bg-gray-400'
-                                                            : isBookable
-                                                                ? 'bg-green-600'
-                                                                : 'bg-pink-600'
+                                                        ? 'bg-gray-400'
+                                                        : isBookable
+                                                            ? 'bg-green-600'
+                                                            : 'bg-pink-600'
                                                         }`}></div>
                                                 )}
                                                 {isPastDate && isEventDate && isCurrentMonth && (
@@ -787,8 +787,8 @@ const EventDetail = (): JSX.Element => {
                                 </div>
                             </div>
 
-                            {/* 중앙: 회차 목록 - 40% */}
-                            <div className="w-[40%]">
+                            {/* 중앙: 회차 목록 - 모바일에서는 전체 너비, 데스크톱에서는 40% */}
+                            <div className="w-full lg:w-[40%]">
                                 <h4 className="text-base font-medium text-gray-900 mb-4">
                                     회차 선택 {selectedDate && `(${selectedDate})`}
                                 </h4>
@@ -840,8 +840,8 @@ const EventDetail = (): JSX.Element => {
                                 </div>
                             </div>
 
-                            {/* 우측: 예매 가능 여부 정보 - 30% */}
-                            <div className="w-[30%]">
+                            {/* 우측: 예매 가능 여부 정보 - 모바일에서는 전체 너비, 데스크톱에서는 30% */}
+                            <div className="w-full lg:w-[30%]">
                                 <h4 className="text-base font-medium text-gray-900 mb-4">행사 일별 예매 현황</h4>
 
                                 <div className="space-y-3">
@@ -885,19 +885,19 @@ const EventDetail = (): JSX.Element => {
                                                     <div
                                                         key={date}
                                                         className={`flex items-center justify-between p-3 border-b last:border-b-0 ${isPastDate
-                                                                ? 'cursor-not-allowed opacity-60'
-                                                                : 'cursor-pointer hover:bg-gray-50'
+                                                            ? 'cursor-not-allowed opacity-60'
+                                                            : 'cursor-pointer hover:bg-gray-50'
                                                             } ${isSelected ? 'bg-blue-50' : ''}`}
                                                         onClick={() => !isPastDate ? handleDateSelect(date) : null}
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <div className={`w-3 h-3 rounded ${isPastDate
-                                                                    ? 'bg-gray-300'
-                                                                    : isSelected
-                                                                        ? 'bg-blue-600'
-                                                                        : isBookable
-                                                                            ? 'bg-green-100 border border-green-300'
-                                                                            : 'bg-pink-100 border border-pink-300'
+                                                                ? 'bg-gray-300'
+                                                                : isSelected
+                                                                    ? 'bg-blue-600'
+                                                                    : isBookable
+                                                                        ? 'bg-green-100 border border-green-300'
+                                                                        : 'bg-pink-100 border border-pink-300'
                                                                 }`}></div>
                                                             <div>
                                                                 <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
@@ -941,7 +941,7 @@ const EventDetail = (): JSX.Element => {
 
                                     {/* 요약 정보 */}
                                     <div className="bg-gray-50 rounded-lg p-3">
-                                        <div className="grid grid-cols-3 gap-3 text-center">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                                             <div>
                                                 <div className="text-lg font-bold text-gray-900">{eventDates.length}</div>
                                                 <div className="text-xs text-gray-600">총 행사일</div>
@@ -967,7 +967,7 @@ const EventDetail = (): JSX.Element => {
                 </div>
 
                 {/* Book Button */}
-                <div className="flex justify-center mb-12">
+                <div className="flex justify-center mb-8 md:mb-12 px-4 md:px-0">
                     <button
                         onClick={() => {
                             if (eventData.mainCategory !== "공연") {
@@ -984,7 +984,7 @@ const EventDetail = (): JSX.Element => {
                             }
                         }}
                         disabled={eventData.mainCategory !== "공연" && !selectedScheduleId}
-                        className={`w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${eventData.mainCategory === "공연" || selectedScheduleId
+                        className={`w-full max-w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${eventData.mainCategory === "공연" || selectedScheduleId
                             ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
@@ -995,9 +995,9 @@ const EventDetail = (): JSX.Element => {
 
                 {/* Event Details Tabs */}
                 <div className="mb-12">
-                    <nav className="h-[40px] border-b border-neutral-200 relative"
+                    <nav className="h-[40px] border-b border-neutral-200 relative overflow-x-auto scrollbar-hide"
                         style={{ borderBottom: '1px solid #e5e5e5', marginBottom: '-1px' }}>
-                        <ul className="flex items-center h-full pl-0">
+                        <ul className="flex items-center h-full pl-0 min-w-max">
                             {[
                                 { id: "detail", name: "상세정보" },
                                 { id: "location", name: "장소정보" },
@@ -1024,7 +1024,7 @@ const EventDetail = (): JSX.Element => {
                         </ul>
                     </nav>
 
-                    <div className="pt-6 px-6">
+                    <div className="pt-4 md:pt-6 px-4 md:px-6">
                         {activeTab === "detail" && (
                             <>
                                 <h3 className="text-lg font-semibold text-[#212121] mb-4">
