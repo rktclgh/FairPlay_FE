@@ -272,6 +272,26 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                         e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
                                     }}
                                 >
+                                    {/* TODO: 링크 변경 */}
+                                    참가 부스 목록
+                                </Link>
+                                <Link
+                                    to="/host/booth-applications"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-applications"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booth-applications" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
+                                    }}
+                                >
                                     부스 신청 목록
                                 </Link>
                                 <Link
