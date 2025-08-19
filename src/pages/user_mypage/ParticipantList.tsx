@@ -77,7 +77,7 @@ export default function ParticipantList(): JSX.Element {
         }
 
         // 2. 예약날짜가 행사 당일일 경우 -> 행사 당일 + 시작시간까지 수정 가능
-        if ((reservationDateObj.getDate() == today.getDate()) &&  (nowTime < eventStart) ) {
+        if ((reservationDateObj.getTime() === eventDate.getTime()) &&  (nowTime.getTime() < eventStart.getTime()) ) {
             setPossibleDate(today.toLocaleDateString("ko-KR",
                 {
                     year: "numeric",

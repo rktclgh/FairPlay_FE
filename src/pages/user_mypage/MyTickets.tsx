@@ -69,8 +69,17 @@ export default function MyTickets(): JSX.Element {
 
     const handleQrTicketOpen = async (reservation: ReservationResponseDto) => {
         try {
-            const today = format(new Date(), 'yyyy-mm-dd');
-            if (reservation.scheduleDate && reservation.scheduleDate !== today) {
+
+            if (!reservation.scheduleDate || !reservation.startTime) {
+                throw new Error("예약 정보가 올바르지 않습니다."); 
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const scheduleDateObj = new Date(reservation.scheduleDate); 
+            scheduleDateObj.setHours(0, 0, 0, 0);
+
+            if (reservation.scheduleDate && scheduleDateObj.getTime() !== today.getTime()) {
                 alert("QR티켓은 당일에만 조회할 수 있습니다.");
                 return;
             }
@@ -147,10 +156,11 @@ export default function MyTickets(): JSX.Element {
             return;
         }
 
+        const today = new Date();
         const eventDateTime = new Date(`${reservation.scheduleDate}T${reservation.startTime}`);
-        const now = new Date();
 
-        if (eventDateTime < now) {
+
+        if (eventDateTime.getTime() < today.getTime()) {
             alert("이미 지난 예약은 조회할 수 없습니다.");
             return;
         }
