@@ -12,6 +12,7 @@ import { ParticipatingBooths } from "./ParticipatingBooths";
 import ExternalLink from "./ExternalLink";
 import { eventAPI } from "../../services/event";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
+import { getEventStatusText, getEventStatusStyle } from "../../utils/eventStatus";
 import api from "../../api/axios";
 import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
 import type {
@@ -585,6 +586,11 @@ const EventDetail = (): JSX.Element => {
                                 <h1 className="text-[32px] font-semibold leading-tight">
                                     {eventData.titleKr}
                                 </h1>
+                                {eventData.eventStatusCode && (
+                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEventStatusStyle(eventData.eventStatusCode)}`}>
+                                        {getEventStatusText(eventData.eventStatusCode)}
+                                    </span>
+                                )}
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
@@ -998,7 +1004,7 @@ const EventDetail = (): JSX.Element => {
                                 { id: "booking", name: "예매/취소안내" },
                                 { id: "review", name: "관람평" },
                                 { id: "expectation", name: "기대평" },
-                                ...(eventData.mainCategory === "박람회" ? [{ id: "booths", name: "참가부스" }] : [])
+                                ...(eventData.mainCategory !== "공연" ? [{ id: "booths", name: "참가부스" }] : [])
                             ].map((tab) => (
                                 <li
                                     key={tab.id}

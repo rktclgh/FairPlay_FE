@@ -1,43 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
+import { useParams, useNavigate } from "react-router-dom";
+import { getBoothTypes, createBoothType, updateBoothType, deleteBoothType } from "../../api/boothApi";
+import { BoothType } from "../../types/booth";
 
-interface BoothType {
-    id: number;
-    boothType: string;
-    boothSize: string;
-    boothCost: string;
-    maxParticipants: number;
-}
 
 // 부스 타입 추가/수정 모달 컴포넌트
 const AddBoothTypeModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onAddBoothType: (boothType: BoothType) => void;
-    onUpdateBoothType?: (boothType: BoothType) => void;
+    onAddBoothType: (boothType: BoothType) => Promise<void>;
+    onUpdateBoothType?: (boothType: BoothType) => Promise<void>;
     editBoothType?: BoothType | null;
     isEditMode?: boolean;
-}> = ({ isOpen, onClose, onAddBoothType, onUpdateBoothType, editBoothType, isEditMode = false }) => {
+    eventId: string;
+}> = ({ isOpen, onClose, onAddBoothType, onUpdateBoothType, editBoothType, isEditMode = false, eventId }) => {
     const [formData, setFormData] = useState({
-        boothType: "",
+        boothTypeName: "",
         boothSizeWidth: "",
         boothSizeHeight: "",
-        boothCost: "",
-        maxParticipants: ""
+        price: "",
+        maxCapacity: ""
     });
+    const [submitting, setSubmitting] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         
-        if (name === 'maxParticipants') {
+        if (name === 'maxCapacity') {
             // 최대 참가자는 숫자만 입력, 앞의 0 제거
             const numValue = parseInt(value) || 0;
             setFormData(prev => ({
                 ...prev,
-                [name]: numValue
+                [name]: numValue.toString()
             }));
-        } else if (name === 'boothCost') {
+        } else if (name === 'price') {
             // 비용은 숫자만 입력하고 자동으로 콤마 추가
             const numValue = value.replace(/[^\d]/g, '');
             if (numValue === '') {
@@ -63,58 +61,53 @@ const AddBoothTypeModal: React.FC<{
     // 수정 모드일 때 기존 데이터로 폼 초기화
     React.useEffect(() => {
         if (isEditMode && editBoothType) {
-            // "3m x 3m" 형태에서 가로와 세로 추출
-            const sizeMatch = editBoothType.boothSize.match(/(\d+(?:\.\d+)?)m\s*x\s*(\d+(?:\.\d+)?)m/);
-            if (sizeMatch) {
-                setFormData({
-                    boothType: editBoothType.boothType,
-                    boothSizeWidth: sizeMatch[1],
-                    boothSizeHeight: sizeMatch[2],
-                    boothCost: editBoothType.boothCost,
-                    maxParticipants: editBoothType.maxParticipants
-                });
-            } else {
-                setFormData({
-                    boothType: editBoothType.boothType,
-                    boothSizeWidth: "",
-                    boothSizeHeight: "",
-                    boothCost: editBoothType.boothCost,
-                    maxParticipants: editBoothType.maxParticipants
-                });
-            }
+            setFormData({
+                boothTypeName: editBoothType.name,
+                boothSizeWidth: editBoothType.size.split("x")[0]?.toString() || "",
+                boothSizeHeight: editBoothType.size.split("x")[1]?.toString() || "",
+                price: editBoothType.price?.toString() || "",
+                maxCapacity: editBoothType.maxApplicants?.toString() || ""
+            });
         } else {
             // 추가 모드일 때 폼 초기화
             setFormData({
-                boothType: "",
+                boothTypeName: "",
                 boothSizeWidth: "",
                 boothSizeHeight: "",
-                boothCost: "",
-                maxParticipants: ""
+                price: "",
+                maxCapacity: ""
             });
         }
     }, [isEditMode, editBoothType]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(isEditMode ? "부스 타입 수정:" : "새 부스 타입 추가:", formData);
+        setSubmitting(true);
 
-        const boothTypeData: BoothType = {
-            id: isEditMode && editBoothType ? editBoothType.id : Date.now(),
-            boothType: formData.boothType,
-            boothSize: `${formData.boothSizeWidth}m x ${formData.boothSizeHeight}m`,
-            boothCost: formData.boothCost,
-            maxParticipants: parseInt(formData.maxParticipants) || 0
-        };
+        try {
+            const boothTypeData: BoothType = {
+                id: isEditMode && editBoothType ? editBoothType.id : 0,
+                name: formData.boothTypeName,
+                size: formData.boothSizeWidth + "x" + formData.boothSizeHeight || "",
+                price: parseInt(formData.price.replace(/[^\d]/g, '')) || 0,
+                maxApplicants: parseInt(formData.maxCapacity) || 0
+            };
 
-        if (isEditMode && onUpdateBoothType) {
-            onUpdateBoothType(boothTypeData);
-            alert("부스 타입이 수정되었습니다.");
-        } else {
-            onAddBoothType(boothTypeData);
-            alert("부스 타입이 추가되었습니다.");
+            if (isEditMode && onUpdateBoothType) {
+                await onUpdateBoothType(boothTypeData);
+                alert("부스 타입이 수정되었습니다.");
+            } else {
+                await onAddBoothType(boothTypeData);
+                alert("부스 타입이 추가되었습니다.");
+            }
+
+            onClose();
+        } catch (error) {
+            console.error('부스 타입 저장 실패:', error);
+            alert(isEditMode ? '부스 타입 수정에 실패했습니다.' : '부스 타입 추가에 실패했습니다.');
+        } finally {
+            setSubmitting(false);
         }
-
-        onClose();
     };
 
     if (!isOpen) return null;
@@ -137,8 +130,8 @@ const AddBoothTypeModal: React.FC<{
                         </label>
                         <input
                             type="text"
-                            name="boothType"
-                            value={formData.boothType}
+                            name="boothTypeName"
+                            value={formData.boothTypeName}
                             onChange={handleInputChange}
                             placeholder="부스 타입을 입력하세요"
                             className="w-full h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -191,8 +184,8 @@ const AddBoothTypeModal: React.FC<{
                         </label>
                         <input
                             type="text"
-                            name="boothCost"
-                            value={formData.boothCost}
+                            name="price"
+                            value={formData.price}
                             onChange={handleInputChange}
                             placeholder="비용을 입력하세요 (예: 500000)"
                             className="w-full h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -207,8 +200,8 @@ const AddBoothTypeModal: React.FC<{
                         </label>
                         <input
                             type="text"
-                            name="maxParticipants"
-                            value={formData.maxParticipants}
+                            name="maxCapacity"
+                            value={formData.maxCapacity}
                             onChange={handleInputChange}
                             placeholder="최대 참가자 수를 입력하세요"
                             className="w-full h-11 px-4 border border-gray-300 rounded-[10px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -227,9 +220,10 @@ const AddBoothTypeModal: React.FC<{
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-black text-white rounded-[10px] text-sm font-medium hover:bg-gray-800 transition-colors focus:outline-none"
+                            disabled={submitting}
+                            className="px-6 py-2 bg-black text-white rounded-[10px] text-sm font-medium hover:bg-gray-800 transition-colors focus:outline-none disabled:opacity-50"
                         >
-                            저장
+                            {submitting ? '저장 중...' : '저장'}
                         </button>
                     </div>
                 </form>
@@ -239,33 +233,71 @@ const AddBoothTypeModal: React.FC<{
 };
 
 export const BoothTypeManagement = () => {
+    const navigate = useNavigate();
+    const params = useParams();
+    const { eventId } = useParams<{ eventId: string }>();
+    console.log('All URL params:', params);
+    console.log('Extracted eventId:', eventId);
+    console.log('Current URL:', window.location.pathname);
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editBoothType, setEditBoothType] = useState<BoothType | null>(null);
-    const [boothTypes, setBoothTypes] = useState<BoothType[]>([
-        {
-            id: 1,
-            boothType: "스탠다드 부스",
-            boothSize: "3m x 3m",
-            boothCost: "500,000",
-            maxParticipants: 10
-        },
-        {
-            id: 2,
-            boothType: "프리미엄 부스",
-            boothSize: "6m x 6m",
-            boothCost: "1,200,000",
-            maxParticipants: 25
-        },
-        {
-            id: 3,
-            boothType: "VIP 부스",
-            boothSize: "9m x 9m",
-            boothCost: "2,500,000",
-            maxParticipants: 50
+    const [boothTypes, setBoothTypes] = useState<BoothType[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // 백엔드에서 부스 타입 데이터 로드
+    useEffect(() => {
+        console.log('BoothTypeManagement - eventId:', eventId);
+        
+        // URL에서 eventId를 가져오거나 localStorage에서 현재 이벤트 ID 가져오기
+        let currentEventId = eventId;
+        if (!currentEventId) {
+            const selectedEvent = localStorage.getItem('selectedEvent');
+            if (selectedEvent) {
+                try {
+                    const eventData = JSON.parse(selectedEvent);
+                    currentEventId = eventData.eventId?.toString();
+                    console.log('BoothTypeManagement - using eventId from localStorage:', currentEventId);
+                    
+                    // eventId가 있으면 올바른 URL로 리다이렉트
+                    if (currentEventId && window.location.pathname === '/host/booth-type') {
+                        console.log('Redirecting to:', `/host/events/${currentEventId}/booth-types`);
+                        navigate(`/host/events/${currentEventId}/booth-types`, { replace: true });
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Error parsing selectedEvent from localStorage:', e);
+                }
+            }
         }
-    ]);
+        
+        if (currentEventId) {
+            loadBoothTypes(currentEventId);
+        } else {
+            console.log('BoothTypeManagement - eventId is missing from both URL and localStorage');
+            setLoading(false);
+            setError('이벤트 ID가 필요합니다. 호스트 대시보드에서 이벤트를 먼저 선택해주세요.');
+        }
+    }, [eventId, navigate]);
+
+    const loadBoothTypes = async (currentEventId: string) => {
+        if (!currentEventId) return;
+        
+        try {
+            setLoading(true);
+            console.log('loadBoothTypes - calling getBoothTypes with eventId:', parseInt(currentEventId));
+            const data = await getBoothTypes(parseInt(currentEventId));
+            console.log('loadBoothTypes - received data:', data);
+            setBoothTypes(data);
+        } catch (err) {
+            console.error('loadBoothTypes - error:', err);
+            setError('부스 타입 목록을 불러오는 데 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // 편집 모달 열기
     const openEditModal = (boothType: BoothType) => {
@@ -281,11 +313,35 @@ export const BoothTypeManagement = () => {
         setEditBoothType(null);
     };
 
+    // 부스 타입 추가
+    const handleAddBoothType = async (boothType: BoothType) => {
+        if (!eventId) return;
+        
+        await createBoothType(parseInt(eventId), boothType);
+        await loadBoothTypes(); // 목록 새로고침
+    };
+
+    // 부스 타입 수정
+    const handleUpdateBoothType = async (boothType: BoothType) => {
+        if (!eventId) return;
+        
+        await updateBoothType(parseInt(eventId), boothType.id, boothType);
+        await loadBoothTypes(); // 목록 새로고침
+    };
+
     // 삭제 핸들러
-    const handleDelete = (id: number) => {
+    const handleDelete = async (boothTypeId: number) => {
+        if (!eventId) return;
+        
         if (window.confirm("정말로 이 부스 타입을 삭제하시겠습니까?")) {
-            setBoothTypes(prev => prev.filter(type => type.id !== id));
-            alert("부스 타입이 삭제되었습니다.");
+            try {
+                await deleteBoothType(parseInt(eventId), boothTypeId);
+                await loadBoothTypes(); // 목록 새로고침
+                alert("부스 타입이 삭제되었습니다.");
+            } catch (error) {
+                console.error('부스 타입 삭제 실패:', error);
+                alert('부스 타입 삭제에 실패했습니다.');
+            }
         }
     };
 
@@ -304,7 +360,13 @@ export const BoothTypeManagement = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20">
-                    {/* 검색 및 필터 섹션 */}
+                    {loading ? (
+                        <div className="text-center py-12">로딩 중...</div>
+                    ) : error ? (
+                        <div className="text-center py-12 text-red-600">{error}</div>
+                    ) : (
+                        <>
+                        {/* 검색 및 필터 섹션 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-8">
@@ -356,37 +418,41 @@ export const BoothTypeManagement = () => {
 
                         {/* 테이블 바디 */}
                         <div className="bg-white">
-                            {boothTypes
-                                .filter(boothType => {
-                                    // 검색어 필터링
-                                    const searchMatch = !searchTerm || boothType.boothType.toLowerCase().includes(searchTerm.toLowerCase());
-                                    return searchMatch;
-                                })
-                                .map((boothType, index) => (
-                                    <div
-                                        key={boothType.id}
-                                        className={`grid grid-cols-5 gap-2 py-5 px-6 text-sm items-center ${index !== boothTypes.length - 1 ? "border-b border-gray-200" : ""}`}
-                                    >
-                                        <div className="font-medium text-gray-900 text-left truncate">{boothType.boothType}</div>
-                                        <div className="text-gray-600 text-center">{boothType.boothSize}</div>
-                                                                                 <div className="font-bold text-gray-900 text-center">{boothType.boothCost}원</div>
-                                        <div className="text-center text-gray-600">{boothType.maxParticipants}명</div>
-                                        <div className="text-center flex justify-center gap-1">
-                                            <button
-                                                onClick={() => openEditModal(boothType)}
-                                                className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-xs"
-                                            >
-                                                수정
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(boothType.id)}
-                                                className="text-red-600 hover:text-red-800 font-medium transition-colors text-xs"
-                                            >
-                                                삭제
-                                            </button>
+                            {boothTypes.length === 0 ? (
+                                <div className="text-center py-12 text-gray-500">등록된 부스 타입이 없습니다.</div>
+                            ) : (
+                                boothTypes
+                                    .filter(boothType => {
+                                        // 검색어 필터링
+                                        const searchMatch = !searchTerm || boothType.name.toLowerCase().includes(searchTerm.toLowerCase());
+                                        return searchMatch;
+                                    })
+                                    .map((boothType, index) => (
+                                        <div
+                                            key={boothType.id}
+                                            className={`grid grid-cols-5 gap-2 py-5 px-6 text-sm items-center ${index !== boothTypes.length - 1 ? "border-b border-gray-200" : ""}`}
+                                        >
+                                            <div className="font-medium text-gray-900 text-left truncate">{boothType.name}</div>
+                                            <div className="text-gray-600 text-center">{boothType.size.split("x")[0]}m x {boothType.size.split("x")[1]}m</div>
+                                            <div className="font-bold text-gray-900 text-center">{boothType.price?.toLocaleString()}원</div>
+                                            <div className="text-center text-gray-600">{boothType.maxApplicants}명</div>
+                                            <div className="text-center flex justify-center gap-1">
+                                                <button
+                                                    onClick={() => openEditModal(boothType)}
+                                                    className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-xs"
+                                                >
+                                                    수정
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(boothType.id)}
+                                                    className="text-red-600 hover:text-red-800 font-medium transition-colors text-xs"
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                            )}
                         </div>
                     </div>
 
@@ -394,29 +460,28 @@ export const BoothTypeManagement = () => {
                     <div className="mt-6 text-sm text-gray-600">
                         총 <span className="font-bold text-black">
                             {boothTypes.filter(boothType => {
-                                const searchMatch = !searchTerm || boothType.boothType.toLowerCase().includes(searchTerm.toLowerCase());
+                                const searchMatch = !searchTerm || boothType.name.toLowerCase().includes(searchTerm.toLowerCase());
                                 return searchMatch;
                             }).length}
                         </span>개의 부스 타입
                     </div>
+                        </>
+                    )}
                 </div>
             </div>
 
             {/* 부스 타입 추가/수정 모달 */}
-            <AddBoothTypeModal
-                isOpen={isModalOpen}
-                onClose={closeEditModal}
-                onAddBoothType={(newBoothType) => {
-                    setBoothTypes(prev => [...prev, newBoothType]);
-                }}
-                onUpdateBoothType={(updatedBoothType) => {
-                    setBoothTypes(prev => prev.map(boothType =>
-                        boothType.id === updatedBoothType.id ? updatedBoothType : boothType
-                    ));
-                }}
-                editBoothType={editBoothType}
-                isEditMode={isEditMode}
-            />
+            {eventId && (
+                <AddBoothTypeModal
+                    isOpen={isModalOpen}
+                    onClose={closeEditModal}
+                    onAddBoothType={handleAddBoothType}
+                    onUpdateBoothType={handleUpdateBoothType}
+                    editBoothType={editBoothType}
+                    isEditMode={isEditMode}
+                    eventId={eventId}
+                />
+            )}
         </div>
     );
 };

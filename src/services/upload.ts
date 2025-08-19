@@ -56,7 +56,9 @@ export const uploadAPI = {
      */
     validateFileSize: (file: File, maxSizeMB: number = 10): boolean => {
         const maxSizeBytes = maxSizeMB * 1024 * 1024;
-        return file.size <= maxSizeBytes;
+        const isValid = file.size <= maxSizeBytes;
+        console.log(`파일 크기 검증: ${file.name}, 크기: ${file.size} bytes (${uploadAPI.formatFileSize(file.size)}), 최대: ${maxSizeMB}MB (${maxSizeBytes} bytes), 결과: ${isValid}`);
+        return isValid;
     },
 
     /**

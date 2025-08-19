@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { applyForBooth, getBoothTypes } from '../../api/boothApi';
-import { BoothType } from '../../types/booth';
+import { BoothType, BoothApplicationRequest } from '../../types/booth';
 
 const BoothApplication: React.FC = () => {
     const { eventId } = useParams<{ eventId: string }>();
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<BoothApplicationRequest>({
         boothTitle: '',
         boothDescription: '',
-        boothTypeId: '',
+        boothEmail: '',
         managerName: '',
         contactEmail: '',
         contactNumber: '',
+        boothTypeId: 0,
+        startDate: '',
+        endDate: '',
+        boothExternalLinks: [],
+        boothBannerUrl: '',
     });
     const [boothTypes, setBoothTypes] = useState<BoothType[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -38,12 +43,7 @@ const BoothApplication: React.FC = () => {
         setSubmitting(true);
         setError(null);
 
-        const applicationData = {
-            ...formData,
-            boothTypeId: parseInt(formData.boothTypeId)
-        };
-
-        applyForBooth(parseInt(eventId), applicationData)
+        applyForBooth(parseInt(eventId), formData)
             .then(() => {
                 alert('부스 신청이 완료되었습니다. 관리자 승인 후 이메일로 안내됩니다.');
                 navigate(`/events/${eventId}/booths`); // Redirect to booth list after successful application
@@ -70,6 +70,10 @@ const BoothApplication: React.FC = () => {
                     <textarea name="boothDescription" value={formData.boothDescription} onChange={handleChange} required style={{ width: '100%', padding: '0.5rem', minHeight: '120px' }} />
                 </div>
                 <div style={{ marginBottom: '1rem' }}>
+                    <label>부스 이메일</label>
+                    <input type="email" name="boothEmail" value={formData.boothEmail} onChange={handleChange} required style={{ width: '100%', padding: '0.5rem' }} />
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
                     <label>부스 타입</label>
                     <select name="boothTypeId" value={formData.boothTypeId} onChange={handleChange} required style={{ width: '100%', padding: '0.5rem' }}>
                         <option value="">타입을 선택하세요</option>
@@ -77,6 +81,18 @@ const BoothApplication: React.FC = () => {
                             <option key={type.id} value={type.id}>{type.name} ({type.size}, {type.price.toLocaleString()}원)</option>
                         ))}
                     </select>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                    <label>운영 시작일</label>
+                    <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required style={{ width: '100%', padding: '0.5rem' }} />
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                    <label>운영 종료일</label>
+                    <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required style={{ width: '100%', padding: '0.5rem' }} />
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                    <label>부스 배너 URL (선택사항)</label>
+                    <input type="url" name="boothBannerUrl" value={formData.boothBannerUrl || ''} onChange={handleChange} style={{ width: '100%', padding: '0.5rem' }} />
                 </div>
                 <hr style={{ margin: '2rem 0' }} />
                 <h2>담당자 정보</h2>
