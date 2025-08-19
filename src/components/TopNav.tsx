@@ -184,7 +184,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					</form>
 					<button onClick={toggleNotification} aria-label={t('common.notification')} className="relative shrink-0 inline-flex items-center justify-center h-10 w-10 appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none">
 						<HiOutlineBell className="block flex-none w-6 h-6 text-gray-500" aria-hidden="true" />
-						{isLoggedIn && unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+						{isLoggedIn && unreadCount > 0 && <span className="absolute top-2 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
 					</button>
 				</div>
 			</div>
@@ -205,7 +205,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					>
 						{t('common.notification')}
 						{isLoggedIn && unreadCount > 0 && (
-							<span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+							<span className="absolute top-0 -right-1 w-1 h-1 bg-red-500 rounded-full"></span>
 						)}
 					</button>
 					<Link
@@ -338,57 +338,85 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 			</div>
 
 			{/* 알림 팝업을 TopNav 밖으로 이동 */}
-			{isNotificationOpen && (
-				<div className="fixed inset-0 z-[9999]">
-					{/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
-					<div className="absolute inset-0 bg-black bg-opacity-50" onClick={toggleNotification} />
+			<AnimatePresence>
+				{isNotificationOpen && (
+					<div className="fixed inset-0 z-[9999]">
+						{/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
+						<motion.div
+							className="absolute inset-0 bg-black bg-opacity-50"
+							onClick={toggleNotification}
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={{ duration: 0.3 }}
+						/>
 
-					{/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
-					<div className="absolute right-0 top-0 h-full w-full md:w-auto md:left-[calc(100vw-420px)] left-0 bg-white shadow-2xl flex flex-col">
-						<div className="flex items-center justify-between p-4 border-b">
-							<h2 className="text-lg font-semibold">{t('notification.title')}</h2>
-							<div className="flex items-center gap-2">
-								<button onClick={toggleNotification} className="p-1 bg-transparent border-none hover:bg-gray-100 rounded">
-									<HiOutlineX className="w-5 h-5" />
-								</button>
+						{/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
+						<motion.div
+							className="absolute right-0 top-0 h-full w-full md:w-auto md:left-[calc(100vw-420px)] left-0 bg-white shadow-2xl flex flex-col"
+							initial={{ x: '100%' }}
+							animate={{ x: 0 }}
+							exit={{ x: '100%' }}
+							transition={{
+								type: "spring",
+								stiffness: 300,
+								damping: 30,
+								duration: 0.4
+							}}
+						>
+							<div className="flex items-center justify-between p-4 border-b">
+								<h2 className="text-lg font-semibold">{t('notification.title')}</h2>
+								<div className="flex items-center gap-2">
+									<button onClick={toggleNotification} className="p-1 bg-transparent border-none hover:bg-gray-100 rounded">
+										<HiOutlineX className="w-5 h-5" />
+									</button>
+								</div>
 							</div>
-						</div>
 
-						<div className="flex-1 overflow-y-auto p-4">
-							{notifications.length > 0 ? (
-								<div className="space-y-3">
-									{notifications.map(n => (
-										<div
-											key={n.notificationId}
-											className={`p-3 rounded-lg border relative group ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
-											onClick={() => !n.isRead && handleMarkAsRead(n.notificationId)}
-										>
-											<div className={`flex-1 ${!n.isRead ? 'cursor-pointer' : ''}`}>
-												<div className="flex items-center gap-2 mb-1">
-													<h4 className={`font-semibold text-sm ${n.isRead ? 'text-gray-600' : 'text-black'}`}>{n.title}</h4>
-													{!n.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
-												</div>
-												<p className="text-sm text-gray-700 mb-2">{n.message}</p>
-												<span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
-											</div>
-											<button
-												onClick={(e) => handleDeleteNotification(e, n.notificationId)}
-												className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none opacity-0 group-hover:opacity-100 transition-opacity"
+							<div className="flex-1 overflow-y-auto p-4">
+								{notifications.length > 0 ? (
+									<div className="space-y-3">
+										{notifications.map(n => (
+											<motion.div
+												key={n.notificationId}
+												className={`p-3 rounded-lg border relative group ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
+												onClick={() => !n.isRead && handleMarkAsRead(n.notificationId)}
+												initial={{ opacity: 0, y: 20 }}
+												animate={{ opacity: 1, y: 0 }}
+												transition={{ duration: 0.3 }}
 											>
-												<HiOutlineX className="w-4 h-4" />
-											</button>
-										</div>
-									))}
-								</div>
-							) : (
-								<div className="flex items-center justify-center h-full text-gray-500">
-									{t('notification.noNotifications')}
-								</div>
-							)}
-						</div>
+												<div className={`flex-1 ${!n.isRead ? 'cursor-pointer' : ''}`}>
+													<div className="flex items-center gap-2 mb-1">
+														<h4 className={`font-semibold text-sm ${n.isRead ? 'text-gray-600' : 'text-black'}`}>{n.title}</h4>
+														{!n.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
+													</div>
+													<p className="text-sm text-gray-700 mb-2">{n.message}</p>
+													<span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
+												</div>
+												<button
+													onClick={(e) => handleDeleteNotification(e, n.notificationId)}
+													className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none opacity-0 group-hover:opacity-100 transition-opacity"
+												>
+													<HiOutlineX className="w-4 h-4" />
+												</button>
+											</motion.div>
+										))}
+									</div>
+								) : (
+									<motion.div
+										className="flex items-center justify-center h-full text-gray-500"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={{ duration: 0.3 }}
+									>
+										{t('notification.noNotifications')}
+									</motion.div>
+								)}
+							</div>
+						</motion.div>
 					</div>
-				</div>
-			)}
+				)}
+			</AnimatePresence>
 		</>
 	);
 };

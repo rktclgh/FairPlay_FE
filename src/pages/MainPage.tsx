@@ -874,7 +874,7 @@ const generateCalendarDays = () => {
                                 <button
                                     key={index}
                                     onClick={() => handleCategoryChange(category.key)}
-                                    className={`shrink-0 inline-flex px-3 py-2 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
+                                    className={`shrink-0 inline-flex px-3 py-3 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
                                         ? (isDark
                                             ? 'dm-light font-bold border-gray-300'
                                             : 'bg-black text-white font-bold border-gray-800')
