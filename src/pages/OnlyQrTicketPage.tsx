@@ -5,6 +5,8 @@ import {
     RefreshCw,
     User,
     AlertCircle,
+    Check,
+    Ban
 } from "lucide-react";
 
 import {
@@ -53,15 +55,11 @@ export const OnlyQrTicketPage = () => {
 
     // 웹소켓 메시지 핸들러를 useCallback으로 메모이제이션
     const handleWebSocketMessage = useCallback((msg: string) => {
-        console.log("QR 웹소켓 메시지 수신:", msg);
-        alert(msg);
         setSuccessMessage(msg);
-        
-        // 타이머 멈추기
-        if (timerRef.current) clearInterval(timerRef.current);
-
         // 입장 완료 상태로 변경
         setIsTicketUsed(true);
+        // 타이머 멈추기
+        if (timerRef.current) clearInterval(timerRef.current);
     }, []);
 
     // ✅ 웹소켓 구독 (qrTicketId가 유효할 때만)
@@ -86,7 +84,8 @@ export const OnlyQrTicketPage = () => {
        return () => {
         if (timerRef.current) clearInterval(timerRef.current);
     };// 컴포넌트 언마운트 시 타이머 정리
-    }, [resData]);
+    }, [resData, qrCode]);
+
     
     useEffect(() => {
         const getMyTicketInfo = async () => {
@@ -111,18 +110,25 @@ export const OnlyQrTicketPage = () => {
                     }
                 });
                 } else if (error.request) {
-                    // 요청은 됐지만 응답 없음
-                    console.error("서버 응답 없음:", error.request);
-                    alert("서버 응답이 없습니다. 잠시 후 다시 시도해주세요.");
+                    navigate(`/qr-ticket/participant/error`, {
+                        state: {
+                            title: "죄송합니다",
+                            message: "서버 응답이 없습니다. 잠시 후 다시 시도해주세요.",
+                    }
+                });
                 } else {
-                    // 기타 오류
-                    console.error("알 수 없는 오류:", error.message);
-                    alert("알 수 없는 오류가 발생했습니다.");
+                    navigate(`/qr-ticket/participant/error`, {
+                        state: {
+                            title: "죄송합니다",
+                            message: "알 수 없는 오류가 발생했습니다.",
+                    }
+                });
                 }
             }
         };
         getMyTicketInfo();
     }, []);
+
     // 새로고침 함수
     const handleRefresh = async () => {
         if (!token) {
@@ -137,6 +143,7 @@ export const OnlyQrTicketPage = () => {
         const res = await reissueQrTicketByGuest(data);
         setQrCode(res.qrCode);
         setManualCode(res.manualCode);
+        setIsTicketUsed(false);
         setTimeLeft(300); // 타이머 리셋
     };
 
@@ -178,22 +185,24 @@ export const OnlyQrTicketPage = () => {
                                 ✅ {successMessage}
                         </div>
                     )}
-
-                    <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
+                    {timeLeft === 0 && (
+                        <div className="text-center mb-4 p-2 rounded-lg font-semibold 
+                                        bg-red-100 text-red-800">
+                            ⛔ 티켓 유효기간이 만료되었습니다.
+                        </div>
+                    )}
+                    <div className="bg-white rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-center mb-2">
                             <div className="w-24 h-24 sm:w-28 md:w-36 sm:h-24 md:h-36 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
                                 <div className="text-center text-gray-500">
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
-                                        <QRCodeCanvas
-                                            value={qrCode ?? ""}
-                                            size={116}
-                                            fgColor={'#000'}
-                                            style={{
-                                                display: 'block',
-                                                width: '120%',
-                                                height: '120%'
-                                            }}
-                                        />
+                                        {timeLeft === 0 ? (
+                                            <Ban size={120} color="#ff0000" strokeWidth={2.25} />
+                                        ): isTicketUsed ? (
+                                            <Check size={120} color="#613cf4ff" strokeWidth={2.25} />
+                                        ) : (
+                                            <QRCodeCanvas value={qrCode} size={120} fgColor={'#000'} />
+                                        )}
                                     </div>
                                 </div>
                             </div>

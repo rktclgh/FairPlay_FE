@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { TopNav } from "../../components/TopNav";
 import { FaChevronDown } from "react-icons/fa";
@@ -13,7 +14,7 @@ import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
 import { eventAPI } from "../../services/event"
 import type { EventSummaryDto } from "../../services/types/eventType";
-import { getEventStatusText, getEventStatusStyle } from "../../utils/eventStatus";
+import { getEventStatusText, getEventStatusStyle, calculateEventStatus } from "../../utils/eventStatus";
 import api from "../../api/axios";
 import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
@@ -38,15 +39,16 @@ const fetchCalendarGrouped = (year: number, month: number) =>
 
 export default function EventOverview() {
     const { isDark } = useTheme();
+    const { t, i18n } = useTranslation();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [filteredEvents, setFilteredEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
-    const [selectedSubCategory, setSelectedSubCategory] = React.useState("카테고리");
+    const [selectedSubCategory, setSelectedSubCategory] = React.useState(() => t('eventOverview.allCategories'));
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
     const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
-    const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
+    const [selectedRegion, setSelectedRegion] = React.useState(() => t('eventOverview.allRegions'));
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
-    const [selectedStatus, setSelectedStatus] = React.useState("전체");
+    const [selectedStatus, setSelectedStatus] = React.useState(() => t('eventOverview.allStatuses'));
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = React.useState(false);
 
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
@@ -374,9 +376,11 @@ export default function EventOverview() {
                 toDate?: string;
                 page?: number;
                 size?: number;
+                includeHidden?: boolean;
             } = {
                 page: 0,
                 size: 50,
+                includeHidden: false,
             };
 
             if (selectedCategory !== "all") {
@@ -415,11 +419,13 @@ export default function EventOverview() {
 
         // 상태 필터링 적용
         if (selectedStatus !== "전체") {
-            const statusCode = selectedStatus === "진행 예정" ? "UPCOMING" 
-                             : selectedStatus === "진행중" ? "ONGOING" 
-                             : selectedStatus === "종료" ? "ENDED" 
-                             : "";
-            filtered = filtered.filter(event => event.eventStatusCode === statusCode);
+            const statusCode = selectedStatus === "진행 예정" ? "UPCOMING"
+                : selectedStatus === "진행중" ? "ONGOING"
+                    : selectedStatus === "종료" ? "ENDED"
+                        : "";
+            if (statusCode) {
+                filtered = filtered.filter(event => calculateEventStatus(event.startDate, event.endDate) === statusCode);
+            }
         }
 
         // 검색어 필터링 적용
@@ -706,7 +712,7 @@ export default function EventOverview() {
 
                         // 화면 경계 체크 및 조정
                         const padding = 10;
-                        
+
                         if (x < padding) {
                             x = padding;
                         } else if (x + cardWidth > rect.width - padding) {
@@ -809,12 +815,12 @@ export default function EventOverview() {
             if (animationFrame) {
                 cancelAnimationFrame(animationFrame);
             }
-            
+
             animationFrame = requestAnimationFrame(() => {
                 if (hoveredEvents.length === 0 || !map || !mapRef.current) return;
 
                 const currentEvent = hoveredEvents[0]; // 대표 이벤트 사용
-                
+
                 // 지도 좌표를 화면 좌표로 변환
                 const coords = new window.kakao.maps.LatLng(currentEvent.latitude, currentEvent.longitude);
                 const projection = map.getProjection();
@@ -833,7 +839,7 @@ export default function EventOverview() {
 
                     // 화면 경계 체크 및 조정
                     const padding = 10;
-                    
+
                     // 좌우 경계 체크
                     if (x < padding) {
                         x = padding;
@@ -897,11 +903,11 @@ export default function EventOverview() {
         <div className="min-h-screen bg-white">
             <TopNav />
 
-            <div className="flex justify-center w-full bg-white">
+            <div className="flex justify-center w-full bg-white pt-6 pb-16 md:pt-0 md:pb-0">
                 <div className="w-full max-w-[1256px] relative">
                     {/* Category Navigation */}
-                    <nav className="h-[40px] border-b border-neutral-200 relative mt-4" style={{ borderBottom: '1px solid #e5e5e5', marginBottom: '-1px' }}>
-                        <ul className="flex items-center h-full">
+                    <nav className="h-[40px] border-b border-neutral-200 relative mt-2 md:mt-4 md:overflow-visible overflow-x-auto scrollbar-hide" style={{ borderBottom: '1px solid #e5e5e5', marginBottom: '-1px' }}>
+                        <ul className="flex items-center h-full md:px-0 px-0 md:min-w-0 min-w-max">
                             {categories.map((category) => (
                                 <li
                                     key={category.id}
@@ -927,9 +933,9 @@ export default function EventOverview() {
                     </nav>
 
                     {/* View Toggle and Filters */}
-                    <div className="flex justify-between items-center mt-[30px] px-7">
-                        {/* 리스트형/캘린더형/지도형 탭 */}
-                        <div className={`flex rounded-full p-1 shadow-sm theme-transition ${isDark ? 'border border-gray-700 bg-transparent' : 'bg-white border border-gray-200'}`}>
+                    <div className="flex justify-between items-center mt-4 md:mt-[30px] px-4 md:px-7">
+                        {/* 리스트형/캘린더형/지도형 탭 - 모바일에서 숨김 */}
+                        <div className={`hidden md:flex rounded-full p-1 shadow-sm theme-transition ${isDark ? 'border border-gray-700 bg-transparent' : 'bg-white border border-gray-200'}`}>
                             <button
                                 onClick={() => setViewMode("list")}
                                 className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
@@ -970,8 +976,8 @@ export default function EventOverview() {
                         </div>
 
                         <div className="flex items-center space-x-4">
-                            {/* 달력 필터 */}
-                            <div className="relative">
+                            {/* 달력 필터 - 모바일에서 숨김 */}
+                            <div className="relative hidden md:block">
                                 <button
                                     className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0"
                                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
@@ -983,7 +989,7 @@ export default function EventOverview() {
 
                                 {/* 날짜 선택 드롭다운 */}
                                 {isDatePickerOpen && (
-                                    <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
+                                    <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
                                         {/* 년도 선택 */}
                                         <div className="mb-4">
                                             <h3 className="text-sm font-medium text-gray-700 mb-2">년도 선택</h3>
@@ -1025,8 +1031,7 @@ export default function EventOverview() {
                                                         const newYear = selectedYear + 1;
                                                         if (newYear <= 2028) {
                                                             setSelectedYear(newYear);
-                                                            // 년도만 변경하고 기존 선택된 날짜는 유지
-                                                            // 범위 텍스트는 기존 선택된 날짜를 기반으로 업데이트
+                                                            // 년도만 변경하고 기존 선택된 날짜를 기반으로 업데이트
                                                             if (startDate && endDate) {
                                                                 const startYear = startDate.getFullYear();
                                                                 const startMonth = startDate.getMonth() + 1;
@@ -1153,16 +1158,16 @@ export default function EventOverview() {
                             {/* 카테고리 필터 */}
                             <div className="relative">
                                 <button
-                                    className="flex items-center justify-between w-40 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                                    className="flex items-center justify-between w-40 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
                                     onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
                                 >
-                                    <span className="text-sm truncate">{selectedSubCategory}</span>
-                                    <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <span className="text-xs md:text-sm truncate">{selectedSubCategory}</span>
+                                    <FaChevronDown className={`w-3 h-3 md:w-4 md:h-4 text-gray-600 transition-transform flex-shrink-0 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* 카테고리 드롭다운 메뉴 */}
                                 {isCategoryDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                                         {selectedCategory === "all" ? (
                                             // 전체 탭일 때: 모든 1차 카테고리와 2차 카테고리 표시
                                             Object.entries(subCategories).map(([categoryKey, subCats]) => (
@@ -1208,16 +1213,16 @@ export default function EventOverview() {
                             {/* 지역 필터 */}
                             <div className="relative">
                                 <button
-                                    className="flex items-center justify-between w-32 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                                    className="flex items-center justify-between w-32 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
                                     onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
                                 >
-                                    <span className="text-sm truncate">{selectedRegion}</span>
-                                    <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <span className="text-xs md:text-sm truncate">{selectedRegion}</span>
+                                    <FaChevronDown className={`w-3 h-3 md:w-4 md:h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* 드롭다운 메뉴 */}
                                 {isRegionDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                    <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                                         {["모든지역", "서울", "경기", "인천", "강원", "부산", "경남", "대구", "경북", "대전", "충남", "충북", "광주", "전북", "전남", "제주", "울산", "해외"].map((region) => (
                                             <button
                                                 key={region}
@@ -1234,19 +1239,19 @@ export default function EventOverview() {
                                 )}
                             </div>
 
-                            {/* 상태 필터 */}
-                            <div className="relative">
+                            {/* 상태 필터 - 모바일에서 숨김 */}
+                            <div className="relative hidden md:block">
                                 <button
-                                    className="flex items-center justify-between w-28 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                                    className="flex items-center justify-between w-28 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
                                     onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                                 >
-                                    <span className="text-sm truncate">{selectedStatus}</span>
-                                    <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <span className="text-xs md:text-sm truncate">{selectedStatus}</span>
+                                    <FaChevronDown className={`w-3 h-3 md:w-4 md:h-4 text-gray-600 transition-transform flex-shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* 드롭다운 메뉴 */}
                                 {isStatusDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                    <div className="absolute top-full left-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                                         {["전체", "진행 예정", "진행중", "종료"].map((status) => (
                                             <button
                                                 key={status}
@@ -1267,7 +1272,7 @@ export default function EventOverview() {
 
                     {/* 검색 결과 표시 */}
                     {searchQuery && (
-                        <div className="mt-6 px-6">
+                        <div className="mt-6 md:px-6 px-4">
                             <div className="flex items-center gap-2 text-gray-600">
                                 <span className="font-medium">검색 결과:</span>
                                 <span className="text-blue-600 font-semibold">"{searchQuery}"</span>
@@ -1278,7 +1283,7 @@ export default function EventOverview() {
 
                     {/* Event Grid */}
                     {viewMode === "list" && (
-                        <div className="grid grid-cols-4 gap-6 mt-10 px-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-10 px-4 md:px-6">
                             {displayEvents.length > 0 ? (
                                 displayEvents.map((event) => (
                                     <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
@@ -1299,7 +1304,7 @@ export default function EventOverview() {
                                             />
                                             <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                                             <FaHeart
-                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                                                className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-30 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -1313,8 +1318,8 @@ export default function EventOverview() {
                                             <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
                                                 {event.mainCategory}
                                             </span>
-                                            <h3 className="font-bold text-xl text-black mb-2 truncate">{event.title}</h3>
-                                            <div className="text-sm text-gray-600 mb-2">
+                                            <h3 className="font-bold text-lg md:text-xl text-black mb-2 truncate">{event.title}</h3>
+                                            <div className="text-xs md:text-sm text-gray-600 mb-2">
                                                 <div className="font-bold">{event.location}</div>
                                                 <div>
                                                     {event.startDate === event.endDate
@@ -1323,7 +1328,7 @@ export default function EventOverview() {
                                                     }
                                                 </div>
                                             </div>
-                                            <p className="font-bold text-lg text-[#ff6b35]">
+                                            <p className="font-bold text-base md:text-lg text-[#ff6b35]">
                                                 {event.minPrice == null
                                                     ? "가격 정보 없음"
                                                     : event.minPrice === 0
@@ -1334,7 +1339,7 @@ export default function EventOverview() {
                                     </div>
                                 ))
                             ) : (
-                                <div className="col-span-4 text-center py-20">
+                                <div className="col-span-2 md:col-span-4 text-center py-20">
                                     <div className="text-gray-500">
                                         {searchQuery ? (
                                             <>
@@ -1544,62 +1549,62 @@ export default function EventOverview() {
                                                     </span>
                                                 </div>
 
-                                            <div className="relative z-10 h-full">
-                                                {/* 썸네일 영역 */}
-                                                <div className="relative h-full overflow-hidden">
-                                                    <img
-                                                        src={hoveredEvents[0]?.thumbnailUrl || "/images/NoImage.png"}
-                                                        alt={hoveredEvents[0]?.title}
-                                                        className="w-full h-full object-cover opacity-80"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-                                                </div>
-
-                                                {/* 카드 콘텐츠 */}
-                                                <div className="absolute bottom-0 left-0 right-0 py-3 px-4 text-white bg-black bg-opacity-70">
-                                                    <h3 className="text-base font-bold mb-2 line-clamp-2 text-white">
-                                                        {hoveredEvents[0]?.title}
-                                                    </h3>
-
-                                                    <div className="space-y-1 mb-3">
-                                                        <div className="flex items-center text-sm text-white text-opacity-90">
-                                                            <MapIcon className="w-3 h-3 mr-2 flex-shrink-0" />
-                                                            <span className="truncate">{hoveredEvents[0]?.location}</span>
-                                                        </div>
-                                                        <div className="flex items-center text-sm text-white text-opacity-90">
-                                                            <Calendar className="w-3 h-3 mr-2 flex-shrink-0" />
-                                                            <span className="text-xs">
-                                                                {hoveredEvents[0]?.startDate === hoveredEvents[0]?.endDate
-                                                                    ? new Date(hoveredEvents[0]?.startDate!).toLocaleDateString('ko-KR', {
-                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
-                                                                    }).replace(/\s/g, '')
-                                                                    : `${new Date(hoveredEvents[0]?.startDate!).toLocaleDateString('ko-KR', {
-                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
-                                                                    }).replace(/\s/g, '')} ~ ${new Date(hoveredEvents[0]?.endDate!).toLocaleDateString('ko-KR', {
-                                                                        year: 'numeric', month: '2-digit', day: '2-digit'
-                                                                    }).replace(/\s/g, '')}`
-                                                                }
-                                                            </span>
-                                                        </div>
+                                                <div className="relative z-10 h-full">
+                                                    {/* 썸네일 영역 */}
+                                                    <div className="relative h-full overflow-hidden">
+                                                        <img
+                                                            src={hoveredEvents[0]?.thumbnailUrl || "/images/NoImage.png"}
+                                                            alt={hoveredEvents[0]?.title}
+                                                            className="w-full h-full object-cover opacity-80"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-sm font-bold text-yellow-200">
-                                                            {hoveredEvents[0]?.minPrice == null
-                                                                ? "가격 정보 없음"
-                                                                : hoveredEvents[0]?.minPrice === 0
-                                                                    ? "무료"
-                                                                    : `${hoveredEvents[0]?.minPrice!.toLocaleString()}원 ~`}
+                                                    {/* 카드 콘텐츠 */}
+                                                    <div className="absolute bottom-0 left-0 right-0 py-3 px-4 text-white bg-black bg-opacity-70">
+                                                        <h3 className="text-base font-bold mb-2 line-clamp-2 text-white">
+                                                            {hoveredEvents[0]?.title}
+                                                        </h3>
+
+                                                        <div className="space-y-1 mb-3">
+                                                            <div className="flex items-center text-sm text-white text-opacity-90">
+                                                                <MapIcon className="w-3 h-3 mr-2 flex-shrink-0" />
+                                                                <span className="truncate">{hoveredEvents[0]?.location}</span>
+                                                            </div>
+                                                            <div className="flex items-center text-sm text-white text-opacity-90">
+                                                                <Calendar className="w-3 h-3 mr-2 flex-shrink-0" />
+                                                                <span className="text-xs">
+                                                                    {hoveredEvents[0]?.startDate === hoveredEvents[0]?.endDate
+                                                                        ? new Date(hoveredEvents[0]?.startDate!).toLocaleDateString('ko-KR', {
+                                                                            year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                        }).replace(/\s/g, '')
+                                                                        : `${new Date(hoveredEvents[0]?.startDate!).toLocaleDateString('ko-KR', {
+                                                                            year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                        }).replace(/\s/g, '')} ~ ${new Date(hoveredEvents[0]?.endDate!).toLocaleDateString('ko-KR', {
+                                                                            year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                        }).replace(/\s/g, '')}`
+                                                                    }
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <button
-                                                            onClick={() => navigate(`/eventdetail/${hoveredEvents[0]?.id}`)}
-                                                            className="px-3 py-1.5 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-lg hover:bg-opacity-30 transition-all text-xs font-medium border border-white border-opacity-30 hover:border-opacity-50"
-                                                        >
-                                                            상세보기
-                                                        </button>
+
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="text-sm font-bold text-yellow-200">
+                                                                {hoveredEvents[0]?.minPrice == null
+                                                                    ? "가격 정보 없음"
+                                                                    : hoveredEvents[0]?.minPrice === 0
+                                                                        ? "무료"
+                                                                        : `${hoveredEvents[0]?.minPrice!.toLocaleString()}원 ~`}
+                                                            </div>
+                                                            <button
+                                                                onClick={() => navigate(`/eventdetail/${hoveredEvents[0]?.id}`)}
+                                                                className="px-3 py-1.5 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-lg hover:bg-opacity-30 transition-all text-xs font-medium border border-white border-opacity-30 hover:border-opacity-50"
+                                                            >
+                                                                상세보기
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
                                             </div>
                                         ) : (
                                             // 3장 카드 레이아웃 (다중 이벤트)
@@ -1611,7 +1616,7 @@ export default function EventOverview() {
                                                         const eventIndex = (currentEventIndex + offset + hoveredEvents.length) % hoveredEvents.length;
                                                         const event = hoveredEvents[eventIndex];
                                                         const isCenter = offset === 0;
-                                                        
+
                                                         return (
                                                             <div
                                                                 key={`${event.id}-${offset}`}
@@ -1719,11 +1724,10 @@ export default function EventOverview() {
                                                             {hoveredEvents.map((_, index) => (
                                                                 <div
                                                                     key={index}
-                                                                    className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                                                                        index === currentEventIndex 
-                                                                            ? 'bg-white scale-125' 
-                                                                            : 'bg-white bg-opacity-50 hover:bg-opacity-80'
-                                                                    }`}
+                                                                    className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${index === currentEventIndex
+                                                                        ? 'bg-white scale-125'
+                                                                        : 'bg-white bg-opacity-50 hover:bg-opacity-80'
+                                                                        }`}
                                                                     onClick={() => setCurrentEventIndex(index)}
                                                                 />
                                                             ))}
@@ -1744,18 +1748,18 @@ export default function EventOverview() {
                                                 >
                                                     {/* 왼쪽 화살표 */}
                                                     <svg width="50" height="50" viewBox="0 0 24 24" fill="none" className="text-white">
-                                                        <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                 </button>
                                                 <button
-                                                    onClick={() => setCurrentEventIndex(prev => 
+                                                    onClick={() => setCurrentEventIndex(prev =>
                                                         prev < hoveredEvents.length - 1 ? prev + 1 : 0
                                                     )}
                                                     className="absolute right-2 top-1/2 transform -translate-y-1/2 z-30 w-12 h-12 bg-black bg-opacity-50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-70 hover:scale-110 transition-all duration-200 border border-white border-opacity-20"
                                                 >
                                                     {/* 오른쪽 화살표 */}
                                                     <svg width="50" height="50" viewBox="0 0 24 24" fill="none" className="text-white">
-                                                        <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                 </button>
                                             </div>

@@ -8,12 +8,14 @@ import { Eye, EyeOff } from "lucide-react";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // .env 환경변수 적용
 const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
 const REDIRECT_URI = `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`;
 
 export const SignUpPage = () => {
+    const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [password, setPassword] = useState("");
@@ -105,16 +107,16 @@ export const SignUpPage = () => {
 
     const handleCheckEmail = async () => {
         if (!email) {
-            toast.warn("이메일을 입력해주세요.");
+            toast.warn(t('auth.emailRequired'));
             return;
         }
         try {
             const response = await api.get(`/api/users/check-email?email=${email}`);
             if (response.data.duplicate) {
-                toast.error("이미 사용 중인 이메일입니다.");
+                toast.error(t('auth.emailInUse'));
                 setEmailChecked(false);
             } else {
-                toast.success("사용 가능한 이메일입니다.");
+                toast.success(t('auth.emailAvailable'));
                 setEmailChecked(true);
             }
         } catch {
@@ -124,16 +126,16 @@ export const SignUpPage = () => {
 
     const handleCheckNickname = async () => {
         if (!nickname) {
-            toast.warn("닉네임을 입력해주세요.");
+            toast.warn(t('auth.nicknameRequired'));
             return;
         }
         try {
             const response = await api.get(`/api/users/check-nickname?nickname=${nickname}`);
             if (response.data.duplicate) {
-                toast.error("이미 사용 중인 닉네임입니다.");
+                toast.error(t('auth.nicknameInUse'));
                 setNicknameChecked(false);
             } else {
-                toast.success("사용 가능한 닉네임입니다.");
+                toast.success(t('auth.nicknameAvailable'));
                 setNicknameChecked(true);
             }
         } catch {
@@ -150,11 +152,11 @@ export const SignUpPage = () => {
 
         try {
             await api.post("/api/email/send-verification", { email });
-            toast.info("인증번호가 발송되었습니다.");
+            toast.info(t('auth.verificationCodeSent'));
             setVerificationSent(true);
             setEmailVerificationTimer(30);
         } catch (error) {
-            toast.error("인증번호 발송에 실패했습니다.");
+            toast.error(t('auth.verificationCodeSendFailed'));
         } finally {
             setIsSendingVerification(false);
         }
@@ -162,19 +164,19 @@ export const SignUpPage = () => {
 
     const handleVerifyCode = async () => {
         if (!verificationCode) {
-            toast.warn("인증번호를 입력하세요");
+            toast.warn(t('auth.verificationCodeInputRequired'));
             return;
         }
         try {
             await api.post("/api/email/verify-code", { email, code: verificationCode });
-            toast.success("인증 성공!");
+            toast.success(t('auth.verificationSuccess2'));
             setVerified(true);
         } catch { }
     };
 
     const handleSignUp = async () => {
         if (!isSignUpEnabled) {
-            toast.error("모든 항목을 올바르게 입력하고 확인해주세요.");
+            toast.error(t('auth.signupFormError'));
             return;
         }
         try {
@@ -186,7 +188,7 @@ export const SignUpPage = () => {
                 phone,
                 roleCodeId: 4 // 일반 사용자
             });
-            toast.success("회원가입 완료!");
+            toast.success(t('auth.signupSuccess2'));
             navigate("/login");
         } catch { }
     };
@@ -215,21 +217,21 @@ export const SignUpPage = () => {
                 <div className="relative flex flex-col items-center px-4 sm:px-0" style={{ marginTop: '80px', paddingBottom: '40px' }}>
                     <Link to="/" className="mb-8">
                         <div className="[font-family:'Segoe_UI-Bold',Helvetica] font-bold text-black text-[32px] text-center leading-[48px] whitespace-nowrap tracking-[0]">
-                            회원가입
+                            {t('common.signup')}
                         </div>
                     </Link>
 
                     {/* 이름 입력 */}
                     <div className="w-full max-w-[400px] mb-6">
                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-1">
-                            이름
+                            {t('common.name')}
                         </div>
                         <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300">
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="실명을 입력하세요"
+                                placeholder={t('auth.namePlaceholder')}
                                 className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
                                 style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                             />
@@ -239,14 +241,14 @@ export const SignUpPage = () => {
                     {/* 닉네임 입력 */}
                     <div className="w-full max-w-[400px] mb-6">
                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-1">
-                            닉네임
+                            {t('common.nickname')}
                         </div>
                         <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
                             <input
                                 type="text"
                                 value={nickname}
                                 onChange={(e) => setNickname(e.target.value)}
-                                placeholder="닉네임을 입력하세요"
+                                placeholder={t('auth.nicknamePlaceholder')}
                                 className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
                                 style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                             />
@@ -259,7 +261,7 @@ export const SignUpPage = () => {
                                     }`}
                             >
                                 <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                    중복 확인
+                                    {t('auth.duplicateCheck')}
                                 </div>
                             </button>
                         </div>
@@ -268,14 +270,14 @@ export const SignUpPage = () => {
                     {/* 이메일 주소 */}
                     <div className="w-full max-w-[400px] mb-6">
                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
-                            이메일 주소
+                            {t('auth.emailAddress')}
                         </div>
                         <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="이메일을 입력하세요"
+                                placeholder={t('auth.emailPlaceholder')}
                                 className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
                                 style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                             />
@@ -288,7 +290,7 @@ export const SignUpPage = () => {
                                     }`}
                             >
                                 <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                    중복 확인
+                                    {t('auth.duplicateCheck')}
                                 </div>
                             </button>
                         </div>
@@ -300,12 +302,12 @@ export const SignUpPage = () => {
                             {emailValid ? (
                                 <div className="flex items-center gap-2 text-green-600">
                                     <FaCheck size={14} />
-                                    <span className="text-sm">올바른 이메일 형식입니다</span>
+                                    <span className="text-sm">{t('auth.validEmail')}</span>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2 text-red-500">
                                     <FaTimes size={14} />
-                                    <span className="text-sm">올바르지 않은 이메일 형식입니다</span>
+                                    <span className="text-sm">{t('auth.invalidEmailFormat')}</span>
                                 </div>
                             )}
                         </div>
@@ -315,14 +317,14 @@ export const SignUpPage = () => {
                     {emailChecked && (
                         <div className="w-full max-w-[400px] mb-6">
                             <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
-                                인증 번호
+                                {t('auth.verificationCode')}
                             </div>
                             <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
                                 <input
                                     type="text"
                                     value={verificationCode}
                                     onChange={(e) => setVerificationCode(e.target.value)}
-                                    placeholder={verificationSent ? "인증번호를 입력하세요" : "인증번호 발송 버튼을 눌러주세요"}
+                                    placeholder={verificationSent ? t('auth.verificationCodePlaceholder') : t('auth.verificationCodeRequired')}
                                     className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
                                     style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                                     disabled={!verificationSent}
@@ -333,7 +335,7 @@ export const SignUpPage = () => {
                                         className="absolute top-[5px] sm:top-[15px] right-0 w-[60px] h-7 rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center"
                                     >
                                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                            인증 확인
+                                            {t('auth.verificationCheck')}
                                         </div>
                                     </button>
                                 ) : (
@@ -346,7 +348,7 @@ export const SignUpPage = () => {
                                             }`}
                                     >
                                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                            {isSendingVerification ? '발송중' : emailVerificationTimer > 0 ? `${emailVerificationTimer}초` : '인증번호 발송'}
+                                            {isSendingVerification ? t('auth.sending') : emailVerificationTimer > 0 ? `${emailVerificationTimer}${t('auth.seconds')}` : t('auth.sendVerificationCode')}
                                         </div>
                                     </button>
                                 )}
@@ -357,14 +359,14 @@ export const SignUpPage = () => {
                     {/* 비밀번호 입력 */}
                     <div className="w-full max-w-[400px] mb-6">
                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
-                            비밀번호
+                            {t('common.password')}
                         </div>
                         <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
                             <input
                                 type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="비밀번호를 입력하세요"
+                                placeholder={t('auth.passwordPlaceholder')}
                                 className="w-full max-w-[320px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none pr-12"
                                 style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                             />
@@ -382,21 +384,21 @@ export const SignUpPage = () => {
                             </button>
                         </div>
                         <p className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-gray-500 text-xs leading-[18px] tracking-[0] whitespace-nowrap mt-2">
-                            • 8자 이상 16자 이하
+                            {t('auth.passwordRule')}
                         </p>
                     </div>
 
                     {/* 비밀번호 확인 */}
                     <div className="w-full max-w-[400px] mb-6">
                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
-                            비밀번호 확인
+                            {t('auth.passwordConfirm')}
                         </div>
                         <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="비밀번호를 다시 입력하세요"
+                                placeholder={t('auth.passwordConfirmPlaceholder')}
                                 className="w-full max-w-[320px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none pr-12"
                                 style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                             />
@@ -419,12 +421,12 @@ export const SignUpPage = () => {
                                 {passwordMatch ? (
                                     <>
                                         <FaCheck size={14} />
-                                        <span className="text-sm">비밀번호가 일치합니다</span>
+                                        <span className="text-sm">{t('auth.passwordMatch')}</span>
                                     </>
                                 ) : (
                                     <>
                                         <FaTimes size={14} />
-                                        <span className="text-sm">비밀번호가 일치하지 않습니다</span>
+                                        <span className="text-sm">{t('auth.passwordMismatch')}</span>
                                     </>
                                 )}
                             </div>
@@ -434,14 +436,14 @@ export const SignUpPage = () => {
                     {/* 휴대폰 번호 입력 */}
                     <div className="w-full max-w-[400px] mb-8">
                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
-                            휴대폰 번호
+                            {t('common.phone')}
                         </div>
                         <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300">
                             <input
                                 type="tel"
                                 value={phone}
                                 onChange={handlePhoneChange}
-                                placeholder="휴대폰 번호를 입력하세요"
+                                placeholder={t('auth.phonePlaceholder')}
                                 className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
                                 style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                                 maxLength={13}
@@ -460,14 +462,14 @@ export const SignUpPage = () => {
                         style={{ borderRadius: '8px' }}
                     >
                         <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-                            회원가입
+                            {t('common.signup')}
                         </div>
                     </button>
 
                     <div className="w-full max-w-[400px] mb-4 flex justify-center">
                         <div className="w-[58px] h-[22px] flex items-center justify-center">
                             <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-gray-500 text-sm leading-[21px] tracking-[0] whitespace-nowrap">
-                                또는
+                                {t('common.or')}
                             </div>
                         </div>
                     </div>
@@ -480,7 +482,7 @@ export const SignUpPage = () => {
                     >
                         <div className="flex items-center space-x-2">
                             <RiKakaoTalkFill size={20} color="#3c1e1e" />
-                            <span className="text-[#3c1e1e] font-semibold text-sm" style={{ fontFamily: 'Segoe_UI-Semibold, Helvetica' }}>카카오로 가입하기</span>
+                            <span className="text-[#3c1e1e] font-semibold text-sm" style={{ fontFamily: 'Segoe_UI-Semibold, Helvetica' }}>{t('auth.kakaoSignup')}</span>
                         </div>
                     </button>
                 </div>

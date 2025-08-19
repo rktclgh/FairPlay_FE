@@ -81,10 +81,10 @@ export const MyPageInfo = () => {
                 const userData = await eventApi.getUserInfo();
                 setUserInfo(userData);
             } catch (error) {
-                console.error("사용자 정보 로드 실패:", error);
+                console.error(t('mypage.info.loadUserFailed'), error);
                 // 로그인이 필요한 경우 로그인 페이지로 리다이렉트
                 if (error instanceof Error && error.message === '로그인이 필요합니다.') {
-                    alert('로그인이 필요합니다.');
+                    alert(t('mypage.info.loginRequired'));
                     navigate('/login');
                     return;
                 }
@@ -94,7 +94,7 @@ export const MyPageInfo = () => {
         };
 
         loadUserInfo();
-    }, [navigate]);
+    }, [navigate, t]);
 
     // 블러 처리된 데이터 업데이트
     useEffect(() => {
@@ -137,11 +137,11 @@ export const MyPageInfo = () => {
                 setPasswordError(t('mypage.info.validation.incorrectOldPassword'));
             }
         } catch (error) {
-            console.error("비밀번호 변경 실패:", error);
+            console.error(t('mypage.info.validation.passwordChangeError'), error);
             if (error instanceof Error) {
                 setPasswordError(error.message);
             } else {
-                setPasswordError("비밀번호 변경 중 오류가 발생했습니다.");
+                setPasswordError(t('mypage.info.validation.passwordChangeError'));
             }
         } finally {
             setIsChangingPassword(false);
@@ -155,7 +155,7 @@ export const MyPageInfo = () => {
             const userData = await eventApi.getUserInfo();
             setUserInfo(userData);
         } catch (error) {
-            console.error("사용자 정보 새로고침 실패:", error);
+            console.error(t('mypage.info.refreshFailed'), error);
         } finally {
             setIsLoading(false);
         }
@@ -170,7 +170,7 @@ export const MyPageInfo = () => {
                     <div className="absolute top-[400px] left-1/2 transform -translate-x-1/2">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">정보를 불러오는 중...</p>
+                            <p className="mt-4 text-gray-600">{t('mypage.info.loading')}</p>
                         </div>
                     </div>
                 </div>
@@ -189,11 +189,11 @@ export const MyPageInfo = () => {
                 <TopNav />
                 <div className={`absolute w-[949px] left-64 ${showPasswordChange ? 'h-[500px]' : 'h-[213px]'} top-[195px] pb-20`}>
                     <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                        내 계정
+                        {t('mypage.info.myAccount')}
                     </div>
 
                     <div className="top-11 left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                        이메일 주소
+                        {t('mypage.info.emailAddress')}
                     </div>
 
                     <div className="absolute top-[71px] left-0 [font-family:'desktop-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-[54px] whitespace-nowrap">
@@ -206,32 +206,32 @@ export const MyPageInfo = () => {
                         // 비밀번호 변경 폼
                         <>
                             <div className="absolute top-32 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                                비밀번호 변경
+                                {t('mypage.info.changePassword')}
                             </div>
 
                             <div className="absolute top-[161px] left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                                이전 비밀번호
+                                {t('mypage.info.oldPassword')}
                             </div>
 
                             <input
                                 type="password"
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
-                                placeholder="영문, 숫자, 특수문자 조합 8-20자"
+                                placeholder={t('mypage.info.passwordRule')}
                                 className="absolute top-[191px] left-0 w-[947px] h-[54px] [font-family:'Roboto-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-[15px] tracking-[0] leading-[54px] bg-transparent border-none outline-none z-10"
                             />
 
                             <div className="w-[947px] h-[140px] top-[110px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
 
                             <div className="absolute top-[255px] left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
-                                새 비밀번호
+                                {t('mypage.info.newPassword')}
                             </div>
 
                             <input
                                 type="password"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="영문, 숫자, 특수문자 조합 8-20자"
+                                placeholder={t('mypage.info.passwordRule')}
                                 className="absolute top-[285px] left-0 w-[947px] h-[54px] [font-family:'Roboto-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-[15px] tracking-[0] leading-[54px] bg-transparent border-none outline-none z-10"
                             />
 
@@ -253,7 +253,7 @@ export const MyPageInfo = () => {
                                     }}
                                     className="px-6 py-2 border border-gray-300 rounded-[10px] text-gray-600 bg-white hover:bg-gray-50 transition-colors text-sm"
                                 >
-                                    취소
+                                    {t('mypage.info.cancel')}
                                 </button>
                                 <button
                                     onClick={handlePasswordChange}
@@ -263,7 +263,7 @@ export const MyPageInfo = () => {
                                         : 'bg-gray-400 text-white cursor-not-allowed'
                                         }`}
                                 >
-                                    {isChangingPassword ? "변경 중..." : "저장"}
+                                    {isChangingPassword ? t('mypage.info.saving') : t('mypage.info.save')}
                                 </button>
                             </div>
                         </>
@@ -271,7 +271,7 @@ export const MyPageInfo = () => {
                         // 기본 비밀번호 표시
                         <>
                             <div className="absolute top-32 left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
-                                비밀번호
+                                {t('mypage.info.password')}
                             </div>
 
                             <div className="absolute top-[155px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
@@ -285,7 +285,7 @@ export const MyPageInfo = () => {
                                     <div className="w-14 h-9 top-2 rounded-[10px] border border-solid border-[#00000033] absolute left-0" />
 
                                     <div className="top-0 left-3.5 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                                        변경
+                                        {t('mypage.info.change')}
                                     </div>
                                 </div>
                             </div>
@@ -296,11 +296,11 @@ export const MyPageInfo = () => {
                 {/* 개인 정보 섹션 - 비밀번호 변경 폼이 표시되면 아래로 이동 */}
                 <div className={`absolute w-[949px] h-[335px] left-64 ${showPasswordChange ? 'top-[600px]' : 'top-[455px]'}`}>
                     <div className="top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                        개인 정보
+                        {t('mypage.info.personalInfo')}
                     </div>
 
                     <div className="top-11 left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                        이름
+                        {t('mypage.info.name')}
                     </div>
 
                     <div className="absolute top-[71px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
@@ -310,7 +310,7 @@ export const MyPageInfo = () => {
                     <div className="w-[947px] h-[79px] top-[50px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
 
                     <div className="absolute top-32 left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
-                        닉네임
+                        {t('mypage.info.nickname')}
                     </div>
 
                     <div className="absolute top-[155px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
@@ -320,7 +320,7 @@ export const MyPageInfo = () => {
                     <div className="w-[947px] h-[79px] top-[134px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
 
                     <div className="absolute top-[209px] left-0 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
-                        휴대폰 번호
+                        {t('mypage.info.phoneNumber')}
                     </div>
 
                     <p className="absolute top-[237px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
@@ -336,7 +336,7 @@ export const MyPageInfo = () => {
                             className="px-4 py-2 border border-gray-300 rounded-[10px] text-gray-600 bg-white hover:bg-gray-50 transition-colors text-sm"
                             style={{ outline: 'none' }}
                         >
-                            수정
+                            {t('mypage.info.edit')}
                         </button>
                     </div>
                 </div>
@@ -346,7 +346,7 @@ export const MyPageInfo = () => {
                         className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap cursor-pointer hover:text-black underline"
                         onClick={() => navigate('/mypage/withdrawal')}
                     >
-                        회원 탈퇴
+                        {t('mypage.info.withdrawal')}
                     </div>
                 </div>
 

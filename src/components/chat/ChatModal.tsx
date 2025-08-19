@@ -171,7 +171,7 @@ export default function ChatModal({
 
                     {/* 채팅 모달 */}
                     <motion.div
-                        className="fixed bottom-24 right-6 w-[420px] max-w-[calc(100vw-2rem)] h-[80vh] max-h-[720px] min-h-[520px] bg-white border border-black/5 rounded-t-xl rounded-b-xl shadow-xl shadow-black/10 flex flex-col min-h-0 z-[1002]"
+                        className="fixed bottom-24 right-6 w-[420px] max-w-[calc(100vw-2rem)] h-[80vh] max-h-[720px] min-h-[520px] bg-white border border-black/5 rounded-t-xl rounded-b-xl shadow-xl shadow-black/10 flex flex-col overflow-hidden z-[1002]"
                         initial={{
                             opacity: 0,
                             scale: 0.8,
@@ -247,7 +247,7 @@ export default function ChatModal({
                             {selectedRoomId === null ? (
                                 <motion.div
                                     key="room-list"
-                                    className="flex flex-col h-full min-h-0"
+                                    className="flex flex-col flex-1 overflow-hidden"
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
@@ -334,6 +334,7 @@ export default function ChatModal({
                             ) : (
                                 <motion.div
                                     key="chat-room"
+                                    className="flex flex-col flex-1 overflow-hidden"
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}

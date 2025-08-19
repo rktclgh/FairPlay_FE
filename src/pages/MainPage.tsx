@@ -120,17 +120,17 @@ export const Main: React.FC = () => {
 
     const handleSubmit = async () => {
         if (!selectedDate) {
-            alert("생년월일을 선택하세요.");
+            alert(t('main.selectBirthday'));
             return;
         }
         const formatted = selectedDate;
         try {
             await api.post("/api/users/mypage/edit", { birthday: formatted, gender });
-            alert("생년월일 저장 완료 ✅");
+            alert(t('main.birthdaySaveSuccess'));
             setShowBirthdayModal(false); // 모달 닫기
         } catch (error) {
             console.error(error);
-            alert("저장 실패 ❌");
+            alert(t('main.birthdaySaveFailed'));
         }
     };
 
@@ -250,6 +250,7 @@ export const Main: React.FC = () => {
                 regionName?: string;
                 fromDate?: string;
                 toDate?: string;
+                includeHidden: boolean;
                 page?: number;
                 size?: number;
             } = {
@@ -257,11 +258,11 @@ export const Main: React.FC = () => {
                 size: 20,
             };
 
+            params.includeHidden = false;
+
             if (selectedCategory !== t('categories.all') && selectedCategory !== "전체") {
                 params.mainCategoryId = mapMainCategoryToId(selectedCategory);
             }
-
-
 
             const response = await eventAPI.getEventList(params);
             setEvents(response.events ?? []);
@@ -408,7 +409,7 @@ export const Main: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const eventsData = await eventAPI.getEventList({ size: 15 });
+                const eventsData = await eventAPI.getEventList({ size: 15, includeHidden: false });
                 setEvents(eventsData.events);
 
                 // 유료광고 데이터 로드
@@ -608,7 +609,7 @@ const getMdPickIdsForToday = (): Set<number> => {
     if (loading) {
         return (
             <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
-                <div className="text-xl">로딩 중...</div>
+                <div className="text-xl">{t('common.loading')}</div>
             </div>
         );
     }
@@ -621,7 +622,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
                     <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
 
-                        <h2 className="text-lg font-bold mb-4">개인 정보 입력</h2>
+                        <h2 className="text-lg font-bold mb-4">{t('main.personalInfo')}</h2>
 
 
                         {/* 달력 */}
@@ -635,7 +636,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                                 >
                                     {Array.from({ length: 100 }, (_, i) => today.getFullYear() - 80 + i).map(year => (
                                         <option key={year} value={year}>
-                                            {year}년
+                                            {year}{t('main.year')}
                                         </option>
                                     ))}
                                 </select>
@@ -647,7 +648,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                                 >
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
                                         <option key={month} value={month}>
-                                            {month}월
+                                            {month}{t('main.month')}
                                         </option>
                                     ))}
                                 </select>
@@ -663,7 +664,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                                         }
                                     }}
                                     className="p-1 hover:bg-gray-200 rounded text-xs"
-                                    title="이전 달"
+                                    title={t('main.previousMonth')}
                                 >
                                     ◀
                                 </button>
@@ -677,7 +678,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                                         }
                                     }}
                                     className="p-1 hover:bg-gray-200 rounded text-xs"
-                                    title="다음 달"
+                                    title={t('main.nextMonth')}
                                 >
                                     ▶
                                 </button>
@@ -686,7 +687,7 @@ const getMdPickIdsForToday = (): Set<number> => {
 
                         {/* 요일 헤더 */}
                         <div className="grid grid-cols-7 gap-1 mb-1">
-                            {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+                            {[t('main.sun'), t('main.mon'), t('main.tue'), t('main.wed'), t('main.thu'), t('main.fri'), t('main.sat')].map((day, index) => (
                                 <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
                                     }`}>
                                     {day}
@@ -721,7 +722,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                         </div>
 
                         {/* 성별 선택 */}
-                        <label className="block mb-2">성별</label>
+                        <label className="block mb-2">{t('main.gender')}</label>
                         <div className="flex gap-4 mb-4">
                             <label>
                                 <input
@@ -730,7 +731,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                                     value="MALE"
                                     checked={gender === "MALE"}
                                     onChange={(e) => setGender(e.target.value)}
-                                /> 남성
+                                /> {t('main.male')}
                             </label>
                             <label>
                                 <input
@@ -739,7 +740,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                                     value="FEMALE"
                                     checked={gender === "FEMALE"}
                                     onChange={(e) => setGender(e.target.value)}
-                                /> 여성
+                                /> {t('main.female')}
                             </label>
                         </div>
 
@@ -747,7 +748,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                             onClick={handleSubmit}
                             className="bg-blue-500 text-white px-4 py-2 rounded w-full"
                         >
-                            저장
+                            {t('common.save')}
                         </button>
 
                         {/* 모달 닫기 버튼 */}
@@ -755,7 +756,7 @@ const getMdPickIdsForToday = (): Set<number> => {
                             onClick={() => setShowBirthdayModal(false)}
                             className="mt-2 text-sm text-gray-500 hover:underline"
                         >
-                            닫기
+                            {t('common.close')}
                         </button>
                     </div>
                 </div>
@@ -822,7 +823,7 @@ const getMdPickIdsForToday = (): Set<number> => {
             <div className="py-8 md:py-16 theme-surface theme-transition">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                     <div className="flex justify-between items-center mb-6 md:mb-8">
-                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>HOT PICKS</h2>
+                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{t('main.hotPicks')}</h2>
                     </div>
 
                     <Swiper
@@ -896,7 +897,7 @@ const getMdPickIdsForToday = (): Set<number> => {
             <div className="py-8 md:py-16 theme-surface theme-transition">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                     <div className="flex justify-between items-center mb-6 md:mb-8">
-                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>EVENTS</h2>
+                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{t('main.events')}</h2>
                     </div>
 
                     {/* 필터 버튼들 */}
@@ -963,10 +964,10 @@ const getMdPickIdsForToday = (): Set<number> => {
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                         </div>
                                         <p className="font-bold text-base md:text-lg text-[#ff6b35]">{event.minPrice == null
-                                            ? "가격 정보 없음"
+                                            ? t('main.noPriceInfo')
                                             : event.minPrice === 0
-                                                ? "무료"
-                                                : `${event.minPrice.toLocaleString()}원 ~`}</p>
+                                                ? t('main.free')
+                                                : `${event.minPrice.toLocaleString()}${t('main.won')}`}</p>
                                     </div>
                                 </Link>
                             </div>

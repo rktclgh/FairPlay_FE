@@ -35,6 +35,15 @@
   .aspect-poster-4-5 {
     aspect-ratio: 4 / 5;
   }
+
+  /* 스크롤바 숨기기 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Hot Picks Panorama-like 3D track */

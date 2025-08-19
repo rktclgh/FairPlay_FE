@@ -94,15 +94,15 @@ export function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden">
-          <div className="p-3 border-b border-gray-100">
+        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
+          <div className="p-3 border-b border-gray-100 flex-none">
             <h3 className="font-semibold text-gray-900">알림</h3>
             {unreadCount > 0 && (
               <p className="text-sm text-gray-500">{unreadCount}개의 읽지 않은 알림</p>
             )}
           </div>
           
-          <div className="overflow-y-auto max-h-80">
+          <div className="overflow-y-auto flex-1">
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 알림이 없습니다.
@@ -162,7 +162,7 @@ export function NotificationBell() {
           </div>
           
           {notifications.length > 0 && (
-            <div className="p-3 border-t border-gray-100 text-center">
+            <div className="p-3 border-t border-gray-100 text-center flex-none">
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
