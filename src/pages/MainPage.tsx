@@ -45,6 +45,121 @@ interface HotPick {
 }
 
 export const Main: React.FC = () => {
+
+const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+const [gender, setGender] = useState<string>("")
+const today = new Date();
+
+const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
+const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
+const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
+
+const getTodayDateString = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+const isDateInFuture = (date: string) => {
+        const todayString = getTodayDateString();
+        return date >= todayString;
+    };
+const handleDateSelect = (date: string) => {
+        setSelectedDate(date);
+    };
+
+const generateCalendarDays = () => {
+        const year = currentCalendarYear;
+        const month = currentCalendarMonth;
+
+        // 해당 월의 첫째 날과 마지막 날
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+
+        // 첫째 날의 요일 (0: 일요일, 6: 토요일)
+        const firstDayOfWeek = firstDay.getDay();
+
+        // 마지막 날의 날짜
+        const lastDate = lastDay.getDate();
+
+        // 이전 달의 마지막 날들
+        const prevMonth = new Date(year, month - 2, 0);
+        const prevLastDate = prevMonth.getDate();
+
+        const days = [];
+
+        // 이전 달의 날짜들 (회색으로 표시)
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const date = prevLastDate - i;
+            const dateString = `${year}-${String(month - 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        // 현재 달의 날짜들
+        for (let date = 1; date <= lastDate; date++) {
+            const dateString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: true
+            });
+        }
+
+        // 다음 달의 날짜들 (달력을 6주로 맞추기 위해)
+        const remainingDays = 42 - days.length; // 6주 * 7일 = 42일
+        for (let date = 1; date <= remainingDays; date++) {
+            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        return days;
+    };
+
+    const handleSubmit = async () => {
+        if (!selectedDate) {
+        alert("생년월일을 선택하세요.");
+        return;
+        }
+        const formatted = selectedDate;
+        try {
+        await api.post("/api/users/mypage/edit", { birthday: formatted, gender });
+        alert("생년월일 저장 완료 ✅");
+        setShowBirthdayModal(false); // 모달 닫기
+        } catch (error) {
+        console.error(error);
+        alert("저장 실패 ❌");
+        }
+    };
+
+  // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
+    useEffect(() => {
+        if (!isAuthenticated()) {
+                    return;
+                }
+
+        const checkBirthday = async () => {
+        try {
+            const res = await api.get("/api/users/mypage");
+            if (!res.data.birthday) {
+            setShowBirthdayModal(true);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        };
+        checkBirthday();
+    }, []);
+
+
     const { isDark } = useTheme();
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
@@ -418,6 +533,127 @@ export const Main: React.FC = () => {
     return (
         <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
             <TopNav />
+
+        {isAuthenticated() && showBirthdayModal && (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white p-6 rounded shadow-lg w-96 z-50">
+
+    <h2 className="text-lg font-bold mb-4">개인 정보 입력</h2>
+
+
+      {/* 달력 */}
+        <div className="flex items-center justify-between mb-3">
+                                    <h5 className="text-sm font-medium text-gray-900">
+                                        {currentCalendarYear}년 {currentCalendarMonth}월
+                                    </h5>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => {
+                                                if (currentCalendarMonth === 1) {
+                                                    setCurrentCalendarMonth(12);
+                                                    setCurrentCalendarYear(currentCalendarYear - 1);
+                                                } else {
+                                                    setCurrentCalendarMonth(currentCalendarMonth - 1);
+                                                }
+                                            }}
+                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                        >
+                                            ◀
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (currentCalendarMonth === 12) {
+                                                    setCurrentCalendarMonth(1);
+                                                    setCurrentCalendarYear(currentCalendarYear + 1);
+                                                } else {
+                                                    setCurrentCalendarMonth(currentCalendarMonth + 1);
+                                                }
+                                            }}
+                                            className="p-1 hover:bg-gray-200 rounded text-xs"
+                                        >
+                                            ▶
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 요일 헤더 */}
+                                <div className="grid grid-cols-7 gap-1 mb-1">
+                                    {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+                                        <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                                            }`}>
+                                            {day}
+                                        </div>
+                                    ))}
+                                </div>
+                <div className="grid grid-cols-7 gap-1 mb-4">
+                    {generateCalendarDays().map((day, index) => {
+                    const isSelected = selectedDate === day.dateString;
+                    const isPast = !isDateInFuture(day.dateString);
+                    const isPastDate = !isDateInFuture(day.dateString);
+
+                    return (
+                        <button
+                        key={index}
+                        onClick={() => ( isPastDate) ? handleDateSelect(day.dateString) : null}
+                        className={`p-1.5 text-xs rounded transition-colors relative h-8 ${
+                            isPast
+                                ? isSelected
+                                ? 'bg-blue-600 text-white'       // 선택된 날짜 스타일
+                                : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer' // 과거 날짜 스타일
+                                : 'text-gray-400 cursor-not-allowed' // 비활성 날짜
+                            }`}
+                        >
+                        {day.date}
+
+                        {isSelected && (
+                            <div className="absolute inset-0 bg-blue-600 rounded opacity-50"></div>
+                        )}
+                        </button>
+                    );
+                    })}
+                </div>
+
+                {/* 성별 선택 */}
+                <label className="block mb-2">성별</label>
+                <div className="flex gap-4 mb-4">
+                    <label>
+                    <input
+                        type="radio"
+                        name="gender"
+                        value="MALE"
+                        checked={gender === "MALE"}
+                        onChange={(e) => setGender(e.target.value)}
+                    /> 남성
+                    </label>
+                    <label>
+                    <input
+                        type="radio"
+                        name="gender"
+                        value="FEMALE"
+                        checked={gender === "FEMALE"}
+                        onChange={(e) => setGender(e.target.value)}
+                    /> 여성
+                    </label>
+                </div>
+
+                <button
+                    onClick={handleSubmit}
+                    className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+                >
+                    저장
+                </button>
+
+                {/* 모달 닫기 버튼 */}
+                <button
+                    onClick={() => setShowBirthdayModal(false)}
+                    className="mt-2 text-sm text-gray-500 hover:underline"
+                >
+                    닫기
+                </button>
+                </div>
+            </div>
+            )}
+
 
             {/* 히어로 섹션 */}
             <div className={`relative w-full aspect-square sm:h-[400px] md:h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
