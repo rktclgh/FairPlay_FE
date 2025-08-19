@@ -54,9 +54,7 @@ export default function MyTickets(): JSX.Element {
                     if (!reservation.scheduleDate || !reservation.startTime) return false;
                     const eventDate = new Date(reservation.scheduleDate); // 행사일
                     eventDate.setHours(0, 0, 0, 0);
-                    const availableFrom = new Date(eventDate);
-                    availableFrom.setDate(eventDate.getDate() - 1);
-                    return today >= availableFrom && today <= eventDate;
+                    return today <= eventDate;
                 });
                 setCanUseQrTicketList(canUseList); // 배열 상태로 관리
             } catch (error) {
@@ -71,7 +69,7 @@ export default function MyTickets(): JSX.Element {
 
     const handleQrTicketOpen = async (reservation: ReservationResponseDto) => {
         try {
-            // QR 티켓 당일 조회할 시 alert알림으로 api 호출 차단
+            //QR 티켓 당일 조회할 시 alert알림으로 api 호출 차단
             // const today = format(new Date(), 'yyyy-mm-dd');
             // if (reservation.scheduleDate && reservation.scheduleDate !== today) {
             //     alert("QR티켓은 당일에만 조회할 수 있습니다.");
