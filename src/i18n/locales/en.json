@@ -34,6 +34,31 @@
     "or": "or",
     "unknown": "Unknown"
   },
+  "main": {
+    "selectBirthday": "Please select your date of birth.",
+    "birthdaySaveSuccess": "Date of birth saved successfully ✅",
+    "birthdaySaveFailed": "Failed to save ❌",
+    "personalInfo": "Enter Personal Information",
+    "year": "Year",
+    "month": "Month",
+    "previousMonth": "Previous Month",
+    "nextMonth": "Next Month",
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "hotPicks": "HOT PICKS",
+    "events": "EVENTS",
+    "noPriceInfo": "No price information",
+    "free": "Free",
+    "won": " KRW ~"
+  },
   "auth": {
     "loginSuccess": "Login successful!",
     "loginLoading": "Logging in...",
@@ -81,7 +106,20 @@
     "passwordTooShort": "Password must be at least 8 characters",
     "passwordTooLong": "Password can be up to 16 characters",
     "phoneValidFormat": "Valid phone number format",
-    "invalidPhoneFormat": "Invalid phone number format"
+    "invalidPhoneFormat": "Invalid phone number format",
+    "emailRequired": "Please enter your email.",
+    "emailInUse": "This email is already in use.",
+    "emailAvailable": "This email is available.",
+    "nicknameRequired": "Please enter your nickname.",
+    "nicknameInUse": "This nickname is already in use.",
+    "nicknameAvailable": "This nickname is available.",
+    "verificationCodeSent": "Verification code has been sent.",
+    "verificationCodeSendFailed": "Failed to send verification code.",
+    "verificationCodeInputRequired": "Please enter the verification code.",
+    "verificationSuccess2": "Verification successful!",
+    "signupFormError": "Please fill out all fields correctly and confirm.",
+    "signupSuccess2": "Sign up complete!",
+    "seconds": "s"
   },
   "navigation": {
     "home": "HOME",
@@ -180,13 +218,16 @@
     "supportTitle": "Customer Support",
     "notices": "Notices",
     "faq": "FAQ",
-    "operationPolicy": "Operation Policy"
+    "operationPolicy": "Operation Policy",
+    "copyright_simple": "© 2025 FairPlay",
+    "copyright_full": "© 2025 FairPlay. All rights reserved."
   },
   "errors": {
     "unknown": "An unknown error occurred.",
     "connectionFailed": "Unable to connect to server. Please try again later.",
     "loginRequired": "Login is required.",
-    "accessDenied": "Access denied."
+    "accessDenied": "Access denied.",
+    "noResponse": "No response from server. Please try again later."
   },
   "language": {
     "korean": "한국어",
@@ -337,8 +378,12 @@
         "allFieldsRequired": "Please fill in all fields.",
         "passwordMinLength": "New password must be at least 8 characters.",
         "passwordChangeSuccess": "Password has been successfully changed.",
-        "incorrectOldPassword": "Current password is incorrect."
-      }
+        "incorrectOldPassword": "Current password is incorrect.",
+        "passwordChangeError": "An error occurred while changing the password."
+      },
+      "loadUserFailed": "Failed to load user information:",
+      "loginRequired": "Login is required.",
+      "refreshFailed": "Failed to refresh user information:"
     },
     "reviews": {
       "title": "Reviews",
@@ -391,7 +436,12 @@
       "linkCopySuccess": "Copied! Please send the link to participants so they can enter their information.",
       "linkError": "An error occurred while loading the form link.",
       "dateTbd": "Date TBD",
-      "timeTbd": "Time TBD"
+      "timeTbd": "Time TBD",
+      "loadReservationsFailed": "Failed to load reservation list:",
+      "loadReservationsError": "An error occurred while loading the reservation list.",
+      "serverNoResponse": "No response from server. Please try again later.",
+      "unknownError": "An unknown error occurred.",
+      "ticketCount": "tickets"
     },
     "participantForm": {
       "title": "Participant Information Input",
@@ -441,7 +491,9 @@
       "free": "Free",
       "unpaid": "Unpaid",
       "paymentPending": "Payment Pending",
-      "dateTbd": "Date TBD"
+      "dateTbd": "Date TBD",
+      "won": "",
+      "loadReservationsError": "An error occurred while loading the reservation list."
     },
     "withdrawal": {
       "title": "Account Withdrawal",
@@ -524,5 +576,112 @@
       "satisfiedParticipants": "Satisfied Participants",
       "satisfaction": "Satisfaction Rate"
     }
+  },
+  "refund": {
+    "title": "My Refund History",
+    "description": "Check the status of your payment refund requests and processing.",
+    "searchConditions": "Search Conditions",
+    "reset": "Reset",
+    "eventName": "Event Name",
+    "eventNamePlaceholder": "Search event name",
+    "paymentDateFrom": "Payment Date From",
+    "paymentDateTo": "Payment Date To",
+    "refundStatus": "Refund Status",
+    "paymentType": "Payment Type",
+    "all": "All",
+    "requested": "Requested",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "reservation": "Reservation",
+    "booth": "Booth",
+    "ad": "Advertisement",
+    "refundRequest": "Refund Request",
+    "totalRefunds": "refund requests",
+    "excelDownload": "Excel Download",
+    "refundId": "Refund ID",
+    "applicant": "Applicant",
+    "paymentAmount": "Payment Amount",
+    "refundAmount": "Refund Amount",
+    "requestDate": "Request Date",
+    "loading": "Loading...",
+    "noRefunds": "No refund requests.",
+    "statusNames": {
+      "REQUESTED": "Requested",
+      "APPROVED": "Approved", 
+      "REJECTED": "Rejected"
+    },
+    "won": ""
+  },
+  "boothExperience": {
+    "title": "My Booth Experience Reservations",
+    "description": "View and manage your booth experience reservations",
+    "searchConditions": "Search Conditions",
+    "experienceOrBoothName": "Experience/Booth Name",
+    "experienceOrBoothNamePlaceholder": "Search experience or booth name...",
+    "reservationStatus": "Reservation Status",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "all": "All",
+    "waiting": "Waiting",
+    "ready": "Ready",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "noShow": "No Show",
+    "loading": "Loading...",
+    "totalReservations": "reservations found",
+    "reservationDateTime": "Reservation:",
+    "queuePosition": "Queue Position:",
+    "queuePositionNumber": "",
+    "notes": "Notes:",
+    "cancelReservation": "Cancel Reservation",
+    "noReservationsFound": "No reservations found matching your criteria",
+    "resetFilters": "Reset Filters",
+    "cancelConfirmTitle": "Cancel Reservation Confirmation",
+    "cancelConfirmMessage": "Are you sure you want to cancel this reservation?",
+    "cancelConfirmWarning": "Cancelled reservations cannot be recovered.",
+    "close": "Close",
+    "cancelSuccess": "Reservation has been cancelled.",
+    "cancelFailed": "Failed to cancel reservation.",
+    "loadFailed": "Failed to load reservation list.",
+    "statusBadges": {
+      "WAITING": "Waiting",
+      "READY": "Ready", 
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "NO_SHOW": "No Show"
+    }
+  },
+  "eventOverview": {
+    "title": "Browse Events",
+    "allRegions": "All Regions",
+    "allCategories": "Category",
+    "allStatuses": "All",
+    "viewModes": {
+      "list": "List",
+      "calendar": "Calendar",  
+      "map": "Map"
+    },
+    "filters": {
+      "region": "Region",
+      "category": "Category", 
+      "status": "Status",
+      "dateRange": "Date Range"
+    },
+    "eventStatus": {
+      "all": "All",
+      "upcoming": "Upcoming",
+      "ongoing": "Ongoing",
+      "ended": "Ended"
+    },
+    "searchPlaceholder": "Search by event name...",
+    "noEvents": "No events found matching your criteria",
+    "loadingEvents": "Loading events...",
+    "eventDetails": "Event Details",
+    "wishlistAdd": "Add to Wishlist",
+    "wishlistRemove": "Remove from Wishlist",
+    "free": "Free"
   }
 }
+
