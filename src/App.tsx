@@ -129,26 +129,34 @@ function AppContent() {
 
   const pathname = location.pathname || "";
   const hideFooter = (
-      pathname.startsWith("/host/") ||
-      pathname === "/host" ||
-      pathname.startsWith("/admin_dashboard") ||
-      pathname.startsWith("/admin_event") ||
-      pathname.startsWith("/admin_security") ||
-      pathname.startsWith("/admin_settings") ||
-      pathname.startsWith("/admin_settlement") ||
-      pathname.startsWith("/admin_statistics") ||
-      pathname.startsWith("/admin_vip_banner")
+    pathname.startsWith("/host/") ||
+    pathname === "/host" ||
+    pathname.startsWith("/admin_dashboard") ||
+    pathname.startsWith("/admin_event") ||
+    pathname.startsWith("/admin_security") ||
+    pathname.startsWith("/admin_settings") ||
+    pathname.startsWith("/admin_settlement") ||
+    pathname.startsWith("/admin_statistics") ||
+    pathname.startsWith("/admin_vip_banner") ||
+    pathname === "/register" ||
+    pathname === "/event-registration-intro" ||
+    pathname.startsWith("/mypage")
   );
+
+  // 마이페이지 경로에 대해 더 큰 여백 적용
+  const isMyPage = pathname.startsWith("/mypage");
+  const isAuthPage = pathname === "/signup" || pathname === "/login";
+  const bottomPadding = isMyPage ? "pb-48 md:pb-56" : isAuthPage ? "" : "pb-20 md:pb-28";
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="flex-1 pb-20 md:pb-28">
+      <main className={`flex-1 ${bottomPadding}`}>
         <Suspense fallback={<div />}>
           <Routes>
             <Route path="/" element={<Main />} />
             <Route path="/participant-form" element={<ParticipantForm />} />
             <Route path="/qr-ticket/participant" element={<OnlyQrTicketPage />} />
-            <Route path="/qr-ticket/participant/error" element={<OnlyQrTicketErrorPage />} />            
+            <Route path="/qr-ticket/participant/error" element={<OnlyQrTicketErrorPage />} />
             <Route path="/eventoverview" element={<EventOverview />} />
             <Route path="/eventdetail/:eventId" element={<EventDetail />} />
             <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
@@ -194,26 +202,26 @@ function AppContent() {
             <Route path="/admin_dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
             <Route path="/admin_dashboard/event-comparison" element={<AdminRouteGuard><EventComparison /></AdminRouteGuard>} />
 
-              {/* 행사 관리 */}
-              <Route path="/admin_dashboard/events" element={<AdminRouteGuard><EventList /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApproval /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/event-approvals/:id" element={<AdminRouteGuard><EventApprovalDetail /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/event-edit-requests/:id" element={<AdminRouteGuard><EventEditRequestDetail /></AdminRouteGuard>} />
+            {/* 행사 관리 */}
+            <Route path="/admin_dashboard/events" element={<AdminRouteGuard><EventList /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/event-approvals" element={<AdminRouteGuard><EventApproval /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/event-approvals/:id" element={<AdminRouteGuard><EventApprovalDetail /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/event-edit-requests" element={<AdminRouteGuard><EventEditRequests /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/event-edit-requests/:id" element={<AdminRouteGuard><EventEditRequestDetail /></AdminRouteGuard>} />
 
-              {/* 계정 관리 */}
-              <Route path="/admin_dashboard/accounts/roles" element={<AdminRouteGuard><AccountRoles /></AdminRouteGuard>} />
+            {/* 계정 관리 */}
+            <Route path="/admin_dashboard/accounts/roles" element={<AdminRouteGuard><AccountRoles /></AdminRouteGuard>} />
 
-              {/* VIP 배너 광고 */}
-              <Route path="/admin_dashboard/vip-banners" element={<AdminRouteGuard><VipBannerManagement /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/advertisement-applications" element={<AdminRouteGuard><AdvertisementApplicationList /></AdminRouteGuard>} />
+            {/* VIP 배너 광고 */}
+            <Route path="/admin_dashboard/vip-banners" element={<AdminRouteGuard><VipBannerManagement /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/advertisement-applications" element={<AdminRouteGuard><AdvertisementApplicationList /></AdminRouteGuard>} />
 
-              {/* 정산 관리 */}
-              <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/remittances" element={<AdminRouteGuard><RemittanceHistory /></AdminRouteGuard>} />
+            {/* 정산 관리 */}
+            <Route path="/admin_dashboard/settlements" element={<AdminRouteGuard><SettlementManagement /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/remittances" element={<AdminRouteGuard><RemittanceHistory /></AdminRouteGuard>} />
 
-              {/* 환불 관리 */}
-              <Route path="/admin_dashboard/refunds" element={<AdminRouteGuard><RefundManagement /></AdminRouteGuard>} />
+            {/* 환불 관리 */}
+            <Route path="/admin_dashboard/refunds" element={<AdminRouteGuard><RefundManagement /></AdminRouteGuard>} />
 
             {/* 결제 관리 */}
             <Route path="/admin_dashboard/payments" element={<AdminRouteGuard><PaymentManagement /></AdminRouteGuard>} />
@@ -222,16 +230,16 @@ function AppContent() {
             <Route path="/admin_dashboard/analytics/reservations" element={<AdminRouteGuard><ReservationStatistics /></AdminRouteGuard>} />
             <Route path="/admin_dashboard/analytics/popular" element={<AdminRouteGuard><PopularEvents /></AdminRouteGuard>} />
 
-              {/* 시스템 설정 */}
-              <Route path="/admin_dashboard/settings/integrations" element={<AdminRouteGuard><IntegrationSettings /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/settings/message-templates" element={<AdminRouteGuard><MessageTemplates /></AdminRouteGuard>} />
+            {/* 시스템 설정 */}
+            <Route path="/admin_dashboard/settings/integrations" element={<AdminRouteGuard><IntegrationSettings /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/settings/message-templates" element={<AdminRouteGuard><MessageTemplates /></AdminRouteGuard>} />
 
-              {/* 로그/보안 */}
-              <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
-              <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
+            {/* 로그/보안 */}
+            <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
+            <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
 
-              {/* 내 정보 관리 */}
-              <Route path="/admin_dashboard/profile" element={<AdminRouteGuard><AdminProfile /></AdminRouteGuard>} />
+            {/* 내 정보 관리 */}
+            <Route path="/admin_dashboard/profile" element={<AdminRouteGuard><AdminProfile /></AdminRouteGuard>} />
 
 
             {/* 부스 관리자 전용 페이지 */}
@@ -253,52 +261,52 @@ function AppContent() {
             <Route path="/host/qr-scan" element={<QRScanPage />} />
             <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
 
-              {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
-              <Route path="/booth/payment" element={<BoothPaymentPage />} />
-              <Route path="/booth/cancel" element={<BoothCancelPage />} />
+            {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
+            <Route path="/booth/payment" element={<BoothPaymentPage />} />
+            <Route path="/booth/cancel" element={<BoothCancelPage />} />
 
-              {/* 부스 체험 */}
-              <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
-              <Route path="/host/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
-              <Route path="/mypage/booth-experiences" element={<BoothExperienceList />} />
-              <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations />} />
-              {/* Footer pages */}
-              <Route path="/support/notices" element={<Notices />} />
-              <Route path="/support/faq" element={<FAQ />} />
-              <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-              <Route path="/legal/terms" element={<TermsOfUse />} />
-              <Route path="/legal/policy" element={<Policy />} />
-            </Routes>
-          </Suspense>
-        </main>
-        <ToastContainer
-            position="bottom-right"
-            autoClose={2500}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-        />
-        {!hideFooter && <Footer />}
-      </div>
+            {/* 부스 체험 */}
+            <Route path="/host/booth-experience-reserver-management" element={<HostRouteGuard><BoothExperienceReserverManagement /></HostRouteGuard>} />
+            <Route path="/host/booth-experience-management" element={<HostRouteGuard><BoothExperienceManagement /></HostRouteGuard>} />
+            <Route path="/mypage/booth-experiences" element={<BoothExperienceList />} />
+            <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations />} />
+            {/* Footer pages */}
+            <Route path="/support/notices" element={<Notices />} />
+            <Route path="/support/faq" element={<FAQ />} />
+            <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+            <Route path="/legal/terms" element={<TermsOfUse />} />
+            <Route path="/legal/policy" element={<Policy />} />
+          </Routes>
+        </Suspense>
+      </main>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+      {!hideFooter && <Footer />}
+    </div>
   );
 }
 
 function App() {
   return (
-      <BrowserRouter>
-        <ThemeProvider>
-          <AppLayout>
-            <AppContent />
-          </AppLayout>
-          {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
-          <ChatFloatingModal />
-        </ThemeProvider>
-      </BrowserRouter>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AppLayout>
+          <AppContent />
+        </AppLayout>
+        {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
+        <ChatFloatingModal />
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 

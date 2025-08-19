@@ -1,8 +1,444 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
 
+// 배너 데이터 인터페이스
+interface BannerData {
+    id: string;
+    eventTitle: string;
+    hostName: string;
+    imageUrl: string;
+    startDate: string;
+    endDate: string;
+    rank: number;
+    status: 'active' | 'inactive' | 'expired';
+    type: 'hero' | 'mdpick';
+}
+
+// MD PICK 데이터 인터페이스
+interface MdPickData {
+    id: string;
+    eventTitle: string;
+    hostName: string;
+    date: string;
+    priority: number;
+    status: 'active' | 'inactive';
+}
+
 export const VipBannerManagement: React.FC = () => {
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [heroBanners, setHeroBanners] = useState<BannerData[]>([]);
+    const [mdPickBanners, setMdPickBanners] = useState<MdPickData[]>([]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+    // 더미 데이터 로드
+    useEffect(() => {
+        // 메인 배너 더미 데이터
+        const dummyHeroBanners: BannerData[] = [
+            {
+                id: '1',
+                eventTitle: 'G-DRAGON 2025 WORLD TOUR IN JAPAN',
+                hostName: 'YG Entertainment',
+                imageUrl: '/images/gd1.png',
+                startDate: '2025-05-20',
+                endDate: '2025-05-25',
+                rank: 1,
+                status: 'active',
+                type: 'hero'
+            },
+            {
+                id: '2',
+                eventTitle: 'YE LIVE IN KOREA',
+                hostName: 'Def Jam Recordings',
+                imageUrl: '/images/YE3.png',
+                startDate: '2025-06-10',
+                endDate: '2025-06-15',
+                rank: 2,
+                status: 'active',
+                type: 'hero'
+            }
+        ];
+
+        // MD PICK 더미 데이터
+        const dummyMdPickBanners: MdPickData[] = [
+            {
+                id: '1',
+                eventTitle: '테스트',
+                hostName: 'Netflix Korea',
+                date: '2025-01-20',
+                priority: 1,
+                status: 'active'
+            },
+            {
+                id: '2',
+                eventTitle: 'YE LIVE IN KOREA',
+                hostName: 'Disney+ Korea',
+                date: '2025-01-20',
+                priority: 2,
+                status: 'active'
+            }
+        ];
+
+        setHeroBanners(dummyHeroBanners);
+        setMdPickBanners(dummyMdPickBanners);
+    }, []);
+
+    // 대시보드 컴포넌트
+    const DashboardTab = () => (
+        <div className="space-y-6">
+            {/* 통계 카드들 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-blue-600">활성 배너</p>
+                            <p className="text-2xl font-bold text-blue-900">{heroBanners.filter(b => b.status === 'active').length}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-green-600">MD PICK</p>
+                            <p className="text-2xl font-bold text-green-900">{mdPickBanners.filter(b => b.status === 'active').length}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-yellow-100 rounded-lg">
+                            <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-yellow-600">만료 예정</p>
+                            <p className="text-2xl font-bold text-yellow-900">3</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-purple-600">이번 달 수익</p>
+                            <p className="text-2xl font-bold text-purple-900">₩12.5M</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 현재 노출 중인 배너들 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">현재 노출 중인 배너</h3>
+                <div className="space-y-4">
+                    {heroBanners.filter(b => b.status === 'active').map((banner) => (
+                        <div key={banner.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                            <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
+                            <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">{banner.eventTitle}</h4>
+                                <p className="text-sm text-gray-600">{banner.hostName}</p>
+                                <p className="text-xs text-gray-500">{banner.startDate} ~ {banner.endDate}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${banner.rank === 1 ? 'bg-red-100 text-red-800' :
+                                    banner.rank === 2 ? 'bg-orange-100 text-orange-800' :
+                                        banner.rank === 3 ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-blue-100 text-blue-800'
+                                    }`}>
+                                    {banner.rank}순위
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+
+    // 메인 배너 관리 컴포넌트
+    const HeroBannerTab = () => (
+        <div className="space-y-6">
+            {/* 배너 스케줄 캘린더 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">배너 스케줄 현황</h3>
+
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium text-blue-800">선착순 결제 시스템</span>
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1">
+                        호스트가 원하는 날짜의 원하는 순위를 먼저 결제한 사람이 해당 순위를 차지합니다.
+                        관리자는 승인/반려만 가능하며 순위 조정은 불가능합니다.
+                    </p>
+                </div>
+
+                {/* 날짜 선택 */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">날짜 선택</label>
+                    <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                {/* 순위별 배너 표시 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((rank) => {
+                        const banner = heroBanners.find(b =>
+                            b.rank === rank &&
+                            b.startDate <= selectedDate &&
+                            b.endDate >= selectedDate
+                        );
+
+                        return (
+                            <div key={rank} className={`border-2 rounded-lg p-4 ${banner ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-50'
+                                }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className={`font-bold text-lg ${rank === 1 ? 'text-red-600' :
+                                        rank === 2 ? 'text-orange-600' :
+                                            rank === 3 ? 'text-yellow-600' :
+                                                'text-gray-600'
+                                        }`}>
+                                        {rank}순위
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                        {rank === 1 ? '2,500,000원' :
+                                            rank === 2 ? '2,200,000원' :
+                                                rank === 3 ? '2,000,000원' :
+                                                    rank === 4 ? '1,800,000원' :
+                                                        rank === 5 ? '1,600,000원' :
+                                                            rank === 6 ? '1,400,000원' :
+                                                                rank === 7 ? '1,200,000원' :
+                                                                    rank === 8 ? '1,000,000원' :
+                                                                        rank === 9 ? '800,000원' :
+                                                                            '600,000원'}
+                                    </span>
+                                </div>
+
+                                {banner ? (
+                                    <div className="space-y-2">
+                                        <img src={banner.imageUrl} alt={banner.eventTitle} className="w-full h-20 object-cover rounded" />
+                                        <h4 className="font-medium text-sm text-gray-900 truncate">{banner.eventTitle}</h4>
+                                        <p className="text-xs text-gray-600">{banner.hostName}</p>
+                                        <div className="text-xs text-gray-500">
+                                            <div>노출 기간: {banner.startDate} ~ {banner.endDate}</div>
+                                            <div className="mt-1">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${banner.status === 'active' ? 'bg-green-100 text-green-800' :
+                                                    banner.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {banner.status === 'active' ? '노출 중' : banner.status === 'inactive' ? '비활성' : '만료됨'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                        <p className="text-sm text-gray-500 mt-2">빈 슬롯</p>
+                                        <p className="text-xs text-gray-400 mt-1">신청 대기 중</p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 배너 목록 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">전체 배너 현황</h3>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이미지</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">행사명</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">호스트</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순위</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">기간</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제 상태</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {heroBanners.map((banner) => (
+                                <tr key={banner.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">{banner.eventTitle}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">{banner.hostName}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${banner.rank === 1 ? 'bg-red-100 text-red-800' :
+                                            banner.rank === 2 ? 'bg-orange-100 text-orange-800' :
+                                                banner.rank === 3 ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-blue-100 text-blue-800'
+                                            }`}>
+                                            {banner.rank}순위
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">{banner.startDate} ~ {banner.endDate}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${banner.status === 'active' ? 'bg-green-100 text-green-800' :
+                                            banner.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                                                'bg-red-100 text-red-800'
+                                            }`}>
+                                            {banner.status === 'active' ? '노출 중' : banner.status === 'inactive' ? '비활성' : '만료됨'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            결제 완료
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+
+    // MD PICK 관리 컴포넌트
+    const MdPickTab = () => (
+        <div className="space-y-6">
+            {/* MD PICK 스케줄 뷰 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">MD PICK 스케줄 현황</h3>
+
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium text-green-800">선착순 결제 시스템</span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">
+                        호스트가 원하는 날짜를 먼저 결제한 사람이 해당 날짜를 차지합니다.
+                        하루 최대 2개까지만 가능하며, 충돌이 발생하지 않습니다.
+                    </p>
+                </div>
+
+                {/* 날짜별 MD PICK 현황 */}
+                <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">7일간 현황</label>
+                    <div className="grid grid-cols-7 gap-2">
+                        {Array.from({ length: 7 }, (_, i) => {
+                            const date = new Date();
+                            date.setDate(date.getDate() + i);
+                            const dateStr = date.toISOString().split('T')[0];
+                            const dayBanners = mdPickBanners.filter(b => b.date === dateStr);
+
+                            return (
+                                <div key={i} className={`p-3 border rounded-lg text-center ${dayBanners.length >= 2 ? 'bg-red-50 border-red-200' :
+                                    dayBanners.length === 1 ? 'bg-yellow-50 border-yellow-200' :
+                                        'bg-green-50 border-green-200'
+                                    }`}>
+                                    <div className="text-xs text-gray-600 mb-1">
+                                        {date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                                    </div>
+                                    <div className="text-sm font-medium">
+                                        {dayBanners.length}/2
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                        {dayBanners.length >= 2 ? '매진' : dayBanners.length === 1 ? '1개 가능' : '신청 가능'}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* MD PICK 목록 */}
+                <div className="space-y-4">
+                    <h4 className="font-medium text-gray-900">현재 등록된 MD PICK</h4>
+                    {mdPickBanners.map((banner) => (
+                        <div key={banner.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center space-x-4">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${banner.priority === 1 ? 'bg-red-500' : 'bg-blue-500'
+                                    }`}>
+                                    {banner.priority}
+                                </div>
+                                <div>
+                                    <h5 className="font-medium text-gray-900">{banner.eventTitle}</h5>
+                                    <p className="text-sm text-gray-600">{banner.hostName}</p>
+                                    <p className="text-xs text-gray-500">{banner.date}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    결제 완료
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 운영 현황 요약 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">운영 현황 요약</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{mdPickBanners.length}</div>
+                        <div className="text-sm text-blue-800">총 등록된 MD PICK</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">정상</div>
+                        <div className="text-sm text-green-800">시스템 상태</div>
+                    </div>
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-600">0</div>
+                        <div className="text-sm text-yellow-800">충돌 발생 건수</div>
+                    </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">시스템 특징</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• 선착순 결제로 충돌 발생 불가</li>
+                        <li>• 하루 최대 2개 MD PICK 제한</li>
+                        <li>• 자동 스케줄링으로 관리자 개입 불필요</li>
+                        <li>• 실시간 가용성 확인 가능</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
@@ -10,7 +446,7 @@ export const VipBannerManagement: React.FC = () => {
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    VIP 배너 광고
+                    VIP 배너 광고 관리
                 </div>
 
                 {/* 사이드바 */}
@@ -18,9 +454,65 @@ export const VipBannerManagement: React.FC = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">VIP 배너 광고</h2>
-                        <p className="text-gray-600">VIP 배너 광고 관리 페이지입니다.</p>
+                    {/* 탭 네비게이션 */}
+                    <nav className="h-[40px] border-b border-neutral-200 relative mb-6" style={{ borderBottom: '1px solid #e5e5e5', marginBottom: '24px' }}>
+                        <ul className="flex items-center h-full">
+                            <li
+                                className="h-full flex items-center px-2.5 cursor-pointer"
+                                onClick={() => setActiveTab('dashboard')}
+                            >
+                                <span
+                                    className={`
+                                        relative text-base leading-[28px] font-['Roboto'] inline-block pb-1
+                                        ${activeTab === 'dashboard'
+                                            ? 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]'
+                                            : 'font-normal text-gray-600 hover:text-black'
+                                        }
+                                    `}
+                                >
+                                    대시보드
+                                </span>
+                            </li>
+                            <li
+                                className="h-full flex items-center px-2.5 cursor-pointer"
+                                onClick={() => setActiveTab('hero')}
+                            >
+                                <span
+                                    className={`
+                                        relative text-base leading-[28px] font-['Roboto'] inline-block pb-1
+                                        ${activeTab === 'hero'
+                                            ? 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]'
+                                            : 'font-normal text-gray-600 hover:text-black'
+                                        }
+                                    `}
+                                >
+                                    메인 배너
+                                </span>
+                            </li>
+                            <li
+                                className="h-full flex items-center px-2.5 cursor-pointer"
+                                onClick={() => setActiveTab('mdpick')}
+                            >
+                                <span
+                                    className={`
+                                        relative text-base leading-[28px] font-['Roboto'] inline-block pb-1
+                                        ${activeTab === 'mdpick'
+                                            ? 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]'
+                                            : 'font-normal text-gray-600 hover:text-black'
+                                        }
+                                    `}
+                                >
+                                    MD PICK
+                                </span>
+                            </li>
+                        </ul>
+                    </nav>
+
+                    {/* 탭 콘텐츠 */}
+                    <div className="bg-white rounded-lg shadow-md">
+                        {activeTab === 'dashboard' && <DashboardTab />}
+                        {activeTab === 'hero' && <HeroBannerTab />}
+                        {activeTab === 'mdpick' && <MdPickTab />}
                     </div>
                 </div>
             </div>
