@@ -250,6 +250,7 @@ export const Main: React.FC = () => {
                 regionName?: string;
                 fromDate?: string;
                 toDate?: string;
+                includeHidden: boolean;
                 page?: number;
                 size?: number;
             } = {
@@ -257,11 +258,11 @@ export const Main: React.FC = () => {
                 size: 20,
             };
 
+            params.includeHidden = false;
+
             if (selectedCategory !== t('categories.all') && selectedCategory !== "전체") {
                 params.mainCategoryId = mapMainCategoryToId(selectedCategory);
             }
-
-
 
             const response = await eventAPI.getEventList(params);
             setEvents(response.events ?? []);
@@ -408,7 +409,7 @@ export const Main: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const eventsData = await eventAPI.getEventList({ size: 15 });
+                const eventsData = await eventAPI.getEventList({ size: 15, includeHidden: false });
                 setEvents(eventsData.events);
 
                 // 유료광고 데이터 로드

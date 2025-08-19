@@ -51,6 +51,7 @@ export const eventAPI = {
 
     /**
      * [READ] 전체 행사 목록 조회 (관리자용)
+     * @param {Object} params
      * @returns EventResponseDto[] 배열
      */
     getAllEvents: async (): Promise<EventResponseDto[]> => {
@@ -70,6 +71,7 @@ export const eventAPI = {
         regionName?: string;
         fromDate?: string; // "YYYY-MM-DD"
         toDate?: string;   // "YYYY-MM-DD"
+        includeHidden?: boolean;
         page?: number;
         size?: number;
     }): Promise<EventSummaryResponseDto> => {

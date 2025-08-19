@@ -374,9 +374,11 @@ export default function EventOverview() {
                 toDate?: string;
                 page?: number;
                 size?: number;
+                includeHidden?: boolean;
             } = {
                 page: 0,
                 size: 50,
+                includeHidden: false,
             };
 
             if (selectedCategory !== "all") {
