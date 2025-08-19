@@ -17,9 +17,11 @@ import {
     updateReview,
     deleteReview
 } from "../../services/review";
+import { useTranslation } from "react-i18next";
 
 
 export const MyPageMyReview = () => {
+    const { t } = useTranslation();
     /** 초기 세팅 데이터 */
     const [savedReview, setSavedReviews] = useState<ReviewResponseDto[] | null>(null); // 작성한 리뷰
     const [writeReviewsState, setWriteReviewsState] = useState<PossibleReviewResponseDto[] | null>(null) // 리뷰 작성 가능한 이벤트 

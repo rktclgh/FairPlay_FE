@@ -19,6 +19,7 @@ import { eventAPI } from "../services/event"
 import type {
     EventSummaryDto
 } from "../services/types/eventType";
+import { useTranslation } from 'react-i18next';
 
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
@@ -45,6 +46,7 @@ interface HotPick {
 
 export const Main: React.FC = () => {
     const { isDark } = useTheme();
+    const { t } = useTranslation();
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
@@ -63,7 +65,7 @@ export const Main: React.FC = () => {
 
     const toggleWish = async (eventId: number) => {
         // 인증 확인
-        if (!requireAuth(navigate, '관심 등록')) {
+        if (!requireAuth(navigate, t('wishlist.requireAuth'))) {
             return;
         }
 
@@ -92,7 +94,7 @@ export const Main: React.FC = () => {
                 });
             }
         } catch (e) {
-            console.error("찜 토글 실패:", e);
+            console.error(t('wishlist.toggleFailed'), e);
             // 실패 시 롤백
             setLikedEvents(prev => {
                 const next = new Set(prev);
@@ -109,15 +111,21 @@ export const Main: React.FC = () => {
     };
 
     const mapMainCategoryToId = (name: string): number | undefined => {
+        // 번역된 카테고리와 한국어 카테고리 모두 지원
         switch (name) {
+            case t('categories.exhibition'):
             case "박람회":
                 return 1;
+            case t('categories.lecture'):
             case "강연/세미나":
                 return 2;
+            case t('categories.event'):
             case "전시/행사":
                 return 3;
+            case t('categories.performance'):
             case "공연":
                 return 4;
+            case t('categories.festival'):
             case "축제":
                 return 5;
             default:
@@ -140,7 +148,7 @@ export const Main: React.FC = () => {
                 size: 20,
             };
 
-            if (selectedCategory !== "전체") {
+            if (selectedCategory !== t('categories.all') && selectedCategory !== "전체") {
                 params.mainCategoryId = mapMainCategoryToId(selectedCategory);
             }
 
@@ -149,7 +157,7 @@ export const Main: React.FC = () => {
             const response = await eventAPI.getEventList(params);
             setEvents(response.events ?? []);
         } catch (error) {
-            console.error("행사 필터링 실패:", error);
+            console.error(t('wishlist.loadFailed'), error);
             // 오류 발생 시 빈 배열로 설정하여 UI가 깨지지 않도록 함
             setEvents([]);
         }
@@ -163,6 +171,16 @@ export const Main: React.FC = () => {
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
     };
+
+    // 번역된 카테고리 배열 생성
+    const getTranslatedCategories = () => [
+        { key: "전체", label: t('categories.all') },
+        { key: "박람회", label: t('categories.exhibition') },
+        { key: "공연", label: t('categories.performance') },
+        { key: "강연/세미나", label: t('categories.lecture') },
+        { key: "전시/행사", label: t('categories.event') },
+        { key: "축제", label: t('categories.festival') }
+    ];
 
 
     // 유료광고 행사 상태
@@ -616,11 +634,11 @@ export const Main: React.FC = () => {
                     {/* 필터 버튼들 */}
                     <div className="mb-6 md:mb-8">
                         <div className="flex md:flex-wrap overflow-x-auto md:overflow-visible whitespace-nowrap no-scrollbar gap-2 md:gap-4 -mx-4 px-4">
-                            {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
+                            {getTranslatedCategories().map((category, index) => (
                                 <button
                                     key={index}
-                                    onClick={() => handleCategoryChange(filter)}
-                                    className={`shrink-0 inline-flex px-3 py-2 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === filter
+                                    onClick={() => handleCategoryChange(category.key)}
+                                    className={`shrink-0 inline-flex px-3 py-2 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
                                         ? (isDark
                                             ? 'dm-light font-bold border-gray-300'
                                             : 'bg-black text-white font-bold border-gray-800')
@@ -629,7 +647,7 @@ export const Main: React.FC = () => {
                                             : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
                                         }`}
                                 >
-                                    {filter}
+                                    {category.label}
                                 </button>
                             ))}
                         </div>
@@ -687,7 +705,7 @@ export const Main: React.FC = () => {
                     <div className="text-center mt-8 md:mt-12">
                         <Link to="/eventoverview">
                             <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
-                                전체보기
+                                {t('mypage.favorites.viewAll')}
                             </button>
                         </Link>
                     </div>
