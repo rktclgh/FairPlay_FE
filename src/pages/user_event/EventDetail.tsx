@@ -241,7 +241,7 @@ const EventDetail = (): JSX.Element => {
                 const data = await eventAPI.getEventDetail(Number(eventId));
 
                 const params: PageableRequest = {
-                    page: 0,
+                    page: currentPage,
                     size: 10,
                     sort: 'createdAt,desc'
                 }
