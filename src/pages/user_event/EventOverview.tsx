@@ -13,7 +13,7 @@ import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
 import { eventAPI } from "../../services/event"
 import type { EventSummaryDto } from "../../services/types/eventType";
-import { getEventStatusText, getEventStatusStyle } from "../../utils/eventStatus";
+import { getEventStatusText, getEventStatusStyle, calculateEventStatus } from "../../utils/eventStatus";
 import api from "../../api/axios";
 import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
@@ -415,11 +415,13 @@ export default function EventOverview() {
 
         // 상태 필터링 적용
         if (selectedStatus !== "전체") {
-            const statusCode = selectedStatus === "진행 예정" ? "UPCOMING" 
-                             : selectedStatus === "진행중" ? "ONGOING" 
-                             : selectedStatus === "종료" ? "ENDED" 
-                             : "";
-            filtered = filtered.filter(event => event.eventStatusCode === statusCode);
+            const statusCode = selectedStatus === "진행 예정" ? "UPCOMING"
+                : selectedStatus === "진행중" ? "ONGOING"
+                    : selectedStatus === "종료" ? "ENDED"
+                        : "";
+            if (statusCode) {
+                filtered = filtered.filter(event => calculateEventStatus(event.startDate, event.endDate) === statusCode);
+            }
         }
 
         // 검색어 필터링 적용
