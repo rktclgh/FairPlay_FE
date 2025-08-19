@@ -46,30 +46,30 @@ interface HotPick {
 
 export const Main: React.FC = () => {
 
-const [showBirthdayModal, setShowBirthdayModal] = useState(false);
-const [gender, setGender] = useState<string>("")
-const today = new Date();
+    const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+    const [gender, setGender] = useState<string>("")
+    const today = new Date();
 
-const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
-const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
-const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
+    const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
+    const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
 
-const getTodayDateString = () => {
+    const getTodayDateString = () => {
         const today = new Date();
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
-const isDateInFuture = (date: string) => {
+    const isDateInFuture = (date: string) => {
         const todayString = getTodayDateString();
         return date >= todayString;
     };
-const handleDateSelect = (date: string) => {
+    const handleDateSelect = (date: string) => {
         setSelectedDate(date);
     };
 
-const generateCalendarDays = () => {
+    const generateCalendarDays = () => {
         const year = currentCalendarYear;
         const month = currentCalendarMonth;
 
@@ -126,35 +126,35 @@ const generateCalendarDays = () => {
 
     const handleSubmit = async () => {
         if (!selectedDate) {
-        alert("생년월일을 선택하세요.");
-        return;
+            alert("생년월일을 선택하세요.");
+            return;
         }
         const formatted = selectedDate;
         try {
-        await api.post("/api/users/mypage/edit", { birthday: formatted, gender });
-        alert("생년월일 저장 완료 ✅");
-        setShowBirthdayModal(false); // 모달 닫기
+            await api.post("/api/users/mypage/edit", { birthday: formatted, gender });
+            alert("생년월일 저장 완료 ✅");
+            setShowBirthdayModal(false); // 모달 닫기
         } catch (error) {
-        console.error(error);
-        alert("저장 실패 ❌");
+            console.error(error);
+            alert("저장 실패 ❌");
         }
     };
 
-  // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
+    // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
     useEffect(() => {
         if (!isAuthenticated()) {
-                    return;
-                }
+            return;
+        }
 
         const checkBirthday = async () => {
-        try {
-            const res = await api.get("/api/users/mypage");
-            if (!res.data.birthday) {
-            setShowBirthdayModal(true);
+            try {
+                const res = await api.get("/api/users/mypage");
+                if (!res.data.birthday) {
+                    setShowBirthdayModal(true);
+                }
+            } catch (err) {
+                console.error(err);
             }
-        } catch (err) {
-            console.error(err);
-        }
         };
         checkBirthday();
     }, []);
@@ -609,124 +609,148 @@ const generateCalendarDays = () => {
         <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
             <TopNav />
 
-        {isAuthenticated() && showBirthdayModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="bg-white p-6 rounded shadow-lg w-96 z-50">
+            {isAuthenticated() && showBirthdayModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+                    <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
 
-    <h2 className="text-lg font-bold mb-4">개인 정보 입력</h2>
+                        <h2 className="text-lg font-bold mb-4">개인 정보 입력</h2>
 
 
-      {/* 달력 */}
-        <div className="flex items-center justify-between mb-3">
-                                    <h5 className="text-sm font-medium text-gray-900">
-                                        {currentCalendarYear}년 {currentCalendarMonth}월
-                                    </h5>
-                                    <div className="flex gap-1">
-                                        <button
-                                            onClick={() => {
-                                                if (currentCalendarMonth === 1) {
-                                                    setCurrentCalendarMonth(12);
-                                                    setCurrentCalendarYear(currentCalendarYear - 1);
-                                                } else {
-                                                    setCurrentCalendarMonth(currentCalendarMonth - 1);
-                                                }
-                                            }}
-                                            className="p-1 hover:bg-gray-200 rounded text-xs"
-                                        >
-                                            ◀
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                if (currentCalendarMonth === 12) {
-                                                    setCurrentCalendarMonth(1);
-                                                    setCurrentCalendarYear(currentCalendarYear + 1);
-                                                } else {
-                                                    setCurrentCalendarMonth(currentCalendarMonth + 1);
-                                                }
-                                            }}
-                                            className="p-1 hover:bg-gray-200 rounded text-xs"
-                                        >
-                                            ▶
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* 요일 헤더 */}
-                                <div className="grid grid-cols-7 gap-1 mb-1">
-                                    {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
-                                        <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
-                                            }`}>
-                                            {day}
-                                        </div>
+                        {/* 달력 */}
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                {/* 년도 선택 드롭다운 */}
+                                <select
+                                    value={currentCalendarYear}
+                                    onChange={(e) => setCurrentCalendarYear(Number(e.target.value))}
+                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {Array.from({ length: 100 }, (_, i) => today.getFullYear() - 80 + i).map(year => (
+                                        <option key={year} value={year}>
+                                            {year}년
+                                        </option>
                                     ))}
+                                </select>
+                                {/* 월 선택 드롭다운 */}
+                                <select
+                                    value={currentCalendarMonth}
+                                    onChange={(e) => setCurrentCalendarMonth(Number(e.target.value))}
+                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                                        <option key={month} value={month}>
+                                            {month}월
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => {
+                                        if (currentCalendarMonth === 1) {
+                                            setCurrentCalendarMonth(12);
+                                            setCurrentCalendarYear(currentCalendarYear - 1);
+                                        } else {
+                                            setCurrentCalendarMonth(currentCalendarMonth - 1);
+                                        }
+                                    }}
+                                    className="p-1 hover:bg-gray-200 rounded text-xs"
+                                    title="이전 달"
+                                >
+                                    ◀
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (currentCalendarMonth === 12) {
+                                            setCurrentCalendarMonth(1);
+                                            setCurrentCalendarYear(currentCalendarYear + 1);
+                                        } else {
+                                            setCurrentCalendarMonth(currentCalendarMonth + 1);
+                                        }
+                                    }}
+                                    className="p-1 hover:bg-gray-200 rounded text-xs"
+                                    title="다음 달"
+                                >
+                                    ▶
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 요일 헤더 */}
+                        <div className="grid grid-cols-7 gap-1 mb-1">
+                            {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+                                <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                                    }`}>
+                                    {day}
                                 </div>
-                <div className="grid grid-cols-7 gap-1 mb-4">
-                    {generateCalendarDays().map((day, index) => {
-                    const isSelected = selectedDate === day.dateString;
-                    const isPast = !isDateInFuture(day.dateString);
-                    const isPastDate = !isDateInFuture(day.dateString);
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 mb-4">
+                            {generateCalendarDays().map((day, index) => {
+                                const isSelected = selectedDate === day.dateString;
+                                const isPast = !isDateInFuture(day.dateString);
+                                const isPastDate = !isDateInFuture(day.dateString);
 
-                    return (
+                                return (
+                                    <button
+                                        key={index}
+                                        onClick={() => (isPastDate) ? handleDateSelect(day.dateString) : null}
+                                        className={`p-1.5 text-xs rounded transition-colors relative h-8 ${isPast
+                                            ? isSelected
+                                                ? 'bg-blue-600 text-white'       // 선택된 날짜 스타일
+                                                : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer' // 과거 날짜 스타일
+                                            : 'text-gray-400 cursor-not-allowed' // 비활성 날짜
+                                            }`}
+                                    >
+                                        {day.date}
+
+                                        {isSelected && (
+                                            <div className="absolute inset-0 bg-blue-600 rounded opacity-50"></div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* 성별 선택 */}
+                        <label className="block mb-2">성별</label>
+                        <div className="flex gap-4 mb-4">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="MALE"
+                                    checked={gender === "MALE"}
+                                    onChange={(e) => setGender(e.target.value)}
+                                /> 남성
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="FEMALE"
+                                    checked={gender === "FEMALE"}
+                                    onChange={(e) => setGender(e.target.value)}
+                                /> 여성
+                            </label>
+                        </div>
+
                         <button
-                        key={index}
-                        onClick={() => ( isPastDate) ? handleDateSelect(day.dateString) : null}
-                        className={`p-1.5 text-xs rounded transition-colors relative h-8 ${
-                            isPast
-                                ? isSelected
-                                ? 'bg-blue-600 text-white'       // 선택된 날짜 스타일
-                                : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer' // 과거 날짜 스타일
-                                : 'text-gray-400 cursor-not-allowed' // 비활성 날짜
-                            }`}
+                            onClick={handleSubmit}
+                            className="bg-blue-500 text-white px-4 py-2 rounded w-full"
                         >
-                        {day.date}
-
-                        {isSelected && (
-                            <div className="absolute inset-0 bg-blue-600 rounded opacity-50"></div>
-                        )}
+                            저장
                         </button>
-                    );
-                    })}
-                </div>
 
-                {/* 성별 선택 */}
-                <label className="block mb-2">성별</label>
-                <div className="flex gap-4 mb-4">
-                    <label>
-                    <input
-                        type="radio"
-                        name="gender"
-                        value="MALE"
-                        checked={gender === "MALE"}
-                        onChange={(e) => setGender(e.target.value)}
-                    /> 남성
-                    </label>
-                    <label>
-                    <input
-                        type="radio"
-                        name="gender"
-                        value="FEMALE"
-                        checked={gender === "FEMALE"}
-                        onChange={(e) => setGender(e.target.value)}
-                    /> 여성
-                    </label>
+                        {/* 모달 닫기 버튼 */}
+                        <button
+                            onClick={() => setShowBirthdayModal(false)}
+                            className="mt-2 text-sm text-gray-500 hover:underline"
+                        >
+                            닫기
+                        </button>
+                    </div>
                 </div>
-
-                <button
-                    onClick={handleSubmit}
-                    className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-                >
-                    저장
-                </button>
-
-                {/* 모달 닫기 버튼 */}
-                <button
-                    onClick={() => setShowBirthdayModal(false)}
-                    className="mt-2 text-sm text-gray-500 hover:underline"
-                >
-                    닫기
-                </button>
-                </div>
-            </div>
             )}
 
 
