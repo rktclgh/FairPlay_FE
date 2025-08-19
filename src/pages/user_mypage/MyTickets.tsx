@@ -15,9 +15,11 @@ import {
 } from "../../services/qrTicket"
 import { getFormLink } from "../../services/attendee";
 import { useQrTicketSocket } from "../../utils/useQrTicketSocket";
+import { useTranslation } from "react-i18next";
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
     const [qrTicketId, setQrTicketId] = useState(0);
     const [selectedTicketData, setSelectedTicketData] = useState<QrTicketData | null>(null);
