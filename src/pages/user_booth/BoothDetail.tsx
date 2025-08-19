@@ -32,7 +32,11 @@ const BoothDetail: React.FC = () => {
         <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '2rem', border: '1px solid #eee', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
             <img src={booth.boothBannerUrl || '/placeholder.png'} alt={booth.boothTitle} style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '8px' }} />
             <h1 style={{ marginTop: '1.5rem' }}>{booth.boothTitle}</h1>
-            <p style={{ fontSize: '1.1rem', color: '#555', borderLeft: '4px solid #007bff', paddingLeft: '1rem', margin: '1.5rem 0' }}>{booth.boothDescription}</p>
+            <div 
+                className="prose prose-sm max-w-none"
+                style={{ fontSize: '1.1rem', color: '#555', borderLeft: '4px solid #007bff', paddingLeft: '1rem', margin: '1.5rem 0' }}
+                dangerouslySetInnerHTML={{ __html: booth.boothDescription }}
+            />
             
             <h2>부스 정보</h2>
             <ul>

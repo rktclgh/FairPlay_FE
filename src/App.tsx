@@ -71,6 +71,7 @@ import ChangeLogs from "./pages/admin_security/ChangeLogs";
 import { AdminProfile } from "./pages/admin_account/AdminProfile";
 import { HostProfile } from "./pages/host_account/HostProfile";
 import { BoothAdminProfile } from "./pages/booth_admin/BoothAdminProfile";
+import BoothAdminDashboard from "./pages/booth_admin/BoothAdminDashboard";
 import { BoothAdminRouteGuard } from "./components/BoothAdminRouteGuard";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -257,6 +258,7 @@ function AppContent() {
 
 
                         {/* 부스 관리자 전용 페이지 */}
+                        <Route path="/booth-admin/dashboard" element={<BoothAdminRouteGuard><BoothAdminDashboard /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/profile" element={<BoothAdminRouteGuard><BoothAdminProfile /></BoothAdminRouteGuard>} />
                         <Route path="/host/dashboard" element={<HostDashboard />} />
                         <Route path="/host/edit-event-info" element={<EditEventInfo />} />
@@ -268,7 +270,6 @@ function AppContent() {
                         <Route path="/host/booth-applications" element={<BoothApplicationList />} />
                         <Route path="/host/booth-participants" element={<BoothParticipants />} />
                         <Route path="/host/booth-participants/:id" element={<BoothParticipantDetail />} />
-                        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
                         <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
                         <Route path="/host/revenue-summary" element={<RevenueSummary />} />
                         <Route path="/host/time-analysis" element={<TimeAnalysis />} />
