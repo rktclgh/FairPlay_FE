@@ -28,7 +28,6 @@ export default function ParticipantList(): JSX.Element {
         const fetchParticipant = async () => {
             
             if (!isOneDayBeforeEvent(scheduleDate)) {
-                alert("종료된 행사이므로 참석자 폼을 작성, 수정할 수 없습니다.");
                 setIsPossibleEdit(false);
             }
             const res = await getAttendeesReservation(Number(reservationId));
@@ -85,6 +84,7 @@ export default function ParticipantList(): JSX.Element {
                     day: "2-digit"
                 })
             );
+            return true;
         }
 
         // 3. 그 외 → 행사 이틀 전까지만 가능
@@ -96,7 +96,7 @@ export default function ParticipantList(): JSX.Element {
                     day: "2-digit"
                 })
             );
-                        console.log("reservationDate"+reservationDate+" twoDaysBefore: "+twoDaysBefore);
+            console.log("reservationDate"+reservationDate+" twoDaysBefore: "+twoDaysBefore);
 
             return true;
         }
