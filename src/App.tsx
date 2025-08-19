@@ -145,7 +145,8 @@ function AppContent() {
 
   // 마이페이지 경로에 대해 더 큰 여백 적용
   const isMyPage = pathname.startsWith("/mypage");
-  const bottomPadding = isMyPage ? "pb-48 md:pb-56" : "pb-20 md:pb-28";
+  const isAuthPage = pathname === "/signup" || pathname === "/login";
+  const bottomPadding = isMyPage ? "pb-48 md:pb-56" : isAuthPage ? "" : "pb-20 md:pb-28";
 
   return (
     <div className="min-h-screen flex flex-col">
