@@ -137,7 +137,7 @@ function AppContent() {
     pathname.startsWith("/admin_settings") ||
     pathname.startsWith("/admin_settlement") ||
     pathname.startsWith("/admin_statistics") ||
-    pathname.startsWith("/admin_vip_banner")
+    pathname.startsWith("/admin_vip_banner") ||
     pathname === "/register" ||
     pathname === "/event-registration-intro" ||
     pathname.startsWith("/mypage")
