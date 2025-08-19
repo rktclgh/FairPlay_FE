@@ -16,6 +16,7 @@ import {
 import { getFormLink } from "../../services/attendee";
 import { useQrTicketSocket } from "../../utils/useQrTicketSocket";
 import { useTranslation } from "react-i18next";
+import { format } from "date-fns";
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function MyTickets(): JSX.Element {
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                // QR 티켓 사용 가능 여부: 관람일자 1일 전부터 행사 날까지
+                // QR 티켓 사용 가능 여부: 관람일자 1일 전부터 행사 날까지 버튼 활성화
                 const canUseList = data.map((reservation: ReservationResponseDto) => {
                     if (!reservation.scheduleDate || !reservation.startTime) return false;
                     const eventDate = new Date(reservation.scheduleDate); // 행사일
@@ -69,8 +70,13 @@ export default function MyTickets(): JSX.Element {
     }, []);
 
     const handleQrTicketOpen = async (reservation: ReservationResponseDto) => {
-
         try {
+            // QR 티켓 당일 조회할 시 alert알림으로 api 호출 차단
+            // const today = format(new Date(), 'yyyy-mm-dd');
+            // if (reservation.scheduleDate && reservation.scheduleDate !== today) {
+            //     alert("QR티켓은 당일에만 조회할 수 있습니다.");
+            //     return;
+            // }
             const eventDate = `${formatDate(reservation.scheduleDate ?? null)} ${formatTime(reservation.startTime ?? null)} - ${formatTime(reservation.endTime ?? null)}`;
 
             const qrTicketRequestDto: QrTicketRequestDto = {
@@ -142,7 +148,6 @@ export default function MyTickets(): JSX.Element {
             toast.success("복사 완료! 참석자들이 정보를 입력할 수 있도록 링크를 보내주세요.");
             return;
         }
-
         try {
             const res = await getFormLink(reservationId);
             const link = `${import.meta.env.VITE_FRONTEND_BASE_URL}/participant-form?token=${res.token}`;

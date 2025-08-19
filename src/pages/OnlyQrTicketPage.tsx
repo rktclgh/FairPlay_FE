@@ -70,7 +70,7 @@ export const OnlyQrTicketPage = () => {
         if (!resData) return;
 
         // 타이머 시작
-        setTimeLeft(10); // 5분 초기화
+        setTimeLeft(300); // 5분 초기화
         timerRef.current = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
