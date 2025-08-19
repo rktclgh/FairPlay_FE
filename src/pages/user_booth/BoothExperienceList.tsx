@@ -13,9 +13,11 @@ import { AttendeeSideNav } from "../../pages/user_mypage/AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
 import BoothExperienceReservationModal from '../../components/booth/BoothExperienceReservationModal';
 import reservationService from '../../services/reservationService';
+import { useTranslation } from 'react-i18next';
 
 const BoothExperienceList: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [experiences, setExperiences] = useState<BoothExperience[]>([]);
   const [filteredExperiences, setFilteredExperiences] = useState<BoothExperience[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,7 @@ const BoothExperienceList: React.FC = () => {
 
     } catch (error) {
       console.error('부스 체험 목록 로딩 실패:', error);
-      toast.error('부스 체험 목록을 불러오는데 실패했습니다.');
+      toast.error(t('boothExperience.loadingFailed'));
     } finally {
       setLoading(false);
     }
@@ -214,7 +216,7 @@ const BoothExperienceList: React.FC = () => {
 
           {/* 페이지 제목 */}
           <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-            부스 체험 목록
+            {t('boothExperience.list')}
           </div>
 
           {/* 사이드바 */}
@@ -224,16 +226,16 @@ const BoothExperienceList: React.FC = () => {
           <div className="ml-64 mt-[195px] w-[949px] pb-28 md:pb-36">
             {/* 헤더 */}
             <div className="mb-6">
-              <p className="text-gray-600">다양한 부스에서 제공하는 흥미로운 체험을 예약하세요</p>
+              <p className="text-gray-600">{t('boothExperience.description')}</p>
             </div>
 
             {/* 검색 및 필터 */}
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">검색 조건</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('payment.searchConditions')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
                 {/* 행사 선택 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">행사</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('event.title')}</label>
                   <div className="relative">
                     <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                     <select
@@ -242,11 +244,11 @@ const BoothExperienceList: React.FC = () => {
                       onChange={(e) => setSelectedEventId(e.target.value)}
                     >
                       <option value="ALL">
-                        모든 행사
+                        {t('event.allCategories')}
                       </option>
                       {availableEvents.map(event => (
                         <option key={event.id} value={event.id?.toString() || ''}>
-                          {event.name || '알 수 없는 행사'}
+                          {event.name || t('common.unknown')}
                         </option>
                       ))}
                     </select>
@@ -260,12 +262,12 @@ const BoothExperienceList: React.FC = () => {
 
                 {/* 검색 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">체험명/부스명</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.experienceName')}</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder="체험명 또는 부스명 검색..."
+                      placeholder={t('boothExperience.experienceNamePlaceholder')}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -275,7 +277,7 @@ const BoothExperienceList: React.FC = () => {
 
                 {/* 시작 날짜 필터 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">시작일</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.startDate')}</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                     <input
@@ -317,7 +319,7 @@ const BoothExperienceList: React.FC = () => {
 
                 {/* 종료 날짜 필터 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">종료일</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.endDate')}</label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                     <input
@@ -359,7 +361,7 @@ const BoothExperienceList: React.FC = () => {
 
                 {/* 정렬 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">정렬</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.sort')}</label>
                   <div className="relative">
                     <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                     <select
@@ -371,9 +373,9 @@ const BoothExperienceList: React.FC = () => {
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
                     >
-                      <option value="startTime" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>시작 시간순</option>
-                      <option value="congestionRate" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>혼잡도순</option>
-                      <option value="createdAt" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>등록순</option>
+                      <option value="startTime" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>{t('boothExperience.sortByTime')}</option>
+                      <option value="congestionRate" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>{t('boothExperience.sortByCongestion')}</option>
+                      <option value="createdAt" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>{t('boothExperience.sortByCreated')}</option>
                     </select>
                     {/* 커스텀 화살표 */}
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -395,7 +397,7 @@ const BoothExperienceList: React.FC = () => {
                       onChange={(e) => setShowAvailableOnly(e.target.checked)}
                     />
                     <label htmlFor="availableOnly" className="ml-2 text-sm text-gray-700">
-                      예약 가능한 것만 보기
+                      {t('boothExperience.availableOnly')}
                     </label>
                   </div>
                 </div>
@@ -411,7 +413,7 @@ const BoothExperienceList: React.FC = () => {
                       onChange={(e) => setShowOnlyRegisteredEvents(e.target.checked)}
                     />
                     <label htmlFor="registeredEventsOnly" className="ml-2 text-sm text-gray-700">
-                      참가 신청한 행사만 보기
+                      {t('boothExperience.registeredEventsOnly')}
                     </label>
                   </div>
                 </div>
@@ -428,7 +430,7 @@ const BoothExperienceList: React.FC = () => {
                 {/* 결과 개수 */}
                 <div className="mb-4">
                   <p className="text-sm text-gray-600">
-                    총 <span className="font-semibold text-blue-600">{filteredExperiences.length}</span>개의 체험이 있습니다
+                    {t('common.total')} <span className="font-semibold text-blue-600">{filteredExperiences.length}</span>{t('boothExperience.totalExperiences')}
                   </p>
                 </div>
 
@@ -478,16 +480,16 @@ const BoothExperienceList: React.FC = () => {
                             <Clock className="w-4 h-4 mr-2" />
                             <span className="text-sm">
                               {formatTime(experience.startTime)} - {formatTime(experience.endTime)}
-                              <span className="ml-1">({experience.durationMinutes}분)</span>
+                              <span className="ml-1">({experience.durationMinutes}{t('boothExperience.minutes')})</span>
                             </span>
                           </div>
                           <div className="flex items-center text-gray-600">
                             <Users className="w-4 h-4 mr-2" />
                             <span className="text-sm">
-                              {experience.currentParticipants}/{experience.maxCapacity}명 참여 중
+                              {experience.currentParticipants}/{experience.maxCapacity}{t('boothExperience.participants')}
                               {experience.waitingCount > 0 && (
                                 <span className="ml-1 text-orange-600">
-                                  (대기 {experience.waitingCount}명)
+                                  ({t('boothExperience.waiting')} {experience.waitingCount}{t('boothExperience.participants')})
                                 </span>
                               )}
                             </span>
@@ -506,7 +508,7 @@ const BoothExperienceList: React.FC = () => {
                               }`}></div>
                             <span className={`text-sm font-medium ${experience.isReservationAvailable ? 'text-green-600' : 'text-red-600'
                               }`}>
-                              {experience.isReservationAvailable ? '예약 가능' : '예약 불가'}
+                              {experience.isReservationAvailable ? t('boothExperience.reservationAvailable') : t('boothExperience.reservationUnavailable')}
                             </span>
                           </div>
 
@@ -533,11 +535,11 @@ const BoothExperienceList: React.FC = () => {
                       <Search className="w-12 h-12 mx-auto mb-2" />
                       {userRegisteredEvents.length === 0 ? (
                         <div>
-                          <p className="mb-2">참가 신청한 행사가 없습니다</p>
-                          <p className="text-sm">행사에 참가 신청을 해주세요</p>
+                          <p className="mb-2">{t('boothExperience.noRegisteredEvents')}</p>
+                          <p className="text-sm">{t('boothExperience.noRegisteredEventsDesc')}</p>
                         </div>
                       ) : (
-                        <p>조건에 맞는 체험을 찾을 수 없습니다</p>
+                        <p>{t('boothExperience.noExperiences')}</p>
                       )}
                     </div>
                     {userRegisteredEvents.length > 0 && (
@@ -551,7 +553,7 @@ const BoothExperienceList: React.FC = () => {
                         }}
                         className="text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        필터 초기화
+                        {t('boothExperience.resetFilters')}
                       </button>
                     )}
                   </div>

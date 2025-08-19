@@ -208,93 +208,95 @@ export const SignUpPage = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
+            <div className="bg-white w-full max-w-[1256px] min-h-screen relative">
                 <TopNav />
 
                 {/* 콘텐츠 컨테이너 */}
-                <div className="relative" style={{ marginTop: '80px' }}>
-                    <Link to="/" className="absolute top-24 left-[569px]">
+                <div className="relative flex flex-col items-center px-4 sm:px-0" style={{ marginTop: '80px', paddingBottom: '40px' }}>
+                    <Link to="/" className="mb-8">
                         <div className="[font-family:'Segoe_UI-Bold',Helvetica] font-bold text-black text-[32px] text-center leading-[48px] whitespace-nowrap tracking-[0]">
                             회원가입
                         </div>
                     </Link>
 
                     {/* 이름 입력 */}
-                    <div className="absolute top-[200px] left-[428px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm tracking-[0] leading-[21px] whitespace-nowrap">
-                        이름
-                    </div>
-                    <div className="absolute w-[400px] h-[52px] top-[230px] left-[428px] border-b border-gray-300">
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="실명을 입력하세요"
-                            className="absolute w-[350px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                            style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
-                        />
+                    <div className="w-full max-w-[400px] mb-6">
+                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-1">
+                            이름
+                        </div>
+                        <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300">
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="실명을 입력하세요"
+                                className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
+                                style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
+                            />
+                        </div>
                     </div>
 
                     {/* 닉네임 입력 */}
-                    <div className="absolute top-[305px] left-[428px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm tracking-[0] leading-[21px] whitespace-nowrap">
-                        닉네임
-                    </div>
-                    <div className="absolute w-[400px] h-[52px] top-[335px] left-[428px] border-b border-gray-300">
-                        <input
-                            type="text"
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
-                            placeholder="닉네임을 입력하세요"
-                            className="absolute w-[350px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                            style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
-                        />
-                    </div>
-                    <button
-                        onClick={handleCheckNickname}
-                        disabled={nicknameChecked}
-                        className={`absolute w-[60px] h-7 top-[345px] left-[768px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${nicknameChecked
-                            ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
-                            : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
-                            }`}
-                    >
-                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                            중복 확인
+                    <div className="w-full max-w-[400px] mb-6">
+                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-1">
+                            닉네임
                         </div>
-                    </button>
+                        <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
+                            <input
+                                type="text"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                placeholder="닉네임을 입력하세요"
+                                className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
+                                style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
+                            />
+                            <button
+                                onClick={handleCheckNickname}
+                                disabled={nicknameChecked}
+                                className={`absolute top-[5px] sm:top-[15px] right-0 w-[60px] h-7 rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${nicknameChecked
+                                    ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                    : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
+                                    }`}
+                            >
+                                <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
+                                    중복 확인
+                                </div>
+                            </button>
+                        </div>
+                    </div>
 
                     {/* 이메일 주소 */}
-                    <div className="inline-flex items-center gap-[3px] absolute top-[410px] left-[428px]">
-                        <div className="relative w-fit mt-[-1.00px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap">
+                    <div className="w-full max-w-[400px] mb-6">
+                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
                             이메일 주소
                         </div>
-                    </div>
-
-                    <div className="absolute w-[400px] h-[52px] top-[440px] left-[428px] border-b border-gray-300">
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="이메일을 입력하세요"
-                            className="absolute w-[350px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                            style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
-                        />
-                    </div>
-
-                    <button
-                        onClick={handleCheckEmail}
-                        disabled={emailChecked || !emailValid}
-                        className={`absolute w-[60px] h-7 top-[450px] left-[768px] rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${emailChecked || !emailValid
-                            ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
-                            : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
-                            }`}
-                    >
-                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                            중복 확인
+                        <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="이메일을 입력하세요"
+                                className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
+                                style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
+                            />
+                            <button
+                                onClick={handleCheckEmail}
+                                disabled={emailChecked || !emailValid}
+                                className={`absolute top-[5px] sm:top-[15px] right-0 w-[60px] h-7 rounded-[10px] border border-solid cursor-pointer transition-colors flex items-center justify-center ${emailChecked || !emailValid
+                                    ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                    : 'border-gray-300 bg-transparent text-black hover:bg-gray-100'
+                                    }`}
+                            >
+                                <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
+                                    중복 확인
+                                </div>
+                            </button>
                         </div>
-                    </button>
+                    </div>
 
                     {/* 이메일 유효성 상태 표시 */}
                     {emailValid !== null && (
-                        <div className="absolute left-[428px] flex items-center gap-2 top-[500px]">
+                        <div className="w-full max-w-[400px] -mt-4 flex items-center gap-2">
                             {emailValid ? (
                                 <div className="flex items-center gap-2 text-green-600">
                                     <FaCheck size={14} />
@@ -309,149 +311,149 @@ export const SignUpPage = () => {
                         </div>
                     )}
 
-
-
                     {/* 인증번호 입력 - 조건부 렌더링 */}
                     {emailChecked && (
-                        <>
-                            <div className="inline-flex items-center gap-[3px] absolute top-[515px] left-[428px]">
-                                <div className="relative w-fit mt-[-1.00px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap">
-                                    인증 번호
-                                </div>
+                        <div className="w-full max-w-[400px] mb-6">
+                            <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
+                                인증 번호
                             </div>
-
-                            <div className="absolute w-[400px] h-[52px] top-[545px] left-[428px] border-b border-gray-300">
+                            <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
                                 <input
                                     type="text"
                                     value={verificationCode}
                                     onChange={(e) => setVerificationCode(e.target.value)}
                                     placeholder={verificationSent ? "인증번호를 입력하세요" : "인증번호 발송 버튼을 눌러주세요"}
-                                    className="absolute w-[350px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                                    style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
+                                    className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
+                                    style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
                                     disabled={!verificationSent}
                                 />
+                                {verificationSent ? (
+                                    <button
+                                        onClick={handleVerifyCode}
+                                        className="absolute top-[5px] sm:top-[15px] right-0 w-[60px] h-7 rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center"
+                                    >
+                                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
+                                            인증 확인
+                                        </div>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleSendVerification}
+                                        disabled={emailVerificationTimer > 0 || isSendingVerification}
+                                        className={`absolute top-[5px] sm:top-[15px] right-0 w-[100px] h-7 rounded-[10px] border border-solid transition-colors flex items-center justify-center ${emailVerificationTimer > 0 || isSendingVerification
+                                            ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                            : 'border-gray-300 bg-transparent text-black hover:bg-gray-100 cursor-pointer'
+                                            }`}
+                                    >
+                                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
+                                            {isSendingVerification ? '발송중' : emailVerificationTimer > 0 ? `${emailVerificationTimer}초` : '인증번호 발송'}
+                                        </div>
+                                    </button>
+                                )}
                             </div>
-                            {verificationSent ? (
-                                <button
-                                    onClick={handleVerifyCode}
-                                    className="absolute w-[60px] h-7 top-[555px] left-[768px] rounded-[10px] border border-solid border-gray-300 cursor-pointer transition-colors bg-transparent text-black hover:bg-gray-100 flex items-center justify-center"
-                                >
-                                    <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                        인증 확인
-                                    </div>
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleSendVerification}
-                                    disabled={emailVerificationTimer > 0 || isSendingVerification}
-                                    className={`absolute w-[100px] h-7 top-[555px] left-[768px] rounded-[10px] border border-solid transition-colors flex items-center justify-center ${emailVerificationTimer > 0 || isSendingVerification
-                                        ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
-                                        : 'border-gray-300 bg-transparent text-black hover:bg-gray-100 cursor-pointer'
-                                        }`}
-                                >
-                                    <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-xs text-center leading-[18px] tracking-[0] whitespace-nowrap">
-                                        {isSendingVerification ? '발송중' : emailVerificationTimer > 0 ? `${emailVerificationTimer}초` : '인증번호 발송'}
-                                    </div>
-                                </button>
-                            )}
-                        </>
-                    )}
-
-                    {/* 비밀번호 입력 */}
-                    <div className={`absolute left-[428px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap ${emailChecked ? 'top-[635px]' : 'top-[530px]'}`}>
-                        비밀번호
-                    </div>
-                    <div className={`absolute w-[400px] h-[52px] left-[428px] border-b border-gray-300 ${emailChecked ? 'top-[665px]' : 'top-[560px]'}`}>
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="비밀번호를 입력하세요"
-                            className="absolute w-[320px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                            style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute top-[15px] right-[15px] cursor-pointer hover:text-gray-700 z-10 border-none outline-none p-0 m-0 focus:outline-none focus:ring-0 focus:border-none"
-                            style={{ background: 'none', backgroundColor: 'transparent', boxShadow: 'none' }}
-                        >
-                            {showPassword ? (
-                                <EyeOff className="w-5 h-5 text-gray-600" />
-                            ) : (
-                                <Eye className="w-5 h-5 text-gray-600" />
-                            )}
-                        </button>
-                    </div>
-                    <p className={`absolute left-[428px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-gray-500 text-xs leading-[18px] tracking-[0] whitespace-nowrap ${emailChecked ? 'top-[724px]' : 'top-[609px]'}`}>
-                        • 8자 이상 16자 이하
-                    </p>
-
-                    {/* 비밀번호 확인 */}
-                    <div className={`absolute left-[428px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap ${emailChecked ? 'top-[754px]' : 'top-[639px]'}`}>
-                        비밀번호 확인
-                    </div>
-                    <div className={`absolute w-[400px] h-[52px] left-[428px] border-b border-gray-300 ${emailChecked ? 'top-[784px]' : 'top-[669px]'}`}>
-                        <input
-                            type={showConfirmPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="비밀번호를 다시 입력하세요"
-                            className="absolute w-[320px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                            style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute top-[15px] right-[15px] cursor-pointer hover:text-gray-700 z-10 border-none outline-none p-0 m-0 focus:outline-none focus:ring-0 focus:border-none"
-                            style={{ background: 'none', backgroundColor: 'transparent', boxShadow: 'none' }}
-                        >
-                            {showConfirmPassword ? (
-                                <EyeOff className="w-5 h-5 text-gray-600" />
-                            ) : (
-                                <Eye className="w-5 h-5 text-gray-600" />
-                            )}
-                        </button>
-                    </div>
-                    {/* 비밀번호 일치 상태 표시 */}
-                    {passwordMatch !== null && (
-                        <div className={`absolute left-[428px] flex items-center gap-2 ${emailChecked ? 'top-[836px]' : 'top-[721px]'} ${passwordMatch ? 'text-green-600' : 'text-red-500'
-                            }`}>
-                            {passwordMatch ? (
-                                <>
-                                    <FaCheck size={14} />
-                                    <span className="text-sm">비밀번호가 일치합니다</span>
-                                </>
-                            ) : (
-                                <>
-                                    <FaTimes size={14} />
-                                    <span className="text-sm">비밀번호가 일치하지 않습니다</span>
-                                </>
-                            )}
                         </div>
                     )}
 
-                    {/* 휴대폰 번호 입력 */}
-                    <div className={`absolute left-[428px] [font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap ${emailChecked ? 'top-[869px]' : 'top-[754px]'}`}>
-                        휴대폰 번호
+                    {/* 비밀번호 입력 */}
+                    <div className="w-full max-w-[400px] mb-6">
+                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
+                            비밀번호
+                        </div>
+                        <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="비밀번호를 입력하세요"
+                                className="w-full max-w-[320px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none pr-12"
+                                style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute top-[15px] right-0 sm:right-[15px] cursor-pointer hover:text-gray-700 z-10 border-none outline-none p-0 m-0 focus:outline-none focus:ring-0 focus:border-none"
+                                style={{ background: 'none', backgroundColor: 'transparent', boxShadow: 'none' }}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="w-5 h-5 text-gray-600" />
+                                ) : (
+                                    <Eye className="w-5 h-5 text-gray-600" />
+                                )}
+                            </button>
+                        </div>
+                        <p className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-gray-500 text-xs leading-[18px] tracking-[0] whitespace-nowrap mt-2">
+                            • 8자 이상 16자 이하
+                        </p>
                     </div>
-                    <div className={`absolute w-[400px] h-[52px] left-[428px] border-b border-gray-300 ${emailChecked ? 'top-[899px]' : 'top-[784px]'}`}>
-                        <input
-                            type="tel"
-                            value={phone}
-                            onChange={handlePhoneChange}
-                            placeholder="휴대폰 번호를 입력하세요"
-                            className="absolute w-[350px] h-[21px] top-[13px] left-[15px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
-                            style={{ WebkitBoxShadow: '0 0 0 1000px white inset' }}
-                            maxLength={13}
-                        />
+
+                    {/* 비밀번호 확인 */}
+                    <div className="w-full max-w-[400px] mb-6">
+                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
+                            비밀번호 확인
+                        </div>
+                        <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300 relative">
+                            <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="비밀번호를 다시 입력하세요"
+                                className="w-full max-w-[320px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none pr-12"
+                                style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute top-[15px] right-0 sm:right-[15px] cursor-pointer hover:text-gray-700 z-10 border-none outline-none p-0 m-0 focus:outline-none focus:ring-0 focus:border-none"
+                                style={{ background: 'none', backgroundColor: 'transparent', boxShadow: 'none' }}
+                            >
+                                {showConfirmPassword ? (
+                                    <EyeOff className="w-5 h-5 text-gray-600" />
+                                ) : (
+                                    <Eye className="w-5 h-5 text-gray-600" />
+                                )}
+                            </button>
+                        </div>
+                        {/* 비밀번호 일치 상태 표시 */}
+                        {passwordMatch !== null && (
+                            <div className={`mt-2 flex items-center gap-2 ${passwordMatch ? 'text-green-600' : 'text-red-500'}`}>
+                                {passwordMatch ? (
+                                    <>
+                                        <FaCheck size={14} />
+                                        <span className="text-sm">비밀번호가 일치합니다</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaTimes size={14} />
+                                        <span className="text-sm">비밀번호가 일치하지 않습니다</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 휴대폰 번호 입력 */}
+                    <div className="w-full max-w-[400px] mb-8">
+                        <div className="[font-family:'Segoe_UI-Semibold',Helvetica] font-normal text-black text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-1">
+                            휴대폰 번호
+                        </div>
+                        <div className="w-full max-w-[400px] h-[52px] border-b border-gray-300">
+                            <input
+                                type="tel"
+                                value={phone}
+                                onChange={handlePhoneChange}
+                                placeholder="휴대폰 번호를 입력하세요"
+                                className="w-full max-w-[350px] h-[21px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-base leading-[normal] bg-transparent border-none outline-none"
+                                style={{ WebkitBoxShadow: '0 0 0 1000px white inset', marginTop: '13px', marginLeft: '15px' }}
+                                maxLength={13}
+                            />
+                        </div>
                     </div>
 
                     {/* 회원가입 버튼 */}
                     <button
                         onClick={handleSignUp}
                         disabled={!isSignUpEnabled}
-                        className={`absolute w-[400px] h-12 left-[428px] rounded-lg flex items-center justify-center transition-colors focus:outline-none ${emailChecked ? 'top-[979px]' : 'top-[864px]'} ${isSignUpEnabled
+                        className={`w-full max-w-[400px] h-12 rounded-lg flex items-center justify-center transition-colors focus:outline-none mb-4 ${isSignUpEnabled
                             ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
                             : 'bg-[#d9d9d9] text-white cursor-not-allowed'
                             }`}
@@ -462,16 +464,17 @@ export const SignUpPage = () => {
                         </div>
                     </button>
 
-                    <div className={`absolute w-[58px] h-[22px] left-[599px] ${emailChecked ? 'top-[1054px]' : 'top-[939px]'}`}>
-                        <div className="absolute w-[58px] h-[21px] top-px left-0 bg-white" />
-                        <div className="absolute top-0 left-4 [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-gray-500 text-sm leading-[21px] tracking-[0] whitespace-nowrap">
-                            또는
+                    <div className="w-full max-w-[400px] mb-4 flex justify-center">
+                        <div className="w-[58px] h-[22px] flex items-center justify-center">
+                            <div className="[font-family:'Segoe_UI-Regular',Helvetica] font-normal text-gray-500 text-sm leading-[21px] tracking-[0] whitespace-nowrap">
+                                또는
+                            </div>
                         </div>
                     </div>
 
                     {/* 카카오 회원가입 버튼 */}
                     <button
-                        className={`absolute w-[400px] h-12 left-[428px] bg-[#fee500] rounded-lg flex items-center justify-center cursor-pointer hover:bg-yellow-400 transition-colors focus:outline-none focus:ring-1 focus:ring-gray-300 ${emailChecked ? 'top-[1100px]' : 'top-[985px]'}`}
+                        className="w-full max-w-[400px] h-12 bg-[#fee500] rounded-lg flex items-center justify-center cursor-pointer hover:bg-yellow-400 transition-colors focus:outline-none focus:ring-1 focus:ring-gray-300"
                         style={{ borderRadius: '8px' }}
                         onClick={handleKakaoSignUp}
                     >
@@ -480,24 +483,6 @@ export const SignUpPage = () => {
                             <span className="text-[#3c1e1e] font-semibold text-sm" style={{ fontFamily: 'Segoe_UI-Semibold, Helvetica' }}>카카오로 가입하기</span>
                         </div>
                     </button>
-
-                    <div className={`absolute w-[1256px] h-[205px] left-0 bg-white border-t border-[#0000001f] ${emailChecked ? 'top-[1252px]' : 'top-[1137px]'}`}>
-                        <p className="absolute top-[62px] left-[515px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-                            간편하고 안전한 행사 관리 솔루션
-                        </p>
-                        <div className="absolute top-[118px] left-[450px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                            이용약관
-                        </div>
-                        <div className="absolute top-[118px] left-[534px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                            개인정보처리방침
-                        </div>
-                        <div className="absolute top-[118px] left-[669px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                            고객센터
-                        </div>
-                        <div className="absolute top-[118px] left-[752px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                            회사소개
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

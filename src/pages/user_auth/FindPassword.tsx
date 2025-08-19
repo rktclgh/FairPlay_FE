@@ -75,64 +75,122 @@ export const FindPassword = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
+            <div className="bg-white w-full max-w-[1256px] min-h-screen relative">
                 <TopNav className="!absolute !left-0 !-top-0.5" />
 
-                <div className="absolute top-44 left-[535px] font-bold text-black text-[32px] text-center leading-[48px] whitespace-nowrap">
-                    비밀번호 찾기
-                </div>
-
-                <p className="absolute top-[232px] left-[479px] font-normal text-gray-500 text-base text-center leading-6 whitespace-nowrap">
-                    등록된 이메일로 임시 비밀번호를 받아보세요
-                </p>
-
-                <div className="absolute top-[280px] left-[428px] font-normal text-[#2d3748] text-sm leading-[21px] whitespace-nowrap">
-                    이메일 주소
-                </div>
-
-                <div className="absolute w-[411px] h-[52px] top-[310px] left-[428px] border-b border-gray-300">
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="이메일 주소를 입력하세요"
-                        className="absolute w-[380px] h-[21px] top-[13px] left-[15px] font-normal text-black placeholder:text-[#00000080] text-base leading-[normal] bg-transparent border-none outline-none"
-                        style={{
-                            WebkitBoxShadow: '0 0 0 1000px white inset'
-                        } as React.CSSProperties}
-                        disabled={loading}
-                        autoFocus
-                    />
-                </div>
-
-                {/* 에러 메시지 */}
-                <div className="absolute top-[345px] left-[428px] w-[411px] h-6">
-                    {errorMsg && (
-                        <div className="text-red-600 text-sm font-medium">{errorMsg}</div>
-                    )}
-                </div>
-
-                <button
-                    className={`absolute w-[411px] h-[52px] top-[403px] left-[428px] rounded-[10px] flex items-center justify-center transition-colors focus:outline-none
-          ${isEmailValid && !loading
-                            ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
-                            : 'bg-[#d9d9d9] text-white cursor-not-allowed'}
-          `}
-                    disabled={!isEmailValid || loading}
-                    onClick={handleSendTempPassword}
-                >
-                    <div className="font-semibold text-base text-center leading-6 whitespace-nowrap flex items-center justify-center">
-                        {loading ? <Spinner /> : null}
-                        {loading ? "처리 중..." : "임시 비밀번호 발송"}
+                {/* 데스크톱 레이아웃 */}
+                <div className="hidden md:block">
+                    <div className="absolute top-44 left-[535px] font-bold text-black text-[32px] text-center leading-[48px] whitespace-nowrap">
+                        비밀번호 찾기
                     </div>
-                </button>
+
+                    <p className="absolute top-[232px] left-[479px] font-normal text-gray-500 text-sm text-center leading-5 whitespace-nowrap">
+                        등록된 이메일로 임시 비밀번호를 받아보세요
+                    </p>
+
+                    <div className="absolute top-[280px] left-[428px] font-normal text-[#2d3748] text-sm leading-[21px] whitespace-nowrap">
+                        이메일 주소
+                    </div>
+
+                    <div className="absolute w-[411px] h-[52px] top-[310px] left-[428px] border-b border-gray-300">
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="이메일 주소를 입력하세요"
+                            className="absolute w-[380px] h-[21px] top-[13px] left-[15px] font-normal text-black placeholder:text-[#00000080] text-base leading-[normal] bg-transparent border-none outline-none"
+                            style={{
+                                WebkitBoxShadow: '0 0 0 1000px white inset'
+                            } as React.CSSProperties}
+                            disabled={loading}
+                            autoFocus
+                        />
+                    </div>
+
+                    {/* 에러 메시지 */}
+                    <div className="absolute top-[345px] left-[428px] w-[411px] h-6">
+                        {errorMsg && (
+                            <div className="text-red-600 text-sm font-medium">{errorMsg}</div>
+                        )}
+                    </div>
+
+                    <button
+                        className={`absolute w-[411px] h-[52px] top-[403px] left-[428px] rounded-[10px] flex items-center justify-center transition-colors focus:outline-none
+              ${isEmailValid && !loading
+                                ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
+                                : 'bg-[#d9d9d9] text-white cursor-not-allowed'}
+              `}
+                        disabled={!isEmailValid || loading}
+                        onClick={handleSendTempPassword}
+                    >
+                        <div className="font-semibold text-base text-center leading-6 whitespace-nowrap flex items-center justify-center">
+                            {loading ? <Spinner /> : null}
+                            {loading ? "처리 중..." : "임시 비밀번호 발송"}
+                        </div>
+                    </button>
+                </div>
+
+                {/* 모바일 레이아웃 */}
+                <div className="md:hidden pt-20 px-6">
+                    <div className="text-center mb-8">
+                        <h1 className="text-2xl font-bold text-black mb-4">
+                            비밀번호 찾기
+                        </h1>
+                        <p className="text-gray-500 text-sm">
+                            등록된 이메일로 임시 비밀번호를 받아보세요
+                        </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[#2d3748] text-sm font-medium mb-2">
+                                이메일 주소
+                            </label>
+                            <div className="border-b border-gray-300 pb-2">
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="이메일 주소를 입력하세요"
+                                    className="w-full font-normal text-black placeholder:text-[#00000080] text-base bg-transparent border-none outline-none"
+                                    style={{
+                                        WebkitBoxShadow: '0 0 0 1000px white inset'
+                                    } as React.CSSProperties}
+                                    disabled={loading}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+
+                        {/* 에러 메시지 */}
+                        {errorMsg && (
+                            <div className="text-red-600 text-sm font-medium">{errorMsg}</div>
+                        )}
+
+                        <button
+                            className={`w-full h-[52px] rounded-[10px] flex items-center justify-center transition-colors focus:outline-none mt-6
+                  ${isEmailValid && !loading
+                                    ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
+                                    : 'bg-[#d9d9d9] text-white cursor-not-allowed'}
+                  `}
+                            disabled={!isEmailValid || loading}
+                            onClick={handleSendTempPassword}
+                        >
+                            <div className="font-semibold text-base text-center leading-6 flex items-center justify-center">
+                                {loading ? <Spinner /> : null}
+                                {loading ? "처리 중..." : "임시 비밀번호 발송"}
+                            </div>
+                        </button>
+                    </div>
+                </div>
 
                 {/* 모달 */}
                 {showModal && (
-                    <div className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30">
-                        <div className="bg-white w-[411px] rounded-[10px] shadow-lg border border-gray-200">
-                            <div className="p-8 text-center">
+                    <div className="fixed inset-0 flex items-center justify-center z-[1001] bg-black bg-opacity-30 p-4">
+                        <div className="bg-white w-full max-w-[411px] rounded-[10px] shadow-lg border border-gray-200">
+                            <div className="p-6 md:p-8 text-center">
                                 <div className="mb-6">
                                     <img
                                         className="w-16 h-16 mx-auto mb-4"
@@ -173,7 +231,6 @@ export const FindPassword = () => {
 
                 {/* 토스트 알림 */}
                 {toast && <Toast message={toast} onClose={() => setToast("")} />}
-
 
             </div>
         </div>

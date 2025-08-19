@@ -1,259 +1,157 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+//import axios, { AxiosError } from 'axios';
 import { TopNav } from '../../components/TopNav';
 import { AdminSideNav } from '../../components/AdminSideNav';
+
+ // ---- Backend response types ----
+ type BackendApplyStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+ type BackendBannerType = 'HERO' | 'SEARCH_TOP';
+ type BackendPayment = 'WAITING' | 'PAID' | 'REFUND_PENDING' | 'REFUNDED' | 'N/A';
+ interface BackendSlot { slotDate: string; priority: number; price: number }
+ interface BackendApplicationItem {
+   applicationId: number | string;
+   hostName?: string;
+   eventId?: number;
+   eventName?: string;
+   bannerType: BackendBannerType;
+   appliedAt: string;
+   applyStatus: BackendApplyStatus;
+   paymentStatus?: BackendPayment;
+   imageUrl?: string;
+   totalAmount: number;
+   slots?: BackendSlot[];
+ }
+ interface BackendPage<T> { content: T[] }  // 필요한 필드만 최소 정의
+ type BackendListResponse<T> = BackendPage<T> | T[];
+  const isPage = <T,>(d: unknown): d is BackendPage<T> => {
+   if (typeof d !== 'object' || d === null) return false;
+   const maybe = d as { content?: unknown };
+   return Array.isArray(maybe.content);
+ };
 
 interface AdvertisementApplication {
   id: string;
   hostName: string;
-  eventTitle: string;
-  type: 'mainBanner' | 'searchTop';
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: string;
-  requestedDates: string[];
-  totalAmount: number;
-  imageUrl?: string;
-  paymentStatus?: 'pending' | 'completed' | 'canceled';
-  exposurePeriod?: {
-    startDate: string;
-    endDate: string;
-  };
-  // 메인 배너 순위 정보 (기존)
-  mainBannerRanks?: string[];
-  // 메인 배너 날짜-순위 매핑 (신규)
-  mainBannerSelections?: { date: string; rank: string }[];
-  // 이벤트 연결 ID (검색 상단 고정 연결용)
+  eventTitle: string;                         // eventName
+  type: 'mainBanner' | 'searchTop';           // HERO | SEARCH_TOP
+  status: 'pending' | 'approved' | 'rejected';// PENDING | APPROVED | REJECTED
+  submittedAt: string;                        // appliedAt(yyyy-MM-ddTHH:mm:ss)
+  requestedDates: string[];                   // slots[].slotDate
+  totalAmount: number;                        // server totalAmount
+  imageUrl?: string;                          // imageUrl
+  paymentStatus?: 'pending' | 'completed' | 'canceled'; // WAITING/PAID/N/A -> mapped
+  exposurePeriod?: { startDate: string; endDate: string };
+  mainBannerRanks?: string[];                 // optional (표시용)
+    mainBannerSelections?: { date: string; rank: string }[];
   eventId?: number;
 }
 
-// 오늘 날짜 문자열 생성
-const todayStr = new Date().toISOString().split('T')[0];
 
 const AdvertisementApplicationList: React.FC = () => {
-  const [applications, setApplications] = useState<AdvertisementApplication[]>([
-    {
-      id: '1',
-      hostName: 'YG Entertainment',
-      eventTitle: 'G-DRAGON 2025 WORLD TOUR IN JAPAN',
-      type: 'mainBanner',
-      status: 'pending',
-      submittedAt: '2024-03-15',
-      requestedDates: ['2025-05-20', '2025-05-21', '2025-05-22', '2025-05-23', '2025-05-24', '2025-05-25'],
-      totalAmount: 4500000,
-      imageUrl: '/images/gd1.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-05-20',
-        endDate: '2025-05-25'
-      },
-      mainBannerRanks: ['1순위', '2순위', '3순위'],
-      mainBannerSelections: [
-        { date: '2025-05-20', rank: '1순위' },
-        { date: '2025-05-21', rank: '2순위' },
-        { date: '2025-05-22', rank: '3순위' },
-      ],
-      totalAmount: 6700000 // 1순위(2,500,000) + 2순위(2,200,000) + 3순위(2,000,000)
-    },
-    {
-      id: '2',
-      hostName: 'Def Jam Recordings',
-      eventTitle: 'YE LIVE IN KOREA',
-      type: 'mainBanner',
-      status: 'approved',
-      submittedAt: '2024-03-10',
-      requestedDates: ['2025-06-10', '2025-06-11', '2025-06-12', '2025-06-13', '2025-06-14', '2025-06-15'],
-      totalAmount: 3800000,
-      imageUrl: '/images/YE3.png',
-      paymentStatus: 'completed',
-      exposurePeriod: {
-        startDate: '2025-06-10',
-        endDate: '2025-06-15'
-      },
-      mainBannerRanks: ['1순위', '4순위', '5순위'],
-      mainBannerSelections: [
-        { date: '2025-06-10', rank: '1순위' },
-        { date: '2025-06-11', rank: '4순위' },
-        { date: '2025-06-12', rank: '5순위' },
-      ],
-      totalAmount: 5900000 // 1순위(2,500,000) + 4순위(1,800,000) + 5순위(1,600,000)
-    },
-    {
-      id: '3',
-      hostName: 'Republic Records',
-      eventTitle: 'Post Malone Concert',
-      type: 'mainBanner',
-      status: 'pending',
-      submittedAt: '2024-03-08',
-      requestedDates: ['2025-07-15', '2025-07-16', '2025-07-17', '2025-07-18', '2025-07-19', '2025-07-20'],
-      totalAmount: 3200000,
-      imageUrl: '/images/malone1.jpg',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-07-15',
-        endDate: '2025-07-20'
-      },
-      mainBannerRanks: ['2순위', '3순위', '6순위'],
-      mainBannerSelections: [
-        { date: '2025-07-15', rank: '2순위' },
-        { date: '2025-07-16', rank: '3순위' },
-        { date: '2025-07-17', rank: '6순위' },
-      ],
-      totalAmount: 5600000 // 2순위(2,200,000) + 3순위(2,000,000) + 6순위(1,400,000)
-    },
-    {
-      id: '4',
-      hostName: 'JYP Entertainment',
-      eventTitle: 'Event 4',
-      type: 'mainBanner',
-      status: 'approved',
-      submittedAt: '2024-03-12',
-      requestedDates: ['2025-08-05', '2025-08-06', '2025-08-07', '2025-08-08', '2025-08-09', '2025-08-10'],
-      totalAmount: 2800000,
-      imageUrl: '/images/therose2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-08-05',
-        endDate: '2025-08-10'
-      },
-      mainBannerRanks: ['7순위', '8순위', '9순위'],
-      mainBannerSelections: [
-        { date: '2025-08-05', rank: '7순위' },
-        { date: '2025-08-06', rank: '8순위' },
-        { date: '2025-08-07', rank: '9순위' },
-      ],
-      totalAmount: 3000000 // 7순위(1,200,000) + 8순위(1,000,000) + 9순위(800,000)
-    },
-    {
-      id: '5',
-      hostName: 'SM Entertainment',
-      eventTitle: 'Event 5',
-      type: 'mainBanner',
-      status: 'rejected',
-      submittedAt: '2024-03-05',
-      requestedDates: ['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05'],
-      totalAmount: 2500000,
-      imageUrl: '/images/eaj2.jpg',
-      paymentStatus: 'canceled',
-      exposurePeriod: {
-        startDate: '2025-09-01',
-        endDate: '2025-09-05'
-      },
-      mainBannerRanks: ['10순위'],
-      mainBannerSelections: [
-        { date: '2025-09-01', rank: '10순위' },
-      ],
-      totalAmount: 600000 // 10순위(600,000)
-    },
-    {
-      id: '6',
-      hostName: 'Cyber Entertainment',
-      eventTitle: 'Event 6',
-      type: 'mainBanner',
-      status: 'pending',
-      submittedAt: '2024-03-18',
-      requestedDates: ['2025-10-10', '2025-10-11', '2025-10-12', '2025-10-13', '2025-10-14', '2025-10-15'],
-      totalAmount: 2200000,
-      imageUrl: '/images/cyber2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-10-10',
-        endDate: '2025-10-15'
-      },
-      mainBannerRanks: ['5순위', '6순위'],
-      mainBannerSelections: [
-        { date: '2025-10-10', rank: '5순위' },
-        { date: '2025-10-11', rank: '6순위' },
-      ],
-      totalAmount: 3000000 // 5순위(1,600,000) + 6순위(1,400,000)
-    },
-    // 검색 상단 고정 (MD PICK) 더미 — 기존
-    {
-      id: '7',
-      hostName: 'Netflix Korea',
-      eventTitle: '테스트',
-      type: 'searchTop',
-      status: 'approved',
-      submittedAt: '2024-03-22',
-      requestedDates: [todayStr],
-      totalAmount: 500000, // 1일 × 500,000원
-      imageUrl: '/images/ex2.png',
-      paymentStatus: 'completed',
-      exposurePeriod: {
-        startDate: todayStr,
-        endDate: todayStr
-      },
-      eventId: undefined
-    },
-    {
-      id: '8',
-      hostName: 'Disney+ Korea',
-      eventTitle: 'YE LIVE IN KOREA',
-      type: 'searchTop',
-      status: 'approved',
-      submittedAt: '2024-03-14',
-      requestedDates: [todayStr],
-      totalAmount: 500000, // 1일 × 500,000원
-      imageUrl: '/images/ex2.png',
-      paymentStatus: 'completed',
-      exposurePeriod: {
-        startDate: todayStr,
-        endDate: todayStr
-      },
-      eventId: undefined
-    },
-    {
-      id: '9',
-      hostName: 'Apple Music',
-      eventTitle: 'Apple Music Festival 2025',
-      type: 'searchTop',
-      status: 'pending',
-      submittedAt: '2025-03-25',
-      requestedDates: ['2025-06-01', '2025-06-02', '2025-06-03', '2025-06-04'],
-      totalAmount: 2000000, // 4일 × 500,000원
-      imageUrl: '/images/ex2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-06-01',
-        endDate: '2025-06-04'
-      }
-    },
-    {
-      id: '10',
-      hostName: 'FairPlay Lab',
-      eventTitle: '테스트 MD PICK 더미',
-      type: 'searchTop',
-      status: 'pending',
-      submittedAt: '2025-08-10',
-      requestedDates: ['2025-08-18', '2025-08-19', '2025-08-20', '2025-08-21', '2025-08-22'],
-      totalAmount: 2500000, // 5일 × 500,000원
-      imageUrl: '/images/ex2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-08-18',
-        endDate: '2025-08-22'
-      },
-      eventId: undefined
-    }
-  ]);
+  
+const [applications, setApplications] = useState<AdvertisementApplication[]>([]);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);
 
-  // 호스트에서 임시 저장한 신청 데이터 병합 표시 (테스트/더미용)
-  React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem('pendingAdApplications');
-      if (!raw) return;
-      const extra: AdvertisementApplication[] = JSON.parse(raw);
-      if (Array.isArray(extra) && extra.length > 0) {
-        setApplications(prev => [...extra, ...prev]);
-        localStorage.removeItem('pendingAdApplications');
-      }
-    } catch (e) {
-      console.error('임시 신청 병합 실패', e);
-    }
-  }, []);
+
+//백엔드 베이스 URL & 토큰
+ const BASE_URL = useMemo(() => import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080', []);
+ const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
+
+
+  // ------------ 매핑 유틸 ------------
+   const toFrontType = (bannerType: string): 'mainBanner' | 'searchTop' =>
+     bannerType === 'HERO' ? 'mainBanner' : 'searchTop';
+
+   const toFrontStatus = (applyStatus: string): 'pending' | 'approved' | 'rejected' => {
+     if (applyStatus === 'APPROVED') return 'approved';
+     if (applyStatus === 'REJECTED') return 'rejected';
+     return 'pending';
+   };
+
+   const paymentToFront = (paymentStatus?: string): 'pending' | 'completed' | 'canceled' => {
+     if (paymentStatus === 'PAID' || paymentStatus === 'REFUNDED') return 'completed';
+     if (paymentStatus === 'N/A') return 'canceled';
+     return 'pending';
+   };
+
+   const rankLabel = (priority: number) => `${priority}순위`;
+
+ const mapBackendItem = (row: BackendApplicationItem): AdvertisementApplication => {
+     // row: 서버 목록의 1개 item (content[])
+   const slots: BackendSlot[] = Array.isArray(row.slots) ? [...row.slots] : [];
+     // 안전하게 날짜/우선순위 정렬
+     slots.sort((a, b) => a.slotDate.localeCompare(b.slotDate) || a.priority - b.priority);
+     const requestedDates = slots.map(s => s.slotDate);
+     const mainBannerSelections = slots.map(s => ({ date: s.slotDate, rank: rankLabel(s.priority) }));
+
+     const exposurePeriod =
+       requestedDates.length > 0
+         ? { startDate: requestedDates[0], endDate: requestedDates[requestedDates.length - 1] }
+         : undefined;
+     return {
+       id: String(row.applicationId),
+       hostName: row.hostName ?? '',
+       eventTitle: row.eventName ?? '',
+       type: toFrontType(row.bannerType),
+       status: toFrontStatus(row.applyStatus),
+       submittedAt: (row.appliedAt || '').split('T')[0] || '',
+       requestedDates,
+       totalAmount: row.totalAmount ?? 0,
+       imageUrl: row.imageUrl ?? undefined,
+       paymentStatus: paymentToFront(row.paymentStatus),
+       exposurePeriod,
+       mainBannerRanks: [...new Set(mainBannerSelections.map(s => s.rank))],
+       mainBannerSelections,
+       eventId: row.eventId ?? undefined
+     };
+   };
+
+   // ------------ 목록 불러오기 ------------
+   const fetchApplications = async () => {
+     setLoading(true);
+     setError(null);
+     try {
+       const params: Record<string, string> = {};
+       if (filterStatus !== 'all') params.status = filterStatus.toUpperCase(); // PENDING/APPROVED/REJECTED
+       if (filterType !== 'all') params.type = filterType === 'mainBanner' ? 'HERO' : 'SEARCH_TOP';
+       params.page = '0';
+       params.size = '100';
+     const res = await axios.get<BackendListResponse<BackendApplicationItem>>(`${BASE_URL}/api/admin/banners/applications`, {
+         params,
+         headers: { ...getAuthHeaders() }
+       });
+const content: BackendApplicationItem[] =
+       isPage<BackendApplicationItem>(res.data) ? res.data.content
+       : Array.isArray(res.data) ? res.data
+       : [];
+       const mapped = content.map(mapBackendItem);
+       setApplications(mapped);
+     } catch (e: unknown) {
+    if (axios.isAxiosError<{ message?: string }>(e)) {
+      const apiMsg = e.response?.data?.message ?? e.message;
+      setError(apiMsg || '목록 조회 실패');
+    } else {
+      setError('목록 조회 실패');
+    }
+     } finally {
+       setLoading(false);
+     }
+   };
+
+   useEffect(() => {
+     fetchApplications();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [filterStatus, filterType]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -312,24 +210,46 @@ const AdvertisementApplicationList: React.FC = () => {
     }
   };
 
-  // 메인 배너 총액 계산 (순위 배열)
-  const calculateMainBannerTotal = (ranks: string[]) => {
-    return ranks.reduce((total, rank) => total + getMainBannerPrice(rank), 0);
-  };
+  
   // 메인 배너 총액 계산 (선택 매핑)
   const calculateMainBannerTotalFromSelections = (selections: { date: string; rank: string }[]) => {
     return selections.reduce((total, sel) => total + getMainBannerPrice(sel.rank), 0);
   };
 
-  const handleStatusChange = (id: string, newStatus: 'approved' | 'rejected') => {
-    setApplications(prev =>
-      prev.map(app =>
-        app.id === id
-          ? { ...app, status: newStatus, paymentStatus: newStatus === 'approved' ? 'pending' : 'canceled' }
-          : app
-      )
-    );
-  };
+
+  // 승인/반려 → 백엔드 호출
+  const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
+    try {
+      if (newStatus === 'approved') {
+        const res = await axios.post(
+          `${BASE_URL}/api/admin/banners/applications/${id}/approve`,
+          { note: 'approved from admin UI' },
+          { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() } }
+        );
+        const updated = mapBackendItem(res.data);
+        setApplications(prev => prev.map(a => (a.id === id ? updated : a)));
+      } else {
+        const reason = 'rejected from admin UI';
+        const res = await axios.post(
+          `${BASE_URL}/api/admin/banners/applications/${id}/reject`,
+          { reason },
+          { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() } }
+        );
+        const updated = mapBackendItem(res.data);
+        setApplications(prev => prev.map(a => (a.id === id ? updated : a)));
+      }
+    } catch (err: unknown) {
+  if (axios.isAxiosError<{ message?: string }>(err)) {
+    const code = err.response?.status;
+    const msg =
+      err.response?.data?.message ??
+      err.message ??
+      '처리 실패';
+    alert(code ? `[${code}] ${msg}` : msg);
+  } else {
+    alert('처리 실패');
+  }
+}};
 
   const handleImageCheck = (imageUrl: string) => {
     setSelectedImage(imageUrl);
@@ -380,6 +300,14 @@ const AdvertisementApplicationList: React.FC = () => {
                   <option value="searchTop">검색 상단 고정 (MD PICK)</option>
                 </select>
               </div>
+              <div className="ml-auto">
+                <button
+                  onClick={fetchApplications}
+                  className="px-3 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
+                >
+                  새로고침
+                </button>
+              </div>
             </div>
           </div>
 
@@ -387,8 +315,10 @@ const AdvertisementApplicationList: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                총 {filteredApplications.length}건의 광고 신청
+               {loading ? '불러오는 중...' : `총 ${filteredApplications.length}건의 광고 신청`}
               </h2>
+               {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+
             </div>
             <div className="divide-y divide-gray-200">
               {filteredApplications.map((application) => (

@@ -9,6 +9,8 @@ import { hasHostPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 import { useTheme } from '../context/ThemeContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import LanguageToggle from './LanguageToggle';
 
 interface TopNavProps {
 	className?: string;
@@ -16,6 +18,7 @@ interface TopNavProps {
 
 export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	const { isDark, toggleDark } = useTheme();
+	const { t } = useTranslation();
 	const [activeMenu, setActiveMenu] = useState<string>('HOME');
 	const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 	const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
@@ -172,16 +175,16 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 							<HiOutlineSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
 							<input
 								type="search"
-								placeholder="검색"
+								placeholder={t('common.search')}
 								value={mobileQuery}
 								onChange={(e) => setMobileQuery(e.target.value)}
 								className={`w-full h-full pl-9 pr-3 text-sm rounded-full outline-none focus:ring-2 ${isDark ? 'bg-gray-800 text-white focus:ring-gray-700' : 'bg-gray-100 text-black focus:ring-gray-300'}`}
 							/>
 						</div>
 					</form>
-					<button onClick={toggleNotification} aria-label="알림" className="relative shrink-0 inline-flex items-center justify-center h-10 w-10 appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none">
+					<button onClick={toggleNotification} aria-label={t('common.notification')} className="relative shrink-0 inline-flex items-center justify-center h-10 w-10 appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none">
 						<HiOutlineBell className="block flex-none w-6 h-6 text-gray-500" aria-hidden="true" />
-						{isLoggedIn && unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
+						{isLoggedIn && unreadCount > 0 && <span className="absolute top-2 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
 					</button>
 				</div>
 			</div>
@@ -194,15 +197,15 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 						onClick={handleCustomerService}
 						className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
 					>
-						고객센터
+						{t('common.customerService')}
 					</button>
 					<button
 						onClick={toggleNotification}
 						className={`relative p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
 					>
-						알림
+						{t('common.notification')}
 						{isLoggedIn && unreadCount > 0 && (
-							<span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+							<span className="absolute top-0 -right-1 w-1 h-1 bg-red-500 rounded-full"></span>
 						)}
 					</button>
 					<Link
@@ -210,7 +213,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 						className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} focus:outline-none focus:ring-0`}
 						onClick={handleAuthClick}
 					>
-						{isLoggedIn ? '로그아웃' : '로그인'}
+						{isLoggedIn ? t('common.logout') : t('common.login')}
 					</Link>
 				</div>
 
@@ -218,9 +221,9 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					<Link to="/"><img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-10" /></Link>
 					<div className="flex items-center space-x-6">
 						<nav className="flex items-center space-x-6">
-							<Link to="/" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>HOME</Link>
-							<Link to="/eventoverview" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>EVENTS</Link>
-							<Link to="/event-registration-intro" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>APPLY</Link>
+							<Link to="/" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'HOME' ? 'font-semibold' : 'font-normal'} text-lg`}>{t('navigation.home')}</Link>
+							<Link to="/eventoverview" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'EVENTS' ? 'font-semibold' : 'font-normal'} text-lg`}>{t('navigation.events')}</Link>
+							<Link to="/event-registration-intro" className={`${isDark ? 'text-white' : 'text-black'} ${activeMenu === 'REGISTER' ? 'font-semibold' : 'font-normal'} text-lg`}>{t('navigation.apply')}</Link>
 						</nav>
 						<div className="flex items-center space-x-6">
 							<HiOutlineSearch
@@ -246,11 +249,11 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 									}
 								})();
 							}} />
-							<HiOutlineGlobeAlt className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} />
+							<LanguageToggle />
 							<button
 								className="theme-btn"
 								onClick={toggleDark}
-								title={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
+								title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}
 							>
 								{isDark ? '🌙' : '☀️'}
 							</button>
@@ -277,7 +280,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 									<HiOutlineSearch className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'}`} />
 									<input
 										type="search"
-										placeholder="검색어를 입력해주세요."
+										placeholder={t('search.placeholder')}
 										value={desktopQuery}
 										onChange={(e) => setDesktopQuery(e.target.value)}
 										className={`flex-1 text-xl outline-none bg-transparent ${isDark ? 'text-white placeholder-gray-500' : 'text-black placeholder-gray-500'}`}
@@ -335,57 +338,85 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 			</div>
 
 			{/* 알림 팝업을 TopNav 밖으로 이동 */}
-			{isNotificationOpen && (
-				<div className="fixed inset-0 z-[9999]">
-					{/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
-					<div className="absolute inset-0 bg-black bg-opacity-50" onClick={toggleNotification} />
+			<AnimatePresence>
+				{isNotificationOpen && (
+					<div className="fixed inset-0 z-[9999]">
+						{/* 어두운 배경 오버레이 - 알림 팝업을 제외한 나머지 화면 */}
+						<motion.div
+							className="absolute inset-0 bg-black bg-opacity-50"
+							onClick={toggleNotification}
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={{ duration: 0.3 }}
+						/>
 
-					{/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
-					<div className="absolute right-0 top-0 h-full w-full md:w-auto md:left-[calc(100vw-420px)] left-0 bg-white shadow-2xl flex flex-col">
-						<div className="flex items-center justify-between p-4 border-b">
-							<h2 className="text-lg font-semibold">알림</h2>
-							<div className="flex items-center gap-2">
-								<button onClick={toggleNotification} className="p-1 bg-transparent border-none hover:bg-gray-100 rounded">
-									<HiOutlineX className="w-5 h-5" />
-								</button>
+						{/* 알림 팝업 - 화면 오른쪽을 꽉 채움 */}
+						<motion.div
+							className="absolute right-0 top-0 h-full w-full md:w-auto md:left-[calc(100vw-420px)] left-0 bg-white shadow-2xl flex flex-col"
+							initial={{ x: '100%' }}
+							animate={{ x: 0 }}
+							exit={{ x: '100%' }}
+							transition={{
+								type: "spring",
+								stiffness: 300,
+								damping: 30,
+								duration: 0.4
+							}}
+						>
+							<div className="flex items-center justify-between p-4 border-b">
+								<h2 className="text-lg font-semibold">{t('notification.title')}</h2>
+								<div className="flex items-center gap-2">
+									<button onClick={toggleNotification} className="p-1 bg-transparent border-none hover:bg-gray-100 rounded">
+										<HiOutlineX className="w-5 h-5" />
+									</button>
+								</div>
 							</div>
-						</div>
 
-						<div className="flex-1 overflow-y-auto p-4">
-							{notifications.length > 0 ? (
-								<div className="space-y-3">
-									{notifications.map(n => (
-										<div
-											key={n.notificationId}
-											className={`p-3 rounded-lg border relative group ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
-											onClick={() => !n.isRead && handleMarkAsRead(n.notificationId)}
-										>
-											<div className={`flex-1 ${!n.isRead ? 'cursor-pointer' : ''}`}>
-												<div className="flex items-center gap-2 mb-1">
-													<h4 className={`font-semibold text-sm ${n.isRead ? 'text-gray-600' : 'text-black'}`}>{n.title}</h4>
-													{!n.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
-												</div>
-												<p className="text-sm text-gray-700 mb-2">{n.message}</p>
-												<span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
-											</div>
-											<button
-												onClick={(e) => handleDeleteNotification(e, n.notificationId)}
-												className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none opacity-0 group-hover:opacity-100 transition-opacity"
+							<div className="flex-1 overflow-y-auto p-4">
+								{notifications.length > 0 ? (
+									<div className="space-y-3">
+										{notifications.map(n => (
+											<motion.div
+												key={n.notificationId}
+												className={`p-3 rounded-lg border relative group ${n.isRead ? 'bg-gray-50 opacity-70' : 'bg-white hover:bg-gray-50'}`}
+												onClick={() => !n.isRead && handleMarkAsRead(n.notificationId)}
+												initial={{ opacity: 0, y: 20 }}
+												animate={{ opacity: 1, y: 0 }}
+												transition={{ duration: 0.3 }}
 											>
-												<HiOutlineX className="w-4 h-4" />
-											</button>
-										</div>
-									))}
-								</div>
-							) : (
-								<div className="flex items-center justify-center h-full text-gray-500">
-									새로운 알림이 없습니다.
-								</div>
-							)}
-						</div>
+												<div className={`flex-1 ${!n.isRead ? 'cursor-pointer' : ''}`}>
+													<div className="flex items-center gap-2 mb-1">
+														<h4 className={`font-semibold text-sm ${n.isRead ? 'text-gray-600' : 'text-black'}`}>{n.title}</h4>
+														{!n.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
+													</div>
+													<p className="text-sm text-gray-700 mb-2">{n.message}</p>
+													<span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
+												</div>
+												<button
+													onClick={(e) => handleDeleteNotification(e, n.notificationId)}
+													className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 bg-transparent border-none opacity-0 group-hover:opacity-100 transition-opacity"
+												>
+													<HiOutlineX className="w-4 h-4" />
+												</button>
+											</motion.div>
+										))}
+									</div>
+								) : (
+									<motion.div
+										className="flex items-center justify-center h-full text-gray-500"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={{ duration: 0.3 }}
+									>
+										{t('notification.noNotifications')}
+									</motion.div>
+								)}
+							</div>
+						</motion.div>
 					</div>
-				</div>
-			)}
+				)}
+			</AnimatePresence>
 		</>
 	);
 };

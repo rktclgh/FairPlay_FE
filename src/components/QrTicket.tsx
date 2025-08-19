@@ -76,17 +76,19 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
             return;
         }
 
-        const timer = setInterval(() => {
-            setTimeLeft((prevTime) => {
-                if (prevTime <= 1) {
-                    clearInterval(timer);
+        timerRef.current = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    if (timerRef.current) clearInterval(timerRef.current); // 0이 되면 멈춤
                     return 0;
                 }
-                return prevTime - 1;
+                return prev - 1;
             });
         }, 1000);
 
-        return () => clearInterval(timer);
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
     }, [isOpen, qrCode]);
 
     // 새로고침 함수
@@ -153,20 +155,15 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                                 ✅ {successMessage}
                         </div>                        
                     )}
-                    <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
+                    <div className="bg-white rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-center mb-2">
                             <div className="w-24 h-24 sm:w-28 md:w-36 sm:h-24 md:h-36 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
                                 <div className="text-center text-gray-500">
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
                                         <QRCodeCanvas
-                                            value={qrCode ?? ""}
-                                            size={116}
+                                            value={qrCode}
+                                            size={120}
                                             fgColor={'#000'}
-                                            style={{
-                                                display: 'block',
-                                                width: '120%',
-                                                height: '120%'
-                                            }}
                                         />
                                     </div>
                                 </div>

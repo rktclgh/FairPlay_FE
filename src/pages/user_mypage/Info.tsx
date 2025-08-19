@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { eventApi } from "../../services/api";
 import type { UserInfo, PasswordChangeRequest } from "../../services/api";
 import { EditProfileModal } from "../../components/EditProfileModal";
+import { useTranslation } from "react-i18next";
 
 // 블러 처리 유틸리티 함수들
 const blurEmail = (email: string) => {
@@ -36,6 +37,7 @@ const formatPhoneNumber = (phoneNumber: string) => {
 
 export const MyPageInfo = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     // 사용자 정보 상태
     const [userInfo, setUserInfo] = useState<UserInfo>({
@@ -106,12 +108,12 @@ export const MyPageInfo = () => {
     // 비밀번호 변경 처리
     const handlePasswordChange = async () => {
         if (!oldPassword || !newPassword) {
-            setPasswordError("모든 필드를 입력해주세요.");
+            setPasswordError(t('mypage.info.validation.allFieldsRequired'));
             return;
         }
 
         if (newPassword.length < 8) {
-            setPasswordError("새 비밀번호는 8자 이상이어야 합니다.");
+            setPasswordError(t('mypage.info.validation.passwordMinLength'));
             return;
         }
 
@@ -130,9 +132,9 @@ export const MyPageInfo = () => {
                 setShowPasswordChange(false);
                 setOldPassword("");
                 setNewPassword("");
-                alert("비밀번호가 성공적으로 변경되었습니다.");
+                alert(t('mypage.info.validation.passwordChangeSuccess'));
             } else {
-                setPasswordError("이전 비밀번호가 올바르지 않습니다.");
+                setPasswordError(t('mypage.info.validation.incorrectOldPassword'));
             }
         } catch (error) {
             console.error("비밀번호 변경 실패:", error);
@@ -180,7 +182,7 @@ export const MyPageInfo = () => {
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    내 정보 조회
+                    {t('mypage.info.title')}
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />

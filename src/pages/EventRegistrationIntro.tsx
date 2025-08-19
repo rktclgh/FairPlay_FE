@@ -2,8 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarPlus, FaUsers, FaChartLine, FaGift, FaHeadset, FaArrowRight, FaPlay } from 'react-icons/fa';
 import { TopNav } from '../components/TopNav';
+import { useTranslation } from 'react-i18next';
 
 export const EventRegistrationIntro: React.FC = () => {
+    const { t } = useTranslation();
+    
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
             <TopNav />
@@ -20,24 +23,24 @@ export const EventRegistrationIntro: React.FC = () => {
                 <div className="container mx-auto px-6 text-center relative z-10">
                     <div className="inline-flex items-center bg-white/10 backdrop-blur-md px-4 py-2 rounded-full text-sm font-medium mb-8 border border-white/20">
                         <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                        새로운 행사 플랫폼이 출시되었습니다
+                        {t('eventRegistration.newPlatform')}
                     </div>
 
                     <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight">
                         <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
-                            FairPlay에서
+                            {t('eventRegistration.heroTitle1')}
                         </span>
                         <br />
                         <span className="bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent">
-                            특별한 행사
-                        </span>를
+                            {t('eventRegistration.heroTitle2')}
+                        </span>{t('eventRegistration.heroTitle3')}
                         <br />
-                        <span className="text-white">만들어보세요</span>
+                        <span className="text-white">{t('eventRegistration.heroTitle4')}</span>
                     </h1>
 
                     <p className="text-xl md:text-2xl mb-12 text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                        AI 기반의 스마트한 행사 관리부터 실시간 분석까지,<br />
-                        차세대 이벤트 플랫폼을 경험해보세요
+                        {t('eventRegistration.heroSubtitle1')}<br />
+                        {t('eventRegistration.heroSubtitle2')}
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
@@ -46,7 +49,7 @@ export const EventRegistrationIntro: React.FC = () => {
                             className="group relative bg-gradient-to-r from-orange-400 to-pink-500 text-white px-10 py-5 rounded-2xl text-lg font-bold hover:from-orange-500 hover:to-pink-600 transition-all duration-300 shadow-2xl hover:shadow-orange-500/25 transform hover:-translate-y-1 border-none focus:outline-none"
                         >
                             <span className="flex items-center">
-                                지금 시작하기
+                                {t('eventRegistration.startNow')}
                                 <FaArrowRight className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                             </span>
                         </Link>
@@ -56,22 +59,22 @@ export const EventRegistrationIntro: React.FC = () => {
                             className="group flex items-center bg-white/10 backdrop-blur-md text-white px-10 py-5 rounded-2xl text-lg font-semibold hover:bg-white/20 transition-all duration-300 border border-white/30 focus:outline-none"
                         >
                             <FaPlay className="mr-3 group-hover:scale-110 transition-transform duration-300" />
-                            데모 보기
+                            {t('eventRegistration.watchDemo')}
                         </button>
                     </div>
 
                     <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto text-center">
                         <div className="group">
                             <div className="text-3xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">500+</div>
-                            <div className="text-gray-300 text-sm">성공한 행사</div>
+                            <div className="text-gray-300 text-sm">{t('eventRegistration.stats.successfulEvents')}</div>
                         </div>
                         <div className="group">
                             <div className="text-3xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">50K+</div>
-                            <div className="text-gray-300 text-sm">만족한 참가자</div>
+                            <div className="text-gray-300 text-sm">{t('eventRegistration.stats.satisfiedParticipants')}</div>
                         </div>
                         <div className="group">
                             <div className="text-3xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">98%</div>
-                            <div className="text-gray-300 text-sm">만족도</div>
+                            <div className="text-gray-300 text-sm">{t('eventRegistration.stats.satisfaction')}</div>
                         </div>
                     </div>
                 </div>
