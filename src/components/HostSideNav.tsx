@@ -228,28 +228,6 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                             >
                                 예약 통계 요약
                             </Link>
-
-                            {/* 신규: 예약/결제 목록 */}
-                            <Link
-                                to="/host/payment-list"
-                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname.startsWith("/host/payment-list")
-                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
-                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                    }`}
-                                style={{
-                                    textDecoration: 'none',
-                                    color: location.pathname.startsWith("/host/payment-list") ? "black" : "#00000080"
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = location.pathname.startsWith("/host/payment-list") ? "black" : "#00000080";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = location.pathname.startsWith("/host/payment-list") ? "black" : "#00000080";
-                                }}
-                            >
-                                예약/결제 목록
-                            </Link>
-
                         </div>
                     </div>
 
@@ -276,6 +254,26 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     }}
                                 >
                                     부스 타입 관리
+                                </Link>
+                                <Link
+                                    to="/host/booth-applications"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/booth-applications"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                        }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/booth-applications" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/booth-applications" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    {/* TODO: 링크 변경 */}
+                                    참가 부스 목록
                                 </Link>
                                 <Link
                                     to="/host/booth-applications"
@@ -399,6 +397,25 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                             <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">결제 관리</h3>
                             <div className="space-y-1">
                                 <Link
+                                    to="/host/payment-management"
+                                    className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/payment-management"
+                                        ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                        : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                    }`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        color: location.pathname === "/host/payment-management" ? "black" : "#00000080"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/payment-management" ? "black" : "#00000080";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = location.pathname === "/host/payment-management" ? "black" : "#00000080";
+                                    }}
+                                >
+                                    결제 정보 관리
+                                </Link>
+                                <Link
                                     to="/host/refund-management"
                                     className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/host/refund-management"
                                         ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
@@ -415,7 +432,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                         e.currentTarget.style.color = location.pathname === "/host/refund-management" ? "black" : "#00000080";
                                     }}
                                 >
-                                    환불 관리
+                                    환불 신청 관리
                                 </Link>
                             </div>
                         </div>

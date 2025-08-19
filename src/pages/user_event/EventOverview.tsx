@@ -512,9 +512,36 @@ export default function EventOverview() {
         return mapInstance;
     }, []);
 
-    // 호버 카드 상태
-    const [hoveredEvent, setHoveredEvent] = React.useState<EventSummaryDto | null>(null);
+    // 호버 카드 상태 (다중 이벤트 지원)
+    const [hoveredEvents, setHoveredEvents] = React.useState<EventSummaryDto[]>([]);
     const [hoverCardPosition, setHoverCardPosition] = React.useState<{ x: number; y: number } | null>(null);
+    const [currentEventIndex, setCurrentEventIndex] = React.useState(0);
+
+
+    // 동일 위치 이벤트 그룹화 함수 (location 기준)
+    const groupEventsByLocation = React.useCallback((events: EventSummaryDto[]) => {
+        const groups: { [key: string]: EventSummaryDto[] } = {};
+
+        events.forEach((event) => {
+            // Ensure latitude and longitude are valid for grouping
+            if (event.latitude == null || event.longitude == null || isNaN(event.latitude) || isNaN(event.longitude)) {
+                console.warn("Skipping event in groupEventsByLocation due to invalid coordinates for grouping:", event.title, event.eventCode, event.latitude, event.longitude);
+                return;
+            }
+
+            // Create a unique key based on latitude and longitude
+            const geoKey = `${event.latitude},${event.longitude}`;
+
+            if (!groups[geoKey]) {
+                groups[geoKey] = [];
+            }
+            groups[geoKey].push(event);
+        });
+
+        console.log("Grouped Events by GeoKey:", Object.values(groups));
+        return Object.values(groups);
+    }, []);
+
 
     // 마커 생성 함수
     const createMarkers = React.useCallback((mapInstance: any, events: EventSummaryDto[]) => {
@@ -551,32 +578,83 @@ export default function EventOverview() {
             }
         };
 
-        events.forEach((event) => {
+        // 이벤트들을 위치별로 그룹화
+        const eventGroups = groupEventsByLocation(events);
+
+        eventGroups.forEach((eventGroup) => {
+            const primaryEvent = eventGroup[0]; // 그룹의 대표 이벤트
+
             // 위도/경도가 유효한 경우에만 마커 생성
-            if (event.latitude && event.longitude && !isNaN(event.latitude) && !isNaN(event.longitude)) {
-                const coords = new window.kakao.maps.LatLng(event.latitude, event.longitude);
+            if (primaryEvent.latitude && primaryEvent.longitude && !isNaN(primaryEvent.latitude) && !isNaN(primaryEvent.longitude)) {
+                console.log("Creating marker for event:", primaryEvent.title, primaryEvent.location, primaryEvent.latitude, primaryEvent.longitude);
+                const coords = new window.kakao.maps.LatLng(primaryEvent.latitude, primaryEvent.longitude);
 
                 // 커스텀 오버레이만 사용 (기본 마커는 생성하지 않음)
                 const overlayContent = document.createElement('div');
                 overlayContent.className = 'map-pin-overlay';
-                overlayContent.style.cssText = `
-                    position: relative;
-                    width: 50px;
-                    height: 50px;
-                    cursor: pointer;
-                    z-index: 1000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 36px;
-                    line-height: 1;
-                    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                    filter: hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-                    transition: all 0.3s ease;
-                    pointer-events: auto;
-                `;
-                overlayContent.innerHTML = '📍';
-                overlayContent.setAttribute('data-event-id', event.id.toString());
+                // 다중 이벤트인 경우 표시 스타일 변경
+                if (eventGroup.length > 1) {
+                    overlayContent.style.cssText = `
+                        position: relative;
+                        width: 60px;
+                        height: 60px;
+                        cursor: pointer;
+                        z-index: 1000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 32px;
+                        line-height: 1;
+                        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        filter: hue-rotate(${getHueRotation(primaryEvent.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+                        transition: all 0.3s ease;
+                        pointer-events: auto;
+                    `;
+
+                    // 다중 이벤트인 경우 숫자 표시
+                    overlayContent.innerHTML = `
+                        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+                            📍
+                            <div style="
+                                position: absolute;
+                                top: -8px;
+                                right: -8px;
+                                background: #ff4444;
+                                color: white;
+                                border-radius: 50%;
+                                width: 20px;
+                                height: 20px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 12px;
+                                font-weight: bold;
+                                z-index: 1001;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                            ">${eventGroup.length}</div>
+                        </div>
+                    `;
+                } else {
+                    overlayContent.style.cssText = `
+                        position: relative;
+                        width: 50px;
+                        height: 50px;
+                        cursor: pointer;
+                        z-index: 1000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 36px;
+                        line-height: 1;
+                        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        filter: hue-rotate(${getHueRotation(primaryEvent.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+                        transition: all 0.3s ease;
+                        pointer-events: auto;
+                    `;
+                    overlayContent.innerHTML = '📍';
+                }
+
+                overlayContent.setAttribute('data-event-id', primaryEvent.id.toString());
 
                 const customOverlay = new window.kakao.maps.CustomOverlay({
                     content: overlayContent,
@@ -593,37 +671,58 @@ export default function EventOverview() {
                 const handleMouseEnter = (e: MouseEvent) => {
                     // 마커 애니메이션
                     overlayContent.style.transform = 'scale(1.2) translateY(-5px)';
-                    overlayContent.style.filter = `hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 4px 8px rgba(0,0,0,0.5))`;
+                    overlayContent.style.filter = `hue-rotate(${getHueRotation(primaryEvent.mainCategory)}deg) drop-shadow(0 4px 8px rgba(0,0,0,0.5))`;
 
-                    // 호버 카드 표시
-                    setHoveredEvent(event);
+                    // 호버 카드 표시 (다중 이벤트 지원)
+                    setHoveredEvents(eventGroup);
+                    setCurrentEventIndex(0); // 첫 번째 이벤트부터 시작
 
-                    // 카드 위치를 마커 기준으로 고정 (지도 좌표계 사용)
+                    // 카드 위치를 마커 기준으로 고정 - 개선된 좌표 변환 사용
                     const mapContainer = mapRef.current;
                     if (mapContainer && mapInstance) {
                         const rect = mapContainer.getBoundingClientRect();
-                        const cardWidth = 250;
-                        const cardHeight = 350;
+                        const cardWidth = eventGroup.length > 1 ? 400 : 250;
+                        const cardHeight = eventGroup.length > 1 ? 380 : 350;
+                        const markerOffset = 70;
 
-                        // 지도에서 마커의 화면 좌표 계산
+                        // 카카오맵 API를 사용한 좌표 변환
                         const projection = mapInstance.getProjection();
-                        const markerPoint = projection.pointFromCoords(coords);
+                        const containerPoint = projection.pointFromCoords(coords);
 
-                        // 마커 중심을 기준으로 카드 위치 설정 (고정)
-                        let x = markerPoint.x - cardWidth / 2;
-                        let y = markerPoint.y - cardHeight - 60; // 마커 위쪽에 카드
+                        // 기본 위치 계산
+                        let x = containerPoint.x - cardWidth / 2;
+                        let y = containerPoint.y - cardHeight - markerOffset;
 
-                        // 화면 경계 체크
-                        if (x < 10) {
-                            x = 10;
-                        } else if (x + cardWidth > rect.width - 10) {
-                            x = rect.width - cardWidth - 10;
+                        // 화면 경계 체크 및 조정
+                        const padding = 10;
+                        
+                        if (x < padding) {
+                            x = padding;
+                        } else if (x + cardWidth > rect.width - padding) {
+                            x = rect.width - cardWidth - padding;
                         }
 
-                        if (y < 10) {
-                            y = markerPoint.y + 40; // 마커 아래쪽에 표시
+                        // 상하 위치 결정 로직
+                        if (y + cardHeight > rect.height - padding) {
+                            // 카드가 화면 아래로 벗어나는 경우 - 우선 처리
+                            const belowMarkerY = containerPoint.y + 50;
+                            if (belowMarkerY + cardHeight <= rect.height - padding) {
+                                // 마커 아래쪽에 표시 가능
+                                y = belowMarkerY;
+                            } else {
+                                // 마커 아래쪽에도 공간이 없으면 화면에 맞춰 위치 조정
+                                y = rect.height - cardHeight - padding;
+                            }
+                        } else if (y < padding) {
+                            // 카드가 화면 위로 벗어나는 경우
+                            y = containerPoint.y + 50; // 마커 아래쪽에 표시
                         }
 
+                        // 최종 안전장치 - 카드가 화면을 벗어나지 않도록 보장
+                        x = Math.max(padding, Math.min(x, rect.width - cardWidth - padding));
+                        y = Math.max(padding, Math.min(y, rect.height - cardHeight - padding));
+
+                        // 위치 설정
                         setHoverCardPosition({ x, y });
                     }
                 };
@@ -631,23 +730,31 @@ export default function EventOverview() {
                 const handleMouseLeave = () => {
                     // 마커 원래 상태로 복원
                     overlayContent.style.transform = 'scale(1) translateY(0)';
-                    overlayContent.style.filter = `hue-rotate(${getHueRotation(event.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3))`;
+                    overlayContent.style.filter = `hue-rotate(${getHueRotation(primaryEvent.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3))`;
 
-                    // 호버 카드 즈시 숨기기 (지연 시간 최소화)
+                    // 호버 카드 즉시 숨기기 (지연 시간 최소화)
                     setTimeout(() => {
-                        setHoveredEvent(null);
+                        setHoveredEvents([]);
+                        setCurrentEventIndex(0);
                         setHoverCardPosition(null);
                     }, 50);
                 };
 
                 const handleClick = () => {
-                    navigate(`/eventdetail/${event.id}`);
+                    if (eventGroup.length === 1) {
+                        navigate(`/eventdetail/${eventGroup[0].id}`);
+                    } else {
+                        // 다중 이벤트인 경우 현재 표시 중인 이벤트의 상세로 이동
+                        navigate(`/eventdetail/${eventGroup[currentEventIndex]?.id || eventGroup[0].id}`);
+                    }
                 };
 
                 // 이벤트 리스너 추가 (마우스 움직임 이벤트 제거)
                 overlayContent.addEventListener('mouseenter', handleMouseEnter);
                 overlayContent.addEventListener('mouseleave', handleMouseLeave);
                 overlayContent.addEventListener('click', handleClick);
+            } else {
+                console.warn("Skipping event due to invalid coordinates:", primaryEvent.title, primaryEvent.eventCode, primaryEvent.location, primaryEvent.latitude, primaryEvent.longitude);
             }
         });
 
@@ -681,54 +788,98 @@ export default function EventOverview() {
         }
     }, [filteredEvents, map, viewMode, createMarkers]);
 
-    // 마커 호버 카드 위치 동기화 (지도 이동/줌 시)
+    // 마커 호버 카드 위치 동기화 (지도 이동/줌 시) - 개선된 버전
     React.useEffect(() => {
-        if (!map || !hoveredEvent) return;
+        if (!map || hoveredEvents.length === 0) return;
 
+        let animationFrame: number;
         const updateCardPosition = () => {
-            if (!hoveredEvent || !map) return; // Double check in case state changed during async call
-
-            const projection = map.getProjection();
-            const coords = new window.kakao.maps.LatLng(hoveredEvent.latitude, hoveredEvent.longitude);
-            const markerPoint = projection.pointFromCoords(coords);
-
-            const mapContainer = mapRef.current;
-            if (mapContainer) {
-                const rect = mapContainer.getBoundingClientRect();
-                const cardWidth = 320;
-                const cardHeight = 320;
-
-                let x = markerPoint.x - cardWidth / 2;
-                let y = markerPoint.y - cardHeight - 60;
-
-                // 화면 경계 체크 (same as in handleMouseEnter)
-                if (x < 10) {
-                    x = 10;
-                } else if (x + cardWidth > rect.width - 10) {
-                    x = rect.width - cardWidth - 10;
-                }
-
-                if (y < 10) {
-                    y = markerPoint.y + 40;
-                }
-
-                setHoverCardPosition({ x, y });
+            // 애니메이션 프레임을 사용해 부드러운 업데이트
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
             }
+            
+            animationFrame = requestAnimationFrame(() => {
+                if (hoveredEvents.length === 0 || !map || !mapRef.current) return;
+
+                const currentEvent = hoveredEvents[0]; // 대표 이벤트 사용
+                
+                // 지도 좌표를 화면 좌표로 변환
+                const coords = new window.kakao.maps.LatLng(currentEvent.latitude, currentEvent.longitude);
+                const projection = map.getProjection();
+                const containerPoint = projection.pointFromCoords(coords);
+
+                const mapContainer = mapRef.current;
+                if (mapContainer) {
+                    const rect = mapContainer.getBoundingClientRect();
+                    const cardWidth = hoveredEvents.length > 1 ? 400 : 250;
+                    const cardHeight = hoveredEvents.length > 1 ? 380 : 350;
+                    const markerOffset = 70; // 마커 위쪽에 카드를 표시하기 위한 오프셋
+
+                    // 기본 위치 계산 (마커 중심 기준)
+                    let x = containerPoint.x - cardWidth / 2;
+                    let y = containerPoint.y - cardHeight - markerOffset;
+
+                    // 화면 경계 체크 및 조정
+                    const padding = 10;
+                    
+                    // 좌우 경계 체크
+                    if (x < padding) {
+                        x = padding;
+                    } else if (x + cardWidth > rect.width - padding) {
+                        x = rect.width - cardWidth - padding;
+                    }
+
+                    // 상하 위치 결정 로직
+                    if (y + cardHeight > rect.height - padding) {
+                        // 카드가 화면 아래로 벗어나는 경우 - 우선 처리
+                        const belowMarkerY = containerPoint.y + 50;
+                        if (belowMarkerY + cardHeight <= rect.height - padding) {
+                            // 마커 아래쪽에 표시 가능
+                            y = belowMarkerY;
+                        } else {
+                            // 마커 아래쪽에도 공간이 없으면 화면에 맞춰 위치 조정
+                            y = rect.height - cardHeight - padding;
+                        }
+                    } else if (y < padding) {
+                        // 카드가 화면 위로 벗어나는 경우
+                        y = containerPoint.y + 50; // 마커 아래쪽에 표시
+                    }
+
+                    // 최종 안전장치 - 카드가 화면을 벗어나지 않도록 보장
+                    x = Math.max(padding, Math.min(x, rect.width - cardWidth - padding));
+                    y = Math.max(padding, Math.min(y, rect.height - cardHeight - padding));
+
+                    // 위치 설정
+                    setHoverCardPosition({ x, y });
+                }
+            });
         };
 
-        // Add listeners
-        window.kakao.maps.event.addListener(map, 'zoom_changed', updateCardPosition);
-        window.kakao.maps.event.addListener(map, 'center_changed', updateCardPosition);
+        // 지도 이벤트 리스너 등록 - 디바운스 적용
+        let debounceTimer: NodeJS.Timeout;
+        const debouncedUpdate = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateCardPosition, 16); // ~60fps
+        };
 
-        // Initial update in case map was already moved before hover
+        window.kakao.maps.event.addListener(map, 'zoom_changed', debouncedUpdate);
+        window.kakao.maps.event.addListener(map, 'center_changed', debouncedUpdate);
+
+        // 초기 위치 설정
         updateCardPosition();
 
-        // Cleanup listeners
+        // 클린업
         return () => {
-            window.kakao.maps.event.removeListener(map, 'zoom_changed', updateCardPosition);
-            window.kakao.maps.event.removeListener(map, 'center_changed', updateCardPosition);
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            clearTimeout(debounceTimer);
+            window.kakao.maps.event.removeListener(map, 'zoom_changed', debouncedUpdate);
+            window.kakao.maps.event.removeListener(map, 'center_changed', debouncedUpdate);
         };
-    }, [map, hoveredEvent, mapRef]);
+    }, [map, hoveredEvents, mapRef]);
+
 
     // 렌더 하단에서 공용 Footer 적용
     return (
@@ -1316,48 +1467,49 @@ export default function EventOverview() {
                                     </div>
                                 </div>
 
-                                {/* 호버 카드 */}
-                                {hoveredEvent && hoverCardPosition && (
+                                {/* 호버 카드 (3장 카드 슬라이드 지원) */}
+                                {hoveredEvents.length > 0 && hoverCardPosition && (
                                     <div
                                         className="absolute z-50"
                                         style={{
-                                            left: `${hoverCardPosition.x}px`,
+                                            left: `${hoverCardPosition.x - (hoveredEvents.length > 1 ? 60 : 0)}px`, // 3장 카드를 위한 중앙 정렬
                                             top: `${hoverCardPosition.y}px`,
-                                            width: '250px',
-                                            height: '320px',
+                                            width: hoveredEvents.length > 1 ? '400px' : '280px', // 3장 카드를 위한 넓은 컨테이너
+                                            height: hoveredEvents.length > 1 ? '380px' : '350px',
                                             pointerEvents: 'auto',
                                             position: 'absolute'
                                         }}
                                         onMouseLeave={() => {
                                             // 카드에서 마우스가 나가면 즉시 카드 숨기기
-                                            setHoveredEvent(null);
+                                            setHoveredEvents([]);
+                                            setCurrentEventIndex(0);
                                             setHoverCardPosition(null);
                                         }}
                                     >
-                                        <div
-                                            className="bg-white rounded-xl shadow-2xl border overflow-hidden transform transition-all duration-200 h-full"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                                border: '1px solid rgba(255,255,255,0.2)',
-                                                animation: 'fadeInUp 0.2s ease-out'
-                                            }}
-                                        >
-                                            {/* 카드 배경 그라데이션 오버레이 */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-90"></div>
-
-                                            {/* 카테고리 배지 */}
-                                            <div className="absolute top-3 left-3 z-20">
-                                                <span className="inline-block px-2 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white border-opacity-30">
-                                                    {hoveredEvent.mainCategory}
-                                                </span>
-                                            </div>
+                                        {hoveredEvents.length === 1 ? (
+                                            // 단일 카드 레이아웃 (기존)
+                                            <div
+                                                className="bg-white rounded-xl shadow-2xl border overflow-hidden transform transition-all duration-200 h-full relative select-none"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                    animation: 'fadeInUp 0.2s ease-out'
+                                                }}
+                                            >
+                                                {/* 단일 카드 내용 */}
+                                                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-90"></div>
+                                                <div className="absolute top-3 left-3 z-20">
+                                                    <span className="inline-block px-2 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white border-opacity-30">
+                                                        {hoveredEvents[0]?.mainCategory}
+                                                    </span>
+                                                </div>
 
                                             <div className="relative z-10 h-full">
                                                 {/* 썸네일 영역 */}
                                                 <div className="relative h-full overflow-hidden">
                                                     <img
-                                                        src={hoveredEvent.thumbnailUrl || "/images/NoImage.png"}
-                                                        alt={hoveredEvent.title}
+                                                        src={hoveredEvents[0]?.thumbnailUrl || "/images/NoImage.png"}
+                                                        alt={hoveredEvents[0]?.title}
                                                         className="w-full h-full object-cover opacity-80"
                                                     />
                                                     <div className="absolute inset-0 bg-black bg-opacity-20"></div>
@@ -1366,24 +1518,24 @@ export default function EventOverview() {
                                                 {/* 카드 콘텐츠 */}
                                                 <div className="absolute bottom-0 left-0 right-0 py-3 px-4 text-white bg-black bg-opacity-70">
                                                     <h3 className="text-base font-bold mb-2 line-clamp-2 text-white">
-                                                        {hoveredEvent.title}
+                                                        {hoveredEvents[0]?.title}
                                                     </h3>
 
                                                     <div className="space-y-1 mb-3">
                                                         <div className="flex items-center text-sm text-white text-opacity-90">
                                                             <MapIcon className="w-3 h-3 mr-2 flex-shrink-0" />
-                                                            <span className="truncate">{hoveredEvent.location}</span>
+                                                            <span className="truncate">{hoveredEvents[0]?.location}</span>
                                                         </div>
                                                         <div className="flex items-center text-sm text-white text-opacity-90">
                                                             <Calendar className="w-3 h-3 mr-2 flex-shrink-0" />
                                                             <span className="text-xs">
-                                                                {hoveredEvent.startDate === hoveredEvent.endDate
-                                                                    ? new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', {
+                                                                {hoveredEvents[0]?.startDate === hoveredEvents[0]?.endDate
+                                                                    ? new Date(hoveredEvents[0]?.startDate!).toLocaleDateString('ko-KR', {
                                                                         year: 'numeric', month: '2-digit', day: '2-digit'
                                                                     }).replace(/\s/g, '')
-                                                                    : `${new Date(hoveredEvent.startDate).toLocaleDateString('ko-KR', {
+                                                                    : `${new Date(hoveredEvents[0]?.startDate!).toLocaleDateString('ko-KR', {
                                                                         year: 'numeric', month: '2-digit', day: '2-digit'
-                                                                    }).replace(/\s/g, '')} ~ ${new Date(hoveredEvent.endDate).toLocaleDateString('ko-KR', {
+                                                                    }).replace(/\s/g, '')} ~ ${new Date(hoveredEvents[0]?.endDate!).toLocaleDateString('ko-KR', {
                                                                         year: 'numeric', month: '2-digit', day: '2-digit'
                                                                     }).replace(/\s/g, '')}`
                                                                 }
@@ -1393,14 +1545,14 @@ export default function EventOverview() {
 
                                                     <div className="flex items-center justify-between">
                                                         <div className="text-sm font-bold text-yellow-200">
-                                                            {hoveredEvent.minPrice == null
+                                                            {hoveredEvents[0]?.minPrice == null
                                                                 ? "가격 정보 없음"
-                                                                : hoveredEvent.minPrice === 0
+                                                                : hoveredEvents[0]?.minPrice === 0
                                                                     ? "무료"
-                                                                    : `${hoveredEvent.minPrice.toLocaleString()}원 ~`}
+                                                                    : `${hoveredEvents[0]?.minPrice!.toLocaleString()}원 ~`}
                                                         </div>
                                                         <button
-                                                            onClick={() => navigate(`/eventdetail/${hoveredEvent.id}`)}
+                                                            onClick={() => navigate(`/eventdetail/${hoveredEvents[0]?.id}`)}
                                                             className="px-3 py-1.5 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-lg hover:bg-opacity-30 transition-all text-xs font-medium border border-white border-opacity-30 hover:border-opacity-50"
                                                         >
                                                             상세보기
@@ -1408,7 +1560,166 @@ export default function EventOverview() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            // 3장 카드 레이아웃 (다중 이벤트)
+                                            <div className="relative w-full h-full select-none">
+                                                {/* 3장 카드 컨테이너 */}
+                                                <div className="flex items-center justify-center w-full h-full relative">
+                                                    {/* 3개 카드 렌더링 */}
+                                                    {[-1, 0, 1].map((offset) => {
+                                                        const eventIndex = (currentEventIndex + offset + hoveredEvents.length) % hoveredEvents.length;
+                                                        const event = hoveredEvents[eventIndex];
+                                                        const isCenter = offset === 0;
+                                                        
+                                                        return (
+                                                            <div
+                                                                key={`${event.id}-${offset}`}
+                                                                className="absolute bg-white rounded-xl shadow-2xl border overflow-hidden transform"
+                                                                style={{
+                                                                    width: isCenter ? '280px' : '240px',
+                                                                    height: isCenter ? '350px' : '300px',
+                                                                    left: `${50 + (offset * 30)}%`,
+                                                                    transform: `translateX(-50%) ${!isCenter ? 'scale(0.85)' : 'scale(1)'}`,
+                                                                    zIndex: isCenter ? 20 : 10,
+                                                                    filter: !isCenter ? 'blur(2px)' : 'none',
+                                                                    opacity: isCenter ? 1 : 0.6,
+                                                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                                    pointerEvents: isCenter ? 'auto' : 'none',
+                                                                    transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                                    willChange: 'transform, filter, opacity'
+                                                                }}
+                                                                onClick={() => {
+                                                                    if (isCenter) {
+                                                                        navigate(`/eventdetail/${event.id}`);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {/* 카드 배경 그라데이션 오버레이 */}
+                                                                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-90"></div>
+
+                                                                {/* 카테고리 배지 */}
+                                                                <div className="absolute top-3 left-3 z-20">
+                                                                    <span className="inline-block px-2 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white border-opacity-30">
+                                                                        {event.mainCategory}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="relative z-10 h-full">
+                                                                    {/* 썸네일 영역 */}
+                                                                    <div className="relative h-full overflow-hidden">
+                                                                        <img
+                                                                            src={event.thumbnailUrl || "/images/NoImage.png"}
+                                                                            alt={event.title}
+                                                                            className="w-full h-full object-cover opacity-80"
+                                                                        />
+                                                                        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+                                                                    </div>
+
+                                                                    {/* 카드 콘텐츠 (메인 카드에서만 표시) */}
+                                                                    {isCenter && (
+                                                                        <div className="absolute bottom-0 left-0 right-0 py-3 px-4 text-white bg-black bg-opacity-70">
+                                                                            <h3 className="text-base font-bold mb-2 line-clamp-2 text-white">
+                                                                                {event.title}
+                                                                            </h3>
+
+                                                                            <div className="space-y-1 mb-3">
+                                                                                <div className="flex items-center text-sm text-white text-opacity-90">
+                                                                                    <MapIcon className="w-3 h-3 mr-2 flex-shrink-0" />
+                                                                                    <span className="truncate">{event.location}</span>
+                                                                                </div>
+                                                                                <div className="flex items-center text-sm text-white text-opacity-90">
+                                                                                    <Calendar className="w-3 h-3 mr-2 flex-shrink-0" />
+                                                                                    <span className="text-xs">
+                                                                                        {event.startDate === event.endDate
+                                                                                            ? new Date(event.startDate).toLocaleDateString('ko-KR', {
+                                                                                                year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                                            }).replace(/\s/g, '')
+                                                                                            : `${new Date(event.startDate).toLocaleDateString('ko-KR', {
+                                                                                                year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                                            }).replace(/\s/g, '')} ~ ${new Date(event.endDate).toLocaleDateString('ko-KR', {
+                                                                                                year: 'numeric', month: '2-digit', day: '2-digit'
+                                                                                            }).replace(/\s/g, '')}`
+                                                                                        }
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div className="text-sm font-bold text-yellow-200">
+                                                                                    {event.minPrice == null
+                                                                                        ? "가격 정보 없음"
+                                                                                        : event.minPrice === 0
+                                                                                            ? "무료"
+                                                                                            : `${event.minPrice.toLocaleString()}원 ~`}
+                                                                                </div>
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        navigate(`/eventdetail/${event.id}`);
+                                                                                    }}
+                                                                                    className="px-3 py-1.5 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-lg hover:bg-opacity-30 transition-all text-xs font-medium border border-white border-opacity-30 hover:border-opacity-50"
+                                                                                >
+                                                                                    상세보기
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* 페이지 인디케이터와 카운터 */}
+                                                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-30">
+                                                    <div className="flex items-center space-x-2 bg-black bg-opacity-40 backdrop-blur-sm rounded-full px-4 py-2">
+                                                        <div className="flex space-x-1">
+                                                            {hoveredEvents.map((_, index) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                                                                        index === currentEventIndex 
+                                                                            ? 'bg-white scale-125' 
+                                                                            : 'bg-white bg-opacity-50 hover:bg-opacity-80'
+                                                                    }`}
+                                                                    onClick={() => setCurrentEventIndex(index)}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        <div className="w-px h-4 bg-white bg-opacity-30"></div>
+                                                        <span className="text-xs text-white font-medium">
+                                                            {currentEventIndex + 1}/{hoveredEvents.length}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* 좌우 네비게이션 버튼 */}
+                                                <button
+                                                    onClick={() => setCurrentEventIndex(prev =>
+                                                        prev > 0 ? prev - 1 : hoveredEvents.length - 1
+                                                    )}
+                                                    className="absolute left-2 top-1/2 transform -translate-y-1/2 z-30 w-12 h-12 bg-black bg-opacity-50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-70 hover:scale-110 transition-all duration-200 border border-white border-opacity-20"
+                                                >
+                                                    {/* 왼쪽 화살표 */}
+                                                    <svg width="50" height="50" viewBox="0 0 24 24" fill="none" className="text-white">
+                                                        <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => setCurrentEventIndex(prev => 
+                                                        prev < hoveredEvents.length - 1 ? prev + 1 : 0
+                                                    )}
+                                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 z-30 w-12 h-12 bg-black bg-opacity-50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-70 hover:scale-110 transition-all duration-200 border border-white border-opacity-20"
+                                                >
+                                                    {/* 오른쪽 화살표 */}
+                                                    <svg width="50" height="50" viewBox="0 0 24 24" fill="none" className="text-white">
+                                                        <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
