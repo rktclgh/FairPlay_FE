@@ -5,6 +5,8 @@ import {
     RefreshCw,
     User,
     AlertCircle,
+    Check,
+    Ban
 } from "lucide-react";
 
 import {
@@ -105,6 +107,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
         }
 
         const res = await reissueQrTicketByMember(data);
+        setIsTicketUsed(false);
         setQrCode(res.qrCode);
         setManualCode(res.manualCode);
         setTimeLeft(300); // 타이머 리셋
@@ -155,16 +158,24 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                                 ✅ {successMessage}
                         </div>                        
                     )}
+                    {timeLeft === 0 && (
+                        <div className="text-center mb-4 p-2 rounded-lg font-semibold 
+                                        bg-red-100 text-red-800">
+                            ⛔ 티켓 유효기간이 만료되었습니다.
+                        </div>
+                    )}
                     <div className="bg-white rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-center mb-2">
                             <div className="w-24 h-24 sm:w-28 md:w-36 sm:h-24 md:h-36 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
                                 <div className="text-center text-gray-500">
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
-                                        <QRCodeCanvas
-                                            value={qrCode}
-                                            size={120}
-                                            fgColor={'#000'}
-                                        />
+                                        {timeLeft === 0 ? (
+                                            <Ban size={120} color="#ff0000" strokeWidth={2.25} />
+                                        ): isTicketUsed ? (
+                                            <Check size={120} color="#050dff" strokeWidth={2.25} />
+                                        ) : (
+                                            <QRCodeCanvas value={qrCode} size={120} fgColor={'#000'} />
+                                        )}
                                     </div>
                                 </div>
                             </div>
