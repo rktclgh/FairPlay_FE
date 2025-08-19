@@ -115,3 +115,7 @@ export interface QrTicketData {
     qrCode: string; // qrCode
     manualCode: string; // 수동코드
 }
+
+// export interface BoothEntryRequestDto {
+//     boothReservationId: string,
+// }

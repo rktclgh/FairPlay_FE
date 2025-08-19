@@ -50,25 +50,34 @@ export const reissueQrTicketSendEmail = async (data: QrTicketReissueRequestDto):
     return res.data;
 }
 
+// 체크인 QR
 export const checkInQr = async (data: QrCheckRequestDto): Promise<CheckResponseDto> => {
     const res = await api.post<CheckResponseDto>(`/api/qr-tickets/check-in/qr`,data);
     return res.data;
 }
 
+// 체크인 수동
 export const checkInManual = async (data: ManualCheckRequestDto): Promise<CheckResponseDto> => {
     const res = await api.post<CheckResponseDto>(`/api/qr-tickets/check-in/manual`,data);
     return res.data;    
 }
 
+// 체크아웃 QR
 export const checkOutQr = async (data: QrCheckRequestDto): Promise<CheckResponseDto> => {
     const res = await api.post<CheckResponseDto>(`/api/qr-tickets/check-out/qr`,data);
     return res.data;    
 }
 
+// 체크아웃 수동
 export const checkOutManual = async (data: ManualCheckRequestDto): Promise<CheckResponseDto> => {
     const res = await api.post<CheckResponseDto>(`/api/qr-tickets/check-out/manual`,data);
     return res.data;    
 }
+
+// // 부스 입장 
+// export const checkBoothQr = async (): Promise<> => {
+
+// }
 
 export const adminForceCheck = async (data: AdminForceCheckRequestDto): Promise<CheckResponseDto> => {
     const res = await api.post<CheckResponseDto>(`/api/qr-tickets/admin/check`,data);

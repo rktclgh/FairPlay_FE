@@ -22,7 +22,7 @@ export const TicketManagement = () => {
                 if (!response.ok) {
                     throw new Error('행사 관리 권한이 없습니다.');
                 }
-                
+
                 const data = await response.json();
                 setEventId(data);
             } catch (error) {
@@ -31,7 +31,7 @@ export const TicketManagement = () => {
                 setIsEventLoading(false);
             }
         };
-        
+
         fetchUserEventId();
     }, []);
 
@@ -81,7 +81,7 @@ export const TicketManagement = () => {
 
     // 티켓 수정 핸들러
     const handleUpdateTicket = (updatedTicket: Ticket) => {
-        setTicketData(prev => prev.map(ticket => 
+        setTicketData(prev => prev.map(ticket =>
             ticket.ticketId === updatedTicket.ticketId ? updatedTicket : ticket
         ));
     };
@@ -155,7 +155,7 @@ export const TicketManagement = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[195px] w-[949px]">
+                <div className="ml-64 mt-[195px] w-[949px] pb-24">
                     {/* 검색 및 필터 섹션 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <div className="flex items-center justify-between">
@@ -269,7 +269,7 @@ export const TicketManagement = () => {
                             ) : error ? (
                                 <div className="py-12 text-center">
                                     <div className="text-red-500 mb-2">{error}</div>
-                                    <button 
+                                    <button
                                         onClick={loadTickets}
                                         className="text-blue-600 hover:text-blue-800 font-medium transition-colors text-sm"
                                     >
@@ -280,7 +280,7 @@ export const TicketManagement = () => {
                                 <div className="py-12 text-center">
                                     <div className="text-gray-500">
                                         {searchTicketName || selectedSeatType !== "ALL"
-                                            ? "검색 조건에 맞는 티켓이 없습니다." 
+                                            ? "검색 조건에 맞는 티켓이 없습니다."
                                             : "등록된 티켓이 없습니다."}
                                     </div>
                                 </div>
@@ -291,9 +291,8 @@ export const TicketManagement = () => {
                                     return (
                                         <div
                                             key={ticket.ticketId}
-                                            className={`grid grid-cols-7 gap-2 py-5 px-6 text-sm items-center ${
-                                                index !== filteredTickets.length - 1 ? "border-b border-gray-200" : ""
-                                            }`}
+                                            className={`grid grid-cols-7 gap-2 py-5 px-6 text-sm items-center ${index !== filteredTickets.length - 1 ? "border-b border-gray-200" : ""
+                                                }`}
                                         >
                                             <div className="font-medium text-gray-900 text-left truncate">{ticket.name || '티켓명 없음'}</div>
                                             <div className="text-gray-600 text-center">{ticket.seatTypeName || '없음'}</div>

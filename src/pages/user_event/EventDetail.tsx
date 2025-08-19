@@ -230,7 +230,7 @@ const EventDetail = (): JSX.Element => {
 
         return calendar;
     };
-    
+
     // 이벤트 데이터 로드 (실제로는 API 호출)
     useEffect(() => {
         const loadEventData = async () => {
@@ -534,7 +534,7 @@ const EventDetail = (): JSX.Element => {
         if (!isDateInFuture(date)) {
             return false;
         }
-        
+
         // 전체 회차 데이터에서 해당 날짜의 회차들을 찾아서 예매 가능 여부 확인
         const dateSchedules = allSchedules.filter(schedule => schedule.date === date);
 
@@ -762,11 +762,10 @@ const EventDetail = (): JSX.Element => {
                                             >
                                                 {day.date}
                                                 {isEventDate && isCurrentMonth && (
-                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
-                                                        isPastDate 
-                                                            ? 'bg-gray-400' 
-                                                            : isBookable 
-                                                                ? 'bg-green-600' 
+                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${isPastDate
+                                                            ? 'bg-gray-400'
+                                                            : isBookable
+                                                                ? 'bg-green-600'
                                                                 : 'bg-pink-600'
                                                         }`}></div>
                                                 )}
@@ -879,16 +878,14 @@ const EventDetail = (): JSX.Element => {
                                                 return (
                                                     <div
                                                         key={date}
-                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 ${
-                                                            isPastDate 
-                                                                ? 'cursor-not-allowed opacity-60' 
+                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 ${isPastDate
+                                                                ? 'cursor-not-allowed opacity-60'
                                                                 : 'cursor-pointer hover:bg-gray-50'
                                                             } ${isSelected ? 'bg-blue-50' : ''}`}
                                                         onClick={() => !isPastDate ? handleDateSelect(date) : null}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-3 h-3 rounded ${
-                                                                isPastDate
+                                                            <div className={`w-3 h-3 rounded ${isPastDate
                                                                     ? 'bg-gray-300'
                                                                     : isSelected
                                                                         ? 'bg-blue-600'
@@ -1090,20 +1087,7 @@ const EventDetail = (): JSX.Element => {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="bg-white border-t border-gray-200 py-16">
-                <div className="max-w-7xl mx-auto px-8 text-center">
-                    <p className="text-gray-600 mb-8">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
-                    <div className="flex justify-center space-x-8">
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">이용약관</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">개인정보처리방침</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">고객센터</a>
-                        <a href="#" className="text-gray-600 hover:text-black text-sm">회사소개</a>
-                    </div>
-                </div>
-            </footer>
+
 
             {/* External Booking Modal */}
             <ExternalLink

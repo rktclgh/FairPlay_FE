@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { eventApi } from "../../services/api";
 import type { UserInfo, PasswordChangeRequest } from "../../services/api";
 import { EditProfileModal } from "../../components/EditProfileModal";
+import { useTranslation } from "react-i18next";
 
 // 블러 처리 유틸리티 함수들
 const blurEmail = (email: string) => {
@@ -26,7 +27,7 @@ const formatPhoneNumber = (phoneNumber: string) => {
     if (!phoneNumber) return "";
     // 전화번호가 이미 포맷팅되어 있으면 그대로 반환
     if (phoneNumber.includes('-')) return phoneNumber;
-    
+
     const cleaned = phoneNumber.replace(/[^0-9]/g, '');
     if (cleaned.length === 11) {
         return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 7)}-${cleaned.substring(7)}`;
@@ -36,6 +37,7 @@ const formatPhoneNumber = (phoneNumber: string) => {
 
 export const MyPageInfo = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     // 사용자 정보 상태
     const [userInfo, setUserInfo] = useState<UserInfo>({
@@ -106,12 +108,12 @@ export const MyPageInfo = () => {
     // 비밀번호 변경 처리
     const handlePasswordChange = async () => {
         if (!oldPassword || !newPassword) {
-            setPasswordError("모든 필드를 입력해주세요.");
+            setPasswordError(t('mypage.info.validation.allFieldsRequired'));
             return;
         }
 
         if (newPassword.length < 8) {
-            setPasswordError("새 비밀번호는 8자 이상이어야 합니다.");
+            setPasswordError(t('mypage.info.validation.passwordMinLength'));
             return;
         }
 
@@ -130,9 +132,9 @@ export const MyPageInfo = () => {
                 setShowPasswordChange(false);
                 setOldPassword("");
                 setNewPassword("");
-                alert("비밀번호가 성공적으로 변경되었습니다.");
+                alert(t('mypage.info.validation.passwordChangeSuccess'));
             } else {
-                setPasswordError("이전 비밀번호가 올바르지 않습니다.");
+                setPasswordError(t('mypage.info.validation.incorrectOldPassword'));
             }
         } catch (error) {
             console.error("비밀번호 변경 실패:", error);
@@ -180,7 +182,7 @@ export const MyPageInfo = () => {
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    내 정보 조회
+                    {t('mypage.info.title')}
                 </div>
 
                 <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
@@ -348,27 +350,7 @@ export const MyPageInfo = () => {
                     </div>
                 </div>
 
-                <div className="absolute w-[1256px] h-[205px] top-[1002px] left-0 bg-white border-t [border-top-style:solid] border-[#0000001f]">
-                    <p className="absolute top-[62px] left-[515px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-base text-center leading-6 tracking-[0] whitespace-nowrap">
-                        간편하고 안전한 행사 관리 솔루션
-                    </p>
 
-                    <div className="absolute top-[118px] left-[450px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        이용약관
-                    </div>
-
-                    <div className="absolute top-[118px] left-[534px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        개인정보처리방침
-                    </div>
-
-                    <div className="absolute top-[118px] left-[669px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        고객센터
-                    </div>
-
-                    <div className="absolute top-[118px] left-[752px] [font-family:'Segoe_UI-Regular',Helvetica] font-normal text-[#666666] text-sm text-center leading-[21px] tracking-[0] whitespace-nowrap">
-                        회사소개
-                    </div>
-                </div>
 
                 {/* 개인정보 수정 모달 */}
                 <EditProfileModal

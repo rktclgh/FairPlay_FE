@@ -7,7 +7,6 @@ import {
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
-import { Footer } from "../components/Footer";
 import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
 import { requireAuth, isAuthenticated } from "../utils/authGuard";
@@ -20,6 +19,10 @@ import { eventAPI } from "../services/event"
 import type {
     EventSummaryDto
 } from "../services/types/eventType";
+import { useTranslation } from 'react-i18next';
+import "swiper/css/effect-coverflow";
+import type { HotPick } from "../services/event";
+
 
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
@@ -34,18 +37,125 @@ interface PaidAdvertisement {
     priority: number; // 노출 순서
 }
 
-// Hot Pick 인터페이스
-interface HotPick {
-    id: number;
-    title: string;
-    date: string;
-    location: string;
-    category: string;
-    image: string;
-}
 
 export const Main: React.FC = () => {
+
+    const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+    const [gender, setGender] = useState<string>("")
+    const today = new Date();
+
+    const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
+    const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
+
+    const getTodayDateString = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    const isDateInFuture = (date: string) => {
+        const todayString = getTodayDateString();
+        return date >= todayString;
+    };
+    const handleDateSelect = (date: string) => {
+        setSelectedDate(date);
+    };
+
+    const generateCalendarDays = () => {
+        const year = currentCalendarYear;
+        const month = currentCalendarMonth;
+
+        // 해당 월의 첫째 날과 마지막 날
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+
+        // 첫째 날의 요일 (0: 일요일, 6: 토요일)
+        const firstDayOfWeek = firstDay.getDay();
+
+        // 마지막 날의 날짜
+        const lastDate = lastDay.getDate();
+
+        // 이전 달의 마지막 날들
+        const prevMonth = new Date(year, month - 2, 0);
+        const prevLastDate = prevMonth.getDate();
+
+        const days = [];
+
+        // 이전 달의 날짜들 (회색으로 표시)
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const date = prevLastDate - i;
+            const dateString = `${year}-${String(month - 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        // 현재 달의 날짜들
+        for (let date = 1; date <= lastDate; date++) {
+            const dateString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: true
+            });
+        }
+
+        // 다음 달의 날짜들 (달력을 6주로 맞추기 위해)
+        const remainingDays = 42 - days.length; // 6주 * 7일 = 42일
+        for (let date = 1; date <= remainingDays; date++) {
+            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            days.push({
+                date,
+                dateString,
+                isCurrentMonth: false
+            });
+        }
+
+        return days;
+    };
+
+    const handleSubmit = async () => {
+        if (!selectedDate) {
+            alert("생년월일을 선택하세요.");
+            return;
+        }
+        const formatted = selectedDate;
+        try {
+            await api.post("/api/users/mypage/edit", { birthday: formatted, gender });
+            alert("생년월일 저장 완료 ✅");
+            setShowBirthdayModal(false); // 모달 닫기
+        } catch (error) {
+            console.error(error);
+            alert("저장 실패 ❌");
+        }
+    };
+
+    // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
+    useEffect(() => {
+        if (!isAuthenticated()) {
+            return;
+        }
+
+        const checkBirthday = async () => {
+            try {
+                const res = await api.get("/api/users/mypage");
+                if (!res.data.birthday) {
+                    setShowBirthdayModal(true);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        checkBirthday();
+    }, []);
+
+
     const { isDark } = useTheme();
+    const { t } = useTranslation();
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
@@ -58,13 +168,13 @@ export const Main: React.FC = () => {
     // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
     const authHeaders = () => {
-        const t = localStorage.getItem("accessToken");
-        return t ? { Authorization: `Bearer ${t}` } : {};
+        const token = localStorage.getItem("accessToken");
+   return token ? { Authorization: `Bearer ${token}` } : {};
     };
 
     const toggleWish = async (eventId: number) => {
         // 인증 확인
-        if (!requireAuth(navigate, '관심 등록')) {
+        if (!requireAuth(navigate, t('wishlist.requireAuth'))) {
             return;
         }
 
@@ -93,7 +203,7 @@ export const Main: React.FC = () => {
                 });
             }
         } catch (e) {
-            console.error("찜 토글 실패:", e);
+            console.error(t('wishlist.toggleFailed'), e);
             // 실패 시 롤백
             setLikedEvents(prev => {
                 const next = new Set(prev);
@@ -110,15 +220,21 @@ export const Main: React.FC = () => {
     };
 
     const mapMainCategoryToId = (name: string): number | undefined => {
+        // 번역된 카테고리와 한국어 카테고리 모두 지원
         switch (name) {
+            case t('categories.exhibition'):
             case "박람회":
                 return 1;
+            case t('categories.lecture'):
             case "강연/세미나":
                 return 2;
+            case t('categories.event'):
             case "전시/행사":
                 return 3;
+            case t('categories.performance'):
             case "공연":
                 return 4;
+            case t('categories.festival'):
             case "축제":
                 return 5;
             default:
@@ -141,7 +257,7 @@ export const Main: React.FC = () => {
                 size: 20,
             };
 
-            if (selectedCategory !== "전체") {
+            if (selectedCategory !== t('categories.all') && selectedCategory !== "전체") {
                 params.mainCategoryId = mapMainCategoryToId(selectedCategory);
             }
 
@@ -150,7 +266,7 @@ export const Main: React.FC = () => {
             const response = await eventAPI.getEventList(params);
             setEvents(response.events ?? []);
         } catch (error) {
-            console.error("행사 필터링 실패:", error);
+            console.error(t('wishlist.loadFailed'), error);
             // 오류 발생 시 빈 배열로 설정하여 UI가 깨지지 않도록 함
             setEvents([]);
         }
@@ -165,6 +281,16 @@ export const Main: React.FC = () => {
         setSelectedCategory(category);
     };
 
+    // 번역된 카테고리 배열 생성
+    const getTranslatedCategories = () => [
+        { key: "전체", label: t('categories.all') },
+        { key: "박람회", label: t('categories.exhibition') },
+        { key: "공연", label: t('categories.performance') },
+        { key: "강연/세미나", label: t('categories.lecture') },
+        { key: "전시/행사", label: t('categories.event') },
+        { key: "축제", label: t('categories.festival') }
+    ];
+
 
     // 유료광고 행사 상태
     const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
@@ -176,68 +302,69 @@ export const Main: React.FC = () => {
             // const ads = await eventApi.getPaidAdvertisements();
 
             // 임시 데이터 (백엔드 연동 전까지 사용)
+            // 실제 행사 ID로 매핑 (events 배열에서 제목으로 찾기)
             const tempAds: PaidAdvertisement[] = [
                 {
-                    id: 1,
+                    id: 19, // G-DRAGON 행사 ID
                     title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
                     imageUrl: "/images/gd1.png",
                     thumbnailUrl: "/images/gd2.png",
-                    linkUrl: "/event/1",
+                    linkUrl: "/event/19",
                     startDate: "2025-05-25",
                     endDate: "2025-05-25",
                     isActive: true,
                     priority: 1
                 },
                 {
-                    id: 2,
+                    id: 20, // YE LIVE IN KOREA 행사 ID
                     title: "YE LIVE IN KOREA",
                     imageUrl: "/images/YE3.png",
                     thumbnailUrl: "/images/YE3.png",
-                    linkUrl: "/event/2",
+                    linkUrl: "/event/20",
                     startDate: "2025-06-15",
                     endDate: "2025-06-15",
                     isActive: true,
                     priority: 2
                 },
                 {
-                    id: 3,
+                    id: 21, // Post Malone Concert 행사 ID
                     title: "Post Malone Concert",
                     imageUrl: "/images/malone1.jpg",
                     thumbnailUrl: "/images/malone.jpg",
-                    linkUrl: "/event/3",
+                    linkUrl: "/event/21",
                     startDate: "2025-07-20",
                     endDate: "2025-07-20",
                     isActive: true,
                     priority: 3
                 },
                 {
-                    id: 4,
-                    title: "Event 4",
+                    id: 22, // THE ROSE 행사 ID
+                    title: "THE ROSE 2025 LIVE IN SEOUL",
                     imageUrl: "/images/therose2.png",
                     thumbnailUrl: "/images/therose1.png",
-                    linkUrl: "/event/4",
+                    linkUrl: "/event/22",
                     startDate: "2025-08-10",
                     endDate: "2025-08-10",
                     isActive: true,
                     priority: 4
                 },
                 {
-                    id: 5,
-                    title: "Event 5",
+                    id: 23, // eaJ 행사 ID
+                    title: "eaJ LIVE IN SEOUL",
                     imageUrl: "/images/eaj2.jpg",
                     thumbnailUrl: "/images/eaj1.jpg",
-                    linkUrl: "/event/5",
+                    linkUrl: "/event/23",
                     startDate: "2025-09-05",
                     endDate: "2025-09-05",
                     isActive: true,
                     priority: 5
                 },
                 {
-                    id: 6,
-                    title: "Event 6",
+                    id: 24, // 사이버 보안 컨퍼런스 행사 ID
+                    title: "사이버 보안 컨퍼런스 2025",
                     imageUrl: "/images/cyber2.png",
                     thumbnailUrl: "/images/cyber.png",
-                    linkUrl: "/event/6",
+                    linkUrl: "/event/24",
                     startDate: "2025-10-15",
                     endDate: "2025-10-15",
                     isActive: true,
@@ -287,20 +414,22 @@ export const Main: React.FC = () => {
                 // 유료광고 데이터 로드
                 await loadPaidAdvertisements();
 
-                // TODO: 백엔드 연결 후 Hot Picks 데이터 로드
-                // const hotPicksData = await eventApi.getHotPicks();
-                // setHotPicks(hotPicksData);
-            } catch (error) {
-                console.error('데이터 로드 실패:', error);
-                // 오류 발생 시 빈 상태로 설정하여 UI가 깨지지 않도록 함
-                setEvents([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadData();
-    }, []);
+                 // HOT PICKS 백엔드 연동
+                try {
+        const hot = await eventAPI.getHotPicks({ size: 10 });
+        setHotPicks(hot); // 매핑 없이 바로
+      } catch (e) {
+        console.error("HOT PICKS 로드 실패:", e);
+      }
+    } catch (error) {
+      console.error("데이터 로드 실패:", error);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadData();
+}, []);
 
     // 카테고리 필터링
     // const handleCategoryChange = async (category: string) => {
@@ -317,13 +446,14 @@ export const Main: React.FC = () => {
     // Hot Picks는 Swiper로 전환하여 수동 인덱스 제어 제거
 
     // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
-    const [hotPicks] = useState<HotPick[]>([]);
-    const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
-
-    // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
+  const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
+  const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
+    
+  // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
+    // 실제 행사 ID로 매핑 (events 배열에서 제목으로 찾기)
     const tempHotPicks: HotPick[] = [
         {
-            id: 1,
+            id: 19, // G-DRAGON 행사 ID
             title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
             date: "2025.05.25",
             location: "KYOCERA DOME OSAKA",
@@ -331,7 +461,7 @@ export const Main: React.FC = () => {
             image: "/images/gd2.png",
         },
         {
-            id: 2,
+            id: 20, // YE LIVE IN KOREA 행사 ID
             title: "YE LIVE IN KOREA",
             date: "2025.06.15",
             location: "인천문학경기장",
@@ -339,7 +469,7 @@ export const Main: React.FC = () => {
             image: "/images/YE3.png",
         },
         {
-            id: 3,
+            id: 25, // 명원 세계 차 박람회 행사 ID
             title: "2025 명원 세계 차 박람회",
             date: "2025-09-11 ~ 2025-09-14",
             location: "코엑스 B2홀",
@@ -347,7 +477,7 @@ export const Main: React.FC = () => {
             image: "/images/tea.png",
         },
         {
-            id: 4,
+            id: 24, // 사이버 보안 컨퍼런스 행사 ID
             title: "사이버 보안 컨퍼런스 2025",
             date: "2025-09-10 ~ 2025-09-12",
             location: "코엑스 D홀",
@@ -355,7 +485,7 @@ export const Main: React.FC = () => {
             image: "/images/cyber.png",
         },
         {
-            id: 5,
+            id: 22, // THE ROSE 행사 ID
             title: "THE ROSE 2025 LIVE IN SEOUL",
             date: "2025.09.20",
             location: "KSPO DOME",
@@ -363,7 +493,7 @@ export const Main: React.FC = () => {
             image: "/images/therose1.png",
         },
         {
-            id: 6,
+            id: 23, // eaJ 행사 ID
             title: "eaJ LIVE IN SEOUL",
             date: "2025.09.25",
             location: "YES24 라이브홀",
@@ -371,7 +501,7 @@ export const Main: React.FC = () => {
             image: "/images/eaj1.jpg",
         },
         {
-            id: 7,
+            id: 26, // 한가위 명절선물전 행사 ID
             title: "2025 한가위 명절선물전",
             date: "2025-08-25 ~ 2025-08-28",
             location: "COEX 컨벤션홀",
@@ -379,7 +509,7 @@ export const Main: React.FC = () => {
             image: "/images/coex.png",
         },
         {
-            id: 8,
+            id: 27, // 케이펫페어 서울 행사 ID
             title: "2025 케이펫페어 서울",
             date: "2025-08-13 ~ 2025-08-16",
             location: "킨텍스 제1전시장",
@@ -387,7 +517,7 @@ export const Main: React.FC = () => {
             image: "/images/pet.jpg",
         },
         {
-            id: 9,
+            id: 28, // JOYURI FAN-CON 행사 ID
             title: "2025 JOYURI FAN-CON",
             date: "추후 공개",
             location: "추후 공개",
@@ -395,7 +525,7 @@ export const Main: React.FC = () => {
             image: "/images/joyuri.jpg",
         },
         {
-            id: 10,
+            id: 29, // IU HEREH WORLD TOUR CONCERT 행사 ID
             title: "IU HEREH WORLD TOUR CONCERT",
             date: "추후 공개",
             location: "추후 공개",
@@ -405,7 +535,75 @@ export const Main: React.FC = () => {
     ];
 
     // Hot Picks 데이터 (백엔드 연결 후 hotPicks로 교체)
-    const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
+const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
+
+const todayKey = dayjs().format("YYYY-MM-DD");
+
+const getMdPickIdsForToday = (): Set<number> => {
+  try {
+    if (typeof window === "undefined") return new Set<number>(); // SSR 대비(필요시)
+    const raw = localStorage.getItem(`mdpick:${todayKey}`);
+    const arr = raw ? JSON.parse(raw) : null;
+    return Array.isArray(arr)
+      ? new Set<number>(
+          arr.slice(0, 2)
+             .map((v: unknown) => Number(v))
+             .filter((n) => Number.isFinite(n))
+        )
+      : new Set<number>();
+  } catch {
+    return new Set<number>();
+  }
+};
+
+    // MD PICK 우선 노출 인식: 로컬스토리지에서 오늘 날짜의 ID/제목을 모두 읽는다
+    // [백엔드 연동 필요]
+    // - 오늘 노출할 MD PICK 이벤트 ID 목록을 API로 전달받아 사용하세요.
+    // - 현재는 로컬스토리지 키 'mdpick:YYYY-MM-DD'에서 읽도록 남겨두었습니다. API 적용 시 이 함수들을 대체하세요.
+    
+    
+    // [백엔드 연동 필요]
+    // - 임시 보조: 제목 기반 매칭용 키입니다. 백엔드가 ID를 제공하면 제거해도 됩니다.
+    const getMdPickTitlesForToday = (): Set<string> => {
+  try {
+    if (typeof window === "undefined") return new Set<string>(); // SSR 대비(필요시)
+    const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
+    const arr = raw ? JSON.parse(raw) : null;
+    return Array.isArray(arr)
+      ? new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)))
+      : new Set<string>();
+  } catch {
+    return new Set<string>();
+  }
+};
+
+    const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
+
+    const mdPickIds = getMdPickIdsForToday();
+    const mdPickTitles = getMdPickTitlesForToday();
+    const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
+
+    // [백엔드 연동 필요]
+    // - API에서 받은 MD PICK 세트를 기준으로 판단하도록 바꾸세요.
+    const isEventMdPick = (e: EventSummaryDto) => {
+        if (mdPickIds.has(e.id)) return true;
+        if (mdPickTitleNorms.size > 0) {
+            const nt = normalize(e.title);
+            for (const t of mdPickTitleNorms) {
+                if (nt.includes(t)) return true;
+            }
+        }
+        return false;
+    };
+
+    const hasMdPickInCurrentList = events.some(e => isEventMdPick(e));
+    const displayEvents = hasMdPickInCurrentList
+        ? [...events].sort((a, b) => {
+            const aPick = isEventMdPick(a) ? 1 : 0;
+            const bPick = isEventMdPick(b) ? 1 : 0;
+            return bPick - aPick;
+        })
+        : events;
 
     if (loading) {
         return (
@@ -418,6 +616,151 @@ export const Main: React.FC = () => {
     return (
         <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
             <TopNav />
+
+            {isAuthenticated() && showBirthdayModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+                    <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
+
+                        <h2 className="text-lg font-bold mb-4">개인 정보 입력</h2>
+
+
+                        {/* 달력 */}
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                {/* 년도 선택 드롭다운 */}
+                                <select
+                                    value={currentCalendarYear}
+                                    onChange={(e) => setCurrentCalendarYear(Number(e.target.value))}
+                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {Array.from({ length: 100 }, (_, i) => today.getFullYear() - 80 + i).map(year => (
+                                        <option key={year} value={year}>
+                                            {year}년
+                                        </option>
+                                    ))}
+                                </select>
+                                {/* 월 선택 드롭다운 */}
+                                <select
+                                    value={currentCalendarMonth}
+                                    onChange={(e) => setCurrentCalendarMonth(Number(e.target.value))}
+                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                                        <option key={month} value={month}>
+                                            {month}월
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => {
+                                        if (currentCalendarMonth === 1) {
+                                            setCurrentCalendarMonth(12);
+                                            setCurrentCalendarYear(currentCalendarYear - 1);
+                                        } else {
+                                            setCurrentCalendarMonth(currentCalendarMonth - 1);
+                                        }
+                                    }}
+                                    className="p-1 hover:bg-gray-200 rounded text-xs"
+                                    title="이전 달"
+                                >
+                                    ◀
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (currentCalendarMonth === 12) {
+                                            setCurrentCalendarMonth(1);
+                                            setCurrentCalendarYear(currentCalendarYear + 1);
+                                        } else {
+                                            setCurrentCalendarMonth(currentCalendarMonth + 1);
+                                        }
+                                    }}
+                                    className="p-1 hover:bg-gray-200 rounded text-xs"
+                                    title="다음 달"
+                                >
+                                    ▶
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 요일 헤더 */}
+                        <div className="grid grid-cols-7 gap-1 mb-1">
+                            {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+                                <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                                    }`}>
+                                    {day}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 mb-4">
+                            {generateCalendarDays().map((day, index) => {
+                                const isSelected = selectedDate === day.dateString;
+                                const isPast = !isDateInFuture(day.dateString);
+                                const isPastDate = !isDateInFuture(day.dateString);
+
+                                return (
+                                    <button
+                                        key={index}
+                                        onClick={() => (isPastDate) ? handleDateSelect(day.dateString) : null}
+                                        className={`p-1.5 text-xs rounded transition-colors relative h-8 ${isPast
+                                            ? isSelected
+                                                ? 'bg-blue-600 text-white'       // 선택된 날짜 스타일
+                                                : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer' // 과거 날짜 스타일
+                                            : 'text-gray-400 cursor-not-allowed' // 비활성 날짜
+                                            }`}
+                                    >
+                                        {day.date}
+
+                                        {isSelected && (
+                                            <div className="absolute inset-0 bg-blue-600 rounded opacity-50"></div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* 성별 선택 */}
+                        <label className="block mb-2">성별</label>
+                        <div className="flex gap-4 mb-4">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="MALE"
+                                    checked={gender === "MALE"}
+                                    onChange={(e) => setGender(e.target.value)}
+                                /> 남성
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="FEMALE"
+                                    checked={gender === "FEMALE"}
+                                    onChange={(e) => setGender(e.target.value)}
+                                /> 여성
+                            </label>
+                        </div>
+
+                        <button
+                            onClick={handleSubmit}
+                            className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+                        >
+                            저장
+                        </button>
+
+                        {/* 모달 닫기 버튼 */}
+                        <button
+                            onClick={() => setShowBirthdayModal(false)}
+                            className="mt-2 text-sm text-gray-500 hover:underline"
+                        >
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            )}
+
 
             {/* 히어로 섹션 */}
             <div className={`relative w-full aspect-square sm:h-[400px] md:h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
@@ -434,14 +777,19 @@ export const Main: React.FC = () => {
                 >
                     {paidAdvertisements.map((ad) => (
                         <SwiperSlide key={ad.id}>
-                            <img
-                                src={ad.imageUrl}
-                                alt={ad.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    console.log('히어로 이미지 로드 실패:', e);
-                                }}
-                            />
+                            <div
+                                className="w-full h-full cursor-pointer"
+                                onClick={() => navigate(`/eventdetail/${ad.id}`)}
+                            >
+                                <img
+                                    src={ad.imageUrl}
+                                    alt={ad.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        console.log('히어로 이미지 로드 실패:', e);
+                                    }}
+                                />
+                            </div>
                         </SwiperSlide>
                     ))}
                 </Swiper>
@@ -481,12 +829,12 @@ export const Main: React.FC = () => {
                         modules={[Navigation, Autoplay, EffectCoverflow]}
                         navigation
                         effect="coverflow"
-                        coverflowEffect={{ 
-                            rotate: 0, 
-                            stretch: -30, 
-                            depth: 220, 
-                            modifier: 1, 
-                            slideShadows: false 
+                        coverflowEffect={{
+                            rotate: 0,
+                            stretch: -30,
+                            depth: 220,
+                            modifier: 1,
+                            slideShadows: false
                         }}
                         slidesPerView="auto"
                         centeredSlides={true}
@@ -505,7 +853,10 @@ export const Main: React.FC = () => {
                     >
                         {allHotPicks.map((item, index) => (
                             <SwiperSlide key={item.id} className="hotpick-slide">
-                                <div className="group relative w-full rounded-[10px] overflow-hidden">
+                                <div
+                                    className="group relative w-full rounded-[10px] overflow-hidden cursor-pointer"
+                                    onClick={() => navigate(`/eventdetail/${item.id}`)}
+                                >
                                     <img
                                         src={item.image}
                                         alt={`Hot Pick ${index + 1}`}
@@ -551,11 +902,11 @@ export const Main: React.FC = () => {
                     {/* 필터 버튼들 */}
                     <div className="mb-6 md:mb-8">
                         <div className="flex md:flex-wrap overflow-x-auto md:overflow-visible whitespace-nowrap no-scrollbar gap-2 md:gap-4 -mx-4 px-4">
-                            {["전체", "박람회", "공연", "강연/세미나", "전시/행사", "축제"].map((filter, index) => (
+                            {getTranslatedCategories().map((category, index) => (
                                 <button
                                     key={index}
-                                    onClick={() => handleCategoryChange(filter)}
-                                    className={`shrink-0 inline-flex px-3 py-2 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === filter
+                                    onClick={() => handleCategoryChange(category.key)}
+                                    className={`shrink-0 inline-flex px-3 py-3 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
                                         ? (isDark
                                             ? 'dm-light font-bold border-gray-300'
                                             : 'bg-black text-white font-bold border-gray-800')
@@ -564,7 +915,7 @@ export const Main: React.FC = () => {
                                             : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
                                         }`}
                                 >
-                                    {filter}
+                                    {category.label}
                                 </button>
                             ))}
                         </div>
@@ -572,10 +923,19 @@ export const Main: React.FC = () => {
 
                     {/* 행사 카드들 */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {events.map((event) => (
+                        {displayEvents.map((event) => (
                             <div key={event.id} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
                                     <div className="relative group">
+                                        {/* MD PICK 스티커 */}
+                                        {hasMdPickInCurrentList && isEventMdPick(event) && (
+                                            <div className="absolute top-2 left-2 z-10">
+                                                <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+                                                    <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+                                                    <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+                                                </div>
+                                            </div>
+                                        )}
                                         <img
                                             className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}
@@ -602,7 +962,11 @@ export const Main: React.FC = () => {
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                                         </div>
-                                        <p className="font-bold text-base md:text-lg text-[#ff6b35]">{event.minPrice}</p>
+                                        <p className="font-bold text-base md:text-lg text-[#ff6b35]">{event.minPrice == null
+                                            ? "가격 정보 없음"
+                                            : event.minPrice === 0
+                                                ? "무료"
+                                                : `${event.minPrice.toLocaleString()}원 ~`}</p>
                                     </div>
                                 </Link>
                             </div>
@@ -613,15 +977,14 @@ export const Main: React.FC = () => {
                     <div className="text-center mt-8 md:mt-12">
                         <Link to="/eventoverview">
                             <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
-                                전체보기
+                                {t('mypage.favorites.viewAll')}
                             </button>
                         </Link>
                     </div>
                 </div>
             </div>
 
-            {/* 푸터 */}
-            <Footer />
+
         </div>
     );
 }; 

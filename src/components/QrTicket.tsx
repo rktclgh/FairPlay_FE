@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     Calendar,
     MapPin,
@@ -35,22 +35,37 @@ interface QrTicketProps {
     updateIds?: {
         reservationId: number,
         qrTicketId: number
-    }
+    };
+    message?: string | null
 }
 
-const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, updateIds }) => {
+const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, updateIds, message }) => {
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
     const [qrCode, setQrCode] = useState(ticketData?.qrCode || ""); // QR 코드 상태
     const [manualCode, setManualCode] = useState(ticketData?.manualCode || ""); // 수동 코드 상태
     const [resData, setResData] = useState(ticketData || null);
     const [updateData, setUpdateData] = useState(updateIds || null)
+    const [successMessage, setSuccessMessage] = useState("");
+    const [isTicketUsed, setIsTicketUsed] = useState(false);
 
     useEffect(() => {
         setQrCode(ticketData?.qrCode ?? "");
         setManualCode(ticketData?.manualCode ?? "");
         setUpdateData(updateIds ?? null);
         setResData(ticketData ?? null);
+        setSuccessMessage("")
+        setIsTicketUsed(false);
     }, [ticketData]);
+
+        // ✅ 소켓 메시지 들어오면 처리
+    useEffect(() => {
+        if (!message) return;
+        setSuccessMessage(message);
+        setIsTicketUsed(true);
+        if (timerRef.current) clearInterval(timerRef.current); // 타이머 정지
+    }, [message]);
+
 
     // 카운트다운 타이머
     useEffect(() => {
@@ -61,17 +76,19 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
             return;
         }
 
-        const timer = setInterval(() => {
-            setTimeLeft((prevTime) => {
-                if (prevTime <= 1) {
-                    clearInterval(timer);
+        timerRef.current = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    if (timerRef.current) clearInterval(timerRef.current); // 0이 되면 멈춤
                     return 0;
                 }
-                return prevTime - 1;
+                return prev - 1;
             });
         }, 1000);
 
-        return () => clearInterval(timer);
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
     }, [isOpen, qrCode]);
 
     // 새로고침 함수
@@ -133,20 +150,20 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
 
                 {/* QR 코드 섹션 */}
                 <div className="p-2 sm:p-3 md:p-4">
-                    <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
+                    {isTicketUsed && (
+                        <div className="text-center mb-4 p-2 bg-green-100 text-green-800 font-semibold rounded-lg">
+                                ✅ {successMessage}
+                        </div>                        
+                    )}
+                    <div className="bg-white rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-center mb-2">
                             <div className="w-24 h-24 sm:w-28 md:w-36 sm:h-24 md:h-36 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
                                 <div className="text-center text-gray-500">
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
                                         <QRCodeCanvas
-                                            value={qrCode ?? ""}
-                                            size={116}
+                                            value={qrCode}
+                                            size={120}
                                             fgColor={'#000'}
-                                            style={{
-                                                display: 'block',
-                                                width: '120%',
-                                                height: '120%'
-                                            }}
                                         />
                                     </div>
                                 </div>
@@ -154,7 +171,9 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                         </div>
 
                         <div className="text-center">
-                            <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">{manualCode}</p>
+                            {!isTicketUsed && (
+                                <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">{manualCode}</p>
+                            )}
                             <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">TicketNo.{resData?.ticketNumber}</p>
                             <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>

@@ -6,18 +6,18 @@ import { Download, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import reservationService from "../../services/reservationService";
 import {
-  ReservationUIData,
-  ReservationFilter,
-  ReservationListResponse,
-  RESERVATION_STATUS,
-  RESERVATION_STATUS_NAMES
+    ReservationUIData,
+    ReservationFilter,
+    ReservationListResponse,
+    RESERVATION_STATUS,
+    RESERVATION_STATUS_NAMES
 } from "../../services/types/reservationType";
 
 export const ReservationList: React.FC = () => {
     // URL 파라미터에서 eventId 추출
     const { eventId: eventIdParam } = useParams<{ eventId: string }>();
     const navigate = useNavigate();
-    
+
     // eventId 파싱 및 유효성 검사
     const eventId = React.useMemo(() => {
         const parsed = eventIdParam ? parseInt(eventIdParam, 10) : null;
@@ -33,7 +33,7 @@ export const ReservationList: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [totalElements, setTotalElements] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
-    
+
     // 검색 및 필터 상태
     const [searchForm, setSearchForm] = useState<ReservationFilter>({
         name: "",
@@ -55,20 +55,20 @@ export const ReservationList: React.FC = () => {
             setError('유효하지 않은 이벤트 ID입니다.');
             return;
         }
-        
+
         try {
             setLoading(true);
             setError(null);
-            
+
             const response: ReservationListResponse = await reservationService.getReservationAttendees(eventId, filter);
-            
+
             // 백엔드 데이터를 UI 데이터로 변환
             const uiData = response.content.map(dto => reservationService.transformToUIData(dto));
-            
+
             setReservations(uiData);
             setTotalElements(response.totalElements);
             setTotalPages(response.totalPages);
-            
+
         } catch (err) {
             console.error('예약 데이터 로드 실패:', err);
             setError('예약 데이터를 불러오는데 실패했습니다.');
@@ -95,13 +95,13 @@ export const ReservationList: React.FC = () => {
     // 검색 폼 변경 핸들러 (서버 사이드 필터링)
     const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        
+
         setSearchForm(prev => ({
             ...prev,
             [name]: value === '' ? undefined : value,
             page: 0 // 검색 시 첫 페이지로 리셋
         }));
-        
+
         setCurrentPage(1);
     }, []);
 
@@ -152,7 +152,7 @@ export const ReservationList: React.FC = () => {
             toast.error('유효하지 않은 이벤트 ID입니다.');
             return;
         }
-        
+
         try {
             setLoading(true);
             await reservationService.downloadAttendeesExcel(eventId, {
@@ -181,7 +181,7 @@ export const ReservationList: React.FC = () => {
                 <div className="bg-white w-[1256px] min-h-screen relative">
                     <TopNav />
                     <HostSideNav className="!absolute !left-0 !top-[117px]" />
-                    
+
                     <div className="absolute left-64 top-[195px] w-[949px] pb-20">
                         <div className="bg-red-50 border border-red-200 rounded-md p-8 text-center">
                             <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
@@ -224,9 +224,6 @@ export const ReservationList: React.FC = () => {
                             <h1 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
                                 예약자 목록
                             </h1>
-                            <p className="text-sm text-gray-600 mt-1">
-                                이벤트 ID: {eventId}
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -235,8 +232,8 @@ export const ReservationList: React.FC = () => {
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
 
                 {/* 메인 콘텐츠 */}
-                <div className="absolute left-64 top-[220px] w-[949px] pb-20">
-                    
+                <div className="ml-64 mt-[220px] w-[949px] pb-20">
+
                     {/* 검색 영역 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                         <h3 className="text-lg font-semibold mb-4">검색 조건</h3>
@@ -249,7 +246,7 @@ export const ReservationList: React.FC = () => {
                                     value={searchForm.name || ''}
                                     onChange={handleSearchChange}
                                     placeholder="예약자명 검색"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 />
                             </div>
@@ -261,7 +258,7 @@ export const ReservationList: React.FC = () => {
                                     value={searchForm.phone || ''}
                                     onChange={handleSearchChange}
                                     placeholder="연락처 검색"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 />
                             </div>
@@ -273,7 +270,7 @@ export const ReservationList: React.FC = () => {
                                     value={searchForm.reservationNumber || ''}
                                     onChange={handleSearchChange}
                                     placeholder="예약번호 검색 (RES-123)"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 />
                             </div>
@@ -283,7 +280,7 @@ export const ReservationList: React.FC = () => {
                                     name="reservationStatus"
                                     value={searchForm.reservationStatus || ''}
                                     onChange={handleSearchChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 >
                                     <option value="">전체</option>
@@ -294,7 +291,7 @@ export const ReservationList: React.FC = () => {
                                 </select>
                             </div>
                         </div>
-                        
+
                         {/* 버튼 영역 */}
                         <div className="flex justify-end items-center">
                             <div className="flex gap-2">
@@ -375,10 +372,9 @@ export const ReservationList: React.FC = () => {
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-center text-center">
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${reservation.checkinStatusColor} ${
-                                                    reservation.checkinStatus === '입장완료' ? 'text-green-800' :
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${reservation.checkinStatusColor} ${reservation.checkinStatus === '입장완료' ? 'text-green-800' :
                                                     reservation.checkinStatus === '취소' ? 'text-red-800' : 'text-gray-800'
-                                                }`}>
+                                                    }`}>
                                                     {reservation.checkinStatus}
                                                 </span>
                                             </div>
@@ -398,11 +394,10 @@ export const ReservationList: React.FC = () => {
                                     <button
                                         onClick={handlePrevPage}
                                         disabled={currentPage === 1 || loading}
-                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                            currentPage === 1 || loading
-                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1 || loading
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
                                     >
                                         이전
                                     </button>
@@ -411,17 +406,16 @@ export const ReservationList: React.FC = () => {
                                         const startPage = Math.max(1, currentPage - 5);
                                         const page = startPage + i;
                                         if (page > totalPages) return null;
-                                        
+
                                         return (
                                             <button
                                                 key={page}
                                                 onClick={() => handlePageChange(page)}
                                                 disabled={loading}
-                                                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                                    currentPage === page
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                                } ${loading ? 'cursor-not-allowed opacity-50' : ''}`}
+                                                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === page
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                    } ${loading ? 'cursor-not-allowed opacity-50' : ''}`}
                                             >
                                                 {page}
                                             </button>
@@ -431,11 +425,10 @@ export const ReservationList: React.FC = () => {
                                     <button
                                         onClick={handleNextPage}
                                         disabled={currentPage === totalPages || loading}
-                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                            currentPage === totalPages || loading
-                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
+                                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages || loading
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
                                     >
                                         다음
                                     </button>
@@ -444,6 +437,7 @@ export const ReservationList: React.FC = () => {
                         )}
                     </div>
                 </div>
+                <div className="h-32 md:h-48" />
             </div>
         </div>
     );

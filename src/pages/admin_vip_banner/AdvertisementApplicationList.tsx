@@ -1,176 +1,157 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+//import axios, { AxiosError } from 'axios';
 import { TopNav } from '../../components/TopNav';
 import { AdminSideNav } from '../../components/AdminSideNav';
+
+ // ---- Backend response types ----
+ type BackendApplyStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+ type BackendBannerType = 'HERO' | 'SEARCH_TOP';
+ type BackendPayment = 'WAITING' | 'PAID' | 'REFUND_PENDING' | 'REFUNDED' | 'N/A';
+ interface BackendSlot { slotDate: string; priority: number; price: number }
+ interface BackendApplicationItem {
+   applicationId: number | string;
+   hostName?: string;
+   eventId?: number;
+   eventName?: string;
+   bannerType: BackendBannerType;
+   appliedAt: string;
+   applyStatus: BackendApplyStatus;
+   paymentStatus?: BackendPayment;
+   imageUrl?: string;
+   totalAmount: number;
+   slots?: BackendSlot[];
+ }
+ interface BackendPage<T> { content: T[] }  // 필요한 필드만 최소 정의
+ type BackendListResponse<T> = BackendPage<T> | T[];
+  const isPage = <T,>(d: unknown): d is BackendPage<T> => {
+   if (typeof d !== 'object' || d === null) return false;
+   const maybe = d as { content?: unknown };
+   return Array.isArray(maybe.content);
+ };
 
 interface AdvertisementApplication {
   id: string;
   hostName: string;
-  eventTitle: string;
-  type: 'mainBanner' | 'searchTop';
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: string;
-  requestedDates: string[];
-  totalAmount: number;
-  imageUrl?: string;
-  paymentStatus?: 'pending' | 'completed' | 'canceled';
-  exposurePeriod?: {
-    startDate: string;
-    endDate: string;
-  };
+  eventTitle: string;                         // eventName
+  type: 'mainBanner' | 'searchTop';           // HERO | SEARCH_TOP
+  status: 'pending' | 'approved' | 'rejected';// PENDING | APPROVED | REJECTED
+  submittedAt: string;                        // appliedAt(yyyy-MM-ddTHH:mm:ss)
+  requestedDates: string[];                   // slots[].slotDate
+  totalAmount: number;                        // server totalAmount
+  imageUrl?: string;                          // imageUrl
+  paymentStatus?: 'pending' | 'completed' | 'canceled'; // WAITING/PAID/N/A -> mapped
+  exposurePeriod?: { startDate: string; endDate: string };
+  mainBannerRanks?: string[];                 // optional (표시용)
+    mainBannerSelections?: { date: string; rank: string }[];
+  eventId?: number;
 }
 
+
 const AdvertisementApplicationList: React.FC = () => {
-  const [applications, setApplications] = useState<AdvertisementApplication[]>([
-    {
-      id: '1',
-      hostName: 'YG Entertainment',
-      eventTitle: 'G-DRAGON 2025 WORLD TOUR IN JAPAN',
-      type: 'mainBanner',
-      status: 'pending',
-      submittedAt: '2024-03-15',
-      requestedDates: ['2025-05-20', '2025-05-21', '2025-05-22', '2025-05-23', '2025-05-24', '2025-05-25'],
-      totalAmount: 4500000,
-      imageUrl: '/images/gd1.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-05-20',
-        endDate: '2025-05-25'
-      }
-    },
-    {
-      id: '2',
-      hostName: 'Def Jam Recordings',
-      eventTitle: 'YE LIVE IN KOREA',
-      type: 'mainBanner',
-      status: 'approved',
-      submittedAt: '2024-03-10',
-      requestedDates: ['2025-06-10', '2025-06-11', '2025-06-12', '2025-06-13', '2025-06-14', '2025-06-15'],
-      totalAmount: 3800000,
-      imageUrl: '/images/YE3.png',
-      paymentStatus: 'completed',
-      exposurePeriod: {
-        startDate: '2025-06-10',
-        endDate: '2025-06-15'
-      }
-    },
-    {
-      id: '3',
-      hostName: 'Republic Records',
-      eventTitle: 'Post Malone Concert',
-      type: 'mainBanner',
-      status: 'pending',
-      submittedAt: '2024-03-08',
-      requestedDates: ['2025-07-15', '2025-07-16', '2025-07-17', '2025-07-18', '2025-07-19', '2025-07-20'],
-      totalAmount: 3200000,
-      imageUrl: '/images/malone1.jpg',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-07-15',
-        endDate: '2025-07-20'
-      }
-    },
-    {
-      id: '4',
-      hostName: 'JYP Entertainment',
-      eventTitle: 'Event 4',
-      type: 'mainBanner',
-      status: 'approved',
-      submittedAt: '2024-03-12',
-      requestedDates: ['2025-08-05', '2025-08-06', '2025-08-07', '2025-08-08', '2025-08-09', '2025-08-10'],
-      totalAmount: 2800000,
-      imageUrl: '/images/therose2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-08-05',
-        endDate: '2025-08-10'
-      }
-    },
-    {
-      id: '5',
-      hostName: 'SM Entertainment',
-      eventTitle: 'Event 5',
-      type: 'mainBanner',
-      status: 'rejected',
-      submittedAt: '2024-03-05',
-      requestedDates: ['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05'],
-      totalAmount: 2500000,
-      imageUrl: '/images/eaj2.jpg',
-      paymentStatus: 'canceled',
-      exposurePeriod: {
-        startDate: '2025-09-01',
-        endDate: '2025-09-05'
-      }
-    },
-    {
-      id: '6',
-      hostName: 'Cyber Entertainment',
-      eventTitle: 'Event 6',
-      type: 'mainBanner',
-      status: 'pending',
-      submittedAt: '2024-03-18',
-      requestedDates: ['2025-10-10', '2025-10-11', '2025-10-12', '2025-10-13', '2025-10-14', '2025-10-15'],
-      totalAmount: 2200000,
-      imageUrl: '/images/cyber2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-10-10',
-        endDate: '2025-10-15'
-      }
-    },
-    {
-      id: '7',
-      hostName: 'Netflix Korea',
-      eventTitle: 'Netflix Original Series Festival',
-      type: 'searchTop',
-      status: 'pending',
-      submittedAt: '2024-03-22',
-      requestedDates: ['2025-04-01', '2025-04-02', '2025-04-03', '2025-04-04', '2025-04-05'],
-      totalAmount: 1800000,
-      imageUrl: '/images/ex2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-04-01',
-        endDate: '2025-04-05'
-      }
-    },
-    {
-      id: '8',
-      hostName: 'Disney+ Korea',
-      eventTitle: 'Disney+ Content Showcase',
-      type: 'searchTop',
-      status: 'approved',
-      submittedAt: '2024-03-14',
-      requestedDates: ['2025-05-01', '2025-05-02', '2025-05-03'],
-      totalAmount: 1200000,
-      imageUrl: '/images/ex2.png',
-      paymentStatus: 'completed',
-      exposurePeriod: {
-        startDate: '2025-05-01',
-        endDate: '2025-05-03'
-      }
-    },
-    {
-      id: '9',
-      hostName: 'Apple Music',
-      eventTitle: 'Apple Music Festival 2025',
-      type: 'searchTop',
-      status: 'pending',
-      submittedAt: '2024-03-25',
-      requestedDates: ['2025-06-01', '2025-06-02', '2025-06-03', '2025-06-04'],
-      totalAmount: 1600000,
-      imageUrl: '/images/ex2.png',
-      paymentStatus: 'pending',
-      exposurePeriod: {
-        startDate: '2025-06-01',
-        endDate: '2025-06-04'
-      }
-    }
-  ]);
+  
+const [applications, setApplications] = useState<AdvertisementApplication[]>([]);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);
+
+
+//백엔드 베이스 URL & 토큰
+ const BASE_URL = useMemo(() => import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080', []);
+ const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
+
+
+  // ------------ 매핑 유틸 ------------
+   const toFrontType = (bannerType: string): 'mainBanner' | 'searchTop' =>
+     bannerType === 'HERO' ? 'mainBanner' : 'searchTop';
+
+   const toFrontStatus = (applyStatus: string): 'pending' | 'approved' | 'rejected' => {
+     if (applyStatus === 'APPROVED') return 'approved';
+     if (applyStatus === 'REJECTED') return 'rejected';
+     return 'pending';
+   };
+
+   const paymentToFront = (paymentStatus?: string): 'pending' | 'completed' | 'canceled' => {
+     if (paymentStatus === 'PAID' || paymentStatus === 'REFUNDED') return 'completed';
+     if (paymentStatus === 'N/A') return 'canceled';
+     return 'pending';
+   };
+
+   const rankLabel = (priority: number) => `${priority}순위`;
+
+ const mapBackendItem = (row: BackendApplicationItem): AdvertisementApplication => {
+     // row: 서버 목록의 1개 item (content[])
+   const slots: BackendSlot[] = Array.isArray(row.slots) ? [...row.slots] : [];
+     // 안전하게 날짜/우선순위 정렬
+     slots.sort((a, b) => a.slotDate.localeCompare(b.slotDate) || a.priority - b.priority);
+     const requestedDates = slots.map(s => s.slotDate);
+     const mainBannerSelections = slots.map(s => ({ date: s.slotDate, rank: rankLabel(s.priority) }));
+
+     const exposurePeriod =
+       requestedDates.length > 0
+         ? { startDate: requestedDates[0], endDate: requestedDates[requestedDates.length - 1] }
+         : undefined;
+     return {
+       id: String(row.applicationId),
+       hostName: row.hostName ?? '',
+       eventTitle: row.eventName ?? '',
+       type: toFrontType(row.bannerType),
+       status: toFrontStatus(row.applyStatus),
+       submittedAt: (row.appliedAt || '').split('T')[0] || '',
+       requestedDates,
+       totalAmount: row.totalAmount ?? 0,
+       imageUrl: row.imageUrl ?? undefined,
+       paymentStatus: paymentToFront(row.paymentStatus),
+       exposurePeriod,
+       mainBannerRanks: [...new Set(mainBannerSelections.map(s => s.rank))],
+       mainBannerSelections,
+       eventId: row.eventId ?? undefined
+     };
+   };
+
+   // ------------ 목록 불러오기 ------------
+   const fetchApplications = async () => {
+     setLoading(true);
+     setError(null);
+     try {
+       const params: Record<string, string> = {};
+       if (filterStatus !== 'all') params.status = filterStatus.toUpperCase(); // PENDING/APPROVED/REJECTED
+       if (filterType !== 'all') params.type = filterType === 'mainBanner' ? 'HERO' : 'SEARCH_TOP';
+       params.page = '0';
+       params.size = '100';
+     const res = await axios.get<BackendListResponse<BackendApplicationItem>>(`${BASE_URL}/api/admin/banners/applications`, {
+         params,
+         headers: { ...getAuthHeaders() }
+       });
+const content: BackendApplicationItem[] =
+       isPage<BackendApplicationItem>(res.data) ? res.data.content
+       : Array.isArray(res.data) ? res.data
+       : [];
+       const mapped = content.map(mapBackendItem);
+       setApplications(mapped);
+     } catch (e: unknown) {
+    if (axios.isAxiosError<{ message?: string }>(e)) {
+      const apiMsg = e.response?.data?.message ?? e.message;
+      setError(apiMsg || '목록 조회 실패');
+    } else {
+      setError('목록 조회 실패');
+    }
+     } finally {
+       setLoading(false);
+     }
+   };
+
+   useEffect(() => {
+     fetchApplications();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [filterStatus, filterType]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -190,7 +171,7 @@ const AdvertisementApplicationList: React.FC = () => {
       case 'mainBanner':
         return '메인 배너';
       case 'searchTop':
-        return '검색창 상단 노출';
+        return '검색 상단 고정 (MD PICK)';
       default:
         return '알 수 없음';
     }
@@ -198,7 +179,7 @@ const AdvertisementApplicationList: React.FC = () => {
 
   const getPaymentStatusBadge = (paymentStatus?: string) => {
     if (!paymentStatus) return null;
-    
+
     switch (paymentStatus) {
       case 'pending':
         return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">대기</span>;
@@ -211,17 +192,64 @@ const AdvertisementApplicationList: React.FC = () => {
     }
   };
 
-  const handleStatusChange = (id: string, newStatus: 'approved' | 'rejected') => {
-    setApplications(prev => 
-      prev.map(app => 
-        app.id === id 
-          ? { ...app, status: newStatus, paymentStatus: newStatus === 'approved' ? 'pending' : 'canceled' }
-          : app
-      )
-    );
+  // 메인 배너 순위별 금액 계산
+  const getMainBannerPrice = (rank: string) => {
+    const rankNumber = parseInt(rank.replace('순위', ''));
+    switch (rankNumber) {
+      case 1: return 2500000;
+      case 2: return 2200000;
+      case 3: return 2000000;
+      case 4: return 1800000;
+      case 5: return 1600000;
+      case 6: return 1400000;
+      case 7: return 1200000;
+      case 8: return 1000000;
+      case 9: return 800000;
+      case 10: return 600000;
+      default: return 600000;
+    }
   };
 
-  // 결제 완료 처리 버튼 제거에 따라 별도 처리 함수 불필요
+  
+  // 메인 배너 총액 계산 (선택 매핑)
+  const calculateMainBannerTotalFromSelections = (selections: { date: string; rank: string }[]) => {
+    return selections.reduce((total, sel) => total + getMainBannerPrice(sel.rank), 0);
+  };
+
+
+  // 승인/반려 → 백엔드 호출
+  const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
+    try {
+      if (newStatus === 'approved') {
+        const res = await axios.post(
+          `${BASE_URL}/api/admin/banners/applications/${id}/approve`,
+          { note: 'approved from admin UI' },
+          { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() } }
+        );
+        const updated = mapBackendItem(res.data);
+        setApplications(prev => prev.map(a => (a.id === id ? updated : a)));
+      } else {
+        const reason = 'rejected from admin UI';
+        const res = await axios.post(
+          `${BASE_URL}/api/admin/banners/applications/${id}/reject`,
+          { reason },
+          { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() } }
+        );
+        const updated = mapBackendItem(res.data);
+        setApplications(prev => prev.map(a => (a.id === id ? updated : a)));
+      }
+    } catch (err: unknown) {
+  if (axios.isAxiosError<{ message?: string }>(err)) {
+    const code = err.response?.status;
+    const msg =
+      err.response?.data?.message ??
+      err.message ??
+      '처리 실패';
+    alert(code ? `[${code}] ${msg}` : msg);
+  } else {
+    alert('처리 실패');
+  }
+}};
 
   const handleImageCheck = (imageUrl: string) => {
     setSelectedImage(imageUrl);
@@ -242,7 +270,7 @@ const AdvertisementApplicationList: React.FC = () => {
           광고 신청 목록
         </div>
         <AdminSideNav className="!absolute !left-0 !top-[117px]" />
-        
+
         <div className="absolute left-64 top-[195px] w-[949px] pb-20">
           {/* 필터 섹션 */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -269,8 +297,16 @@ const AdvertisementApplicationList: React.FC = () => {
                 >
                   <option value="all">전체</option>
                   <option value="mainBanner">메인 배너</option>
-                  <option value="searchTop">검색창 상단 노출</option>
+                  <option value="searchTop">검색 상단 고정 (MD PICK)</option>
                 </select>
+              </div>
+              <div className="ml-auto">
+                <button
+                  onClick={fetchApplications}
+                  className="px-3 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
+                >
+                  새로고침
+                </button>
               </div>
             </div>
           </div>
@@ -279,8 +315,10 @@ const AdvertisementApplicationList: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                총 {filteredApplications.length}건의 광고 신청
+               {loading ? '불러오는 중...' : `총 ${filteredApplications.length}건의 광고 신청`}
               </h2>
+               {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+
             </div>
             <div className="divide-y divide-gray-200">
               {filteredApplications.map((application) => (
@@ -297,7 +335,22 @@ const AdvertisementApplicationList: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">행사명</p>
-                          <p className="text-sm font-medium text-gray-900 truncate">{application.eventTitle}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900 truncate">{application.eventTitle}</p>
+                            {/* 메인 배너 이미지 확인 버튼 */}
+                            {application.type === 'mainBanner' && application.imageUrl && (
+                              <button
+                                onClick={() => handleImageCheck(application.imageUrl!)}
+                                className="inline-flex items-center px-2 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded hover:bg-blue-100 transition-colors"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                이미지
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {/* 2행: 광고 타입 / 신청된 날짜 */}
@@ -322,42 +375,84 @@ const AdvertisementApplicationList: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* 4행: 노출 / 총 금액 */}
-                        <div>
-                          <p className="text-xs text-gray-500">노출</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {application.exposurePeriod
-                              ? (application.type === 'mainBanner'
-                                  ? `${application.exposurePeriod.startDate} 00:00 ~ 23:59`
-                                  : `${application.exposurePeriod.startDate} ~ ${application.exposurePeriod.endDate}`)
-                              : '-'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">총 금액</p>
-                          <p className="text-sm font-medium text-gray-900">{application.totalAmount.toLocaleString()}원</p>
-                        </div>
                       </div>
 
-                      {/* 메인 배너 이미지 확인 버튼 */}
-                      {application.type === 'mainBanner' && application.imageUrl && (
-                        <div>
-                          <button
-                            onClick={() => handleImageCheck(application.imageUrl!)}
-                            className="inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
-                          >
-                            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            배너 이미지 확인
-                          </button>
+                      {/* MD PICK 상태 정보 (검색 상단 고정인 경우) */}
+                      {application.type === 'searchTop' && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500">전체 선택 기간</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {application.exposurePeriod
+                                  ? `${application.exposurePeriod.startDate} ~ ${application.exposurePeriod.endDate}`
+                                  : '-'
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">노출 날짜 ({application.requestedDates.length}일)</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {application.requestedDates.map((date, index) => (
+                                  <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                                    {date}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-700">총 금액:</span>
+                                <span className="text-lg font-bold text-green-600">
+                                  {application.totalAmount.toLocaleString()}원
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
+
+                      {/* 메인 배너 순위 정보 */}
+                      {application.type === 'mainBanner' && application.mainBannerSelections && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-gray-500 mb-2">노출 날짜</p>
+                                <div className="space-y-1">
+                                  {application.mainBannerSelections.map((sel, index) => (
+                                    <p key={index} className="text-sm font-medium text-gray-900">{sel.date}</p>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 mb-2">신청한 순위</p>
+                                <div className="space-y-1">
+                                  {application.mainBannerSelections.map((sel, index) => (
+                                    <div key={index} className="flex items-center justify-between">
+                                      <span className="text-sm font-medium text-blue-800">{sel.rank}</span>
+                                      <span className="text-sm text-gray-600">({getMainBannerPrice(sel.rank).toLocaleString()}원)</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="pt-2 border-t border-blue-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-700">총 금액:</span>
+                                <span className="text-lg font-bold text-blue-600">
+                                  {calculateMainBannerTotalFromSelections(application.mainBannerSelections).toLocaleString()}원
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                     </div>
 
-                    {/* 액션 버튼 */}
-                    <div className="w-40 flex-shrink-0 flex flex-col gap-3 min-h-[86px]">
+                    {/* 액션 버튼 - 우측 하단 */}
+                    <div className="w-40 flex-shrink-0 flex flex-col justify-end gap-3 min-h-[86px]">
                       {/* 슬롯 1 */}
                       {application.status === 'pending' ? (
                         <button

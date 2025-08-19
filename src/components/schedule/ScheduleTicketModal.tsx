@@ -6,6 +6,7 @@ interface ScheduleTicketResponseDto {
     ticketId: number;
     name: string;
     price: number;
+    maxPurchase: number;    // 1인 판매제한수량
     saleQuantity: number;   // 판매할 수량
     salesStartAt: string;   // ISO DateTime string
     salesEndAt: string;     // ISO DateTime string
@@ -329,7 +330,9 @@ export const ScheduleTicketModal: React.FC<ScheduleTicketModalProps> = ({
                                                     </span>
                                                 </td>
                                                 <td className="px-2 py-3 text-center font-bold text-gray-900 min-w-[80px] whitespace-nowrap">{ticket.price.toLocaleString()}원</td>
-                                                <td className="px-2 py-3 text-center text-gray-600 min-w-[90px] whitespace-nowrap">제한없음</td> {/* maxPurchase 정보 없음 */}
+                                                <td className="px-2 py-3 text-center text-gray-600 min-w-[90px] whitespace-nowrap">
+                                                    {ticket.maxPurchase ? `${ticket.maxPurchase}장` : '제한없음'}
+                                                </td>
                                                 <td className="px-2 py-3 text-center min-w-[80px]">
                                                     <input
                                                         type="number"

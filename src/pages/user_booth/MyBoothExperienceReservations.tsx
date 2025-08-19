@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Clock, Users, MapPin, Calendar, X, AlertCircle } from 'lucide-react';
-import { 
-  getMyReservations, 
+import {
+  getMyReservations,
   cancelReservation,
-  formatTime 
+  formatTime
 } from '../../services/boothExperienceService';
 import { BoothExperienceReservation, ExperienceStatusCode, ReservationFilters } from '../../services/types/boothExperienceType';
 import { toast } from 'react-toastify';
@@ -119,9 +119,9 @@ const MyBoothExperienceReservations: React.FC = () => {
 
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
-    return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -140,7 +140,7 @@ const MyBoothExperienceReservations: React.FC = () => {
           <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
 
           {/* 메인 콘텐츠 */}
-          <div className="absolute left-64 top-[195px] w-[949px] pb-20">
+          <div className="ml-64 mt-[195px] w-[949px] pb-28 md:pb-36">
             {/* 헤더 */}
             <div className="mb-6">
               <p className="text-gray-600">예약한 부스 체험 목록을 확인하고 관리하세요</p>
@@ -254,7 +254,7 @@ const MyBoothExperienceReservations: React.FC = () => {
                               </span>
                             </div>
                           )}
-                          
+
                           <div className="flex items-center text-gray-600 mb-2">
                             <MapPin className="w-4 h-4 mr-1" />
                             <span className="text-sm">{reservation.boothName}</span>
@@ -335,12 +335,12 @@ const MyBoothExperienceReservations: React.FC = () => {
               <AlertCircle className="w-6 h-6 text-red-500 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">예약 취소 확인</h3>
             </div>
-            
+
             <p className="text-gray-600 mb-6">
               정말로 이 예약을 취소하시겠습니까?<br />
               취소된 예약은 복구할 수 없습니다.
             </p>
-            
+
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => {

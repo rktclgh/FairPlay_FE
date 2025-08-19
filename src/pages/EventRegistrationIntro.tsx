@@ -2,76 +2,79 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarPlus, FaUsers, FaChartLine, FaGift, FaHeadset, FaArrowRight, FaPlay } from 'react-icons/fa';
 import { TopNav } from '../components/TopNav';
+import { useTranslation } from 'react-i18next';
 
 export const EventRegistrationIntro: React.FC = () => {
+    const { t } = useTranslation();
+    
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
             <TopNav />
-            
+
             {/* Hero Section */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 text-white py-32">
                 {/* Background Elements */}
                 <div className="absolute inset-0">
                     <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-                    <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
-                    <div className="absolute bottom-1/4 left-1/2 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{animationDelay: '4s'}}></div>
+                    <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+                    <div className="absolute bottom-1/4 left-1/2 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '4s' }}></div>
                 </div>
-                
+
                 <div className="container mx-auto px-6 text-center relative z-10">
                     <div className="inline-flex items-center bg-white/10 backdrop-blur-md px-4 py-2 rounded-full text-sm font-medium mb-8 border border-white/20">
                         <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                        새로운 행사 플랫폼이 출시되었습니다
+                        {t('eventRegistration.newPlatform')}
                     </div>
-                    
+
                     <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tight">
                         <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
-                            FairPlay에서
+                            {t('eventRegistration.heroTitle1')}
                         </span>
                         <br />
                         <span className="bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent">
-                            특별한 행사
-                        </span>를
+                            {t('eventRegistration.heroTitle2')}
+                        </span>{t('eventRegistration.heroTitle3')}
                         <br />
-                        <span className="text-white">만들어보세요</span>
+                        <span className="text-white">{t('eventRegistration.heroTitle4')}</span>
                     </h1>
-                    
+
                     <p className="text-xl md:text-2xl mb-12 text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                        AI 기반의 스마트한 행사 관리부터 실시간 분석까지,<br />
-                        차세대 이벤트 플랫폼을 경험해보세요
+                        {t('eventRegistration.heroSubtitle1')}<br />
+                        {t('eventRegistration.heroSubtitle2')}
                     </p>
-                    
+
                     <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                        <Link 
+                        <Link
                             to="/register"
                             className="group relative bg-gradient-to-r from-orange-400 to-pink-500 text-white px-10 py-5 rounded-2xl text-lg font-bold hover:from-orange-500 hover:to-pink-600 transition-all duration-300 shadow-2xl hover:shadow-orange-500/25 transform hover:-translate-y-1 border-none focus:outline-none"
                         >
                             <span className="flex items-center">
-                                지금 시작하기
+                                {t('eventRegistration.startNow')}
                                 <FaArrowRight className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                             </span>
                         </Link>
-                        
-                        <button 
+
+                        <button
                             onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                             className="group flex items-center bg-white/10 backdrop-blur-md text-white px-10 py-5 rounded-2xl text-lg font-semibold hover:bg-white/20 transition-all duration-300 border border-white/30 focus:outline-none"
                         >
                             <FaPlay className="mr-3 group-hover:scale-110 transition-transform duration-300" />
-                            데모 보기
+                            {t('eventRegistration.watchDemo')}
                         </button>
                     </div>
-                    
+
                     <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto text-center">
                         <div className="group">
                             <div className="text-3xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">500+</div>
-                            <div className="text-gray-300 text-sm">성공한 행사</div>
+                            <div className="text-gray-300 text-sm">{t('eventRegistration.stats.successfulEvents')}</div>
                         </div>
                         <div className="group">
                             <div className="text-3xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">50K+</div>
-                            <div className="text-gray-300 text-sm">만족한 참가자</div>
+                            <div className="text-gray-300 text-sm">{t('eventRegistration.stats.satisfiedParticipants')}</div>
                         </div>
                         <div className="group">
                             <div className="text-3xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300">98%</div>
-                            <div className="text-gray-300 text-sm">만족도</div>
+                            <div className="text-gray-300 text-sm">{t('eventRegistration.stats.satisfaction')}</div>
                         </div>
                     </div>
                 </div>
@@ -187,7 +190,7 @@ export const EventRegistrationIntro: React.FC = () => {
                 <div className="absolute inset-0">
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-200/30 to-purple-200/30 rounded-full filter blur-3xl"></div>
                 </div>
-                
+
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="text-center mb-20">
                         <div className="inline-flex items-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-semibold mb-6">
@@ -204,7 +207,7 @@ export const EventRegistrationIntro: React.FC = () => {
                     <div className="grid md:grid-cols-3 gap-12 relative">
                         {/* Connection Lines */}
                         <div className="hidden md:block absolute top-1/2 left-1/3 right-1/3 h-0.5 bg-gradient-to-r from-blue-200 via-emerald-200 to-purple-200 transform -translate-y-1/2 z-0"></div>
-                        
+
                         <div className="group text-center relative z-10">
                             <div className="relative mb-8">
                                 <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl flex items-center justify-center text-3xl font-black mx-auto shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
@@ -252,9 +255,9 @@ export const EventRegistrationIntro: React.FC = () => {
                 {/* Background Elements */}
                 <div className="absolute inset-0">
                     <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
-                    <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse" style={{animationDelay: '2s'}}></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse" style={{ animationDelay: '2s' }}></div>
                 </div>
-                
+
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="text-center mb-20">
                         <div className="inline-flex items-center bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-white/20">
@@ -316,9 +319,9 @@ export const EventRegistrationIntro: React.FC = () => {
                 {/* Background Elements */}
                 <div className="absolute inset-0">
                     <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
-                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" style={{animationDelay: '2s'}}></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '2s' }}></div>
                 </div>
-                
+
                 <div className="container mx-auto px-6 text-center relative z-10">
                     <div className="max-w-4xl mx-auto">
                         <h2 className="text-5xl md:text-6xl font-black mb-8 tracking-tight">
@@ -331,9 +334,9 @@ export const EventRegistrationIntro: React.FC = () => {
                             혁신적인 기술과 직관적인 인터페이스로 <br />
                             단 몇 분 만에 전문적인 행사를 시작할 수 있습니다
                         </p>
-                        
+
                         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
-                            <Link 
+                            <Link
                                 to="/register"
                                 className="group relative bg-white text-gray-900 px-12 py-6 rounded-2xl text-xl font-black hover:bg-gray-100 transition-all duration-300 shadow-2xl hover:shadow-white/25 transform hover:-translate-y-2 border-none focus:outline-none"
                             >
@@ -342,13 +345,13 @@ export const EventRegistrationIntro: React.FC = () => {
                                     <FaArrowRight className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                                 </span>
                             </Link>
-                            
+
                             <div className="text-center">
                                 <div className="text-sm text-orange-200 mb-1">💳 신용카드 불필요</div>
                                 <div className="text-sm text-orange-200">⚡️ 30초 만에 시작</div>
                             </div>
                         </div>
-                        
+
                         <div className="inline-flex items-center bg-white/10 backdrop-blur-md px-6 py-3 rounded-full text-sm font-medium border border-white/20">
                             <span className="w-2 h-2 bg-green-400 rounded-full mr-3 animate-pulse"></span>
                             지금 1,250명의 주최자가 FairPlay를 사용 중입니다
@@ -357,25 +360,7 @@ export const EventRegistrationIntro: React.FC = () => {
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="bg-gradient-to-r from-gray-900 to-slate-900 text-white py-16">
-                <div className="container mx-auto px-6">
-                    <div className="text-center">
-                        <div className="flex justify-center items-center mb-8">
-                            <img src="/images/FPlogo.png" alt="FairPlay Logo" className="h-12 opacity-80" />
-                        </div>
-                        <p className="text-gray-400 text-lg mb-6 max-w-2xl mx-auto leading-relaxed">
-                            전 세계 어디서나 누구나 쉽게 만들 수 있는 <br />
-                            차세대 이벤트 플랫폼을 경험해보세요
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-gray-400 text-sm">
-                            <span>🌍 글로벌 서비스</span>
-                            <span>🔒 엔터프라이즈급 보안</span>
-                            <span>🎯 24/7 고객지원</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     );
 };

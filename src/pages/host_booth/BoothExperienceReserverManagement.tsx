@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, Calendar, Users, Clock, Phone, User, 
+import {
+  Search, Calendar, Users, Clock, Phone, User,
   CheckCircle, XCircle, AlertCircle, RefreshCw, Filter
 } from 'lucide-react';
 import { TopNav } from "../../components/TopNav";
@@ -76,14 +76,14 @@ const BoothExperienceReserverManagement: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      
+
       // 관리 가능한 부스 목록 조회
       const booths = await getManageableBoothsForReservation();
-      
+
       // 배열인지 확인하고 설정
       if (Array.isArray(booths)) {
         setAvailableBooths(booths);
-        
+
         // 첫 번째 부스를 기본 선택
         if (booths.length > 0) {
           setFilters(prev => ({ ...prev, boothId: booths[0].boothId.toString() }));
@@ -128,7 +128,7 @@ const BoothExperienceReserverManagement: React.FC = () => {
   const handleSearch = async () => {
     try {
       setSearchLoading(true);
-      
+
       const searchFilters: ReservationManagementFilters = {
         boothId: filters.boothId ? parseInt(filters.boothId) : undefined,
         reserverName: filters.reserverName || undefined,
@@ -232,7 +232,7 @@ const BoothExperienceReserverManagement: React.FC = () => {
                     {selectedBooth.maxCapacity}명 / {selectedBooth.currentParticipants}명 / {selectedBooth.waitingCount}명
                   </div>
                 </div>
-                
+
                 {/* 체험중인 인원 */}
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="text-sm text-gray-600 mb-1">체험중인 인원</div>
@@ -245,7 +245,7 @@ const BoothExperienceReserverManagement: React.FC = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* 다음 입장자 */}
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="text-sm text-gray-600 mb-1">다음 입장 예약자</div>
@@ -289,7 +289,7 @@ const BoothExperienceReserverManagement: React.FC = () => {
                   <input
                     type="text"
                     placeholder="예약자 이름"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={filters.reserverName}
                     onChange={(e) => setFilters(prev => ({ ...prev, reserverName: e.target.value }))}
                   />
@@ -304,7 +304,7 @@ const BoothExperienceReserverManagement: React.FC = () => {
                   <input
                     type="text"
                     placeholder="010-1234-5678"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={filters.reserverPhone}
                     onChange={(e) => setFilters(prev => ({ ...prev, reserverPhone: e.target.value }))}
                   />
@@ -318,7 +318,7 @@ const BoothExperienceReserverManagement: React.FC = () => {
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="date"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={filters.experienceDate}
                     onChange={(e) => setFilters(prev => ({ ...prev, experienceDate: e.target.value }))}
                   />
@@ -444,9 +444,8 @@ const BoothExperienceReserverManagement: React.FC = () => {
                               ) : (
                                 <XCircle className="w-4 h-4 text-red-500 mr-1" />
                               )}
-                              <span className={`text-sm font-medium ${
-                                reservation.canEnter ? 'text-green-600' : 'text-red-600'
-                              }`}>
+                              <span className={`text-sm font-medium ${reservation.canEnter ? 'text-green-600' : 'text-red-600'
+                                }`}>
                                 {reservation.canEnter ? '입장 가능' : '입장 불가'}
                               </span>
                             </div>
@@ -571,11 +570,10 @@ const BoothExperienceReserverManagement: React.FC = () => {
                           <button
                             key={pageNum}
                             onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              pagination.page === pageNum
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pagination.page === pageNum
                                 ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                                 : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
+                              }`}
                           >
                             {pageNum + 1}
                           </button>
