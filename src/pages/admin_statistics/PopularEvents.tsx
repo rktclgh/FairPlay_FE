@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
-import { adminStatisticsService, type GenderCode, type PopularTop5Item } from "../../services/adminStatistics.service";
+import { adminStatisticsService, type PopularTop5Item } from "../../services/adminStatistics.service";
 
 export const PopularEvents: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchKeyword, setSearchKeyword] = useState('');
 
     // 추가: 성별/세대 Top5 상태
-    const [gender, setGender] = useState<GenderCode>('MALE');
+    // const [gender, setGender] = useState<GenderCode>('MALE');
     const [ageGroup, setAgeGroup] = useState<number>(20);
-    const [topByGender, setTopByGender] = useState<PopularTop5Item[]>([]);
+    const [topByMale, setTopByMale] = useState<PopularTop5Item[]>([]);
+    const [topByFemale, setTopByFemale] = useState<PopularTop5Item[]>([]);
     const [topByAge, setTopByAge] = useState<PopularTop5Item[]>([]);
-    const [loadingGender, setLoadingGender] = useState<boolean>(false);
+    const [loadingMale, setLoadingMale] = useState<boolean>(false);
+    const [loadingFemale, setLoadingFemale] = useState<boolean>(false);
     const [loadingAge, setLoadingAge] = useState<boolean>(false);
 
     // 샘플 데이터 (실제로는 API에서 가져올 데이터)
@@ -100,16 +102,31 @@ export const PopularEvents: React.FC = () => {
         let ignore = false;
         const load = async () => {
             try {
-                setLoadingGender(true);
-                const data = await adminStatisticsService.getTop5ByGender(gender);
-                if (!ignore) setTopByGender(data);
+                setLoadingMale(true);
+                const data = await adminStatisticsService.getTop5ByMale();
+                if (!ignore) setTopByMale(data);
             } finally {
-                if (!ignore) setLoadingGender(false);
+                if (!ignore) setLoadingMale(false);
             }
         };
         load();
         return () => { ignore = true; };
-    }, [gender]);
+    }, []);
+
+    useEffect(() => {
+        let ignore = false;
+        const load = async () => {
+            try {
+                setLoadingFemale(true);
+                const data = await adminStatisticsService.getTop5ByFemale();
+                if (!ignore) setTopByFemale(data);
+            } finally {
+                if (!ignore) setLoadingFemale(false);
+            }
+        };
+        load();
+        return () => { ignore = true; };
+    }, []);
 
     // 세대 Top5 로드
     useEffect(() => {
@@ -304,37 +321,54 @@ export const PopularEvents: React.FC = () => {
                     </div>
 
                     {/* 성별/세대 TOP5 추가 섹션 */}
-                    <div className="grid grid-cols-2 gap-6">
-                        {/* 성별별 TOP5 */}
+                    <div className="grid grid-cols-3 gap-6">
+                        {/* 남성 TOP5 */}
                         <div className="bg-white rounded-lg shadow-md p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">성별별 TOP 5</h3>
-                                <select
-                                    value={gender}
-                                    onChange={(e) => setGender(e.target.value as GenderCode)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="MALE">남성</option>
-                                    <option value="FEMALE">여성</option>
-                                </select>
-                            </div>
-                            {loadingGender ? (
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">남성 TOP 5</h3>
+                            {loadingMale ? (
                                 <div className="h-24 flex items-center justify-center text-gray-500">로딩 중...</div>
                             ) : (
                                 <div className="space-y-3">
-                                    {topByGender.map((item, index) => (
-                                        <div key={item.eventId} className="p-3 bg-gray-50 rounded-lg">
+                                    {topByMale.map((item, index) => (
+                                        <div key={item.eventTitle} className="p-3 bg-gray-50 rounded-lg">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' : index === 1 ? 'bg-gray-100 text-gray-800' : index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}`}>
                                                     {index + 1}
                                                 </span>
-                                                <span className="text-sm font-medium text-gray-900">{item.eventName}</span>
+                                                <span className="text-sm font-medium text-gray-900">{item.eventTitle}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(item.value / (topByGender[0]?.value || 1)) * 100}%` }}></div>
+                                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(item.count / (topByMale[0]?.count || 1)) * 100}%` }}></div>
                                                 </div>
-                                                <span className="text-sm font-semibold text-blue-600 min-w-[60px] text-right">{formatNumber(item.value)}</span>
+                                                <span className="text-sm font-semibold text-blue-600 min-w-[60px] text-right">{formatNumber(item.count)}회</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 여성 TOP5 */}
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">여성 TOP 5</h3>
+                            {loadingFemale ? (
+                                <div className="h-24 flex items-center justify-center text-gray-500">로딩 중...</div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {topByFemale.map((item, index) => (
+                                        <div key={item.eventTitle} className="p-3 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' : index === 1 ? 'bg-gray-100 text-gray-800' : index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-sm font-medium text-gray-900">{item.eventTitle}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-pink-400 rounded-full" style={{ width: `${(item.count / (topByFemale[0]?.count || 1)) * 100}%` }}></div>
+                                                </div>
+                                                <span className="text-sm font-semibold text-pink-600 min-w-[60px] text-right">{formatNumber(item.count)}회</span>
                                             </div>
                                         </div>
                                     ))}
@@ -366,18 +400,18 @@ export const PopularEvents: React.FC = () => {
                             ) : (
                                 <div className="space-y-3">
                                     {topByAge.map((item, index) => (
-                                        <div key={item.eventId} className="p-3 bg-gray-50 rounded-lg">
+                                        <div key={item.eventTitle} className="p-3 bg-gray-50 rounded-lg">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' : index === 1 ? 'bg-gray-100 text-gray-800' : index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}`}>
                                                     {index + 1}
                                                 </span>
-                                                <span className="text-sm font-medium text-gray-900">{item.eventName}</span>
+                                                <span className="text-sm font-medium text-gray-900">{item.eventTitle}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(item.value / (topByAge[0]?.value || 1)) * 100}%` }}></div>
+                                                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(item.count / (topByAge[0]?.count || 1)) * 100}%` }}></div>
                                                 </div>
-                                                <span className="text-sm font-semibold text-indigo-600 min-w-[60px] text-right">{formatNumber(item.value)}</span>
+                                                <span className="text-sm font-semibold text-indigo-600 min-w-[60px] text-right">{formatNumber(item.count)}</span>
                                             </div>
                                         </div>
                                     ))}
