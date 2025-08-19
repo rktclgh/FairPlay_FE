@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { HostSideNav } from "../../components/HostSideNav";
 import { TopNav } from "../../components/TopNav";
 import { HiChevronDown } from 'react-icons/hi';
-import { dashboardAPI, EventDashboardStatsDto,EventDetailResponseDto } from "../../services/dashboard";
+import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto } from "../../services/dashboard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { toast } from "react-toastify";
+import dayjs from 'dayjs';
 
 export const ReservationStats = () => {
-    const [selectedPeriod, setSelectedPeriod] = React.useState('최근 7일');
+    const [selectedPeriod, setSelectedPeriod] = React.useState('일별');
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-    const [dashboardStats, setDashboardStats] = useState<EventDetailResponseDto | null>(null);
-     const [selectedEvent, setSelectedEvent] = useState<EventDetailInfo | null>(null);
+    const [dashboardStats, setDashboardStats] = useState<EventDashboardStatsDto | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<EventBasicInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
@@ -110,31 +112,11 @@ export const ReservationStats = () => {
 
 
 
-    const convertDailyToMonthly = (dailyTrend: ReservationDailyTrendDto[]): MonthlyData[] => {
+    const convertDailyToMonthly = (dailyTrend: ReservationDailyTrendDto[]): ReservationDailyTrendDto[] => {
       // 1. 월별로 그룹핑하고 합계 계산
       const monthlyMap = dailyTrend.reduce((acc, item) => {
-        // date 형식에 따라 월 추출 방법을 조정하세요
-        let month: string;
 
-        // date가 "YYYY-MM-DD" 형식인 경우
-        if (item.date.includes('-')) {
-          const [year, monthNum] = item.date.split('-');
-          month = `${monthNum}월`;
-        }
-        // date가 "MM/DD" 형식인 경우
-        else if (item.date.includes('/')) {
-          const [monthNum] = item.date.split('/');
-          month = `${monthNum.padStart(2, '0')}월`;
-        }
-        // date가 "MM월DD일" 형식인 경우
-        else if (item.date.includes('월')) {
-          month = item.date.split('월')[0] + '월';
-        }
-        // 기본값 (필요에 따라 수정)
-        else {
-          month = item.date;
-        }
-
+        const month = dayjs(item.date).format('MM월');
         if (!acc[month]) {
           acc[month] = 0;
         }
@@ -144,10 +126,9 @@ export const ReservationStats = () => {
       }, {} as Record<string, number>);
 
       // 2. 배열로 변환하고 월 순서대로 정렬
-      const monthlyArray = Object.entries(monthlyMap).map(([month, bookings]) => ({
-        date: month,
-        bookings
-      }));
+      const monthlyArray = Object.entries(monthlyMap).map(([month, reservations]) => ({
+          date: month,
+          reservations
 
       // 3. 월 순서대로 정렬 (01월, 02월, ... 12월)
       return monthlyArray.sort((a, b) => {
