@@ -1,47 +1,40 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { getAllBoothsForHost } from "../../api/boothApi";
+import { BoothSummaryForManager } from "../../types/booth";
 
 const BoothParticipants: React.FC = () => {
-    interface ApprovedBoothItem {
-        id: number;
-        boothName: string;
-        startDate: string;
-        endDate: string;
-        boothType: string;
-        zone: string;
-    }
+    const { eventId } = useParams<{ eventId: string }>();
+    
+    // 부스 데이터 상태
+    const [items, setItems] = useState<BoothSummaryForManager[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // 테스트용 더미 데이터 (승인완료된 부스만)
-    const [items, setItems] = useState<ApprovedBoothItem[]>([
-        { id: 1, boothName: "FoodTech 스타트업 부스", startDate: "2025-02-01", endDate: "2025-02-03", boothType: "스탠다드", zone: "" },
-        { id: 2, boothName: "AI 솔루션 체험관", startDate: "2025-02-01", endDate: "2025-02-02", boothType: "프리미엄", zone: "" },
-        { id: 3, boothName: "메타버스 체험부스", startDate: "2025-02-02", endDate: "2025-02-04", boothType: "스탠다드", zone: "" },
-        { id: 4, boothName: "로보틱스 연구회", startDate: "2025-02-01", endDate: "2025-02-01", boothType: "스탠다드", zone: "" },
-        { id: 5, boothName: "클라우드 SaaS 데모", startDate: "2025-02-03", endDate: "2025-02-04", boothType: "프리미엄", zone: "" },
-    ]);
-
-    // 삭제/구역 표시 반영 (localStorage에서 상태를 읽어 표시)
-    const deletedIds: number[] = (() => {
-        try {
-            const raw = localStorage.getItem('deletedBoothParticipantIds');
-            const arr = JSON.parse(raw || '[]');
-            return Array.isArray(arr) ? arr : [];
-        } catch {
-            return [];
+    // 백엔드에서 데이터 로드
+    useEffect(() => {
+        if (eventId) {
+            setLoading(true);
+            getAllBoothsForHost(Number(eventId))
+                .then(data => {
+                    setItems(data);
+                    setLoading(false);
+                })
+                .catch(err => {
+                    setError('참가 부스 목록을 불러오는 데 실패했습니다.');
+                    setLoading(false);
+                    console.error(err);
+                });
         }
-    })();
+    }, [eventId]);
 
-    const zoneById: Record<string, string> = (() => {
-        try {
-            const raw = localStorage.getItem('boothZoneById');
-            const obj = JSON.parse(raw || '{}');
-            return obj && typeof obj === 'object' ? obj : {};
-        } catch {
-            return {} as Record<string, string>;
-        }
-    })();
+    // 중복 제거한 부스타입 리스트
+    const boothTypes = useMemo(() => {
+        const types = items.map(b => b.boothTypeName);
+        return Array.from(new Set(types));
+    }, [items]);
 
     // 검색 폼 상태
     const [searchForm, setSearchForm] = useState({
@@ -66,9 +59,9 @@ const BoothParticipants: React.FC = () => {
 
     // 필터링
     const filteredItems = items.filter(b => {
-        const matchesName = !searchForm.boothName || b.boothName.toLowerCase().includes(searchForm.boothName.toLowerCase());
-        const matchesType = !searchForm.boothType || b.boothType === searchForm.boothType;
-        const matchesZone = !searchForm.zone || b.zone.toLowerCase().includes(searchForm.zone.toLowerCase());
+        const matchesName = !searchForm.boothName || b.boothTitle.toLowerCase().includes(searchForm.boothName.toLowerCase());
+        const matchesType = !searchForm.boothType || b.boothTypeName.toLowerCase().includes(searchForm.boothType.toLowerCase());
+        const matchesZone = !searchForm.zone || b.location.toLowerCase().includes(searchForm.zone.toLowerCase());
         return matchesName && matchesType && matchesZone;
     });
 
@@ -84,9 +77,37 @@ const BoothParticipants: React.FC = () => {
 
     const tableColumns = useMemo(() => '200px 160px 160px 120px 90px 100px', []);
     const navigate = useNavigate();
-    const handleView = (id: number) => {
-        navigate(`/host/booth-participants/${id}`);
+    const handleView = (boothId: number) => {
+        navigate(`/host/events/${eventId}/booths/${boothId}`);
     };
+
+    if (loading) {
+        return (
+            <div className="bg-white flex flex-row justify-center w-full">
+                <div className="bg-white w-[1256px] min-h-screen relative">
+                    <TopNav />
+                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <div className="ml-64 mt-[195px] w-[949px] pb-20">
+                        <div className="text-center py-12">로딩 중...</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-white flex flex-row justify-center w-full">
+                <div className="bg-white w-[1256px] min-h-screen relative">
+                    <TopNav />
+                    <HostSideNav className="!absolute !left-0 !top-[117px]" />
+                    <div className="ml-64 mt-[195px] w-[949px] pb-20">
+                        <div className="text-center py-12 text-red-600">{error}</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -137,8 +158,11 @@ const BoothParticipants: React.FC = () => {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 >
                                     <option value="">전체</option>
-                                    <option value="스탠다드">스탠다드</option>
-                                    <option value="프리미엄">프리미엄</option>
+                                    {boothTypes.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -166,21 +190,18 @@ const BoothParticipants: React.FC = () => {
                                 <div className="text-center py-12 text-gray-500">승인된 참가 부스 데이터가 없습니다.</div>
                             ) : (
                                 currentList.map((b) => (
-                                    <div key={b.id} className="border-b hover:bg-gray-50 transition-colors">
+                                    <div key={b.boothId} className="border-b hover:bg-gray-50 transition-colors">
                                         <div className="grid gap-4 p-4 items-center" style={{ gridTemplateColumns: tableColumns as any }}>
                                             <div className="text-gray-900 text-sm text-center whitespace-nowrap">
-                                                {b.boothName}
-                                                {deletedIds.includes(b.id) && (
-                                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-200 text-gray-700">삭제됨</span>
-                                                )}
+                                                {b.boothTitle}
                                             </div>
                                             <div className="text-gray-900 text-sm text-center whitespace-nowrap">{b.startDate}</div>
                                             <div className="text-gray-900 text-sm text-center whitespace-nowrap">{b.endDate}</div>
-                                            <div className="text-gray-900 text-sm text-center">{b.boothType}</div>
-                                            <div className="text-gray-900 text-sm text-center">{zoneById[String(b.id)] || b.zone || ''}</div>
+                                            <div className="text-gray-900 text-sm text-center">{b.boothTypeName}</div>
+                                            <div className="text-gray-900 text-sm text-center">{b.location}</div>
                                             <div className="flex items-center justify-center">
                                                 <button
-                                                    onClick={() => handleView(b.id)}
+                                                    onClick={() => handleView(b.boothId)}
                                                     className="px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors focus:outline-none text-sm font-medium border border-blue-200 hover:border-blue-300"
                                                     title="상세보기"
                                                 >

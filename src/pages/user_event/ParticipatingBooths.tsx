@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { getBooths, getBoothDetails, applyForBooth, getBoothTypes } from "../../api/boothApi";
+import {BoothDetailResponse, BoothSummary, BoothType} from "../../types/booth";
+import { eventAPI } from "../../services/event";
+import type { EventDetailResponseDto } from "../../services/types/eventType";
 
 interface Booth {
     id: number;
@@ -19,15 +23,18 @@ interface ParticipatingBoothsProps {
 }
 
 export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventId }) => {
-    const [booths, setBooths] = useState<Booth[]>([]);
+    const [booths, setBooths] = useState<BoothSummary[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedBooth, setSelectedBooth] = useState<Booth | null>(null);
+    const [selectedBooth, setSelectedBooth] = useState<BoothDetailResponse | null>(null);
     const [showApplicationForm, setShowApplicationForm] = useState(false);
+    const [boothTypes, setBoothTypes] = useState<BoothType[]>([]);
+    const [eventDetail, setEventDetail] = useState<EventDetailResponseDto | null>(null);
     const [applicationForm, setApplicationForm] = useState({
         startDate: '',
         endDate: '',
-        boothType: '',
+        boothTypeId: '',
         boothName: '',
         bannerImage: null as File | null,
         description: '',
@@ -39,152 +46,166 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
     });
 
     // 목업 부스 데이터
-    const mockBooths: Booth[] = [
-        {
-            id: 1,
-            name: "AI 혁신 부스",
-            company: "테크노베이션",
-            category: "기술/IT",
-            description: "최신 AI 기술과 머신러닝 솔루션을 체험해보세요.",
-            location: "A-01",
-            contactEmail: "ai@technovation.co.kr",
-            contactPhone: "02-1234-5678",
-            website: "https://technovation.co.kr",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        },
-        {
-            id: 2,
-            name: "스마트 홈 체험관",
-            company: "스마트라이프",
-            category: "기술/IT",
-            description: "IoT 기반 스마트 홈 시스템을 체험해보세요.",
-            location: "A-02",
-            contactEmail: "info@smartlife.co.kr",
-            contactPhone: "02-2345-6789",
-            website: "https://smartlife.co.kr",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        },
-        {
-            id: 3,
-            name: "건강한 먹거리",
-            company: "그린푸드",
-            category: "식품/음료",
-            description: "유기농 식품과 건강한 먹거리를 소개합니다.",
-            location: "B-01",
-            contactEmail: "green@greenfood.co.kr",
-            contactPhone: "02-3456-7890",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        },
-        {
-            id: 4,
-            name: "에코 뷰티",
-            company: "네이처코스메틱",
-            category: "패션/뷰티",
-            description: "자연 친화적인 화장품과 뷰티 제품을 만나보세요.",
-            location: "B-02",
-            contactEmail: "beauty@naturecosmetic.co.kr",
-            contactPhone: "02-4567-8901",
-            website: "https://naturecosmetic.co.kr",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        },
-        {
-            id: 5,
-            name: "미래 교육 솔루션",
-            company: "에듀테크",
-            category: "교육/문화",
-            description: "혁신적인 교육 기술을 체험해보세요.",
-            location: "C-01",
-            contactEmail: "edu@edutech.co.kr",
-            contactPhone: "02-5678-9012",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        },
-        {
-            id: 6,
-            name: "헬스케어 이노베이션",
-            company: "메디케어플러스",
-            category: "헬스케어",
-            description: "디지털 헬스케어 솔루션을 체험해보세요.",
-            location: "C-02",
-            contactEmail: "health@medicareplus.co.kr",
-            contactPhone: "02-6789-0123",
-            website: "https://medicareplus.co.kr",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        },
-        {
-            id: 7,
-            name: "블록체인 솔루션",
-            company: "크립토이노베이션",
-            category: "기술/IT",
-            description: "블록체인 기술의 실제 활용사례를 소개합니다.",
-            location: "A-03",
-            contactEmail: "crypto@innovation.co.kr",
-            contactPhone: "02-7890-1234",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        },
-        {
-            id: 8,
-            name: "친환경 패키징",
-            company: "그린패키지",
-            category: "기타",
-            description: "지속가능한 포장재 솔루션을 제공합니다.",
-            location: "B-03",
-            contactEmail: "green@package.co.kr",
-            contactPhone: "02-8901-2345",
-            logoUrl: "/images/NoImage.png",
-            isActive: true
-        }
-    ];
+    // const mockBooths: Booth[] = [
+    //     {
+    //         id: 1,
+    //         name: "AI 혁신 부스",
+    //         company: "테크노베이션",
+    //         category: "기술/IT",
+    //         description: "최신 AI 기술과 머신러닝 솔루션을 체험해보세요.",
+    //         location: "A-01",
+    //         contactEmail: "ai@technovation.co.kr",
+    //         contactPhone: "02-1234-5678",
+    //         website: "https://technovation.co.kr",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     },
+    //     {
+    //         id: 2,
+    //         name: "스마트 홈 체험관",
+    //         company: "스마트라이프",
+    //         category: "기술/IT",
+    //         description: "IoT 기반 스마트 홈 시스템을 체험해보세요.",
+    //         location: "A-02",
+    //         contactEmail: "info@smartlife.co.kr",
+    //         contactPhone: "02-2345-6789",
+    //         website: "https://smartlife.co.kr",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     },
+    //     {
+    //         id: 3,
+    //         name: "건강한 먹거리",
+    //         company: "그린푸드",
+    //         category: "식품/음료",
+    //         description: "유기농 식품과 건강한 먹거리를 소개합니다.",
+    //         location: "B-01",
+    //         contactEmail: "green@greenfood.co.kr",
+    //         contactPhone: "02-3456-7890",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     },
+    //     {
+    //         id: 4,
+    //         name: "에코 뷰티",
+    //         company: "네이처코스메틱",
+    //         category: "패션/뷰티",
+    //         description: "자연 친화적인 화장품과 뷰티 제품을 만나보세요.",
+    //         location: "B-02",
+    //         contactEmail: "beauty@naturecosmetic.co.kr",
+    //         contactPhone: "02-4567-8901",
+    //         website: "https://naturecosmetic.co.kr",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     },
+    //     {
+    //         id: 5,
+    //         name: "미래 교육 솔루션",
+    //         company: "에듀테크",
+    //         category: "교육/문화",
+    //         description: "혁신적인 교육 기술을 체험해보세요.",
+    //         location: "C-01",
+    //         contactEmail: "edu@edutech.co.kr",
+    //         contactPhone: "02-5678-9012",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     },
+    //     {
+    //         id: 6,
+    //         name: "헬스케어 이노베이션",
+    //         company: "메디케어플러스",
+    //         category: "헬스케어",
+    //         description: "디지털 헬스케어 솔루션을 체험해보세요.",
+    //         location: "C-02",
+    //         contactEmail: "health@medicareplus.co.kr",
+    //         contactPhone: "02-6789-0123",
+    //         website: "https://medicareplus.co.kr",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     },
+    //     {
+    //         id: 7,
+    //         name: "블록체인 솔루션",
+    //         company: "크립토이노베이션",
+    //         category: "기술/IT",
+    //         description: "블록체인 기술의 실제 활용사례를 소개합니다.",
+    //         location: "A-03",
+    //         contactEmail: "crypto@innovation.co.kr",
+    //         contactPhone: "02-7890-1234",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     },
+    //     {
+    //         id: 8,
+    //         name: "친환경 패키징",
+    //         company: "그린패키지",
+    //         category: "기타",
+    //         description: "지속가능한 포장재 솔루션을 제공합니다.",
+    //         location: "B-03",
+    //         contactEmail: "green@package.co.kr",
+    //         contactPhone: "02-8901-2345",
+    //         logoUrl: "/images/NoImage.png",
+    //         isActive: true
+    //     }
+    // ];
 
     useEffect(() => {
-        // 실제로는 API 호출
-        const loadBooths = async () => {
+        const loadData = async () => {
+            if (!eventId) return;
+            
             try {
                 setLoading(true);
-                // API 호출 시뮬레이션
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                setBooths(mockBooths);
+                
+                // 부스 목록, 부스 타입, 행사 상세 정보를 병렬로 로드
+                const [boothsData, boothTypesData, eventDetailData] = await Promise.all([
+                    getBooths(Number(eventId)),
+                    getBoothTypes(Number(eventId)),
+                    eventAPI.getEventDetail(Number(eventId))
+                ]);
+                
+                setBooths(boothsData);
+                setBoothTypes(boothTypesData);
+                setEventDetail(eventDetailData);
             } catch (error) {
-                console.error('부스 데이터 로드 실패:', error);
+                console.error('데이터 로드 실패:', error);
+                setError('데이터를 불러오는 데 실패했습니다.');
             } finally {
                 setLoading(false);
             }
         };
 
-        loadBooths();
+        loadData();
     }, [eventId]);
 
     // 필터링된 부스 목록
     const filteredBooths = booths.filter(booth => {
-        const matchesSearch = booth.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            booth.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            booth.description.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch && booth.isActive;
+        const matchesSearch = booth.boothTitle.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch;
     });
 
     // 부스 클릭 핸들러
-    const handleBoothClick = (booth: Booth) => {
-        setSelectedBooth(booth);
-        // 스크롤을 탭 상단으로 이동 (상단바 높이 고려)
-        setTimeout(() => {
-            const tabContent = document.querySelector('[data-tab-content="booths"]');
-            if (tabContent) {
-                const rect = tabContent.getBoundingClientRect();
-                const topNavHeight = 120; // 상단바 높이 + 여유공간
-                const targetPosition = window.pageYOffset + rect.top - topNavHeight;
+    const handleBoothClick = async (booth: BoothSummary) => {
+        try {
+            const boothDetail = await getBoothDetails(Number(eventId), booth.boothId);
+            setSelectedBooth(boothDetail);
+            // 스크롤을 탭 상단으로 이동 (상단바 높이 고려)
+            setTimeout(() => {
+                const tabContent = document.querySelector('[data-tab-content="booths"]');
+                if (tabContent) {
+                    const rect = tabContent.getBoundingClientRect();
+                    const topNavHeight = 120; // 상단바 높이 + 여유공간
+                    const targetPosition = window.pageYOffset + rect.top - topNavHeight;
 
-                window.scrollTo({
-                    top: targetPosition,
-                    behavior: 'smooth'
-                });
-            }
-        }, 100);
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 100);
+        } catch (error) {
+            console.error('부스 상세 정보 불러오기 실패:', error);
+            setError('부스 상세 정보를 불러오는 데 실패했습니다.');
+        }
     };
 
     // 뒤로가기 핸들러
@@ -224,12 +245,37 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         }));
     };
 
+    // 날짜 유효성 검증
+    const validateDates = () => {
+        if (!applicationForm.startDate || !applicationForm.endDate || !eventDetail) return true;
+        
+        const startDate = new Date(applicationForm.startDate);
+        const endDate = new Date(applicationForm.endDate);
+        const eventStartDate = new Date(eventDetail.eventStartDate);
+        const eventEndDate = new Date(eventDetail.eventEndDate);
+        
+        // 시작일이 종료일보다 늦을 수 없음
+        if (startDate > endDate) {
+            return '시작일이 종료일보다 늦을 수 없습니다.';
+        }
+        
+        // 부스 참가 일정이 행사 일정 범위 내에 있어야 함
+        if (startDate < eventStartDate || endDate > eventEndDate) {
+            return `참가 일정은 행사 기간(${eventDetail.eventStartDate} ~ ${eventDetail.eventEndDate}) 내에 있어야 합니다.`;
+        }
+        
+        return true;
+    };
+
     // 필수 필드 검증
     const isFormValid = () => {
+        const dateValidation = validateDates();
+        if (dateValidation !== true) return false;
+        
         return (
             applicationForm.startDate &&
             applicationForm.endDate &&
-            applicationForm.boothType &&
+            applicationForm.boothTypeId &&
             applicationForm.boothName &&
             applicationForm.bannerImage &&
             applicationForm.description &&
@@ -241,28 +287,71 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
     };
 
     // 신청 제출 핸들러
-    const handleSubmitApplication = () => {
+    const handleSubmitApplication = async () => {
+        const dateValidation = validateDates();
+        if (dateValidation !== true) {
+            alert(dateValidation);
+            return;
+        }
+        
         if (!isFormValid()) {
             alert('필수 항목을 모두 입력해주세요.');
             return;
         }
 
-        // TODO: 실제 API 호출
-        alert('부스 신청이 완료되었습니다. 1~2일 내에 검토 결과를 알려드립니다.');
-        setShowApplicationForm(false);
-        setApplicationForm({
-            startDate: '',
-            endDate: '',
-            boothType: '',
-            boothName: '',
-            bannerImage: null,
-            description: '',
-            representativeName: '',
-            contactEmail: '',
-            contactPhone: '',
-            websiteLink: '',
-            fairPlayEmail: ''
-        });
+        try {
+            setLoading(true);
+            
+            // FormData 생성 (파일 업로드를 위해)
+            const formData = new FormData();
+            
+            // 부스 신청 데이터 생성
+            const applicationData = {
+                boothTitle: applicationForm.boothName,
+                boothDescription: applicationForm.description,
+                boothEmail: `${applicationForm.fairPlayEmail}@fair-play.ink`,
+                managerName: applicationForm.representativeName,
+                contactEmail: applicationForm.contactEmail,
+                contactNumber: applicationForm.contactPhone,
+                boothTypeId: Number(applicationForm.boothTypeId),
+                startDate: applicationForm.startDate,
+                endDate: applicationForm.endDate,
+                boothExternalLinks: applicationForm.websiteLink ? [
+                    { url: applicationForm.websiteLink, displayText: "웹사이트" }
+                ] : []
+            };
+            
+            // JSON 데이터 추가
+            formData.append('data', JSON.stringify(applicationData));
+            
+            // 파일 추가
+            if (applicationForm.bannerImage) {
+                formData.append('files', applicationForm.bannerImage);
+            }
+            
+            await applyForBooth(Number(eventId), formData);
+            
+            alert('부스 신청이 완료되었습니다. 1~2일 내에 검토 결과를 알려드립니다.');
+            setShowApplicationForm(false);
+            setApplicationForm({
+                startDate: '',
+                endDate: '',
+                boothTypeId: '',
+                boothName: '',
+                bannerImage: null,
+                description: '',
+                representativeName: '',
+                contactEmail: '',
+                contactPhone: '',
+                websiteLink: '',
+                fairPlayEmail: ''
+            });
+        } catch (error) {
+            console.error('부스 신청 실패:', error);
+            alert('부스 신청 중 오류가 발생했습니다. 다시 시도해주세요.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {
@@ -296,10 +385,10 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                             {/* 배너 이미지 */}
                             <div className="lg:w-1/3">
                                 <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
-                                    {selectedBooth.logoUrl ? (
+                                    {selectedBooth.boothBannerUrl ? (
                                         <img
-                                            src={selectedBooth.logoUrl}
-                                            alt={selectedBooth.name}
+                                            src={selectedBooth.boothBannerUrl}
+                                            alt={selectedBooth.boothTitle}
                                             className="w-full h-full object-cover rounded-lg"
                                         />
                                     ) : (
@@ -316,12 +405,8 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                             {/* 부스 정보 */}
                             <div className="lg:w-2/3 space-y-4">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedBooth.name}</h2>
-                                    <p className="text-lg text-gray-700 mb-1">{selectedBooth.company}</p>
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedBooth.boothTitle}</h2>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                                            {selectedBooth.category}
-                                        </span>
                                         <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
                                             {selectedBooth.location}
                                         </span>
@@ -342,18 +427,22 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                         </svg>
-                                        <a href={`tel:${selectedBooth.contactPhone}`} className="hover:text-blue-600">
-                                            {selectedBooth.contactPhone}
+                                        <a href={`tel:${selectedBooth.contactNumber}`} className="hover:text-blue-600">
+                                            {selectedBooth.contactNumber}
                                         </a>
                                     </div>
-                                    {selectedBooth.website && (
-                                        <div className="flex items-center text-gray-600">
-                                            <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                            </svg>
-                                            <a href={selectedBooth.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
-                                                {selectedBooth.website}
-                                            </a>
+                                    {selectedBooth.boothExternalLinks && selectedBooth.boothExternalLinks.length > 0 && (
+                                        <div className="space-y-2">
+                                            {selectedBooth.boothExternalLinks.map((link, index) => (
+                                                <div key={index} className="flex items-center text-gray-600">
+                                                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
+                                                        {link.displayText}
+                                                    </a>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -363,7 +452,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                         {/* 부스 설명 */}
                         <div className="mt-8 pt-6 border-t border-gray-200">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">부스 소개</h3>
-                            <p className="text-gray-700 leading-relaxed">{selectedBooth.description}</p>
+                            <p className="text-gray-700 leading-relaxed">{selectedBooth.boothDescription}</p>
                         </div>
                     </div>
                 </div>
@@ -403,9 +492,16 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         type="date"
                                         value={applicationForm.startDate}
                                         onChange={(e) => handleFormChange('startDate', e.target.value)}
+                                        min={eventDetail?.eventStartDate}
+                                        max={eventDetail?.eventEndDate}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
+                                    {eventDetail && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            행사 기간: {eventDetail.eventStartDate} ~ {eventDetail.eventEndDate}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -415,6 +511,8 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         type="date"
                                         value={applicationForm.endDate}
                                         onChange={(e) => handleFormChange('endDate', e.target.value)}
+                                        min={applicationForm.startDate || eventDetail?.eventStartDate}
+                                        max={eventDetail?.eventEndDate}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
@@ -428,16 +526,17 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         부스 타입 <span className="text-red-500">*</span>
                                     </label>
                                     <select
-                                        value={applicationForm.boothType}
-                                        onChange={(e) => handleFormChange('boothType', e.target.value)}
+                                        value={applicationForm.boothTypeId}
+                                        onChange={(e) => handleFormChange('boothTypeId', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     >
                                         <option value="">부스 타입을 선택하세요</option>
-                                        <option value="standard">표준 부스 (3m x 3m)</option>
-                                        <option value="premium">프리미엄 부스 (6m x 3m)</option>
-                                        <option value="corner">코너 부스 (3m x 3m)</option>
-                                        <option value="large">대형 부스 (6m x 6m)</option>
+                                        {boothTypes.map((type) => (
+                                            <option key={type.id} value={type.id}>
+                                                {type.name} ({type.size}) - {type.price.toLocaleString()}원
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>
@@ -539,7 +638,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                                 </label>
                                                 <p className="pl-1">또는 드래그 앤 드롭</p>
                                             </div>
-                                            <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 5MB</p>
+                                            <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 10MB</p>
                                         </div>
                                     )}
                                 </div>
@@ -669,6 +768,14 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
 
     return (
         <div className="space-y-8">
+                <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors" onClick={() => {
+                    const el = document.getElementById("apply-section");
+                    el?.scrollIntoView({ behavior: "smooth" }); // 부드럽게 스크롤
+                }}>
+                    부스 신청 바로가기
+                </button>
+
+
             {/* 참가 부스 목록 섹션 */}
             <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">
@@ -680,7 +787,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                     <div className="w-full sm:w-1/2 lg:w-1/4">
                         <input
                             type="text"
-                            placeholder="부스명, 업체명으로 검색"
+                            placeholder="부스명으로 검색"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -703,16 +810,16 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {filteredBooths.map((booth) => (
                             <div
-                                key={booth.id}
+                                key={booth.boothId}
                                 className="bg-white border border-gray-200 rounded-[10px] shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
                                 onClick={() => handleBoothClick(booth)}
                             >
                                 {/* 배너(정방형) */}
                                 <div className="aspect-square bg-gray-100 rounded-t-[10px] flex items-center justify-center">
-                                    {booth.logoUrl ? (
+                                    {booth.boothBannerUrl ? (
                                         <img
-                                            src={booth.logoUrl}
-                                            alt={booth.name}
+                                            src={booth.boothBannerUrl}
+                                            alt={booth.boothTitle}
                                             className="w-full h-full object-cover rounded-t-[10px]"
                                         />
                                     ) : (
@@ -727,13 +834,13 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
 
                                 {/* 부스명과 구역 */}
                                 <div className="p-4">
-                                    <div className="flex items-center justify-between">
+                                    <div className="items-center">
                                         <h4 className="font-semibold text-gray-900 text-base truncate">
-                                            {booth.name}
+                                            {booth.boothTitle}
                                         </h4>
-                                        <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded shrink-0">
-                                            {booth.location}
-                                        </span>
+                                        <div className="mt-2 px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded shrink-0" style={{ width: '100px', textAlign: 'center' }}>
+                                            {booth.location ? booth.location : "위치미정"}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -748,6 +855,11 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                     * 부스 위치는 행사 당일 변경될 수 있습니다. 정확한 위치는 현장 안내판을 확인해주세요.
                 </p>
             </div>
+
+            <hr className="my-8" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-6" id="apply-section">
+                부스 신청
+            </h3>
 
             {/* 부스 신청 안내 */}
             <div className="bg-gray-50 rounded-lg p-6">

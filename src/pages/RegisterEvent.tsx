@@ -709,7 +709,7 @@ export const RegisterEvent = () => {
                                                                 </label>
                                                                 <p className="pl-1">또는 드래그 앤 드롭</p>
                                                             </div>
-                                                            <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 5MB</p>
+                                                            <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 10MB</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -799,7 +799,7 @@ export const RegisterEvent = () => {
                                                                 </label>
                                                                 <p className="pl-1">또는 드래그 앤 드롭</p>
                                                             </div>
-                                                            <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 5MB</p>
+                                                            <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 10MB</p>
                                                         </div>
                                                     )}
                                                 </div>

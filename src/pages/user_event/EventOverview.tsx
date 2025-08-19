@@ -13,6 +13,7 @@ import { HiOutlineCalendar } from "react-icons/hi";
 import { FaHeart } from "react-icons/fa";
 import { eventAPI } from "../../services/event"
 import type { EventSummaryDto } from "../../services/types/eventType";
+import { getEventStatusText, getEventStatusStyle } from "../../utils/eventStatus";
 import api from "../../api/axios";
 import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
@@ -45,6 +46,8 @@ export default function EventOverview() {
     const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
     const [selectedRegion, setSelectedRegion] = React.useState("모든지역");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
+    const [selectedStatus, setSelectedStatus] = React.useState("전체");
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = React.useState(false);
 
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
         try {
@@ -92,25 +95,6 @@ export default function EventOverview() {
     const [searchParams] = useSearchParams();
     const searchQuery = searchParams.get('q') || '';
 
-    // 검색어에 따른 이벤트 필터링
-    React.useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredEvents(events);
-            return;
-        }
-
-        const filtered = events.filter(event => {
-            const query = searchQuery.toLowerCase();
-            return (
-                event.title.toLowerCase().includes(query) ||
-                event.mainCategory.toLowerCase().includes(query) ||
-                event.location.toLowerCase().includes(query) ||
-                event.region.toLowerCase().includes(query)
-            );
-        });
-
-        setFilteredEvents(filtered);
-    }, [searchQuery, events]);
 
     // 좋아요 토글 함수
     const toggleWish = async (eventId: number) => {
@@ -424,6 +408,33 @@ export default function EventOverview() {
     React.useEffect(() => {
         fetchEvents();
     }, [selectedCategory, selectedSubCategory, selectedRegion, startDate, endDate]);
+
+    // events가 변경될 때 필터링 다시 적용
+    React.useEffect(() => {
+        let filtered = events;
+
+        // 상태 필터링 적용
+        if (selectedStatus !== "전체") {
+            const statusCode = selectedStatus === "진행 예정" ? "UPCOMING" 
+                             : selectedStatus === "진행중" ? "ONGOING" 
+                             : selectedStatus === "종료" ? "ENDED" 
+                             : "";
+            filtered = filtered.filter(event => event.eventStatusCode === statusCode);
+        }
+
+        // 검색어 필터링 적용
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(event => (
+                event.title.toLowerCase().includes(query) ||
+                event.mainCategory.toLowerCase().includes(query) ||
+                event.location.toLowerCase().includes(query) ||
+                event.region.toLowerCase().includes(query)
+            ));
+        }
+
+        setFilteredEvents(filtered);
+    }, [events, selectedStatus, searchQuery]);
 
     const isEventInDateRange = (eventStart: string, eventEnd: string) => {
         if (!startDate || !endDate) return true;
@@ -1217,6 +1228,35 @@ export default function EventOverview() {
                                                 }}
                                             >
                                                 {region}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 상태 필터 */}
+                            <div className="relative">
+                                <button
+                                    className="flex items-center justify-between w-28 px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                                    onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                >
+                                    <span className="text-sm truncate">{selectedStatus}</span>
+                                    <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* 드롭다운 메뉴 */}
+                                {isStatusDropdownOpen && (
+                                    <div className="absolute top-full left-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                        {["전체", "진행 예정", "진행중", "종료"].map((status) => (
+                                            <button
+                                                key={status}
+                                                className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedStatus === status ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
+                                                onClick={() => {
+                                                    setSelectedStatus(status);
+                                                    setIsStatusDropdownOpen(false);
+                                                }}
+                                            >
+                                                {status}
                                             </button>
                                         ))}
                                     </div>
