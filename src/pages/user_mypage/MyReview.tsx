@@ -252,11 +252,20 @@ export const MyPageMyReview = () => {
                     reactions: 0,
                     comment: res.comment,
                     visible: res.visible,
-                    createdAt: res.createdAt.toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                    }).replace(/\. /g, '.').replace('.', '')
+                    createdAt: (() => {
+                        // createdAt이 문자열로 오고 있으므로 문자열로 처리
+                        const createdAtStr = res.createdAt as unknown as string;
+                        if (createdAtStr && typeof createdAtStr === 'string') {
+                            // YYYY-MM-DD 형식으로 변환
+                            return createdAtStr.slice(0, 10).replace(/-/g, '. ');
+                        }
+                        // 기본값
+                        return new Date().toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                        }).replace(/\. /g, '.').replace('.', '');
+                    })()
                 }
                 const reviewResponse: ReviewResponseDto = {
                     reservationId: selectReservationId,
@@ -281,6 +290,14 @@ export const MyPageMyReview = () => {
             handleBackToList();
         } catch (error: unknown) {
             console.error("관람평 저장/수정 실패:", error);
+
+            // 더 자세한 에러 정보 로깅
+            if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as any;
+                console.error("HTTP 상태:", axiosError.response?.status);
+                console.error("응답 데이터:", axiosError.response?.data);
+                console.error("응답 헤더:", axiosError.response?.headers);
+            }
 
             // 실제 에러가 발생한 경우 에러 메시지 표시
             toast.error("관람평 저장에 실패했습니다. 다시 시도해주세요.");
