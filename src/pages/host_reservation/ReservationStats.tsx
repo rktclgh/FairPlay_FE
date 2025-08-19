@@ -126,9 +126,13 @@ export const ReservationStats = () => {
       }, {} as Record<string, number>);
 
       // 2. 배열로 변환하고 월 순서대로 정렬
-      const monthlyArray = Object.entries(monthlyMap).map(([month, reservations]) => ({
-          date: month,
-          reservations
+        const monthlyArray = Object.entries(monthlyMap).map(
+          ([month, reservations]) => ({
+            date: month,
+            reservations,
+          })
+        );
+
       // 3. 월 순서대로 정렬 (01월, 02월, ... 12월)
       return monthlyArray.sort((a, b) => {
         const monthA = parseInt(a.date.replace('월', ''));
@@ -140,12 +144,7 @@ export const ReservationStats = () => {
     const monthlyData = convertDailyToMonthly(weeklyData);
 
 
-    // 년별 데이터 (최근 3년간)
-    const yearlyData = [
-        { date: '2022', reservations: 28456 },
-        { date: '2023', reservations: 34789 },
-        { date: '2024', reservations: 41234 },
-    ];
+
 
     // 성별 분포 데이터
     const genderData = [
@@ -165,8 +164,7 @@ export const ReservationStats = () => {
     // 데이터 매핑
     const dataMap = {
         '일별': weeklyData,
-        '월별': monthlyData,
-        '연간': yearlyData
+        '월별': monthlyData
     };
 
     const currentData = dataMap[selectedPeriod as keyof typeof dataMap] || weeklyData;
@@ -292,7 +290,7 @@ export const ReservationStats = () => {
 
                                 {isDropdownOpen && (
                                     <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                        {['일별', '월별', '연간'].map((period) => (
+                                        {['일별', '월별'].map((period) => (
                                             <button
                                                 key={period}
                                                 onClick={() => handlePeriodChange(period)}
