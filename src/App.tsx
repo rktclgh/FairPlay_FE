@@ -72,7 +72,6 @@ import { AdminProfile } from "./pages/admin_account/AdminProfile";
 import { HostProfile } from "./pages/host_account/HostProfile";
 import { BoothAdminProfile } from "./pages/booth_admin/BoothAdminProfile";
 import BoothAdminDashboard from "./pages/booth_admin/BoothAdminDashboard";
-import BoothAdminDashboard from "./pages/booth_admin/BoothAdminDashboard";
 import BoothQRScanPage from "./pages/booth_admin/BoothQRScanPage";
 import ExperienceDetailPage from "./pages/booth_admin/ExperienceDetailPage";
 import { BoothAdminRouteGuard } from "./components/BoothAdminRouteGuard";
