@@ -624,7 +624,7 @@ const EventDetail = (): JSX.Element => {
                                 </button>
 
                             </div>
-                            <p className="text-[#00000099] text-xl mt-1">
+                            <p className="text-    [#00000099] text-xl mt-1">
                                 {eventData.titleEng}
                             </p>
                             {/* 카테고리 정보 */}
@@ -905,7 +905,25 @@ const EventDetail = (): JSX.Element => {
                                         <div className="p-3 border-b bg-gray-50">
                                             <h5 className="text-sm font-medium text-gray-900">전체 행사일 현황</h5>
                                         </div>
-                                        <div className="max-h-60 overflow-y-auto">
+                                        <div
+                                            ref={(el) => {
+                                                // 선택된 날짜가 변경될 때 해당 날짜가 보이도록 자동 스크롤
+                                                if (el && selectedDate) {
+                                                    setTimeout(() => {
+                                                        // 선택된 날짜 요소 찾기
+                                                        const selectedDateElement = el.querySelector(`[data-date="${selectedDate}"]`);
+                                                        if (selectedDateElement) {
+                                                            selectedDateElement.scrollIntoView({
+                                                                behavior: 'smooth',
+                                                                block: 'center',
+                                                                inline: 'nearest'
+                                                            });
+                                                        }
+                                                    }, 100);
+                                                }
+                                            }}
+                                            className="max-h-60 overflow-y-auto"
+                                        >
                                             {eventDates.map((date) => {
                                                 const isBookable = isDateBookable(date);
                                                 const isSelected = selectedDate === date;
@@ -913,13 +931,19 @@ const EventDetail = (): JSX.Element => {
                                                 const dateObj = new Date(date + 'T00:00:00');
                                                 const dayName = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
 
+                                                // 선택된 날짜의 경우 해당 회차 정보 가져오기
+                                                const schedulesForDate = isSelected ? availableSchedules : [];
+
                                                 return (
                                                     <div
                                                         key={date}
-                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 ${isPastDate
-                                                            ? 'cursor-not-allowed opacity-60'
-                                                            : 'cursor-pointer hover:bg-gray-50'
-                                                            } ${isSelected ? 'bg-blue-50' : ''}`}
+                                                        data-date={date}
+                                                        className={`flex items-center justify-between p-3 ${isPastDate
+                                                            ? 'cursor-not-allowed opacity-60 border-b'
+                                                            : isSelected
+                                                                ? 'cursor-pointer bg-blue-50 border-2 border-blue-500 rounded'
+                                                                : 'cursor-pointer hover:bg-gray-50 border-b'
+                                                            } ${!isPastDate && !isSelected ? 'last:border-b-0' : ''}`}
                                                         onClick={() => !isPastDate ? handleDateSelect(date) : null}
                                                     >
                                                         <div className="flex items-center gap-3">
@@ -931,18 +955,22 @@ const EventDetail = (): JSX.Element => {
                                                                         ? 'bg-green-100 border border-green-300'
                                                                         : 'bg-pink-100 border border-pink-300'
                                                                 }`}></div>
-                                                            <div>
-                                                                <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
-                                                                    {date}
-                                                                </span>
-                                                                <span className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                                    ({dayName})
-                                                                </span>
-                                                                {isPastDate && (
-                                                                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
-                                                                        지난 날짜
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center">
+                                                                    <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
+                                                                        {date}
                                                                     </span>
-                                                                )}
+                                                                    <span className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                        ({dayName})
+                                                                    </span>
+                                                                    {isPastDate && (
+                                                                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
+                                                                            지난 날짜
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
@@ -959,11 +987,7 @@ const EventDetail = (): JSX.Element => {
                                                                     예매불가
                                                                 </span>
                                                             )}
-                                                            {isSelected && (
-                                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                                                    선택됨
-                                                                </span>
-                                                            )}
+
                                                         </div>
                                                     </div>
                                                 );
