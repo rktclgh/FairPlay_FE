@@ -28,6 +28,7 @@ import NewLoader from "../components/NewLoader";
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
     id: number;
+    eventId?: number | null;  
     title: string;
     imageUrl: string;
     thumbnailUrl: string;
@@ -38,8 +39,115 @@ interface PaidAdvertisement {
     priority: number; // 노출 순서
 }
 
+// 제목 정규화 유틸 그대로 사용
+const norm = (s: string) => (s || "").toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, "");
+
+// URL에서 event id 뽑기: /eventdetail/123, /event/123, ?eventId=123, ?eid=123, ?id=123 모두 지원
+const extractEventId = (url?: string | null): number | null => {
+  if (!url) return null; // ← 이거 꼭 필요!
+
+    try {
+    // 절대/상대 URL 모두 OK
+    const u = new URL(url, window.location.origin);
+    // /eventdetail/123, /event/123 (뒤에 슬래시 있어도 OK)
+    const m1 = u.pathname.match(/(?:\/eventdetail\/|\/event\/)(\d+)(?=\/|$)/i);
+    if (m1) return Number(m1[1]);
+    // ?eventId=123, ?event_id=123, ?eid=123, ?id=123
+    const m2 = u.search.match(/[?&](?:eventId|event_id|eid|id)=(\d+)/i);
+    return m2 ? Number(m2[1]) : null;
+  } catch {
+    // URL 파싱 실패 시 백업 정규식
+    const m =
+      url.match(/(?:\/eventdetail\/|\/event\/)(\d+)(?=\/|$)/i) ||
+      url.match(/[?&](?:eventId|event_id|eid|id)=(\d+)/i);
+    return m ? Number(m[1]) : null;
+  }
+};
+
+// 제목으로 느슨하게 매칭(정확=우선, 포함=보조)
+const findEventByTitle = (title: string, events: EventSummaryDto[]) => {
+  const n = norm(title);
+  const exact = events.find(e => norm(e.title) === n);
+  if (exact) return exact;
+
+  const candidates = events.filter(e => {
+    const t = norm(e.title);
+    return t.includes(n) || n.includes(t);
+  });
+  return candidates.length === 1 ? candidates[0] : null;
+};
+
+const gotoAdDetail = (
+  ad: PaidAdvertisement,
+  events: EventSummaryDto[],
+  navigate: ReturnType<typeof useNavigate>
+) => {
+  // 0) (선택) 백엔드가 배너에 eventId를 내려줄 수 있다면 최우선 사용
+  // if ((ad as any).eventId) return navigate(`/eventdetail/${(ad as any).eventId}`);
+if (ad.eventId) {
+    navigate(`/eventdetail/${ad.eventId}`);
+    return;
+  }
+
+  // 1) URL 안에서 id 추출
+  const idFromUrl = extractEventId(ad.linkUrl);
+  if (idFromUrl) {
+    navigate(`/eventdetail/${idFromUrl}`);
+    return;
+  }
+
+  // 2) 제목으로 매칭
+  const byTitle = ad.title ? findEventByTitle(ad.title, events) : null;
+  if (byTitle?.id) {
+    navigate(`/eventdetail/${byTitle.id}`);
+    return;
+  }
+
+  // 3) 마지막: 외부 URL 열지 말고 안내 (원하시면 eventoverview로 보내도 OK)
+  alert("연결된 이벤트를 찾지 못했어요. 배너 링크를 /eventdetail/{id} 또는 ?eventId={id} 형식으로 저장해주세요.");
+};
+
+
+//  백엔드 배너 응답형 (BannerResponseDto 가정)
+type BannerResp = {
+  id: number;
+  eventId?: number | null;
+  title?: string | null;
+  imageUrl?: string | null;
+  linkUrl?: string | null;
+  priority?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  statusCode?: string | null;        // "ACTIVE"
+  bannerTypeCode?: string | null;    // "HERO"
+};
+
+// 서버 응답 (FixedTopDto 가정: eventId 필수)
+type SearchTopDto = {
+  id: number;
+  title: string;
+  imageUrl: string;
+  linkUrl: string | null;
+  priority: number;
+  startDate: string; // ISO
+  endDate: string;   // ISO
+  eventId: number;   // ★ 스티커/이동용 핵심
+};
+
+const fetchSearchTopToday = async (): Promise<SearchTopDto[]> => {
+  // 오늘 날짜 기준 (백엔드는 date null이면 today 처리하지만 명시적으로 줘도 OK)
+  const today = dayjs().format("YYYY-MM-DD");
+  const { data } = await api.get<SearchTopDto[]>("/api/banner/search-top", {
+    params: { date: today },
+  });
+  return Array.isArray(data) ? data : [];
+};
+
+
 
 export const Main: React.FC = () => {
+
+const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
 
     const [showBirthdayModal, setShowBirthdayModal] = useState(false);
     const [gender, setGender] = useState<string>("")
@@ -297,93 +405,98 @@ export const Main: React.FC = () => {
     // 유료광고 행사 상태
     const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
 
-    // 유료광고 행사 데이터 로드 (백엔드 연동 전까지 임시 데이터 사용)
-    const loadPaidAdvertisements = async () => {
-        try {
-            // TODO: 백엔드 연동 후 실제 API 호출로 교체
-            // const ads = await eventApi.getPaidAdvertisements();
+   
+const fetchHeroBanners = async (): Promise<BannerResp[]> => {
+  const tries = [
+    { url: "/api/banners/hero/active" },
+    { url: "/api/banners", params: { type: "HERO", status: "ACTIVE" } },
+  ] as const;
 
-            // 임시 데이터 (백엔드 연동 전까지 사용)
-            // 실제 행사 ID로 매핑 (events 배열에서 제목으로 찾기)
-            const tempAds: PaidAdvertisement[] = [
-                {
-                    id: 19, // G-DRAGON 행사 ID
-                    title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
-                    imageUrl: "/images/gd1.png",
-                    thumbnailUrl: "/images/gd2.png",
-                    linkUrl: "/event/19",
-                    startDate: "2025-05-25",
-                    endDate: "2025-05-25",
-                    isActive: true,
-                    priority: 1
-                },
-                {
-                    id: 20, // YE LIVE IN KOREA 행사 ID
-                    title: "YE LIVE IN KOREA",
-                    imageUrl: "/images/YE3.png",
-                    thumbnailUrl: "/images/YE3.png",
-                    linkUrl: "/event/20",
-                    startDate: "2025-06-15",
-                    endDate: "2025-06-15",
-                    isActive: true,
-                    priority: 2
-                },
-                {
-                    id: 21, // Post Malone Concert 행사 ID
-                    title: "Post Malone Concert",
-                    imageUrl: "/images/malone1.jpg",
-                    thumbnailUrl: "/images/malone.jpg",
-                    linkUrl: "/event/21",
-                    startDate: "2025-07-20",
-                    endDate: "2025-07-20",
-                    isActive: true,
-                    priority: 3
-                },
-                {
-                    id: 22, // THE ROSE 행사 ID
-                    title: "THE ROSE 2025 LIVE IN SEOUL",
-                    imageUrl: "/images/therose2.png",
-                    thumbnailUrl: "/images/therose1.png",
-                    linkUrl: "/event/22",
-                    startDate: "2025-08-10",
-                    endDate: "2025-08-10",
-                    isActive: true,
-                    priority: 4
-                },
-                {
-                    id: 23, // eaJ 행사 ID
-                    title: "eaJ LIVE IN SEOUL",
-                    imageUrl: "/images/eaj2.jpg",
-                    thumbnailUrl: "/images/eaj1.jpg",
-                    linkUrl: "/event/23",
-                    startDate: "2025-09-05",
-                    endDate: "2025-09-05",
-                    isActive: true,
-                    priority: 5
-                },
-                {
-                    id: 24, // 사이버 보안 컨퍼런스 행사 ID
-                    title: "사이버 보안 컨퍼런스 2025",
-                    imageUrl: "/images/cyber2.png",
-                    thumbnailUrl: "/images/cyber.png",
-                    linkUrl: "/event/24",
-                    startDate: "2025-10-15",
-                    endDate: "2025-10-15",
-                    isActive: true,
-                    priority: 6
-                }
-            ];
+  for (const { url, params } of tries) {
+    try {
+      const { data } = await api.get<BannerResp[] | BannerResp>(url, { params });
+      const list = Array.isArray(data) ? data : data ? [data] : [];
+      if (list.length) return list;
+    } catch (err: any) {
+      console.warn("[HERO] request fail:", url, err?.response?.status, err?.response?.data);
+    }
+  }
+  return [];
+};
 
-            // 활성화된 광고만 필터링하고 우선순위 순으로 정렬
-            const activeAds = tempAds
-                .filter(ad => ad.isActive)
-                .sort((a, b) => a.priority - b.priority);
+const parseYMD = (s?: string | null) => {
+  if (!s) return null;
+  return dayjs(s.slice(0, 10).replace(/[./]/g, "-"));
+};
+const isTodayInRange = (start?: string | null, end?: string | null) => {
+  const today = dayjs().startOf("day");
+  const s = parseYMD(start);
+  const e = parseYMD(end)?.endOf("day");
+  return (!s || !s.isAfter(today)) && (!e || !e.isBefore(today));
+};
 
-            setPaidAdvertisements(activeAds);
-        } catch (error) {
-            console.error('유료광고 데이터 로드 실패:', error);
-        }
-    };
+const asUpper = (v?: string | null) => (v ?? "").toString().trim().toUpperCase();
+
+const loadHeroAdvertisements = async () => {
+  try {
+    const raw = await fetchHeroBanners();
+    console.log("[HERO] raw count:", raw.length, raw);
+
+    const filtered = raw.filter(r => {
+      const type   = asUpper((r as any).bannerTypeCode ?? (r as any).bannerType);
+      const status = asUpper((r as any).statusCode ?? (r as any).status);
+      const okType   = ["HERO", "MAIN", "HERO_MAIN"].includes(type || "HERO");
+      const okStatus = ["ACTIVE", "APPROVED", "PUBLISHED"].includes(status || "ACTIVE");
+      return okType && okStatus && isTodayInRange(r.startDate, r.endDate);
+    });
+
+    console.log("[HERO] filtered count:", filtered.length, filtered);
+
+    if (!filtered.length) {
+      // 폴백: HotPick
+      const hot = await eventAPI.getHotPicks({ size: 6 });
+      setPaidAdvertisements((hot || []).map((h, i) => ({
+        id: h.id, eventId: h.id,  title: h.title, imageUrl: h.image, thumbnailUrl: h.image,
+        linkUrl: `/eventdetail/${h.id}`, startDate: "", endDate: "",
+        isActive: true, priority: i + 1,
+      })));
+      return;
+    }
+
+    const get = (o:any, ...keys:string[]) => {
+  for (const k of keys) if (o && o[k] != null) return o[k];
+  return undefined;
+};
+    setPaidAdvertisements(
+      filtered
+        .map(r => {
+      const eid = get(r, "eventId", "event_id") ?? null;
+      const img = get(r, "imageUrl", "image_url") ?? "/images/FPlogo.png";
+      const rawLink = get(r, "linkUrl", "link_url") ?? "";
+      return {
+        id:           get(r, "id"),
+        eventId:      eid,
+        title:        get(r, "title") ?? "",
+        imageUrl:     img,
+        thumbnailUrl: img,
+        // ★ eventId가 있으면 상세로 바로 가는 내부 링크를 만들어 둠
+        linkUrl:      rawLink || (eid ? `/eventdetail/${eid}` : ""),
+        startDate:    get(r, "startDate", "start_date") ?? "",
+        endDate:      get(r, "endDate", "end_date") ?? "",
+        isActive:     true,
+        priority:     get(r, "priority") ?? 999,
+      } as PaidAdvertisement;
+    })
+    .sort((a, b) => a.priority - b.priority)
+);
+  } catch (e) {
+    console.error("HERO 배너 로드 실패:", e);
+    setPaidAdvertisements([]);
+  }
+};
+
+
+
 
     useEffect(() => {
         (async () => {
@@ -411,10 +524,14 @@ export const Main: React.FC = () => {
             try {
                 setLoading(true);
                 const eventsData = await eventAPI.getEventList({ size: 15, includeHidden: false });
-                setEvents(eventsData.events);
+setEvents(eventsData?.events ?? []);
+
 
                 // 유료광고 데이터 로드
-                await loadPaidAdvertisements();
+                //await loadPaidAdvertisements();
+await loadHeroAdvertisements();
+const searchTop = await fetchSearchTopToday(); // ★ 추가
+setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.isFinite)));
 
                 // HOT PICKS 백엔드 연동
                 try {
@@ -433,172 +550,51 @@ export const Main: React.FC = () => {
         loadData();
     }, []);
 
-    // 카테고리 필터링
-    // const handleCategoryChange = async (category: string) => {
-    //     setSelectedCategory(category);
-    //     try {
-    //         const filteredEvents = await eventApi.getEvents(category);
-    //         setEvents(filteredEvents);
-    //     } catch (error) {
-    //         console.error('카테고리 필터링 실패:', error);
-    //     }
-    // };
-
-
-    // Hot Picks는 Swiper로 전환하여 수동 인덱스 제어 제거
-
+  
     // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
-    const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
-    const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
+  const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
+  const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
+    
+  const todayKey = dayjs().format("YYYY-MM-DD");
 
-    // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
-    // 실제 행사 ID로 매핑 (events 배열에서 제목으로 찾기)
-    const tempHotPicks: HotPick[] = [
-        {
-            id: 19, // G-DRAGON 행사 ID
-            title: "G-DRAGON 2025 WORLD TOUR IN JAPAN",
-            date: "2025.05.25",
-            location: "KYOCERA DOME OSAKA",
-            category: "공연",
-            image: "/images/gd2.png",
-        },
-        {
-            id: 20, // YE LIVE IN KOREA 행사 ID
-            title: "YE LIVE IN KOREA",
-            date: "2025.06.15",
-            location: "인천문학경기장",
-            category: "공연",
-            image: "/images/YE3.png",
-        },
-        {
-            id: 25, // 명원 세계 차 박람회 행사 ID
-            title: "2025 명원 세계 차 박람회",
-            date: "2025-09-11 ~ 2025-09-14",
-            location: "코엑스 B2홀",
-            category: "박람회",
-            image: "/images/tea.png",
-        },
-        {
-            id: 24, // 사이버 보안 컨퍼런스 행사 ID
-            title: "사이버 보안 컨퍼런스 2025",
-            date: "2025-09-10 ~ 2025-09-12",
-            location: "코엑스 D홀",
-            category: "강연/세미나",
-            image: "/images/cyber.png",
-        },
-        {
-            id: 22, // THE ROSE 행사 ID
-            title: "THE ROSE 2025 LIVE IN SEOUL",
-            date: "2025.09.20",
-            location: "KSPO DOME",
-            category: "공연",
-            image: "/images/therose1.png",
-        },
-        {
-            id: 23, // eaJ 행사 ID
-            title: "eaJ LIVE IN SEOUL",
-            date: "2025.09.25",
-            location: "YES24 라이브홀",
-            category: "공연",
-            image: "/images/eaj1.jpg",
-        },
-        {
-            id: 26, // 한가위 명절선물전 행사 ID
-            title: "2025 한가위 명절선물전",
-            date: "2025-08-25 ~ 2025-08-28",
-            location: "COEX 컨벤션홀",
-            category: "전시/행사",
-            image: "/images/coex.png",
-        },
-        {
-            id: 27, // 케이펫페어 서울 행사 ID
-            title: "2025 케이펫페어 서울",
-            date: "2025-08-13 ~ 2025-08-16",
-            location: "킨텍스 제1전시장",
-            category: "박람회",
-            image: "/images/pet.jpg",
-        },
-        {
-            id: 28, // JOYURI FAN-CON 행사 ID
-            title: "2025 JOYURI FAN-CON",
-            date: "추후 공개",
-            location: "추후 공개",
-            category: "공연",
-            image: "/images/joyuri.jpg",
-        },
-        {
-            id: 29, // IU HEREH WORLD TOUR CONCERT 행사 ID
-            title: "IU HEREH WORLD TOUR CONCERT",
-            date: "추후 공개",
-            location: "추후 공개",
-            category: "공연",
-            image: "/images/iu.jpg",
-        },
-    ];
+function getMdPickIdsForToday(): Set<number> {
+  try {
+    if (typeof window === "undefined") return new Set<number>();
+    const raw = localStorage.getItem(`mdpick:${todayKey}`);
+    const arr = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(arr)) return new Set<number>();
+    return new Set<number>(
+      arr
+        .slice(0, 2)
+        .map((v: unknown) => Number(v))
+        .filter((n) => Number.isFinite(n))
+    );
+  } catch {
+    return new Set<number>();
+  }
+}
 
-    // Hot Picks 데이터 (백엔드 연결 후 hotPicks로 교체)
-    const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
-
-    const todayKey = dayjs().format("YYYY-MM-DD");
-
-    const getMdPickIdsForToday = (): Set<number> => {
-        try {
-            if (typeof window === "undefined") return new Set<number>(); // SSR 대비(필요시)
-            const raw = localStorage.getItem(`mdpick:${todayKey}`);
-            const arr = raw ? JSON.parse(raw) : null;
-            return Array.isArray(arr)
-                ? new Set<number>(
-                    arr.slice(0, 2)
-                        .map((v: unknown) => Number(v))
-                        .filter((n) => Number.isFinite(n))
-                )
-                : new Set<number>();
-        } catch {
-            return new Set<number>();
-        }
-    };
-
-    // MD PICK 우선 노출 인식: 로컬스토리지에서 오늘 날짜의 ID/제목을 모두 읽는다
-    // [백엔드 연동 필요]
-    // - 오늘 노출할 MD PICK 이벤트 ID 목록을 API로 전달받아 사용하세요.
-    // - 현재는 로컬스토리지 키 'mdpick:YYYY-MM-DD'에서 읽도록 남겨두었습니다. API 적용 시 이 함수들을 대체하세요.
-
-
-    // [백엔드 연동 필요]
-    // - 임시 보조: 제목 기반 매칭용 키입니다. 백엔드가 ID를 제공하면 제거해도 됩니다.
-    const getMdPickTitlesForToday = (): Set<string> => {
-        try {
-            if (typeof window === "undefined") return new Set<string>(); // SSR 대비(필요시)
-            const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
-            const arr = raw ? JSON.parse(raw) : null;
-            return Array.isArray(arr)
-                ? new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)))
-                : new Set<string>();
-        } catch {
-            return new Set<string>();
-        }
-    };
-
+function getMdPickTitlesForToday(): Set<string> {
+  try {
+    if (typeof window === "undefined") return new Set<string>();
+    const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
+    const arr = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(arr)) return new Set<string>();
+    return new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)));
+  } catch {
+    return new Set<string>();
+  }
+}
     const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
 
     const mdPickIds = getMdPickIdsForToday();
     const mdPickTitles = getMdPickTitlesForToday();
     const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
 
-    // [백엔드 연동 필요]
-    // - API에서 받은 MD PICK 세트를 기준으로 판단하도록 바꾸세요.
-    const isEventMdPick = (e: EventSummaryDto) => {
-        if (mdPickIds.has(e.id)) return true;
-        if (mdPickTitleNorms.size > 0) {
-            const nt = normalize(e.title);
-            for (const t of mdPickTitleNorms) {
-                if (nt.includes(t)) return true;
-            }
-        }
-        return false;
-    };
 
-    const hasMdPickInCurrentList = events.some(e => isEventMdPick(e));
+    const isEventMdPick = (e: EventSummaryDto) => mdPickEventIds.has(e.id);
+const hasMdPickInCurrentList = events.some(e => mdPickEventIds.has(e.id));
+
     const displayEvents = hasMdPickInCurrentList
         ? [...events].sort((a, b) => {
             const aPick = isEventMdPick(a) ? 1 : 0;
@@ -614,7 +610,10 @@ export const Main: React.FC = () => {
             </div>
         );
     }
-
+    const heroLoop = paidAdvertisements.length >= 2;
+const hasHero  = paidAdvertisements.length > 0;
+const hasHot  = hotPicks.length > 0;
+const hotLoop = hotPicks.length >= 2;
     return (
         <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
             <TopNav />
@@ -765,134 +764,116 @@ export const Main: React.FC = () => {
 
 
             {/* 히어로 섹션 */}
-            <div className={`relative w-full aspect-square sm:h-[400px] md:h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
-                <Swiper
-                    modules={[Autoplay, EffectFade]}
-                    effect="fade"
-                    autoplay={{ delay: 4000 }}
-                    loop={true}
-                    className="w-full h-full"
-                    onSwiper={(swiper) => {
-                        // Swiper 인스턴스를 저장
-                        (window as unknown as Window).heroSwiper = swiper;
-                    }}
-                >
-                    {paidAdvertisements.map((ad) => (
-                        <SwiperSlide key={ad.id}>
-                            <div
-                                className="w-full h-full cursor-pointer"
-                                onClick={() => navigate(`/eventdetail/${ad.id}`)}
-                            >
-                                <img
-                                    src={ad.imageUrl}
-                                    alt={ad.title}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        console.log('히어로 이미지 로드 실패:', e);
-                                    }}
-                                />
-                            </div>
-                        </SwiperSlide>
-                    ))}
-                </Swiper>
+{hasHero && (
+  <div className={`relative w-full aspect-square sm:h-[400px] md:h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
+    <Swiper
+      modules={[Autoplay, EffectFade]}
+    effect="fade"
+    autoplay={heroLoop ? { delay: 4000 } : false}
+    loop={heroLoop}
+      className="w-full h-full"
+      onSwiper={(swiper) => { (window as any).heroSwiper = swiper; }}
+    >
+      {paidAdvertisements.map((ad) => (
+        <SwiperSlide key={ad.id}>
+          <div className="w-full h-full cursor-pointer" onClick={() => gotoAdDetail(ad, events, navigate)}>
+            <img
+              src={ad.imageUrl || '/images/FPlogo.png'}
+              alt={ad.title}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
+            />
+          </div>
+        </SwiperSlide>
+      ))}
+    </Swiper>
 
-                {/* 하단 작은 포스터들 */}
-                <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
-                    {paidAdvertisements.map((ad, index) => (
-                        <div
-                            key={ad.id}
-                            className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                            onMouseEnter={() => {
-                                const swiper = (window as unknown as Window & { heroSwiper?: any }).heroSwiper;
-                                if (swiper) {
-                                    // loop 모드에서는 slideToLoop를 사용해야 원본 인덱스와 정확히 매칭됩니다.
-                                    swiper.slideToLoop(index);
-                                }
-                            }}
-                        >
-                            <img
-                                className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                                alt={`Paid Ad ${ad.id}`}
-                                src={ad.thumbnailUrl}
-                            />
-                        </div>
-                    ))}
-                </div>
+    {/* 썸네일 바: 2장 이상일 때만 */}
+    {heroLoop && (
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
+        {paidAdvertisements.map((ad, index) => (
+          <div
+            key={ad.id}
+            className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+            onMouseEnter={() => (window as any).heroSwiper?.slideToLoop(index)}
+          >
+            <img className="w-full h-full object-cover rounded-[10px] shadow-lg"
+                 src={ad.thumbnailUrl || ad.imageUrl || '/images/FPlogo.png'}
+                 alt={`Paid Ad ${ad.id}`} />
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
+            {/* 핫픽스 섹션 (3D 커버플로우) - 데이터 있을 때만 */}
+{hasHot && (
+  <div className="py-8 md:py-16 theme-surface theme-transition">
+    <div className="max-w-7xl mx-auto px-4 md:px-8">
+      <div className="flex justify-between items-center mb-6 md:mb-8">
+        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+          {t('main.hotPicks')}
+        </h2>
+      </div>
+
+      <Swiper
+        modules={[Navigation, Autoplay, EffectCoverflow]}
+        navigation
+        effect="coverflow"
+        coverflowEffect={{ rotate: 0, stretch: -30, depth: 220, modifier: 1, slideShadows: false }}
+        slidesPerView="auto"
+        centeredSlides
+        loop={hotLoop}
+        autoplay={hotLoop ? { delay: 3500, disableOnInteraction: false } : false}
+        spaceBetween={0}
+        watchSlidesProgress
+        speed={900}
+        className="w-full hotpick-swiper"
+        onSwiper={(swiper) => setActiveHotPickIndex(swiper.realIndex % hotPicks.length)}
+        onSlideChange={(swiper) => setActiveHotPickIndex(swiper.realIndex % hotPicks.length)}
+      >
+        {hotPicks.map((item, index) => (
+          <SwiperSlide key={item.id} className="hotpick-slide">
+            <div
+              className="group relative w-full rounded-[10px] overflow-hidden cursor-pointer"
+              onClick={() => navigate(`/eventdetail/${item.id}`)}
+            >
+              <img
+                src={item.image}
+                alt={`Hot Pick ${index + 1}`}
+                className="w-full aspect-poster-4-5 object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
-            {/* 핫픽스 섹션 (3D 커버플로우) */}
-            <div className="py-8 md:py-16 theme-surface theme-transition">
-                <div className="max-w-7xl mx-auto px-4 md:px-8">
-                    <div className="flex justify-between items-center mb-6 md:mb-8">
-                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{t('main.hotPicks')}</h2>
-                    </div>
-
-                    <Swiper
-                        modules={[Navigation, Autoplay, EffectCoverflow]}
-                        navigation
-                        effect="coverflow"
-                        coverflowEffect={{
-                            rotate: 0,
-                            stretch: -30,
-                            depth: 220,
-                            modifier: 1,
-                            slideShadows: false
-                        }}
-                        slidesPerView="auto"
-                        centeredSlides={true}
-                        loop={true}
-                        spaceBetween={0}
-                        watchSlidesProgress={true}
-                        speed={900}
-                        autoplay={{ delay: 3500, disableOnInteraction: false }}
-                        className="w-full hotpick-swiper"
-                        onSwiper={(swiper) => {
-                            setActiveHotPickIndex(swiper.realIndex % allHotPicks.length);
-                        }}
-                        onSlideChange={(swiper) => {
-                            setActiveHotPickIndex(swiper.realIndex % allHotPicks.length);
-                        }}
-                    >
-                        {allHotPicks.map((item, index) => (
-                            <SwiperSlide key={item.id} className="hotpick-slide">
-                                <div
-                                    className="group relative w-full rounded-[10px] overflow-hidden cursor-pointer"
-                                    onClick={() => navigate(`/eventdetail/${item.id}`)}
-                                >
-                                    <img
-                                        src={item.image}
-                                        alt={`Hot Pick ${index + 1}`}
-                                        className="w-full aspect-poster-4-5 object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </div>
-                            </SwiperSlide>
-                        ))}
-                    </Swiper>
-
-                    {/* 중앙 캡션 (블루스퀘어 스타일) */}
-                    <div className="mt-4 md:mt-6 text-center px-4">
-                        <div key={activeHotPickIndex} className={`text-xl md:text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
-                            {allHotPicks[activeHotPickIndex]?.title}
-                        </div>
-                        <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
-                            <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                <HiOutlineCalendar className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-                                <span className="truncate">
-                                    {(allHotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
-                                </span>
-                            </div>
-                            <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                <FaMapMarkerAlt className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-                                <span className="truncate">
-                                    {allHotPicks[activeHotPickIndex]?.location}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      {/* 중앙 캡션 */}
+      <div className="mt-4 md:mt-6 text-center px-4">
+        <div key={activeHotPickIndex} className={`text-xl md:text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
+          {hotPicks[activeHotPickIndex]?.title}
+        </div>
+        <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
+          <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <HiOutlineCalendar className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+            <span className="truncate">
+              {(hotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
+            </span>
+          </div>
+          <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <FaMapMarkerAlt className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+            <span className="truncate">
+              {hotPicks[activeHotPickIndex]?.location}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
             {/* 행사 섹션 */}
             <div className="py-8 md:py-16 theme-surface theme-transition">
@@ -931,13 +912,14 @@ export const Main: React.FC = () => {
                                     <div className="relative group">
                                         {/* MD PICK 스티커 */}
                                         {hasMdPickInCurrentList && isEventMdPick(event) && (
-                                            <div className="absolute top-2 left-2 z-10">
-                                                <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
-                                                    <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
-                                                    <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
-                                                </div>
-                                            </div>
-                                        )}
+  <div className="absolute top-2 left-2 z-10">
+    <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+      <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+      <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+    </div>
+  </div>
+)}
+
                                         <img
                                             className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}
