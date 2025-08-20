@@ -525,24 +525,26 @@ export default function MyTickets(): JSX.Element {
                                                     </div>
                                                 )}
 
-                                                {/* 모바일 팜플렛 버튼 */}
-                                                <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-10">
-                                                    <button
-                                                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handlePamphletOpen(reservation);
-                                                        }}
-                                                        className="w-full h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
-                                                        style={{ pointerEvents: 'auto' }}
-                                                    >
-                                                        <span className="font-semibold text-white text-xs tracking-wide">
-                                                            모바일 팜플렛
-                                                        </span>
-                                                        <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                                                    </button>
-                                                </div>
+                                                {/* 모바일 팜플렛 버튼 - 박람회 카테고리인 경우에만 표시 */}
+                                                {reservation.mainCategory === "박람회" && (
+                                                    <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-10">
+                                                        <button
+                                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handlePamphletOpen(reservation);
+                                                            }}
+                                                            className="w-full h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                                            style={{ pointerEvents: 'auto' }}
+                                                        >
+                                                            <span className="font-semibold text-white text-xs tracking-wide">
+                                                                모바일 팜플렛
+                                                            </span>
+                                                            <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
