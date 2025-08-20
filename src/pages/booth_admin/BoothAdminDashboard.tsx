@@ -113,6 +113,7 @@ const BoothAdminDashboard: React.FC = () => {
             }
 
             const data = await response.json();
+            console.log('Booths:', data);
             setBooths(data);
         } catch (error) {
             console.error('Booth fetch error:', error);

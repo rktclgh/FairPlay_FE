@@ -61,7 +61,17 @@ const BoothParticipants: React.FC = () => {
     const filteredItems = items.filter(b => {
         const matchesName = !searchForm.boothName || b.boothTitle.toLowerCase().includes(searchForm.boothName.toLowerCase());
         const matchesType = !searchForm.boothType || b.boothTypeName.toLowerCase().includes(searchForm.boothType.toLowerCase());
-        const matchesZone = !searchForm.zone || b.location.toLowerCase().includes(searchForm.zone.toLowerCase());
+        
+        // 구역 필터링 로직 개선
+        let matchesZone = true;
+        if (searchForm.zone) {
+            if (searchForm.zone === '미설정') {
+                matchesZone = !b.location || b.location.trim() === '';
+            } else {
+                matchesZone = b.location && b.location.toLowerCase().includes(searchForm.zone.toLowerCase());
+            }
+        }
+        
         return matchesName && matchesType && matchesZone;
     });
 
@@ -70,6 +80,21 @@ const BoothParticipants: React.FC = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentList = filteredItems.slice(startIndex, endIndex);
+
+    // 위치 설정 통계
+    const locationStats = useMemo(() => {
+        const total = items.length;
+        const withLocation = items.filter(item => item.location && item.location.trim() !== '').length;
+        const withoutLocation = total - withLocation;
+        const percentage = total > 0 ? Math.round((withLocation / total) * 100) : 0;
+        
+        return {
+            total,
+            withLocation,
+            withoutLocation,
+            percentage
+        };
+    }, [items]);
 
     const handlePageChange = (page: number) => setCurrentPage(page);
     const handlePrevPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
@@ -140,14 +165,25 @@ const BoothParticipants: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">구역</label>
-                                <input
-                                    type="text"
-                                    name="zone"
-                                    value={searchForm.zone}
-                                    onChange={handleSearchChange}
-                                    placeholder="구역(A-01 등)"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        name="zone"
+                                        value={searchForm.zone}
+                                        onChange={handleSearchChange}
+                                        placeholder="구역(A-01 등) 또는 '미설정' 입력"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                    {searchForm.zone === '' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchForm(prev => ({ ...prev, zone: '미설정' }))}
+                                            className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 transition-colors"
+                                        >
+                                            미설정만
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">부스타입</label>
@@ -165,6 +201,44 @@ const BoothParticipants: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* 위치 설정 통계 */}
+                    <div className="mb-6">
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h3 className="text-lg font-semibold mb-4 text-gray-800">부스 위치 설정 현황</h3>
+                            <div className="grid grid-cols-4 gap-4">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-gray-900">{locationStats.total}</div>
+                                    <div className="text-sm text-gray-600">전체 부스</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-green-600">{locationStats.withLocation}</div>
+                                    <div className="text-sm text-gray-600">위치 설정 완료</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-yellow-600">{locationStats.withoutLocation}</div>
+                                    <div className="text-sm text-gray-600">위치 미설정</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-blue-600">{locationStats.percentage}%</div>
+                                    <div className="text-sm text-gray-600">설정 완료율</div>
+                                </div>
+                            </div>
+                            {locationStats.withoutLocation > 0 && (
+                                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <div className="flex items-center">
+                                        <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        <div>
+                                            <p className="text-yellow-800 font-medium">{locationStats.withoutLocation}개 부스의 위치가 설정되지 않았습니다</p>
+                                            <p className="text-yellow-700 text-sm">참가자들이 부스를 쉽게 찾을 수 있도록 위치를 설정해주세요.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -205,7 +279,17 @@ const BoothParticipants: React.FC = () => {
                                             <div className="text-gray-900 text-sm text-center whitespace-nowrap">{b.startDate}</div>
                                             <div className="text-gray-900 text-sm text-center whitespace-nowrap">{b.endDate}</div>
                                             <div className="text-gray-900 text-sm text-center">{b.boothTypeName}</div>
-                                            <div className="text-gray-900 text-sm text-center">{b.location}</div>
+                                            <div className="text-gray-900 text-sm text-center">
+                                                {b.location ? (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        {b.location}
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                        미설정
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="flex items-center justify-center">
                                                 <button
                                                     onClick={() => handleView(b.boothId)}
