@@ -139,3 +139,9 @@ export interface BoothAdminResponse {
     email: string;
     phone: string;
 }
+
+export interface BoothUserRecentlyWaitingCount{
+    eventId: number;
+    eventName: string;
+    waitingCount: number
+}

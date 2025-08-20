@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import QrTicket from "../../components/QrTicket";
@@ -17,19 +17,22 @@ import {
 } from "../../services/qrTicket"
 import { getFormLink } from "../../services/attendee";
 import { useQrTicketSocket } from "../../utils/useQrTicketSocket";
+import { useWaitingSocket } from "../../utils/useWaitingSocket";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
+import { getExperienceSummary} from "../../services/boothExperienceService";
+import { getBooths, /* getUserRecentlyEventWaitingCount, */ getBoothDetails } from "../../api/boothApi";
+import { BoothSummary } from '../../types/booth';
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
     const { t } = useTranslation();
+
+    //======= QR 티켓 ======= //
     const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
     const [qrTicketId, setQrTicketId] = useState(0);
     const [selectedTicketData, setSelectedTicketData] = useState<QrTicketData | null>(null);
-    const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
-    const [formLinks, setFormLinks] = useState<{ [key: number]: string }>({});
-    const [loading, setLoading] = useState(true);
     const [canUseQrTicket, setCanUseQrTicketList] = useState<boolean[]>([]);
     const [updateIds, setUpdateIds] = useState({
         reservationId: 0,
@@ -37,20 +40,40 @@ export default function MyTickets(): JSX.Element {
     });
     const [successMessage, setSuccessMessage] = useState("");
 
+     //======= 예약 내역 ======= //
+    const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
+
+    //======= 참석자 폼 링크 ======= //
+    const [formLinks, setFormLinks] = useState<{ [key: number]: string }>({});
+    const [loading, setLoading] = useState(true);
+
     // 모바일 팜플렛 모달 상태
     const [isPamphletModalOpen, setIsPamphletModalOpen] = useState(false);
     const [selectedEventForPamphlet, setSelectedEventForPamphlet] = useState<ReservationResponseDto | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [myOrderNumber, setMyOrderNumber] = useState(15); // 임시 데이터
 
-    // 부스 상세정보 모달 상태
-    const [isBoothDetailModalOpen, setIsBoothDetailModalOpen] = useState(false);
-    const [selectedBooth, setSelectedBooth] = useState<{ id: number; name: string; image: string; description: string; manager: { name: string; email: string; phone: string }; waitingCount: number } | null>(null);
+    //======= 웨이팅 순서 ======= //
+    const [waitingCount, setWaitingCount] = useState(0);
+
+    //======= 조회중인 사용자 ID ======= //
+    const [userId, setUserId] = useState(0);
+    const [savedEventId, setSavedEventId] = useState(0);
+
+    //======= 부스 정보 ======= //    
+    const [isBoothDetailModalOpen, setIsBoothDetailModalOpen] = useState(false); // 부스 상세정보 모달 상태
+    const [experiences, setExperiences] = useState<BoothSummary[] | null>(null); // 부스 요약 목록
+    const [booths, setBooths] = useState<BoothSummary[] | null>(null); // 부스 목록
+    const [selectedBooth, setSelectedBooth] = useState<any | null>(null); // 부스 상세정보
     const [isWaiting, setIsWaiting] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
 
     // 모바일 사이드바 상태
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+    // ✅  웨이팅 메세지 설정
+    const handleWebSocketMessage = useCallback((msg: string) => {
+        setWaitingCount(parseInt(msg));
+    }, []);
 
     // 카테고리 정보 캐시
     const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
@@ -61,6 +84,10 @@ export default function MyTickets(): JSX.Element {
         setSuccessMessage(msg);   // 메시지를 state에 저장
     });
 
+    // ✅ 부스 웨이팅 웹소켓 - 주석처리 (더미 데이터 사용)
+    // useWaitingSocket(userId > 0 ? userId : 0, handleWebSocketMessage);
+
+    //======= 예약 내역 조회 ======= // 
     useEffect(() => {
         const loadMyReservationsWithCategories = async () => {
             try {
@@ -116,6 +143,7 @@ export default function MyTickets(): JSX.Element {
         loadMyReservationsWithCategories();
     }, [t]);
 
+    //======= QR 티켓 창 열기 ======= //    
     const handleQrTicketOpen = async (reservation: ReservationResponseDto) => {
         try {
 
@@ -179,41 +207,68 @@ export default function MyTickets(): JSX.Element {
         }
     };
 
+    //======= QR 티켓 창 닫기 ======= //
     const handleQrTicketClose = () => {
         setIsQrTicketOpen(false);
         setSelectedTicketData(null);
+        setSuccessMessage("");
     };
 
-    const handlePamphletOpen = (reservation: ReservationResponseDto) => {
-        setSelectedEventForPamphlet(reservation);
-        setIsPamphletModalOpen(true);
+    //======= 모바일 팜플렛 열기 ======= //
+    const handlePamphletOpen = async (eventId: number) => {
+        console.log('handlePamphletOpen 호출됨, eventId:', eventId);
+        const token = localStorage.getItem('accessToken');
+        if (token && userId === 0) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const savedUserId = Number(payload.sub);
+            setUserId(savedUserId);
+        }
+
+        try {
+            const boothsData = await getBooths(eventId); // 부스 요약 목록
+            console.log('getBooths 응답:', boothsData);
+            // const res = await getUserRecentlyEventWaitingCount(eventId); // 웨이팅 API 주석처리
+            
+            // 현재 이벤트 정보를 찾아서 selectedEventForPamphlet에 설정
+            const currentEvent = reservations.find(r => r.eventId === eventId);
+            
+            setSavedEventId(eventId);
+            setSelectedEventForPamphlet(currentEvent || null);
+            // setWaitingCount(res.waitingCount); // 더미 데이터로 대체
+            setBooths(boothsData);
+            setIsPamphletModalOpen(true);
+        } catch (error) {
+            console.error('부스 데이터 로드 실패:', error);
+            toast.error('부스 정보를 불러오는 중 오류가 발생했습니다.');
+        }
     };
 
+    // 팜플렛 모달 닫기
     const handlePamphletClose = () => {
         setIsPamphletModalOpen(false);
         setSelectedEventForPamphlet(null);
+        // setWaitingCount(0); // 웨이팅 카운트 초기화 주석처리 - 더미 데이터 사용
         setSearchTerm("");
+        setSavedEventId(0);
+        setBooths(null);
     };
 
-    const handleRefreshOrder = () => {
-        // 웨이팅 순서 새로고침 - 순서가 줄어들거나 동일하게 유지
-        setMyOrderNumber(prevOrder => {
-            // 70% 확률로 순서가 줄어들고, 30% 확률로 동일하게 유지
-            const shouldDecrease = Math.random() < 0.7;
-            if (shouldDecrease && prevOrder > 1) {
-                // 1~3칸 정도 줄어들 수 있음
-                const decreaseAmount = Math.floor(Math.random() * 3) + 1;
-                return Math.max(1, prevOrder - decreaseAmount);
-            } else {
-                // 동일하게 유지
-                return prevOrder;
-            }
-        });
-    };
-
-    const handleBoothDetailOpen = (booth: { id: number; name: string; image: string; description: string; manager: { name: string; email: string; phone: string }; waitingCount: number }) => {
-        setSelectedBooth(booth);
-        setIsBoothDetailModalOpen(true);
+    const handleBoothDetailOpen = async (boothId: number) => {
+        if (!savedEventId) return;
+        
+        try {
+            console.log('부스 상세정보 로드 시작 - eventId:', savedEventId, 'boothId:', boothId);
+            // 부스 상세정보 API 호출 - eventId와 boothId 모두 필요
+            const boothDetails = await getBoothDetails(savedEventId, boothId);
+            console.log('부스 상세정보 응답:', boothDetails);
+            
+            setSelectedBooth(boothDetails);
+            // setWaitingCount(boothDetails.waitingCount || 0); // 웨이팅 정보 주석처리 - 더미 데이터 사용
+            setIsBoothDetailModalOpen(true);
+        } catch (error) {
+            console.error('부스 상세정보 로드 실패:', error);
+            toast.error('부스 정보를 불러오는 중 오류가 발생했습니다.');
+        }
     };
 
     const handleBoothDetailClose = () => {
@@ -230,15 +285,15 @@ export default function MyTickets(): JSX.Element {
         setAgreeToTerms(false);
     };
 
-    const handleWaitingRegistration = () => {
-        if (!agreeToTerms) {
-            alert("약관에 동의해주세요.");
-            return;
-        }
-        setIsWaiting(true);
-        // 실제 대기 등록 로직은 여기에 구현
-        alert("대기 등록이 완료되었습니다.");
-    };
+    // const handleWaitingRegistration = () => {  // 웨이팅 등록 함수 주석처리
+    //     if (!agreeToTerms) {
+    //         alert("약관에 동의해주세요.");
+    //         return;
+    //     }
+    //     setIsWaiting(true);
+    //     // 실제 대기 등록 로직은 여기에 구현
+    //     alert("대기 등록이 완료되었습니다.");
+    // };
 
     const handleParticipantListOpen = (reservation: ReservationResponseDto, bookingDate: string) => {
         console.log("handleParticipantListOpen:" + reservation.createdAt)
@@ -308,6 +363,29 @@ export default function MyTickets(): JSX.Element {
     const formatDateTime = (dateTimeStr: string | null) => {
         if (!dateTimeStr) return t('mypage.tickets.dateTbd');
         return formatDate(dateTimeStr.split('T')[0]);
+    };
+
+    // HTML 태그를 제거하는 유틸리티 함수 (줄바꿈 유지)
+    const stripHtmlTags = (html: string) => {
+        if (!html) return '';
+        
+        // HTML 태그를 줄바꿈으로 변환하면서 제거
+        const cleanText = html
+            .replace(/<br\s*\/?>/gi, '\n')     // <br>, <br/> → 줄바꿈
+            .replace(/<\/p>/gi, '\n')          // </p> → 줄바꿈
+            .replace(/<p[^>]*>/gi, '')         // <p> 태그 제거 (줄바꿈은 </p>에서 처리)
+            .replace(/<div[^>]*>/gi, '\n')     // <div> → 줄바꿈
+            .replace(/<\/div>/gi, '')          // </div> 제거
+            .replace(/<[^>]*>/g, '')           // 나머지 HTML 태그 제거
+            .replace(/&nbsp;/g, ' ')           // &nbsp; → 공백
+            .replace(/&amp;/g, '&')            // &amp; → &
+            .replace(/&lt;/g, '<')             // &lt; → <
+            .replace(/&gt;/g, '>')             // &gt; → >
+            .replace(/&quot;/g, '"')           // &quot; → "
+            .replace(/\n\s*\n/g, '\n')         // 연속된 빈 줄 → 단일 줄바꿈
+            .trim();
+            
+        return cleanText;
     };
 
     return (
@@ -525,17 +603,18 @@ export default function MyTickets(): JSX.Element {
                                                     </div>
                                                 )}
 
-                                                {/* 모바일 팜플렛 버튼 - 박람회 카테고리인 경우에만 표시 */}
-                                                {reservation.mainCategory === "박람회" && (
-                                                    <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-10">
+                                                {/* 모바일 팜플렛 버튼 - 공연, 강연/세미나 제외 카테고리인 경우에만 표시 */}
+                                                {reservation.mainCategory !== "공연" && reservation.mainCategory !== "강연/세미나" && (
+                                                    <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-20">
                                                         <button
                                                             onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                                             onClick={(e) => {
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
-                                                                handlePamphletOpen(reservation);
+                                                                console.log('모바일 팜플렛 버튼 클릭:', reservation.eventId);
+                                                                handlePamphletOpen(reservation.eventId);
                                                             }}
-                                                            className="w-full h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                                            className="relative z-20 w-full h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
                                                             style={{ pointerEvents: 'auto' }}
                                                         >
                                                             <span className="font-semibold text-white text-xs tracking-wide">
@@ -564,12 +643,12 @@ export default function MyTickets(): JSX.Element {
             />
 
             {/* 모바일 팜플렛 모달 */}
-            {isPamphletModalOpen && selectedEventForPamphlet && (
+            {isPamphletModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
                     <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm w-full h-[92vh] overflow-y-auto scrollbar-hide">
                         {/* 모달 헤더 */}
                         <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white p-6">
-                            <h2 className="text-xl font-bold">{selectedEventForPamphlet.eventName}</h2>
+                            <h2 className="text-xl font-bold">{selectedEventForPamphlet?.eventName || '모바일 팜플렛'}</h2>
                             <button
                                 onClick={handlePamphletClose}
                                 className="absolute top-2 right-2 sm:top-3 md:top-4 sm:right-3 md:right-4 w-6 h-6 flex items-center justify-center bg-transparent hover:bg-white/20 transition-colors text-white font-bold text-lg focus:outline-none focus:ring-0"
@@ -580,19 +659,12 @@ export default function MyTickets(): JSX.Element {
 
                         {/* 모달 콘텐츠 */}
                         <div className="p-6 space-y-6">
-                            {/* 나의 실시간 순서 */}
+                            {/* 나의 실시간 순서 - 더미 데이터 */}
                             <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                                 <div className="flex items-center space-x-3">
                                     <span className="text-gray-700 font-medium">나의 실시간 순서:</span>
-                                    <span className="text-2xl font-bold text-orange-600">{myOrderNumber}번째</span>
+                                    <span className="text-2xl font-bold text-orange-600">3번째</span>
                                 </div>
-                                <button
-                                    onClick={handleRefreshOrder}
-                                    className="p-2 text-gray-600 hover:text-orange-600 transition-colors"
-                                    title="새로고침"
-                                >
-                                    <RefreshCw className="w-5 h-5" />
-                                </button>
                             </div>
 
                             {/* 부스 상세정보가 열려있지 않을 때만 부스 목록 표시 */}
@@ -612,86 +684,36 @@ export default function MyTickets(): JSX.Element {
 
                                     {/* 부스 카드 그리드 */}
                                     <div className="grid grid-cols-2 gap-4 min-h-[300px]">
-                                        {/* 임시 부스 데이터 */}
-                                        {[
-                                            {
-                                                id: 1,
-                                                name: "삼성전자",
-                                                image: "/images/NoImage.png",
-                                                description: "최신 스마트폰과 가전제품을 체험해보세요",
-                                                manager: { name: "김사장", email: "example@example.com", phone: "010-1234-1234" },
-                                                waitingCount: 5
-                                            },
-                                            {
-                                                id: 2,
-                                                name: "LG전자",
-                                                image: "/images/NoImage.png",
-                                                description: "OLED TV와 가전제품의 혁신을 만나보세요",
-                                                manager: { name: "이과장", email: "lg@example.com", phone: "010-2345-2345" },
-                                                waitingCount: 3
-                                            },
-                                            {
-                                                id: 3,
-                                                name: "현대자동차",
-                                                image: "/images/NoImage.png",
-                                                description: "미래형 자율주행 기술을 체험해보세요",
-                                                manager: { name: "박대리", email: "hyundai@example.com", phone: "010-3456-3456" },
-                                                waitingCount: 8
-                                            },
-                                            {
-                                                id: 4,
-                                                name: "기아자동차",
-                                                image: "/images/NoImage.png",
-                                                description: "친환경 전기차의 미래를 경험해보세요",
-                                                manager: { name: "최사원", email: "kia@example.com", phone: "010-4567-4567" },
-                                                waitingCount: 2
-                                            },
-                                            {
-                                                id: 5,
-                                                name: "SK하이닉스",
-                                                image: "/images/NoImage.png",
-                                                description: "반도체 기술의 핵심을 알아보세요",
-                                                manager: { name: "정팀장", email: "sk@example.com", phone: "010-5678-5678" },
-                                                waitingCount: 12
-                                            },
-                                            {
-                                                id: 6,
-                                                name: "포스코",
-                                                image: "/images/NoImage.png",
-                                                description: "철강 산업의 첨단 기술을 체험해보세요",
-                                                manager: { name: "한부장", email: "posco@example.com", phone: "010-6789-6789" },
-                                                waitingCount: 0
-                                            },
-                                            {
-                                                id: 7,
-                                                name: "KT",
-                                                image: "/images/NoImage.png",
-                                                description: "5G 통신 기술의 미래를 경험해보세요",
-                                                manager: { name: "윤차장", email: "kt@example.com", phone: "010-7890-7890" },
-                                                waitingCount: 6
-                                            },
-                                            {
-                                                id: 8,
-                                                name: "SK텔레콤",
-                                                image: "/images/NoImage.png",
-                                                description: "AI와 IoT 기술의 융합을 체험해보세요",
-                                                manager: { name: "임대표", email: "skt@example.com", phone: "010-8901-8901" },
-                                                waitingCount: 4
-                                            }
-                                        ]
-                                            .filter(booth => booth.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                            .map(booth => (
-                                                <div key={booth.id} className="text-center cursor-pointer hover:scale-105 transition-transform" onClick={() => handleBoothDetailOpen(booth)}>
-                                                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
-                                                        <img
-                                                            src={booth.image}
-                                                            alt={booth.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
+                                        {booths?.filter(booth => (booth.boothTitle || '').toLowerCase().includes(searchTerm.toLowerCase()))
+                                            .map((booth, index) => {
+                                                console.log('부스 데이터:', booth);
+                                                // boothId가 없을 경우 다른 필드들도 확인
+                                                const id = booth.boothId || booth.id || index;
+                                                return (
+                                                    <div key={id} className="text-center cursor-pointer hover:scale-105 transition-transform" onClick={() => {
+                                                        console.log('부스 클릭 - boothId:', booth.boothId, 'id:', booth.id, 'index:', index);
+                                                        const validId = booth.boothId || booth.id;
+                                                        if (validId && typeof validId === 'number') {
+                                                            handleBoothDetailOpen(validId);
+                                                        } else {
+                                                            console.error('유효하지 않은 boothId:', booth);
+                                                            toast.error('부스 정보가 올바르지 않습니다.');
+                                                        }
+                                                    }}>
+                                                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
+                                                            <img
+                                                                src={booth.boothBannerUrl || '/placeholder-image.jpg'}
+                                                                alt={booth.boothTitle || '부스'}
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.src = '/placeholder-image.jpg';
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <p className="text-sm font-medium text-gray-800">{booth.boothTitle || '제목 없음'}</p>
                                                     </div>
-                                                    <p className="text-sm font-medium text-gray-800">{booth.name}</p>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                     </div>
                                 </>
                             )}
@@ -716,44 +738,79 @@ export default function MyTickets(): JSX.Element {
                                     <div className="text-center">
                                         <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
                                             <img
-                                                src={selectedBooth.image}
-                                                alt={selectedBooth.name}
+                                                src={selectedBooth.boothBannerUrl}
+                                                alt={selectedBooth.boothTitle}
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>
-                                        <p className="text-sm font-medium text-gray-800">{selectedBooth.name}</p>
+                                        <p className="text-sm font-medium text-gray-800">{selectedBooth.boothTitle}</p>
                                     </div>
 
                                     {/* 부스 설명 */}
                                     <div className="bg-gray-50 p-4 rounded-lg">
                                         <h4 className="font-semibold text-gray-700 mb-2">부스 소개</h4>
-                                        <p className="text-gray-600 text-sm leading-relaxed">{selectedBooth.description}</p>
+                                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                                            {selectedBooth.boothDescription
+                                                ? stripHtmlTags(selectedBooth.boothDescription)
+                                                : '부스 설명이 없습니다.'}
+                                        </p>
                                     </div>
 
                                     {/* 부스 담당자 정보 */}
                                     <div className="bg-blue-50 p-4 rounded-lg">
                                         <h4 className="font-semibold text-blue-700 mb-3">부스 담당자</h4>
-                                        <div className="flex items-center space-x-3">
+                                        <div className="flex items-center space-x-3 mb-3">
                                             <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                                                <span className="text-white font-bold text-lg">{selectedBooth.manager.name.charAt(0)}</span>
+                                                <span className="text-white font-bold text-lg">
+                                                    {(selectedBooth.managerName || 'N').charAt(0)}
+                                                </span>
                                             </div>
                                             <div className="flex-1">
-                                                <p className="font-medium text-blue-800">{selectedBooth.manager.name}</p>
-                                                <p className="text-blue-600 text-sm">{selectedBooth.manager.email}</p>
-                                                <p className="text-blue-600 text-sm">{selectedBooth.manager.phone}</p>
+                                                <p className="font-medium text-blue-800">{selectedBooth.managerName || '담당자 미등록'}</p>
+                                                <p className="text-blue-600 text-sm">{selectedBooth.contactEmail || '이메일 미등록'}</p>
+                                                <p className="text-blue-600 text-sm">{selectedBooth.contactNumber || '연락처 미등록'}</p>
                                             </div>
                                         </div>
+                                        
+                                        {/* 외부 링크 */}
+                                        {((selectedBooth.boothExternalLinks && selectedBooth.boothExternalLinks.length > 0) ||
+                                          (selectedBooth.externalLinks && selectedBooth.externalLinks.length > 0)) && (
+                                            <div className="border-t border-blue-200 pt-3 mt-3">
+                                                <h5 className="font-medium text-blue-700 mb-2 text-sm">관련 링크</h5>
+                                                <div className="space-y-2">
+                                                    {(selectedBooth.boothExternalLinks || selectedBooth.externalLinks || [])
+                                                        .filter(link => link && (link.url || link.link))
+                                                        .map((link, index) => {
+                                                            const linkUrl = link.url || link.link;
+                                                            const linkText = link.displayText || link.text || linkUrl;
+                                                            const fullUrl = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
+                                                            
+                                                            return (
+                                                                <a
+                                                                    key={index}
+                                                                    href={fullUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm transition-colors break-all"
+                                                                >
+                                                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                    </svg>
+                                                                    <span>{linkText}</span>
+                                                                </a>
+                                                            );
+                                                        })
+                                                    }
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* 실시간 웨이팅 현황 */}
+                                    {/* 실시간 웨이팅 현황 - 더미 데이터 */}
                                     <div className="bg-orange-50 p-4 rounded-lg">
                                         <h4 className="font-semibold text-orange-700 mb-2">실시간 웨이팅 현황</h4>
                                         <p className="text-orange-600 text-sm mb-2">실시간 대기 현황입니다.</p>
-                                        {selectedBooth.waitingCount > 0 ? (
-                                            <p className="text-orange-800 font-medium">현재 대기열: {selectedBooth.waitingCount}명</p>
-                                        ) : (
-                                            <p className="text-orange-800 font-medium">현재 대기가 없습니다.</p>
-                                        )}
+                                        <p className="text-orange-800 font-medium">현재 대기열: 5명</p>
                                     </div>
 
                                     {/* 약관 동의 */}
@@ -770,16 +827,22 @@ export default function MyTickets(): JSX.Element {
                                         </label>
                                     </div>
 
-                                    {/* 대기 등록 버튼 */}
+                                    {/* 대기 등록 버튼 - 더미 동작 */}
                                     <button
-                                        onClick={handleWaitingRegistration}
-                                        disabled={!agreeToTerms || isWaiting}
-                                        className={`w-full py-3 px-4 rounded-[10px] font-semibold text-white transition-all duration-200 ${agreeToTerms && !isWaiting
+                                        onClick={() => {
+                                            if (!agreeToTerms) {
+                                                alert("약관에 동의해주세요.");
+                                                return;
+                                            }
+                                            alert("대기 등록이 완료되었습니다. (더미 기능)");
+                                        }}
+                                        disabled={!agreeToTerms}
+                                        className={`w-full py-3 px-4 rounded-[10px] font-semibold text-white transition-all duration-200 ${agreeToTerms
                                             ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-lg hover:shadow-xl'
                                             : 'bg-gray-400 cursor-not-allowed'
                                             }`}
                                     >
-                                        {isWaiting ? '대기 등록 완료' : '대기 등록'}
+                                        대기 등록
                                     </button>
                                 </>
                             )}
