@@ -749,12 +749,8 @@ export default function EventOverview() {
                     overlayContent.style.transform = 'scale(1) translateY(0)';
                     overlayContent.style.filter = `hue-rotate(${getHueRotation(primaryEvent.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3))`;
 
-                    // 호버 카드 즉시 숨기기 (지연 시간 최소화)
-                    setTimeout(() => {
-                        setHoveredEvents([]);
-                        setCurrentEventIndex(0);
-                        setHoverCardPosition(null);
-                    }, 50);
+                    // 핀에서 마우스가 나가도 카드는 유지 - 카드 클릭을 위해
+                    // 카드는 지도 빈 공간 클릭 시에만 사라짐
                 };
 
                 const handleClick = () => {
@@ -897,6 +893,29 @@ export default function EventOverview() {
         };
     }, [map, hoveredEvents, mapRef]);
 
+    // 지도 클릭 이벤트 추가 - 빈 공간 클릭 시 카드 숨기기
+    React.useEffect(() => {
+        if (!map || viewMode !== 'map') return;
+
+        const handleMapClick = (e: any) => {
+            // 클릭된 요소가 마커나 카드가 아닌 경우에만 카드 숨기기
+            const clickedElement = e.originalEvent.target;
+            const isMarker = clickedElement.closest('.map-pin-overlay');
+            const isCard = clickedElement.closest('.hover-card-container');
+
+            if (!isMarker && !isCard) {
+                setHoveredEvents([]);
+                setCurrentEventIndex(0);
+                setHoverCardPosition(null);
+            }
+        };
+
+        window.kakao.maps.event.addListener(map, 'click', handleMapClick);
+
+        return () => {
+            window.kakao.maps.event.removeListener(map, 'click', handleMapClick);
+        };
+    }, [map, viewMode]);
 
     // 렌더 하단에서 공용 Footer 적용
     return (
@@ -1515,7 +1534,7 @@ export default function EventOverview() {
                                 {/* 호버 카드 (3장 카드 슬라이드 지원) */}
                                 {hoveredEvents.length > 0 && hoverCardPosition && (
                                     <div
-                                        className="absolute z-50"
+                                        className="hover-card-container absolute z-50"
                                         style={{
                                             left: `${hoverCardPosition.x - (hoveredEvents.length > 1 ? 60 : 0)}px`, // 3장 카드를 위한 중앙 정렬
                                             top: `${hoverCardPosition.y}px`,
@@ -1524,11 +1543,13 @@ export default function EventOverview() {
                                             pointerEvents: 'auto',
                                             position: 'absolute'
                                         }}
+                                        onMouseEnter={() => {
+                                            // 카드에 마우스가 들어오면 카드 유지
+                                            // 아무것도 하지 않음 - 카드가 계속 표시됨
+                                        }}
                                         onMouseLeave={() => {
-                                            // 카드에서 마우스가 나가면 즉시 카드 숨기기
-                                            setHoveredEvents([]);
-                                            setCurrentEventIndex(0);
-                                            setHoverCardPosition(null);
+                                            // 카드에서 마우스가 나가도 카드는 유지 - 지도 빈 공간 클릭 시에만 사라짐
+                                            // 아무것도 하지 않음
                                         }}
                                     >
                                         {hoveredEvents.length === 1 ? (
