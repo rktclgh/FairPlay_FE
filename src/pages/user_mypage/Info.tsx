@@ -6,6 +6,7 @@ import { eventApi } from "../../services/api";
 import type { UserInfo, PasswordChangeRequest } from "../../services/api";
 import { EditProfileModal } from "../../components/EditProfileModal";
 import { useTranslation } from "react-i18next";
+import NewLoader from "../../components/NewLoader";
 
 // 블러 처리 유틸리티 함수들
 const blurEmail = (email: string) => {
@@ -169,7 +170,7 @@ export const MyPageInfo = () => {
                     <TopNav className="!absolute !left-0 !top-0" />
                     <div className="absolute top-[400px] left-1/2 transform -translate-x-1/2">
                         <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                            <NewLoader />
                             <p className="mt-4 text-gray-600">{t('mypage.info.loading')}</p>
                         </div>
                     </div>

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { eventApi } from "../../services/api";
 import type { UserInfo, PasswordChangeRequest } from "../../services/api";
 import { EditProfileModal } from "../../components/EditProfileModal";
+import NewLoader from "../../components/NewLoader";
 
 // 블러 처리 유틸리티 함수들
 const blurEmail = (email: string) => {
@@ -26,7 +27,7 @@ const formatPhoneNumber = (phoneNumber: string) => {
     if (!phoneNumber) return "";
     // 전화번호가 이미 포맷팅되어 있으면 그대로 반환
     if (phoneNumber.includes('-')) return phoneNumber;
-    
+
     const cleaned = phoneNumber.replace(/[^0-9]/g, '');
     if (cleaned.length === 11) {
         return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 7)}-${cleaned.substring(7)}`;
@@ -167,7 +168,7 @@ export const HostProfile = () => {
                     <TopNav className="!absolute !left-0 !top-0" />
                     <div className="absolute top-[400px] left-1/2 transform -translate-x-1/2">
                         <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                            <NewLoader />
                             <p className="mt-4 text-gray-600">정보를 불러오는 중...</p>
                         </div>
                     </div>
@@ -333,8 +334,8 @@ export const HostProfile = () => {
                     </div>
 
                     <p className="absolute top-[323px] left-0 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
-                        {userInfo.role === 'HOST' ? '행사 관리자' : 
-                         userInfo.role === 'EVENT_MANAGER' ? '행사 관리자' : userInfo.role}
+                        {userInfo.role === 'HOST' ? '행사 관리자' :
+                            userInfo.role === 'EVENT_MANAGER' ? '행사 관리자' : userInfo.role}
                     </p>
 
                     <div className="w-[947px] h-[79px] top-[302px] border-b [border-bottom-style:solid] border-[#0000001a] absolute left-0" />
