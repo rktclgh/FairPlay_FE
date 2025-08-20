@@ -206,9 +206,9 @@ export default function Reservation(): JSX.Element {
                                                 )}
                                             </div>
 
-                                            <div className="mb-[15px] flex flex-col md:flex-row gap-4 md:gap-[100px]">
+                                            <div className="mb-[15px] flex flex-col md:flex-row gap-4 md:gap-[245px]">
                                                 <div>
-                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
                                                         {t('mypage.reservation.bookingDate')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
@@ -236,7 +236,7 @@ export default function Reservation(): JSX.Element {
 
                                             <div className="flex flex-col md:flex-row gap-4 md:gap-[100px]">
                                                 <div>
-                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
                                                         {t('mypage.reservation.paymentAmount')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
@@ -248,7 +248,7 @@ export default function Reservation(): JSX.Element {
                                                 </div>
 
                                                 <div>
-                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
                                                         {t('mypage.reservation.paymentMethod')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
@@ -257,7 +257,7 @@ export default function Reservation(): JSX.Element {
                                                 </div>
 
                                                 <div>
-                                                    <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
                                                         {t('mypage.reservation.ticketInfo')}
                                                     </div>
                                                     <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
