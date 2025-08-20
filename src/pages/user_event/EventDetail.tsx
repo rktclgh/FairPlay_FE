@@ -90,6 +90,20 @@ const EventDetail = (): JSX.Element => {
 
     const id = Number(eventId); // 컴포넌트 내부에서 계산
 
+    // 페이지 로드 시 스크롤을 맨 위로 이동 (강제)
+    React.useLayoutEffect(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    }, [eventId]);
+
+    // 추가로 useEffect도 사용
+    React.useEffect(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    }, [eventId]);
+
     // 초기 위시 상태 로드
     React.useEffect(() => {
         if (!isAuthed()) return;
