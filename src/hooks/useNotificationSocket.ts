@@ -48,8 +48,8 @@ export function useNotificationSocket() {
       return updated;
     });
     
-    // 브라우저 알림 표시
-    if (Notification.permission === "granted") {
+    // 브라우저 알림 표시 (iOS Safari 호환)
+    if (typeof Notification !== 'undefined' && Notification.permission === "granted") {
       new Notification(notification.title, {
         body: notification.message,
         icon: "/favicon.ico"
@@ -283,9 +283,9 @@ export function useNotificationSocket() {
     return true;
   }, [updateUnreadCount]);
 
-  // 브라우저 알림 권한 요청
+  // 브라우저 알림 권한 요청 (iOS Safari 호환)
   useEffect(() => {
-    if (Notification.permission === "default") {
+    if (typeof Notification !== 'undefined' && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);

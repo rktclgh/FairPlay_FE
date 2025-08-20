@@ -32,9 +32,9 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: "dist",
-      target: ["es2015", "safari11"], // iOS Safari 호환성
+      target: "es2015", // iOS Safari 호환성 강화
       minify: "terser",
-      sourcemap: false,
+      sourcemap: true, // iOS 디버깅용
       rollupOptions: {
         // SPA 라우팅을 위한 히스토리 API 폴백 지원
         input: {
