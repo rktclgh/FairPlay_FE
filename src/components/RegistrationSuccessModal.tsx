@@ -1,5 +1,6 @@
 import React from "react";
 import { CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Participant {
     id: number;
@@ -21,6 +22,7 @@ export default function RegistrationSuccessModal({
     participant,
     eventName
 }: RegistrationSuccessModalProps): JSX.Element {
+    const { t } = useTranslation();
     if (!isOpen) return <></>;
 
     return (
@@ -40,7 +42,7 @@ export default function RegistrationSuccessModal({
                             </p>
                         </div>
                         <p className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-base leading-6">
-                            참여자 등록이 완료되었습니다.
+                            {t('mypage.participantForm.registerSuccess')}
                         </p>
                     </div>
 
@@ -49,7 +51,7 @@ export default function RegistrationSuccessModal({
                         <div className="space-y-3 text-left">
                             <div className="flex justify-between">
                                 <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-700 text-sm">
-                                    이름
+                                    {t('common.name')}
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
                                     {participant?.name}
@@ -57,7 +59,7 @@ export default function RegistrationSuccessModal({
                             </div>                          
                             <div className="flex justify-between">
                                 <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-700 text-sm">
-                                    휴대폰 번호
+                                    {t('common.phone')}
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
                                     {participant?.phone}
@@ -65,7 +67,7 @@ export default function RegistrationSuccessModal({
                             </div>
                             <div className="flex justify-between">
                                 <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-700 text-sm">
-                                    이메일
+                                    {t('common.email')}
                                 </span>
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
                                     {participant?.email}
@@ -79,7 +81,7 @@ export default function RegistrationSuccessModal({
                         onClick={onClose}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded-[10px] hover:bg-gray-50 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-xs"
                     >
-                        확인
+                        {t('common.confirm')}
                     </button>
                 </div>
             </div>

@@ -43,12 +43,12 @@ export default function EventOverview() {
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [filteredEvents, setFilteredEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
-    const [selectedSubCategory, setSelectedSubCategory] = React.useState(() => t('eventOverview.allCategories'));
+    const [selectedSubCategory, setSelectedSubCategory] = React.useState("All Categories");
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
     const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
-    const [selectedRegion, setSelectedRegion] = React.useState(() => t('eventOverview.allRegions'));
+    const [selectedRegion, setSelectedRegion] = React.useState("All Regions");
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
-    const [selectedStatus, setSelectedStatus] = React.useState(() => t('eventOverview.allStatuses'));
+    const [selectedStatus, setSelectedStatus] = React.useState("All");
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = React.useState(false);
 
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
@@ -102,7 +102,7 @@ export default function EventOverview() {
     const toggleWish = async (eventId: number) => {
         // 인증 확인
         if (!isAuthed()) {
-            alert("로그인 후 이용할 수 있습니다.");
+            alert(t('eventOverview.loginRequired'));
             navigate("/login", { state: { from: location.pathname } }); // 로그인 후 돌아올 수 있게
             return;
         }
@@ -336,12 +336,12 @@ export default function EventOverview() {
 
     // Event data for mapping
     const categories = [
-        { id: "all", name: "전체" },
-        { id: "박람회", name: "박람회" },
-        { id: "공연", name: "공연" },
-        { id: "강연/세미나", name: "강연/세미나" },
-        { id: "전시/행사", name: "전시/행사" },
-        { id: "축제", name: "축제" },
+        { id: "all", name: t('eventOverview.allCategories') },
+        { id: "박람회", name: t('categories.박람회') },
+        { id: "공연", name: t('categories.공연') },
+        { id: "강연/세미나", name: t('categories.강연/세미나') },
+        { id: "전시/행사", name: t('categories.전시/행사') },
+        { id: "축제", name: t('categories.축제') },
     ];
 
     // 2차 카테고리 데이터
@@ -367,6 +367,14 @@ export default function EventOverview() {
     };
 
     const fetchEvents = async () => {
+        console.log('🔍 Fetching events with filters:', {
+            selectedCategory,
+            selectedSubCategory,
+            selectedRegion,
+            selectedStatus,
+            startDate,
+            endDate
+        });
         try {
             const params: {
                 mainCategoryId?: number;
@@ -387,11 +395,11 @@ export default function EventOverview() {
                 params.mainCategoryId = mapMainCategoryToId(selectedCategory);
             }
 
-            if (selectedSubCategory !== "카테고리") {
+            if (selectedSubCategory !== "All Categories" && selectedSubCategory !== t('eventOverview.allCategories')) {
                 params.subCategoryId = mapSubCategoryToId(selectedSubCategory);
             }
 
-            if (selectedRegion !== "모든지역") {
+            if (selectedRegion !== "All Regions" && selectedRegion !== t('eventOverview.allRegions')) {
                 params.regionName = selectedRegion;
             }
 
@@ -402,26 +410,39 @@ export default function EventOverview() {
                 params.toDate = formatDate(new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0));
             }
 
+            console.log('📡 API request params:', params);
             const res = await eventAPI.getEventList(params);
+            console.log('✅ API response:', res);
             setEvents(res.events ?? []);
         } catch (error) {
-            console.error("행사 불러오기 실패", error);
+            console.error('❌ Failed to fetch events:', error);
+            console.error(t('eventOverview.loadEventsFailed'), error);
         }
     };
 
+    // 초기 데이터 로드 및 필터 변경 시 재로드
     React.useEffect(() => {
+        console.log('🔄 Filter dependency changed, fetching events...');
         fetchEvents();
     }, [selectedCategory, selectedSubCategory, selectedRegion, startDate, endDate]);
 
+    // 컴포넌트 마운트 시 초기 데이터 로드
+    React.useEffect(() => {
+        console.log('🎆 Component mounted, loading initial data...');
+        fetchEvents();
+    }, []);
+
     // events가 변경될 때 필터링 다시 적용
     React.useEffect(() => {
+        console.log('🗂 Applying client-side filters to', events.length, 'events');
+        console.log('🗂 Selected status for filtering:', selectedStatus);
         let filtered = events;
 
         // 상태 필터링 적용
-        if (selectedStatus !== "전체") {
-            const statusCode = selectedStatus === "진행 예정" ? "UPCOMING"
-                : selectedStatus === "진행중" ? "ONGOING"
-                    : selectedStatus === "종료" ? "ENDED"
+        if (selectedStatus !== "All" && selectedStatus !== t('eventOverview.allStatuses')) {
+            const statusCode = selectedStatus === t('eventOverview.upcoming') ? "UPCOMING"
+                : selectedStatus === t('eventOverview.ongoing') ? "ONGOING"
+                    : selectedStatus === t('eventOverview.ended') ? "ENDED"
                         : "";
             if (statusCode) {
                 filtered = filtered.filter(event => calculateEventStatus(event.startDate, event.endDate) === statusCode);
@@ -439,6 +460,7 @@ export default function EventOverview() {
             ));
         }
 
+        console.log('✅ Filtered events result:', filtered.length, 'events');
         setFilteredEvents(filtered);
     }, [events, selectedStatus, searchQuery]);
 
@@ -933,7 +955,7 @@ export default function EventOverview() {
                                     className="h-full flex items-center px-2.5 cursor-pointer"
                                     onClick={() => {
                                         setSelectedCategory(category.id);
-                                        setSelectedSubCategory("카테고리"); // 상단 탭 변경 시 카테고리 초기화
+                                        setSelectedSubCategory(t('eventOverview.allCategories')); // 상단 탭 변경 시 카테고리 초기화
                                     }}
                                 >
                                     <span
@@ -964,7 +986,7 @@ export default function EventOverview() {
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <List className="w-4 h-4" />
-                                <span className="text-sm font-medium">리스트형</span>
+                                <span className="text-sm font-medium">{t('eventOverview.viewModes.list')}형</span>
                             </button>
                             <button
                                 onClick={() => {
@@ -979,7 +1001,7 @@ export default function EventOverview() {
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <Calendar className="w-4 h-4" />
-                                <span className="text-sm font-medium">캘린더형</span>
+                                <span className="text-sm font-medium">{t('eventOverview.viewModes.calendar')}형</span>
                             </button>
                             <button
                                 onClick={() => setViewMode("map")}
@@ -990,7 +1012,7 @@ export default function EventOverview() {
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <MapIcon className="w-4 h-4" />
-                                <span className="text-sm font-medium">지도형</span>
+                                <span className="text-sm font-medium">{t('eventOverview.viewModes.map')}형</span>
                             </button>
                         </div>
 
@@ -1011,7 +1033,7 @@ export default function EventOverview() {
                                     <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
                                         {/* 년도 선택 */}
                                         <div className="mb-4">
-                                            <h3 className="text-sm font-medium text-gray-700 mb-2">년도 선택</h3>
+                                            <h3 className="text-sm font-medium text-gray-700 mb-2">{t('eventOverview.selectYear')}</h3>
                                             <div className="flex items-center justify-center space-x-4">
                                                 <button
                                                     className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:text-gray-300"
@@ -1078,7 +1100,7 @@ export default function EventOverview() {
 
                                         {/* 월 선택 */}
                                         <div className="mb-4">
-                                            <h3 className="text-sm font-medium text-gray-700 mb-2">월 선택</h3>
+                                            <h3 className="text-sm font-medium text-gray-700 mb-2">{t('eventOverview.selectMonth')}</h3>
                                             <div className="grid grid-cols-3 gap-2">
                                                 {Array.from({ length: 12 }, (_, i) => {
                                                     const monthDate = new Date(selectedYear, i, 1);
@@ -1140,10 +1162,10 @@ export default function EventOverview() {
 
                                         {/* 선택된 범위 표시 */}
                                         <div className="mb-4 p-3 bg-gray-50 rounded">
-                                            <div className="text-sm text-gray-600 mb-1">선택된 범위</div>
+                                            <div className="text-sm text-gray-600 mb-1">{t('eventOverview.selectedRange')}</div>
                                             <div className="text-sm font-medium">
-                                                {startDate ? `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월 ${startDate.getDate()}일` : '시작일 미선택'} ~
-                                                {endDate ? `${endDate.getFullYear()}년 ${endDate.getMonth() + 1}월 ${endDate.getDate()}일` : '종료일 미선택'}
+                                                {startDate ? `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월 ${startDate.getDate()}일` : t('eventOverview.startDateNotSelected')} ~
+                                                {endDate ? `${endDate.getFullYear()}년 ${endDate.getMonth() + 1}월 ${endDate.getDate()}일` : t('eventOverview.endDateNotSelected')}
                                             </div>
                                         </div>
 
@@ -1242,7 +1264,9 @@ export default function EventOverview() {
                                 {/* 드롭다운 메뉴 */}
                                 {isRegionDropdownOpen && (
                                     <div className="absolute top-full left-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                        {["모든지역", "서울", "경기", "인천", "강원", "부산", "경남", "대구", "경북", "대전", "충남", "충북", "광주", "전북", "전남", "제주", "울산", "해외"].map((region) => (
+                                        {Object.keys(t('eventOverview.regions', { returnObjects: true })).map((regionKey) => {
+                                            const region = t(`eventOverview.regions.${regionKey}`);
+                                            return (
                                             <button
                                                 key={region}
                                                 className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedRegion === region ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
@@ -1253,7 +1277,8 @@ export default function EventOverview() {
                                             >
                                                 {region}
                                             </button>
-                                        ))}
+                                        );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -1271,7 +1296,12 @@ export default function EventOverview() {
                                 {/* 드롭다운 메뉴 */}
                                 {isStatusDropdownOpen && (
                                     <div className="absolute top-full left-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                        {["전체", "진행 예정", "진행중", "종료"].map((status) => (
+                                        {[
+                                            t('eventOverview.allStatuses'),
+                                            t('eventOverview.upcoming'),
+                                            t('eventOverview.ongoing'),
+                                            t('eventOverview.ended')
+                                        ].map((status) => (
                                             <button
                                                 key={status}
                                                 className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedStatus === status ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
@@ -1349,9 +1379,9 @@ export default function EventOverview() {
                                             </div>
                                             <p className="font-bold text-base md:text-lg text-[#ff6b35]">
                                                 {event.minPrice == null
-                                                    ? "가격 정보 없음"
+                                                    ? t('eventOverview.noPriceInfo')
                                                     : event.minPrice === 0
-                                                        ? "무료"
+                                                        ? t('eventOverview.free')
                                                         : `${event.minPrice.toLocaleString()}원 ~`}
                                             </p>
                                         </div>
@@ -1362,12 +1392,12 @@ export default function EventOverview() {
                                     <div className="text-gray-500">
                                         {searchQuery ? (
                                             <>
-                                                <p className="text-lg font-medium mb-2">검색 결과가 없습니다</p>
-                                                <p className="text-sm">"{searchQuery}"에 대한 검색 결과를 찾을 수 없습니다.</p>
-                                                <p className="text-sm text-gray-400 mt-1">다른 검색어를 시도해보세요.</p>
+                                                <p className="text-lg font-medium mb-2">{t('eventOverview.noSearchResults')}</p>
+                                                <p className="text-sm">{t('eventOverview.noResultsFor', { query: searchQuery })}</p>
+                                                <p className="text-sm text-gray-400 mt-1">{t('eventOverview.tryDifferentSearch')}</p>
                                             </>
                                         ) : (
-                                            <p className="text-lg">이벤트가 없습니다</p>
+                                            <p className="text-lg">{t('eventOverview.noEvents')}</p>
                                         )}
                                     </div>
                                 </div>
@@ -1511,7 +1541,7 @@ export default function EventOverview() {
 
                                 {/* 범례 (카테고리별 색상 안내) */}
                                 <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg border p-3 z-10">
-                                    <div className="text-sm font-medium text-gray-700 mb-2">카테고리</div>
+                                    <div className="text-sm font-medium text-gray-700 mb-2">{t('eventOverview.categories')}</div>
                                     <div className="space-y-1">
                                         {[
                                             { category: "박람회", color: "#3B82F6" },
@@ -1612,9 +1642,9 @@ export default function EventOverview() {
                                                         <div className="flex items-center justify-between">
                                                             <div className="text-sm font-bold text-yellow-200">
                                                                 {hoveredEvents[0]?.minPrice == null
-                                                                    ? "가격 정보 없음"
+                                                                    ? t('eventOverview.noPriceInfo')
                                                                     : hoveredEvents[0]?.minPrice === 0
-                                                                        ? "무료"
+                                                                        ? t('eventOverview.free')
                                                                         : `${hoveredEvents[0]?.minPrice!.toLocaleString()}원 ~`}
                                                             </div>
                                                             <button
@@ -1715,9 +1745,9 @@ export default function EventOverview() {
                                                                             <div className="flex items-center justify-between">
                                                                                 <div className="text-sm font-bold text-yellow-200">
                                                                                     {event.minPrice == null
-                                                                                        ? "가격 정보 없음"
+                                                                                        ? t('eventOverview.noPriceInfo')
                                                                                         : event.minPrice === 0
-                                                                                            ? "무료"
+                                                                                            ? t('eventOverview.free')
                                                                                             : `${event.minPrice.toLocaleString()}원 ~`}
                                                                                 </div>
                                                                                 <button

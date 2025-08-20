@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { hasAdminPermission } from "../utils/permissions";
 import { getCachedRoleCode } from "../utils/role";
 
@@ -8,6 +9,7 @@ interface AdminSideNavProps {
 }
 
 export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) => {
+    const { t } = useTranslation();
     const location = useLocation();
     const role = getCachedRoleCode();
 
@@ -37,14 +39,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
         <div className={`w-[240px] h-[800px] bg-white ${className}`}>
             <div className="p-6">
                 <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[40px] whitespace-nowrap mb-4 text-left">
-                    ADMIN PAGE
+                    {t('admin.title')}
                 </h2>
 
                 <nav className="text-left">
                     {/* 대시보드 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            대시보드
+                            {t('admin.dashboard.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -52,14 +54,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard")}
                                 style={linkStyle("/admin_dashboard")}
                             >
-                                플랫폼 KPI
+                                {t('admin.dashboard.platformKpi')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/event-comparison"
                                 className={linkClass("/admin_dashboard/event-comparison")}
                                 style={linkStyle("/admin_dashboard/event-comparison")}
                             >
-                                행사별 비교
+                                {t('admin.dashboard.eventComparison')}
                             </Link>
                         </div>
                     </div>
@@ -67,7 +69,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 행사 관리 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            행사 관리
+                            {t('admin.eventManagement.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -75,21 +77,21 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/events")}
                                 style={linkStyle("/admin_dashboard/events")}
                             >
-                                행사 목록
+                                {t('admin.eventManagement.eventList')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/event-approvals"
                                 className={linkClass("/admin_dashboard/event-approvals", true)}
                                 style={linkStyle("/admin_dashboard/event-approvals", true)}
                             >
-                                행사 등록 승인
+                                {t('admin.eventManagement.eventApproval')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/event-edit-requests"
                                 className={linkClass("/admin_dashboard/event-edit-requests")}
                                 style={linkStyle("/admin_dashboard/event-edit-requests")}
                             >
-                                행사 수정 요청
+                                {t('admin.eventManagement.eventEditRequests')}
                             </Link>
                         </div>
                     </div>
@@ -97,7 +99,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 계정 관리 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            계정 관리
+                            {t('admin.accountManagement.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -105,7 +107,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/accounts/roles")}
                                 style={linkStyle("/admin_dashboard/accounts/roles")}
                             >
-                                권한 설정
+                                {t('admin.accountManagement.roleSettings')}
                             </Link>
                         </div>
                     </div>
@@ -113,7 +115,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* VIP 배너 광고 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            VIP 배너 광고
+                            {t('admin.vipBanner.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -121,14 +123,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/vip-banners")}
                                 style={linkStyle("/admin_dashboard/vip-banners")}
                             >
-                                배너 관리
+                                {t('admin.vipBanner.bannerManagement')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/advertisement-applications"
                                 className={linkClass("/admin_dashboard/advertisement-applications")}
                                 style={linkStyle("/admin_dashboard/advertisement-applications")}
                             >
-                                광고 신청 목록
+                                {t('admin.vipBanner.adApplications')}
                             </Link>
                         </div>
                     </div>
@@ -136,7 +138,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 정산 관리 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            정산 관리
+                            {t('admin.settlement.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -144,14 +146,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/settlements")}
                                 style={linkStyle("/admin_dashboard/settlements")}
                             >
-                                매출 통계
+                                {t('admin.settlement.revenueStats')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/remittances"
                                 className={linkClass("/admin_dashboard/remittances")}
                                 style={linkStyle("/admin_dashboard/remittances")}
                             >
-                                송금 정산
+                                {t('admin.settlement.remittanceSettlement')}
                             </Link>
                         </div>
                     </div>
@@ -159,7 +161,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 결제 관리 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            결제 관리
+                            {t('admin.paymentManagement.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -167,14 +169,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/payments")}
                                 style={linkStyle("/admin_dashboard/payments")}
                             >
-                                결제 정보 관리
+                                {t('admin.paymentManagement.paymentInfo')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/refunds"
                                 className={linkClass("/admin_dashboard/refunds")}
                                 style={linkStyle("/admin_dashboard/refunds")}
                             >
-                                환불 신청 관리
+                                {t('admin.paymentManagement.refundManagement')}
                             </Link>
                         </div>
                     </div>
@@ -182,7 +184,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 통합 통계 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            통합 통계
+                            {t('admin.statistics.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -190,14 +192,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/analytics/reservations")}
                                 style={linkStyle("/admin_dashboard/analytics/reservations")}
                             >
-                                예약 통계
+                                {t('admin.statistics.reservationStats')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/analytics/popular"
                                 className={linkClass("/admin_dashboard/analytics/popular")}
                                 style={linkStyle("/admin_dashboard/analytics/popular")}
                             >
-                                인기 행사
+                                {t('admin.statistics.popularEvents')}
                             </Link>
                         </div>
                     </div>
@@ -205,7 +207,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 시스템 설정 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            시스템 설정
+                            {t('admin.systemSettings.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -213,14 +215,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/settings/integrations")}
                                 style={linkStyle("/admin_dashboard/settings/integrations")}
                             >
-                                연동 설정
+                                {t('admin.systemSettings.integrationSettings')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/settings/message-templates"
                                 className={linkClass("/admin_dashboard/settings/message-templates")}
                                 style={linkStyle("/admin_dashboard/settings/message-templates")}
                             >
-                                이메일 템플릿
+                                {t('admin.systemSettings.emailTemplates')}
                             </Link>
                         </div>
                     </div>
@@ -228,7 +230,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 로그/보안 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            로그/보안
+                            {t('admin.security.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -236,14 +238,14 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/logs/access")}
                                 style={linkStyle("/admin_dashboard/logs/access")}
                             >
-                                접속 이력
+                                {t('admin.security.accessLogs')}
                             </Link>
                             <Link
                                 to="/admin_dashboard/logs/changes"
                                 className={linkClass("/admin_dashboard/logs/changes")}
                                 style={linkStyle("/admin_dashboard/logs/changes")}
                             >
-                                변경 기록
+                                {t('admin.security.changeLogs')}
                             </Link>
                         </div>
                     </div>
@@ -251,7 +253,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                     {/* 내 정보 관리 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            내 정보 관리
+                            {t('admin.profile.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -259,7 +261,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                                 className={linkClass("/admin_dashboard/profile")}
                                 style={linkStyle("/admin_dashboard/profile")}
                             >
-                                내 정보 조회
+                                {t('admin.profile.myInfo')}
                             </Link>
                         </div>
                     </div>
