@@ -26,6 +26,7 @@ type WishlistResponseDto = { eventId: number };
 
 import authManager from "../../utils/auth";
 import { toast } from 'react-toastify';
+import NewLoader from "../../components/NewLoader";
 
 // 회차 정보 인터페이스
 interface EventSchedule {
@@ -551,7 +552,7 @@ const EventDetail = (): JSX.Element => {
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-xl">로딩 중...</div>
+                <NewLoader />
             </div>
         );
     }
@@ -641,7 +642,7 @@ const EventDetail = (): JSX.Element => {
                             <hr className="my-2 bg-gray-300" />
 
                             <div className="flex items-start">
-                                <span className="text-base text-[#00000099] font-semibold w-20">행사 소개</span>
+                                <span className="text-base text-[#00000099] font-semibold w-20">소개</span>
                                 <div className="text-base" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
                             </div>
 

@@ -35,6 +35,7 @@ export interface BoothSummaryForManager {
     managerName: string;
     contactEmail: string;
     contactNumber: string;
+    isDeleted: boolean;
 }
 
 // 기존 Booth 인터페이스는 BoothDetailResponse로 대체

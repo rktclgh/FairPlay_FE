@@ -90,7 +90,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
     const getProductInfo = (payment: PaymentData): string => {
         const eventName = payment.eventName || '행사명 없음';
         const productType = payment.targetTypeName || '기타';
-        
+
         return `${eventName} - ${productType}`;
     };
 
@@ -148,7 +148,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
             const maxRefundableQuantity = getMaxRefundableQuantity(selectedPayment);
             const initialQuantity = Math.min(1, maxRefundableQuantity);
             const initialAmount = selectedPayment.price * initialQuantity;
-            
+
             setRefundForm(prev => ({
                 ...prev,
                 refundType: type,
@@ -162,7 +162,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
     const getMaxRefundableQuantity = (payment: PaymentData): number => {
         // 이미 환불된 수량 계산 (이미 환불된 금액 ÷ 단가)
         const refundedQuantity = Math.floor(payment.refundedAmount / payment.price);
-        
+
         // 환불 가능한 최대 수량 (전체 수량 - 이미 환불된 수량)
         return Math.max(0, payment.quantity - refundedQuantity);
     };
@@ -172,10 +172,10 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
         if (!selectedPayment || refundForm.refundType !== 'PARTIAL') return;
 
         const maxRefundableQuantity = getMaxRefundableQuantity(selectedPayment);
-        
+
         // 유효한 환불 수량 계산
         const validQuantity = Math.max(1, Math.min(quantity, maxRefundableQuantity));
-        
+
         // 환불 금액 계산 (단가 × 환불 수량)
         const refundAmount = selectedPayment.price * validQuantity;
 
@@ -249,8 +249,8 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
+            <div className="bg-white rounded-[10px] shadow-xl w-full max-w-4xl mx-4 max-h-[98vh] min-h-[400px] overflow-hidden">
                 {/* 헤더 */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h2 className="text-xl font-semibold text-gray-900">
@@ -265,7 +265,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                 </div>
 
                 {/* 내용 */}
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                <div className="p-6 overflow-y-auto max-h-[calc(98vh-200px)]">
                     {step === 'select' ? (
                         /* 결제 내역 선택 화면 */
                         <div>
@@ -274,7 +274,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                                 <button
                                     onClick={loadPayments}
                                     disabled={loading}
-                                    className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50"
+                                    className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-[10px] disabled:opacity-50"
                                 >
                                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                                     새로고침
@@ -295,7 +295,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                                     </div>
                                 </div>
                             ) : (
-                                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="border border-gray-200 rounded-[10px] overflow-hidden">
                                     <table className="w-full">
                                         <thead className="bg-gray-50">
                                             <tr>
@@ -326,7 +326,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                                             {payments.map((payment) => {
                                                 const refundCheck = isRefundable(payment);
                                                 const refundableAmount = payment.amount - payment.refundedAmount;
-                                                
+
                                                 return (
                                                     <tr key={payment.paymentId} className={`hover:bg-gray-50 ${!refundCheck.canRefund ? 'opacity-50' : ''}`}>
                                                         <td className="px-4 py-3 text-sm text-gray-900">
@@ -362,7 +362,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                                                                     환불가능
                                                                 </span>
                                                             ) : (
-                                                                <span 
+                                                                <span
                                                                     className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 cursor-help"
                                                                     title={refundCheck.reason}
                                                                 >
@@ -393,7 +393,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                         <div>
                             {/* 선택된 결제 정보 */}
                             {selectedPayment && (
-                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                <div className="bg-gray-50 rounded-[10px] p-4 mb-6">
                                     <h3 className="text-lg font-medium text-gray-900 mb-3">선택된 결제 정보</h3>
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div>
@@ -466,7 +466,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                                             max={getMaxRefundableQuantity(selectedPayment)}
                                             value={refundForm.refundQuantity}
                                             onChange={(e) => handleQuantityChange(parseInt(e.target.value))}
-                                            className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-32 px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                         <span className="ml-2 text-sm text-gray-500">
                                             (최대 {getMaxRefundableQuantity(selectedPayment)}개)
@@ -484,7 +484,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                                             type="text"
                                             value={refundForm.refundAmount.toLocaleString()}
                                             readOnly
-                                            className="w-48 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                                            className="w-48 px-3 py-2 border border-gray-300 rounded-[10px] bg-gray-50"
                                         />
                                         <span className="ml-2 text-sm text-gray-500">원</span>
                                     </div>
@@ -500,12 +500,12 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                                         onChange={(e) => setRefundForm(prev => ({ ...prev, reason: e.target.value }))}
                                         placeholder="환불 사유를 입력해주세요"
                                         rows={4}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
 
                                 {/* 주의사항 */}
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-[10px] p-4">
                                     <div className="flex items-start">
                                         <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5" />
                                         <div className="text-sm text-yellow-800">
@@ -539,7 +539,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                         <button
                             onClick={handleClose}
                             disabled={submitting}
-                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-[10px] hover:bg-gray-200 disabled:opacity-50"
                         >
                             취소
                         </button>
@@ -547,7 +547,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
                             <button
                                 onClick={submitRefundRequest}
                                 disabled={submitting || !refundForm.reason.trim()}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-[10px] hover:bg-blue-700 disabled:opacity-50"
                             >
                                 {submitting ? '처리 중...' : '환불 요청'}
                             </button>

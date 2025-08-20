@@ -11,7 +11,9 @@ import type {
     QrCheckRequestDto,
     ManualCheckRequestDto,
     CheckResponseDto,
-    AdminForceCheckRequestDto
+    AdminForceCheckRequestDto,
+    BoothEntryRequestDto,
+    BoothEntryResponseDto
 } from "./types/qrTicketType";
 
 // 마이페이지에서 QR 티켓 조회
@@ -74,10 +76,12 @@ export const checkOutManual = async (data: ManualCheckRequestDto): Promise<Check
     return res.data;    
 }
 
-// // 부스 입장 
-// export const checkBoothQr = async (): Promise<> => {
+// 부스 입장 
+export const checkBoothQr = async (data: BoothEntryRequestDto): Promise<BoothEntryResponseDto> => {
 
-// }
+    const res = await api.post<BoothEntryResponseDto>(`/api/booth-qr`, data);
+    return res.data;
+}
 
 export const adminForceCheck = async (data: AdminForceCheckRequestDto): Promise<CheckResponseDto> => {
     const res = await api.post<CheckResponseDto>(`/api/qr-tickets/admin/check`,data);

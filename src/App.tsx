@@ -102,6 +102,8 @@ import Policy from "./pages/footer/Policy";
 import BoothPaymentPage from "./pages/booth/BoothPaymentPage";
 import BoothCancelPage from "./pages/booth/BoothCancelPage";
 import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
+import BoothInfoManagement from "./pages/booth_admin/BoothInfoManagement";
+import BoothEdit from "./pages/booth_admin/BoothEdit";
 
 function AppContent() {
     useScrollToTop();
@@ -208,7 +210,6 @@ function AppContent() {
                         <Route path="/host/events/:eventId/booth-applications" element={<HostRouteGuard><BoothApplicationList /></HostRouteGuard>} />
                         <Route path="/host/booth-participants" element={<HostRouteGuard><BoothParticipants /></HostRouteGuard>} />
                         <Route path="/host/events/:eventId/booth-participants" element={<HostRouteGuard><BoothParticipants /></HostRouteGuard>} />
-                        <Route path="/host/booth-participants/:id" element={<HostRouteGuard><BoothParticipantDetail /></HostRouteGuard>} />
                         <Route path="/host/events/:eventId/booth-participants/:id" element={<HostRouteGuard><BoothParticipantDetail /></HostRouteGuard>} />
                         <Route path="/host/booth-applications/:id" element={<HostRouteGuard><BoothApplicationDetail /></HostRouteGuard>} />
                         <Route path="/host/events/:eventId/booth-applications/:id" element={<HostRouteGuard><BoothApplicationDetail /></HostRouteGuard>} />
@@ -261,13 +262,15 @@ function AppContent() {
 
 
                         {/* 부스 관리자 전용 페이지 */}
-                        <Route path="/booth-admin/dashboard" element={<BoothAdminRouteGuard><BoothAdminDashboard /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/profile" element={<BoothAdminRouteGuard><BoothAdminProfile /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/dashboard" element={<BoothAdminRouteGuard><BoothAdminDashboard /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/qr-scan" element={<BoothAdminRouteGuard><BoothQRScanPage /></BoothAdminRouteGuard>} />
+                        <Route path="/booth-admin/info-management" element={<BoothAdminRouteGuard><BoothInfoManagement /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/experience-management" element={<BoothAdminRouteGuard><BoothExperienceManagement /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/experience-reserver-management" element={<BoothAdminRouteGuard><BoothExperienceReserverManagement /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/experience-detail/:experienceId" element={<BoothAdminRouteGuard><ExperienceDetailPage /></BoothAdminRouteGuard>} />
+                        <Route path="/booth-admin/booth/:boothId/edit" element={<BoothAdminRouteGuard><BoothEdit /></BoothAdminRouteGuard>} />
+
                         <Route path="/host/dashboard" element={<HostDashboard />} />
                         <Route path="/host/edit-event-info" element={<EditEventInfo />} />
                         <Route path="/host/ticket-management" element={<TicketManagement />} />

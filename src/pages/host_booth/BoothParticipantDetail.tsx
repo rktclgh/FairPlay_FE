@@ -3,14 +3,15 @@ import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
 import { useParams, useNavigate } from "react-router-dom";
 import { getBoothDetails, updateBooth, deleteBooth, updateBoothAdminInfo } from "../../api/boothApi";
-import { BoothDetailResponse, BoothUpdateRequest, BoothAdminRequest } from "../../types/booth";
+import type {BoothDetailResponse, BoothUpdateRequest, BoothAdminRequest} from "../../types/booth";
 import { useFileUpload } from "../../hooks/useFileUpload";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
 
 const BoothParticipantDetail = () => {
-    const { eventId, boothId } = useParams<{ eventId: string; boothId: string }>();
+    const { eventId, id } = useParams<{ eventId: string; id: string }>();
+    const boothId = id;
     const navigate = useNavigate();
     
     // 파일 업로드 훅
@@ -68,9 +69,9 @@ const BoothParticipantDetail = () => {
     useEffect(() => {
         if (eventId && boothId) {
             setLoading(true);
-            getBoothDetails(parseInt(eventId), parseInt(boothId))
+            getBoothDetails(Number(eventId), Number(boothId))
                 .then(data => {
-                    console.log(data.boothExternalLinks);
+                    console.log(data);
                     setDetail(data);
                     setEditData({
                         boothTitle: data.boothTitle,
@@ -101,7 +102,7 @@ const BoothParticipantDetail = () => {
 
         setUpdating(true);
         try {
-            const updatedBooth = await updateBooth(parseInt(eventId), parseInt(boothId), editData);
+            const updatedBooth = await updateBooth(Number(eventId), Number(boothId), editData);
             setDetail(updatedBooth);
             setEditing(false);
             alert('부스 정보가 성공적으로 업데이트되었습니다.');
@@ -119,10 +120,10 @@ const BoothParticipantDetail = () => {
 
         setUpdating(true);
         try {
-            await updateBoothAdminInfo(parseInt(eventId), parseInt(boothId), adminData);
+            await updateBoothAdminInfo(Number(eventId), Number(boothId), adminData);
 
             // 업데이트된 정보로 상세 정보 다시 로드
-            const updatedDetail = await getBoothDetails(parseInt(eventId), parseInt(boothId));
+            const updatedDetail = await getBoothDetails(Number(eventId), Number(boothId));
             setDetail(updatedDetail);
 
             alert('관리자 정보가 성공적으로 업데이트되었습니다.');
@@ -142,7 +143,7 @@ const BoothParticipantDetail = () => {
 
         setUpdating(true);
         try {
-            await deleteBooth(parseInt(eventId), parseInt(boothId));
+            await deleteBooth(Number(eventId), Number(boothId));
             alert('부스가 성공적으로 삭제되었습니다.');
             navigate(`/host/booth-participants`);
         } catch (err) {

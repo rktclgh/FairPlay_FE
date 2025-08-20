@@ -145,7 +145,6 @@ export const ReservationStats = () => {
     const monthlyData = convertDailyToMonthly(dashboardStats?.dailyTrend || []);
 
 
-
     // 성별 분포 데이터
     const genderData = [
         { name: '남성', value: 60, color: '#3B82F6' },

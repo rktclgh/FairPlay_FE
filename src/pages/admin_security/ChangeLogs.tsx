@@ -1,47 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
-
-interface ChangeLog {
-    name: string;
-    email: string;
-    content: string;
-    nickname: string;
-    modifyTime: string;
-    targetType: string;
-}
-
-interface PageableResponse {
-    content: ChangeLog[];
-    pageable: {
-        pageNumber: number;
-        pageSize: number;
-        sort: {
-            empty: boolean;
-            sorted: boolean;
-            unsorted: boolean;
-        };
-        offset: number;
-        unpaged: boolean;
-        paged: boolean;
-    };
-    last: boolean;
-    totalElements: number;
-    totalPages: number;
-    size: number;
-    number: number;
-    sort: {
-        empty: boolean;
-        sorted: boolean;
-        unsorted: boolean;
-    };
-    first: boolean;
-    numberOfElements: number;
-    empty: boolean;
-}
+import { adminSecurityService, type ChangeHistoryDto } from "../../services/adminSecurity.service";
 
 export const ChangeLogs: React.FC = () => {
-    const [changeLogs, setChangeLogs] = useState<ChangeLog[]>([]);
+    const [changeLogs, setChangeLogs] = useState<ChangeHistoryDto[]>([]);
     const [totalElements, setTotalElements] = useState<number>(0);
     const [totalPages, setTotalPages] = useState<number>(0);
     const [currentPage, setCurrentPage] = useState<number>(0);
@@ -59,150 +22,52 @@ export const ChangeLogs: React.FC = () => {
     // 변경 항목 드롭다운 옵션
     const changeItemOptions = ["전체", "행사 정보", "계정 정보", "배너 정보"];
 
-    // 전체 목업 데이터
-    const allMockData: ChangeLog[] = [
-        {
-            name: "관리자",
-            email: "admin@example.com",
-            content: "권한 설정",
-            nickname: "id테스트",
-            modifyTime: "2025-08-13T23:36:50",
-            targetType: "계정 정보"
-        },
-        {
-            name: "관리자",
-            email: "admin@example.com",
-            content: "행사 제목 수정",
-            nickname: "이벤트_기획자",
-            modifyTime: "2025-08-13T15:20:30",
-            targetType: "행사 정보"
-        },
-        {
-            name: "관리자",
-            email: "admin@example.com",
-            content: "프로필 사진 변경",
-            nickname: "민수킴",
-            modifyTime: "2025-08-13T14:15:22",
-            targetType: "계정 정보"
-        },
-        {
-            name: "시스템관리자",
-            email: "system@example.com",
-            content: "메인 배너 이미지 업로드",
-            nickname: "영희이",
-            modifyTime: "2025-08-13T11:45:11",
-            targetType: "배너 정보"
-        },
-        {
-            name: "이벤트관리자",
-            email: "event@example.com",
-            content: "행사 일정 변경",
-            nickname: "철수박",
-            modifyTime: "2025-08-12T16:30:45",
-            targetType: "행사 정보"
-        },
-        {
-            name: "관리자",
-            email: "admin@example.com",
-            content: "비밀번호 변경",
-            nickname: "유리최",
-            modifyTime: "2025-08-12T09:20:10",
-            targetType: "계정 정보"
-        },
-        {
-            name: "마케팅관리자",
-            email: "marketing@example.com",
-            content: "프로모션 배너 수정",
-            nickname: "호준정",
-            modifyTime: "2025-08-11T18:15:33",
-            targetType: "배너 정보"
-        }
-    ];
-
     // 날짜 포맷 함수
     const formatDateTime = (dateString: string) => {
-        return dateString;
+        const date = new Date(dateString);
+        return date.toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
     };
 
-    // 변경 기록 데이터 로드
-    const loadChangeLogs = async (page: number = 0) => {
+    // 변경 기록 데이터 로드 (실제 API 호출)
+    const loadChangeLogs = useCallback(async (page: number = 0) => {
         setLoading(true);
         try {
-            // 필터링 적용
-            let filteredData = allMockData;
+            const response = await adminSecurityService.getChangeLogs({
+                page,
+                size: pageSize,
+                email: filters.email || undefined,
+                type: filters.changeItem === '전체' ? undefined : filters.changeItem,
+                from: filters.fromDate || undefined,
+                to: filters.toDate || undefined
+            });
 
-            // 이메일로 필터링
-            if (filters.email) {
-                filteredData = filteredData.filter(log =>
-                    log.name.toLowerCase().includes(filters.email.toLowerCase()) ||
-                    log.email.toLowerCase().includes(filters.email.toLowerCase())
-                );
-            }
-
-            // 변경 항목으로 필터링
-            if (filters.changeItem && filters.changeItem !== "전체") {
-                filteredData = filteredData.filter(log =>
-                    log.targetType === filters.changeItem
-                );
-            }
-
-            // From 날짜로 필터링
-            if (filters.fromDate) {
-                filteredData = filteredData.filter(log =>
-                    log.modifyTime >= filters.fromDate
-                );
-            }
-
-            // To 날짜로 필터링
-            if (filters.toDate) {
-                filteredData = filteredData.filter(log =>
-                    log.modifyTime <= filters.toDate + 'T23:59:59'
-                );
-            }
-
-            // 페이지네이션 적용
-            const totalElements = filteredData.length;
-            const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
-            const startIndex = page * pageSize;
-            const endIndex = startIndex + pageSize;
-            const pageData = filteredData.slice(startIndex, endIndex);
-
-            const mockData: PageableResponse = {
-                content: pageData,
-                pageable: {
-                    pageNumber: page,
-                    pageSize: 10,
-                    sort: { empty: false, sorted: true, unsorted: false },
-                    offset: page * 10,
-                    unpaged: false,
-                    paged: true
-                },
-                last: page >= totalPages - 1,
-                totalElements: totalElements,
-                totalPages: totalPages,
-                size: 10,
-                number: page,
-                sort: { empty: false, sorted: true, unsorted: false },
-                first: page === 0,
-                numberOfElements: pageData.length,
-                empty: pageData.length === 0
-            };
-
-            setChangeLogs(mockData.content);
-            setTotalElements(mockData.totalElements);
-            setTotalPages(mockData.totalPages);
-            setCurrentPage(mockData.number);
+            setChangeLogs(response.content);
+            setTotalElements(response.totalElements);
+            setTotalPages(response.totalPages);
+            setCurrentPage(response.number);
         } catch (error) {
             console.error('변경 기록 로드 중 오류:', error);
+            // 에러 시 안전한 초기값으로 설정
+            setChangeLogs([]);
+            setTotalElements(0);
+            setTotalPages(1);
+            setCurrentPage(0);
         } finally {
             setLoading(false);
         }
-    };
+    }, [pageSize, filters.email, filters.changeItem, filters.fromDate, filters.toDate]);
 
     useEffect(() => {
         setCurrentPage(0); // 필터 변경 시 첫 페이지로 이동
         loadChangeLogs(0);
-    }, [filters]);
+    }, [loadChangeLogs]);
 
     // 초기화 핸들러
     const handleReset = () => {
@@ -330,14 +195,14 @@ export const ChangeLogs: React.FC = () => {
                                                 로딩 중...
                                             </td>
                                         </tr>
-                                    ) : changeLogs.length === 0 ? (
+                                    ) : !changeLogs || changeLogs.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                                                 변경 기록이 없습니다.
                                             </td>
                                         </tr>
                                     ) : (
-                                        changeLogs.map((log, index) => (
+                                        (changeLogs || []).map((log, index) => (
                                             <tr key={index} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {formatDateTime(log.modifyTime)}
@@ -381,7 +246,7 @@ export const ChangeLogs: React.FC = () => {
                                     이전
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
+                                {Array.from({ length: totalPages || 1 }, (_, i) => i).map((page) => (
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
