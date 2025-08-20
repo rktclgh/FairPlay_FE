@@ -1,6 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import {eventAPI} from "../../services/event";
+import { getLogoByUrl } from "../../utils/linkLogo";
 
 interface ExternalLinkProps {
   isOpen: boolean;
@@ -20,7 +21,8 @@ export const ExternalLink = ({ isOpen, onClose, title, externalLinks }: External
         id: `external-${index}`,
         name: link.displayText,
         url: link.url,
-        description: `${link.displayText}를 통해 예매하실 수 있습니다.`
+        description: `${link.displayText}를 통해 예매하실 수 있습니다.`,
+        logo: getLogoByUrl(link.url),
       });
     });
   }

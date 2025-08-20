@@ -561,10 +561,10 @@ export const EventEditRequestDetail: React.FC = () => {
                                             }
                                         </label>
                                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                                            {(modifiedData.bannerUrl || modifiedData.thumbnailUrl || originalData.bannerUrl || originalData.thumbnailUrl) ? (
+                                            {(modifiedData.thumbnailUrl || originalData.thumbnailUrl) ? (
                                                 <div className="space-y-2">
                                                     <img
-                                                        src={modifiedData.bannerUrl || modifiedData.thumbnailUrl || originalData.bannerUrl || originalData.thumbnailUrl}
+                                                        src={modifiedData.thumbnailUrl || originalData.thumbnailUrl}
                                                         alt="행사 배너"
                                                         className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                     />
