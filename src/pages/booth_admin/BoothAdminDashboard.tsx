@@ -281,71 +281,61 @@ const BoothAdminDashboard: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* Booth Info Grid */}
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500">부스 타입</label>
-                                                <div className="mt-1 text-gray-900">{application.boothTypeName}</div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500">크기</label>
-                                                <div className="mt-1 text-gray-900">
-                                                    {application.boothTypeSize 
-                                                        ? application.boothTypeSize.replace('x', 'm x ') + 'm'
-                                                        : '미지정'
-                                                    }
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500">운영 기간</label>
-                                                <div className="mt-1 text-gray-900">
-                                                    {application.startDate ? new Date(application.startDate).toLocaleDateString() : ''} ~ {application.endDate ? new Date(application.endDate).toLocaleDateString() : ''}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500">결제 금액</label>
-                                                <div className="mt-1 text-lg font-semibold text-gray-900">
-                                                    {application.price?.toLocaleString() || 0}원
-                                                </div>
-                                            </div>
-                                        </div>
 
-                                        {/* Payment Section */}
-                                        {application.statusCode === 'APPROVED' && application.paymentStatusCode === 'PENDING' && (
-                                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <h3 className="text-lg font-semibold text-yellow-800">💳 결제가
-                                                            필요합니다</h3>
-                                                        <p className="text-yellow-700 text-sm">부스 운영을 위해 결제를 완료해주세요.</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handlePayment(application)}
-                                                        disabled={paymentLoading === application.boothApplicationId}
-                                                        className="bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-yellow-700 transition-colors disabled:opacity-50"
-                                                    >
-                                                        {paymentLoading === application.boothApplicationId ? '결제 중...' : '결제하기'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
 
                                         {/* Feature Access */}
                                         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">부스 정보</h3>
                                             {/* 부스 정보 요약 */}
                                             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">부스 정보</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="flex items-center text-gray-600">
-                                                        <span className="font-medium mr-2">부스명:</span>
-                                                        <span>{boothInfo.boothName}</span>
+                                                {/* Booth Info Grid */}
+                                                <div className="grid gap-4 mb-6" style={{gridTemplateColumns: '1fr 0.7fr 1.5fr 1fr'}}>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-500">부스 타입</label>
+                                                        <div className="mt-1 text-gray-900">{application.boothTypeName}</div>
                                                     </div>
-                                                    <div className="flex items-center text-gray-600">
-                                                        <span className="font-medium mr-2">이벤트:</span>
-                                                        <span>{boothInfo.eventName}</span>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-500">크기</label>
+                                                        <div className="mt-1 text-gray-900 text-sm">
+                                                            {application.boothTypeSize
+                                                                ? application.boothTypeSize.replace('x', 'm x ') + 'm'
+                                                                : '미지정'
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-500">운영 기간</label>
+                                                        <div className="mt-1 text-gray-900">
+                                                            {application.startDate ? new Date(application.startDate).toLocaleDateString() : ''} ~ {application.endDate ? new Date(application.endDate).toLocaleDateString() : ''}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-500">결제 금액</label>
+                                                        <div className="mt-1 text-lg font-semibold text-gray-900">
+                                                            {application.price?.toLocaleString() || 0}원
+                                                        </div>
                                                     </div>
                                                 </div>
+
+                                                {/* Payment Section */}
+                                                {application.statusCode === 'APPROVED' && application.paymentStatusCode === 'PENDING' && (
+                                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <h3 className="text-lg font-semibold text-yellow-800">💳 결제가
+                                                                    필요합니다</h3>
+                                                                <p className="text-yellow-700 text-sm">부스 운영을 위해 결제를 완료해주세요.</p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handlePayment(application)}
+                                                                disabled={paymentLoading === application.boothApplicationId}
+                                                                className="bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-yellow-700 transition-colors disabled:opacity-50"
+                                                            >
+                                                                {paymentLoading === application.boothApplicationId ? '결제 중...' : '결제하기'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* 통계 카드 */}
