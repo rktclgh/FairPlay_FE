@@ -3,6 +3,7 @@ import axios from 'axios';
 //import axios, { AxiosError } from 'axios';
 import { TopNav } from '../../components/TopNav';
 import { AdminSideNav } from '../../components/AdminSideNav';
+import authManager from "../../utils/auth";
 
  // ---- Backend response types ----
  type BackendApplyStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -126,11 +127,11 @@ const [error, setError] = useState<string | null>(null);
        if (filterType !== 'all') params.type = filterType === 'mainBanner' ? 'HERO' : 'SEARCH_TOP';
        params.page = '0';
        params.size = '100';
-     const res = await axios.get<BackendListResponse<BackendApplicationItem>>(`${BASE_URL}/api/admin/banners/applications`, {
+     const res = await axios.get<BackendListResponse<BackendApplicationItem>>(`/api/admin/banners/applications`, {
          params,
          headers: { ...getAuthHeaders() }
        });
-const content: BackendApplicationItem[] =
+    const content: BackendApplicationItem[] =
        isPage<BackendApplicationItem>(res.data) ? res.data.content
        : Array.isArray(res.data) ? res.data
        : [];
@@ -219,37 +220,82 @@ const content: BackendApplicationItem[] =
 
   // 승인/반려 → 백엔드 호출
   const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
+    // 상태에 따른 확인창 표시
+    const confirmMessage = newStatus === 'approved' 
+      ? '승인하시겠습니까?\n\n승인 시 신청자에게 결제 링크가 포함된 이메일이 발송됩니다.'
+      : '거부하시겠습니까?\n\n거부 시 신청자에게 반려 알림이 발송됩니다.';
+    
+    const confirmed = window.confirm(confirmMessage);
+    if (!confirmed) {
+      return; // 사용자가 취소를 선택한 경우 함수 종료
+    }
+
     try {
       if (newStatus === 'approved') {
+        console.log('승인 API 호출 시작:', {
+          url: `/api/admin/banners/applications/${id}/approve`,
+          id,
+          headers: getAuthHeaders()
+        });
+        
         const res = await axios.post(
-          `${BASE_URL}/api/admin/banners/applications/${id}/approve`,
+          `/api/admin/banners/applications/${id}/approve`,
           { note: 'approved from admin UI' },
           { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() } }
         );
+        
+        console.log('승인 API 응답:', res.data);
         const updated = mapBackendItem(res.data);
         setApplications(prev => prev.map(a => (a.id === id ? updated : a)));
+        
+        // 승인 완료 알림
+        alert('승인이 완료되었습니다.\n신청자에게 결제 링크가 포함된 이메일이 발송되었습니다.');
       } else {
+        console.log('반려 API 호출 시작:', {
+          url: `/api/admin/banners/applications/${id}/reject`,
+          id,
+          headers: getAuthHeaders()
+        });
+        
         const reason = 'rejected from admin UI';
         const res = await axios.post(
-          `${BASE_URL}/api/admin/banners/applications/${id}/reject`,
+          `/api/admin/banners/applications/${id}/reject`,
           { reason },
           { headers: { 'Content-Type': 'application/json', ...getAuthHeaders() } }
         );
+        
+        console.log('반려 API 응답:', res.data);
         const updated = mapBackendItem(res.data);
         setApplications(prev => prev.map(a => (a.id === id ? updated : a)));
+        
+        // 반려 완료 알림
+        alert('반려가 완료되었습니다.\n신청자에게 반려 알림이 발송되었습니다.');
       }
     } catch (err: unknown) {
-  if (axios.isAxiosError<{ message?: string }>(err)) {
-    const code = err.response?.status;
-    const msg =
-      err.response?.data?.message ??
-      err.message ??
-      '처리 실패';
-    alert(code ? `[${code}] ${msg}` : msg);
-  } else {
-    alert('처리 실패');
-  }
-}};
+      console.error('API 호출 에러:', err);
+      
+      if (axios.isAxiosError<{ message?: string }>(err)) {
+        const code = err.response?.status;
+        const msg =
+          err.response?.data?.message ??
+          err.message ??
+          '처리 실패';
+        
+        console.error('Axios 에러 상세:', {
+          status: code,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          url: err.config?.url,
+          method: err.config?.method
+        });
+        
+        alert(code ? `[${code}] ${msg}` : msg);
+      } else {
+        console.error('알 수 없는 에러:', err);
+        alert('처리 실패');
+      }
+    }
+  };
 
   const handleImageCheck = (imageUrl: string) => {
     setSelectedImage(imageUrl);
