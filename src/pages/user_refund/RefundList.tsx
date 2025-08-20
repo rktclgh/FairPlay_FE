@@ -5,6 +5,7 @@ import { Plus, Download, ChevronLeft, ChevronRight, RotateCcw } from "lucide-rea
 import { useTranslation } from "react-i18next";
 import RefundRequestModal from "./RefundRequestModal";
 import authManager from "../../utils/auth";
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 // 환불 데이터 타입
 interface RefundData {
@@ -62,6 +63,7 @@ export const RefundList = () => {
     const [totalElements, setTotalElements] = useState(0);
     const [currentPage, setCurrentPage] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const itemsPerPage = 15;
 
     // 검색 필터 상태
@@ -205,15 +207,57 @@ export const RefundList = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
-                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    {t('refund.title')}
+            <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
+                {/* 제목 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
+                    <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+                        {t('refund.title')}
+                    </div>
                 </div>
 
-                <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+                <button
+                    onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                    className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+                >
+                    {isMobileSidebarOpen ? (
+                        <HiOutlineX className="w-6 h-6 text-gray-600" />
+                    ) : (
+                        <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+                    )}
+                </button>
+
+                {/* 모바일 사이드바 오버레이 */}
+                {isMobileSidebarOpen && (
+                    <div
+                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                    />
+                )}
+
+                {/* 모바일 사이드바 */}
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
+                    <div className="p-4">
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className="absolute top-4 right-4 p-2"
+                        >
+                            <HiOutlineX className="w-6 h-6 text-gray-600" />
+                        </button>
+                        <AttendeeSideNav className="!relative !top-0 !left-0" />
+                    </div>
+                </div>
+
+                {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+                <div className="hidden md:block">
+                    <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                </div>
+
                 <TopNav />
 
-                <div className="absolute top-[195px] left-64 right-0 pr-8">
+                {/* 콘텐츠 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[195px] md:left-64 md:right-0 md:pr-8 left-0 right-4 top-32 relative">
                     <div className="mb-6">
                         <p className="text-gray-600">나의 결제 환불 요청 및 처리 현황을 확인합니다.</p>
                     </div>
@@ -456,8 +500,8 @@ export const RefundList = () => {
                                                         key={pageNum}
                                                         onClick={() => handlePageChange(pageNum)}
                                                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pageNum === currentPage
-                                                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                                                             }`}
                                                     >
                                                         {pageNum + 1}
