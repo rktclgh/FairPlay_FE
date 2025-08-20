@@ -658,7 +658,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                             {/* 배너 업로드 */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    배너 이미지 업로드 (선택사항)
+                                    배너 이미지 (정방형)
                                 </label>
                                 <div
                                     className="border-2 border-dashed border-gray-300 rounded-[10px] p-6 text-center hover:border-gray-400 transition-colors relative"
