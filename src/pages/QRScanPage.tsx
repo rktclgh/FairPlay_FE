@@ -185,16 +185,6 @@ const QRScanPage: React.FC = () => {
                         >
                             체크아웃
                         </button>
-                        <button
-                            onClick={() => setCheckType("booth")}
-                            className={`px-4 py-2 rounded-[10px] font-medium text-sm 
-                                hover:text-white hover:bg-purple-600 hover:border-purple-600 
-                                active:border-purple-600 focus:border-purple-600 focus:outline-none
-                                ${checkType === "booth" ? "bg-purple-500 text-white bg-purple-500" : "bg-gray-200 text-gray-700"}
-                            `}
-                        >
-                            부스 체크인
-                        </button>
                     </div>
 
                 </div>

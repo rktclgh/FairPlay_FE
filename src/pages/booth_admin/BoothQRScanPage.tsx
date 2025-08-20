@@ -22,15 +22,6 @@ interface ScannedTicket {
     scannedAt: Date;
 }
 
-interface Experience {
-    id: number;
-    title: string;
-    date: string;
-    time: string;
-    maxCapacity: number;
-    currentParticipants: number;
-}
-
 
 const BoothQRScanPage: React.FC = () => {
     const location = useLocation();
