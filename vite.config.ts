@@ -32,10 +32,20 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: "dist",
+      target: ["es2015", "safari11"], // iOS Safari 호환성
+      minify: "terser",
+      sourcemap: false,
       rollupOptions: {
         // SPA 라우팅을 위한 히스토리 API 폴백 지원
         input: {
           main: "./index.html"
+        },
+        output: {
+          // iOS Safari를 위한 청크 분할 최적화
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            router: ['react-router-dom']
+          }
         }
       }
     },
