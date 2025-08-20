@@ -1065,7 +1065,7 @@ const EventDetail = (): JSX.Element => {
                                 { id: "booking", name: "예매/취소안내" },
                                 { id: "review", name: "관람평" },
                                 { id: "expectation", name: "기대평" },
-                                ...(eventData.mainCategory !== "공연" ? [{ id: "booths", name: "참가부스" }] : [])
+                                ...(eventData.mainCategory !== "공연" && eventData.mainCategory !== "강연/세미나" ? [{ id: "booths", name: "참가부스" }] : [])
                             ].map((tab) => (
                                 <li
                                     key={tab.id}
