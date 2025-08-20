@@ -672,6 +672,8 @@ export default function EventOverview() {
                 }
 
                 overlayContent.setAttribute('data-event-id', primaryEvent.id.toString());
+                overlayContent.setAttribute('data-marker', 'true');
+                overlayContent.classList.add('map-pin-overlay', 'kakao-map-pin');
 
                 const customOverlay = new window.kakao.maps.CustomOverlay({
                     content: overlayContent,
@@ -893,29 +895,71 @@ export default function EventOverview() {
         };
     }, [map, hoveredEvents, mapRef]);
 
-    // 지도 클릭 이벤트 추가 - 빈 공간 클릭 시 카드 숨기기
+    // 지도 클릭 이벤트 추가 - 빈 공간 클릭 시 카드 숨기기 (드래그 방해하지 않도록 수정)
     React.useEffect(() => {
         if (!map || viewMode !== 'map') return;
 
-        const handleMapClick = (e: any) => {
-            // 클릭된 요소가 마커나 카드가 아닌 경우에만 카드 숨기기
-            const clickedElement = e.originalEvent.target;
-            const isMarker = clickedElement.closest('.map-pin-overlay');
-            const isCard = clickedElement.closest('.hover-card-container');
+        let isDragging = false;
+        let startPos = { x: 0, y: 0 };
 
-            if (!isMarker && !isCard) {
-                setHoveredEvents([]);
-                setCurrentEventIndex(0);
-                setHoverCardPosition(null);
+        const handleMouseDown = (e: any) => {
+            startPos = { x: e.clientX, y: e.clientY };
+            isDragging = false;
+        };
+
+        const handleMouseMove = (e: any) => {
+            if (startPos.x !== 0 && startPos.y !== 0) {
+                const deltaX = Math.abs(e.clientX - startPos.x);
+                const deltaY = Math.abs(e.clientY - startPos.y);
+
+                // 일정 거리 이상 움직이면 드래그로 판단
+                if (deltaX > 5 || deltaY > 5) {
+                    isDragging = true;
+                }
             }
         };
 
-        window.kakao.maps.event.addListener(map, 'click', handleMapClick);
+        const handleMouseUp = (e: any) => {
+            // 드래그가 아닌 클릭인 경우에만 카드 숨기기
+            if (!isDragging) {
+                const clickedElement = e.target;
 
-        return () => {
-            window.kakao.maps.event.removeListener(map, 'click', handleMapClick);
+                // 마커나 카드 영역을 클릭했는지 확인
+                const isMarker = clickedElement.closest('.map-pin-overlay') ||
+                    clickedElement.closest('.kakao-map-pin') ||
+                    clickedElement.closest('[data-marker]') ||
+                    clickedElement.closest('.customoverlay');
+
+                const isCard = clickedElement.closest('.hover-card-container') ||
+                    clickedElement.closest('.hover-card');
+
+                // 지도 빈 공간을 클릭한 경우에만 카드 숨기기
+                if (!isMarker && !isCard) {
+                    setHoveredEvents([]);
+                    setCurrentEventIndex(0);
+                    setHoverCardPosition(null);
+                }
+            }
+
+            // 상태 초기화
+            startPos = { x: 0, y: 0 };
+            isDragging = false;
         };
-    }, [map, viewMode]);
+
+        // 지도 컨테이너에 이벤트 리스너 등록
+        const mapContainer = mapRef.current;
+        if (mapContainer) {
+            mapContainer.addEventListener('mousedown', handleMouseDown);
+            mapContainer.addEventListener('mousemove', handleMouseMove);
+            mapContainer.addEventListener('mouseup', handleMouseUp);
+
+            return () => {
+                mapContainer.removeEventListener('mousedown', handleMouseDown);
+                mapContainer.removeEventListener('mousemove', handleMouseMove);
+                mapContainer.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [map, viewMode, mapRef]);
 
     // 렌더 하단에서 공용 Footer 적용
     return (
@@ -1534,7 +1578,7 @@ export default function EventOverview() {
                                 {/* 호버 카드 (3장 카드 슬라이드 지원) */}
                                 {hoveredEvents.length > 0 && hoverCardPosition && (
                                     <div
-                                        className="hover-card-container absolute z-50"
+                                        className="hover-card-container hover-card absolute z-50"
                                         style={{
                                             left: `${hoverCardPosition.x - (hoveredEvents.length > 1 ? 60 : 0)}px`, // 3장 카드를 위한 중앙 정렬
                                             top: `${hoverCardPosition.y}px`,
