@@ -60,7 +60,7 @@ const MyBoothExperienceReservations: React.FC = () => {
       setReservations(data);
     } catch (error) {
       console.error('예약 목록 로딩 실패:', error);
-      toast.error(t('boothExperience.loadFailed'));
+      toast.error(t('boothExperienceReservation.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -85,13 +85,13 @@ const MyBoothExperienceReservations: React.FC = () => {
 
     try {
       await cancelReservation(selectedReservationId);
-      toast.success(t('boothExperience.cancelSuccess'));
+      toast.success(t('boothExperienceReservation.cancelSuccess'));
       setShowCancelModal(false);
       setSelectedReservationId(null);
       loadReservations(); // 목록 새로고침
     } catch (error) {
       console.error('예약 취소 실패:', error);
-      toast.error(t('boothExperience.cancelFailed'));
+      toast.error(t('boothExperienceReservation.cancelFailed'));
     }
   };
 
@@ -135,7 +135,7 @@ const MyBoothExperienceReservations: React.FC = () => {
 
           {/* 페이지 제목 */}
           <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-            {t('boothExperience.title')}
+            {t('boothExperienceReservation.title')}
           </div>
 
           {/* 사이드바 */}
@@ -145,21 +145,21 @@ const MyBoothExperienceReservations: React.FC = () => {
           <div className="ml-64 mt-[195px] w-[949px] pb-28 md:pb-36">
             {/* 헤더 */}
             <div className="mb-6">
-              <p className="text-gray-600">{t('boothExperience.description')}</p>
+              <p className="text-gray-600">{t('boothExperienceReservation.description')}</p>
             </div>
 
             {/* 검색 및 필터 */}
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">{t('boothExperience.searchConditions')}</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('boothExperienceReservation.searchConditions')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 검색 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.experienceOrBoothName')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperienceReservation.experienceOrBoothName')}</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={t('boothExperience.experienceOrBoothNamePlaceholder')}
+                      placeholder={t('boothExperienceReservation.experienceOrBoothNamePlaceholder')}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
