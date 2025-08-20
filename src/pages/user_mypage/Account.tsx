@@ -33,8 +33,23 @@ export const MyPageAccount = () => {
         "경남은행"
     ];
 
+    // 페이지 로드 시 localStorage에서 데이터 불러오기
+    useEffect(() => {
+        const savedBank = localStorage.getItem('refundAccount_bank');
+        const savedAccountNumber = localStorage.getItem('refundAccount_accountNumber');
+        const savedAccountHolder = localStorage.getItem('refundAccount_accountHolder');
+
+        if (savedBank) setSelectedBank(savedBank);
+        if (savedAccountNumber) setAccountNumber(savedAccountNumber);
+        if (savedAccountHolder) setAccountHolder(savedAccountHolder);
+    }, []);
+
     const handleSave = () => {
-        // 저장 로직 구현
+        // localStorage에 데이터 저장
+        localStorage.setItem('refundAccount_bank', selectedBank);
+        localStorage.setItem('refundAccount_accountNumber', accountNumber);
+        localStorage.setItem('refundAccount_accountHolder', accountHolder);
+
         console.log("계좌 정보 저장:", {
             bank: selectedBank,
             accountNumber,
