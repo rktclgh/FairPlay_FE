@@ -11,7 +11,8 @@ import type {
     BoothType,
     BoothUpdateRequest,
     BoothAdminRequest,
-    BoothAdminResponse
+    BoothAdminResponse,
+    BoothUserRecentlyWaitingCount
 } from '../types/booth';
 
 // ==================== Booth APIs ====================
@@ -39,6 +40,14 @@ export const deleteBooth = (eventId: number, boothId: number): Promise<string> =
 export const updateBoothAdminInfo = (eventId: number, boothId: number, data: BoothAdminRequest): Promise<BoothAdminResponse> => {
     return api.patch(`/api/events/${eventId}/booths/${boothId}/manager`, data).then(res => res.data);
 };
+
+export const getUserRecentlyEventWaitingCount = async (eventId: number): Promise<BoothUserRecentlyWaitingCount> => {
+    const accessToken = localStorage.getItem("accessToken");
+    const res = await api.get<BoothUserRecentlyWaitingCount>(`/user/${eventId}/waiting-count`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+    return res.data;
+}
 
 // ==================== Booth Type APIs ====================
 
