@@ -619,12 +619,12 @@ const EventDetail = (): JSX.Element => {
 
                         <div className="space-y-4">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-32">
-                                <div className="flex items-center">
-                                    <span className="text-base text-[#00000099] font-semibold w-20">장소</span>
-                                    <span className="text-base inline-block">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">장소</span>
+                                    <span className="text-base inline-block break-words">
                                         {eventData.placeName}
                                     </span>
-                                    <MapPin className="w-3 h-3 ml-1" />
+                                    <MapPin className="w-3 h-3 ml-1 flex-shrink-0" />
                                 </div>
                                 {/*<div className="flex items-center">*/}
                                 {/*    <span className="text-base text-[#00000099] font-semibold w-20">관람등급</span>*/}
@@ -634,20 +634,20 @@ const EventDetail = (): JSX.Element => {
                                 {/*</div>*/}
                             </div>
 
-                            <div className="flex items-center">
-                                <span className="text-base text-[#00000099] font-semibold w-20">일정</span>
-                                <span className="text-base">{eventData.startDate} ~ {eventData.endDate}</span>
+                            <div className="flex items-center gap-4">
+                                <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">일정</span>
+                                <span className="text-base break-words">{eventData.startDate} ~ {eventData.endDate}</span>
                             </div>
 
                             <hr className="my-2 bg-gray-300" />
 
-                            <div className="flex items-start">
-                                <span className="text-base text-[#00000099] font-semibold w-20">소개</span>
-                                <div className="text-base" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
+                            <div className="flex items-start gap-4">
+                                <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">소개</span>
+                                <div className="flex-1 text-base break-words" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
                             </div>
 
                             <div className="flex flex-col lg:flex-row items-start gap-4">
-                                <span className="text-base text-[#00000099] font-semibold w-20">가격</span>
+                                <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">가격</span>
                                 <div className="flex-1">
                                     {ticketPrices.length > 0 ? (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">

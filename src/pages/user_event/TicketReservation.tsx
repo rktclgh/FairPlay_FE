@@ -71,6 +71,11 @@ export const TicketReservation = () => {
     const [loading, setLoading] = useState(true);
     const [currentStep, setCurrentStep] = useState(0); // 0: 티켓 선택, 1: 예매자 정보, 2: 예매 확인
 
+    // 중복 클릭 방지를 위한 상태
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [paymentAttempts, setPaymentAttempts] = useState(0);
+    const [lastAttemptTime, setLastAttemptTime] = useState(0);
+
     const [ticketReservationForm, setTicketReservationForm] = useState<TicketReservationForm>({
         selectedOption: "",
         quantity: 1,
@@ -307,9 +312,47 @@ export const TicketReservation = () => {
         };
     }, []);
 
+    // 결제 처리 중 페이지 이탈 방지
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (isProcessing) {
+                event.preventDefault();
+                event.returnValue = '결제가 진행 중입니다. 정말 페이지를 떠나시겠습니까?';
+                return '결제가 진행 중입니다. 정말 페이지를 떠나시겠습니까?';
+            }
+        };
 
-    // 결제 하기 버튼
+        if (isProcessing) {
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        }
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isProcessing]);
+
+
+    // 중복 클릭 방지 및 결제 처리 함수
     const handlePayment = async () => {
+        const now = Date.now();
+
+        // 1. 중복 클릭 방지 - 이미 처리 중인 경우
+        if (isProcessing) {
+            toast.warning('결제가 진행 중입니다. 잠시만 기다려주세요.');
+            return;
+        }
+
+        // 2. 연속 시도 제한 - 5초 내 3회 제한
+        if (now - lastAttemptTime < 5000) {
+            if (paymentAttempts >= 3) {
+                toast.error('너무 많은 결제 시도가 발생했습니다. 5초 후 다시 시도해주세요.');
+                return;
+            }
+        } else {
+            // 5초가 지났으면 시도 횟수 초기화
+            setPaymentAttempts(0);
+        }
+
         const selectedTicket = getSelectedTicket();
         console.log('선택된 티켓 : ', selectedTicket);
 
@@ -320,6 +363,14 @@ export const TicketReservation = () => {
 
         const totalAmount = calculateTotal();
         const paymentTargetType = "RESERVATION";
+
+        // 3. 결제 처리 시작 - 상태 업데이트
+        setIsProcessing(true);
+        setPaymentAttempts(prev => prev + 1);
+        setLastAttemptTime(now);
+
+        // 처리 시작 알림
+        toast.info('결제를 처리 중입니다. 잠시만 기다려주세요...');
 
         try {
             // 예약 데이터 준비
@@ -361,6 +412,9 @@ export const TicketReservation = () => {
         } catch (error) {
             console.error('결제 처리 중 오류:', error);
             toast.error(error instanceof Error ? error.message : '결제 중 오류가 발생했습니다.');
+        } finally {
+            // 4. 결제 처리 완료 - 상태 초기화
+            setIsProcessing(false);
         }
     };
 

@@ -430,7 +430,7 @@ const BoothExperienceList: React.FC = () => {
                 {/* 결과 개수 */}
                 <div className="mb-4">
                   <p className="text-sm text-gray-600">
-                    {t('common.total')} <span className="font-semibold text-blue-600">{filteredExperiences.length}</span>{t('boothExperience.totalExperiences')}
+                    총 <span className="font-semibold text-blue-600">{filteredExperiences.length}</span>{t('boothExperience.totalExperiences')}
                   </p>
                 </div>
 

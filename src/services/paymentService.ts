@@ -234,8 +234,8 @@ class PaymentService {
             const merchantUid = await this.generateMerchantUid(paymentTargetType);
             console.log('merchantUid:', merchantUid);
 
-            // 1. 백엔드에 결제 요청 정보 저장 (PENDING 상태)
-            await this.savePaymentRequest({
+            // 1. 백엔드에 결제 요청 정보 저장 (PENDING 상태) - paymentId 반환
+            const savedPayment = await this.savePaymentRequest({
                 eventId: eventId,
                 paymentTargetType: paymentTargetType,
                 quantity: quantity,
@@ -244,6 +244,8 @@ class PaymentService {
                 merchantUid: merchantUid,
                 pgProvider: 'uplus'
             });
+            
+            console.log('저장된 paymentId:', savedPayment.paymentId);
 
             // 3. 결제 요청 데이터 준비
             const paymentRequest: PaymentRequest = {
@@ -280,7 +282,8 @@ class PaymentService {
                     paid_amount: paymentResponse.paid_amount!,
                     apply_num: paymentResponse.apply_num
                 },
-                reservationData
+                reservationData,
+                savedPayment.paymentId
             );
 
             // 7. 결제 테이블에 target_id 업데이트
@@ -288,6 +291,7 @@ class PaymentService {
 
             return {
                 success: true,
+                paymentId: savedPayment.paymentId,
                 paymentResponse,
                 completionResult,
                 targetId
@@ -317,7 +321,7 @@ class PaymentService {
             const merchantUid = await this.generateMerchantUid(paymentTargetType);
             console.log('무료 티켓 처리 - merchantUid:', merchantUid);
 
-            // 1. 무료 티켓 직접 처리 (백엔드에서 즉시 완료 처리)
+            // 1. 무료 티켓 직접 처리 (백엔드에서 즉시 완료 처리) - paymentId 반환
             const freeTicketResult = await this.processFreeTicketOnServer({
                 eventId: eventId,
                 paymentTargetType: paymentTargetType,
@@ -326,6 +330,8 @@ class PaymentService {
                 merchantUid: merchantUid,
                 pgProvider: 'free'
             });
+            
+            console.log('무료 티켓 paymentId:', freeTicketResult.paymentId);
 
             // 2. 예약 데이터 처리 (무료 티켓도 예약 생성 필요)
             const targetId = await this.processTargetData(
@@ -337,7 +343,8 @@ class PaymentService {
                     paid_amount: 0,
                     apply_num: 'FREE_TICKET'
                 },
-                reservationData
+                reservationData,
+                freeTicketResult.paymentId
             );
 
             // 3. 결제 테이블에 target_id 업데이트
@@ -345,6 +352,7 @@ class PaymentService {
 
             return {
                 success: true,
+                paymentId: freeTicketResult.paymentId,
                 paymentResponse: {
                     success: true,
                     merchant_uid: freeTicketResult.merchantUid,
@@ -473,13 +481,37 @@ class PaymentService {
     }
 
     /**
+     * 결제 테이블에 target_id 업데이트
+     */
+    async updatePaymentTargetId(merchantUid: string, targetId: number): Promise<void> {
+        try {
+            const response = await authManager.authenticatedFetch(`/api/payments/${merchantUid}/target-id`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ targetId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`결제 테이블 target_id 업데이트 실패: ${response.status} - ${errorData}`);
+            }
+        } catch (error) {
+            console.error('결제 테이블 target_id 업데이트 중 오류:', error);
+            throw error;
+        }
+    }
+
+    /**
      * paymentTargetType에 따라 예약/부스/광고 데이터 저장
      */
     async processTargetData(
-        paymentTargetType: string,
-        eventId: number,
-        paymentData: any,
-        reservationData?: any
+        paymentTargetType: string, 
+        eventId: number, 
+        paymentData: any, 
+        reservationData?: any, 
+        paymentId?: number
     ): Promise<number> {
         try {
             switch (paymentTargetType) {
@@ -505,7 +537,8 @@ class PaymentService {
                                 paid_amount: paymentData.paid_amount,
                                 apply_num: paymentData.apply_num
                             }
-                        }
+                        },
+                        paymentId
                     );
                     return reservationResult.reservationId;
 
@@ -522,29 +555,6 @@ class PaymentService {
             }
         } catch (error) {
             console.error(`${paymentTargetType} 데이터 저장 중 오류:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * 결제 테이블에 target_id 업데이트
-     */
-    async updatePaymentTargetId(merchantUid: string, targetId: number): Promise<void> {
-        try {
-            const response = await authManager.authenticatedFetch(`/api/payments/${merchantUid}/target-id`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ targetId })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`결제 테이블 target_id 업데이트 실패: ${response.status} - ${errorData}`);
-            }
-        } catch (error) {
-            console.error('결제 테이블 target_id 업데이트 중 오류:', error);
             throw error;
         }
     }

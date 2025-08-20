@@ -5,14 +5,6 @@ import { HostSideNav } from "../../components/HostSideNav";
 import authManager from "../../utils/auth";
 import RefundApprovalModal from "../admin_refund/RefundApprovalModal";
 
-// 관리하는 이벤트 타입
-interface ManagedEvent {
-    eventId: number;
-    eventName: string;
-    eventStatus: string;
-    startDate?: string;
-    endDate?: string;
-}
 
 // 환불 데이터 타입
 interface RefundData {
@@ -61,7 +53,6 @@ interface PagedResponse<T> {
 
 // 검색 필터 타입
 interface RefundFilters {
-    eventId?: number;
     userName?: string;
     paymentDateFrom?: string;
     paymentDateTo?: string;
@@ -82,12 +73,10 @@ export const HostRefundManagement = () => {
     const [selectedRefunds, setSelectedRefunds] = useState<Set<number>>(new Set());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRefund, setSelectedRefund] = useState<RefundData | null>(null);
-    const [managedEvents, setManagedEvents] = useState<ManagedEvent[]>([]);
     const itemsPerPage = 20;
 
     // 검색 필터 상태
     const [filters, setFilters] = useState<RefundFilters>({
-        eventId: undefined,
         userName: "",
         paymentDateFrom: "",
         paymentDateTo: "",
@@ -99,18 +88,6 @@ export const HostRefundManagement = () => {
         sortDirection: "desc"
     });
 
-    // 관리하는 이벤트 목록 조회
-    const fetchManagedEvents = async () => {
-        try {
-            const response = await authManager.authenticatedFetch('/api/host/refunds/managed-events');
-            if (response.ok) {
-                const data: ManagedEvent[] = await response.json();
-                setManagedEvents(data);
-            }
-        } catch (error) {
-            console.error('관리 이벤트 조회 중 오류:', error);
-        }
-    };
 
     // 환불 목록 조회
     const fetchRefunds = async () => {
@@ -145,17 +122,12 @@ export const HostRefundManagement = () => {
     };
 
     useEffect(() => {
-        fetchManagedEvents();
-    }, []);
-
-    useEffect(() => {
         fetchRefunds();
     }, [filters]);
 
     // 필터 초기화
     const handleResetFilters = () => {
         setFilters({
-            eventId: undefined,
             userName: "",
             paymentDateFrom: "",
             paymentDateTo: "",
@@ -256,24 +228,7 @@ export const HostRefundManagement = () => {
                             </button>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    내 이벤트
-                                </label>
-                                <select
-                                    value={filters.eventId || ""}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, eventId: e.target.value ? Number(e.target.value) : undefined, page: 0 }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">전체 이벤트</option>
-                                    {managedEvents.map(event => (
-                                        <option key={event.eventId} value={event.eventId}>
-                                            {event.eventName}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     사용자명
@@ -327,7 +282,7 @@ export const HostRefundManagement = () => {
                                 </select>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     결제 유형

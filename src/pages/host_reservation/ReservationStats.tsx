@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { HostSideNav } from "../../components/HostSideNav";
 import { TopNav } from "../../components/TopNav";
 import { HiChevronDown } from 'react-icons/hi';
-import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto } from "../../services/dashboard";
+import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto,ReservationSummaryDto } from "../../services/dashboard";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from "react-toastify";

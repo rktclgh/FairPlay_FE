@@ -222,7 +222,7 @@ export const ReservationList: React.FC = () => {
                         </button>
                         <div>
                             <h1 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
-                                예약자 목록
+                                참가자 목록
                             </h1>
                         </div>
                     </div>
@@ -239,13 +239,13 @@ export const ReservationList: React.FC = () => {
                         <h3 className="text-lg font-semibold mb-4">검색 조건</h3>
                         <div className="grid grid-cols-4 gap-3 mb-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">예약자명</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">참가자명</label>
                                 <input
                                     type="text"
                                     name="name"
                                     value={searchForm.name || ''}
                                     onChange={handleSearchChange}
-                                    placeholder="예약자명 검색"
+                                    placeholder="참가자명 검색"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     disabled={loading}
                                 />
@@ -338,13 +338,12 @@ export const ReservationList: React.FC = () => {
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* 테이블 헤더 */}
                         <div className="bg-gray-50 border-b">
-                            <div className="grid gap-2 p-4 items-center w-full" style={{ gridTemplateColumns: '1fr 1.2fr 1fr 1.2fr 1.5fr 0.6fr 0.6fr 0.6fr' }}>
-                                <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">예약자명</div>
+                            <div className="grid gap-2 p-4 items-center w-full" style={{ gridTemplateColumns: '1fr 1.2fr 1fr 1.2fr 1.8fr 0.6fr 0.6fr' }}>
+                                <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">참가자명</div>
                                 <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">연락처</div>
                                 <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">예약번호</div>
-                                <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">예약일시</div>
+                                <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">등록일시</div>
                                 <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">회차정보</div>
-                                <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">티켓수량</div>
                                 <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">예약상태</div>
                                 <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-gray-700 text-sm text-center flex items-center justify-center">입장상태</div>
                             </div>
@@ -359,13 +358,12 @@ export const ReservationList: React.FC = () => {
                             ) : (
                                 reservations.map((reservation) => (
                                     <div key={reservation.reservationId} className="border-b hover:bg-gray-50 transition-colors">
-                                        <div className="grid gap-2 p-4 items-center w-full" style={{ gridTemplateColumns: '1fr 1.2fr 1fr 1.2fr 1.5fr 0.6fr 0.6fr 0.6fr' }}>
+                                        <div className="grid gap-2 p-4 items-center w-full" style={{ gridTemplateColumns: '1fr 1.2fr 1fr 1.2fr 1.8fr 0.6fr 0.6fr' }}>
                                             <div className="text-gray-900 text-sm flex items-center justify-center text-center">{reservation.userName}</div>
                                             <div className="text-gray-900 text-sm flex items-center justify-center text-center">{reservation.userPhone}</div>
                                             <div className="text-gray-900 text-sm flex items-center justify-center text-center">{reservation.reservationNumber}</div>
                                             <div className="text-gray-900 text-sm flex items-center justify-center text-center">{reservation.reservationDate}</div>
                                             <div className="text-gray-900 text-sm flex items-center justify-center text-center whitespace-nowrap overflow-hidden text-ellipsis">{reservation.scheduleName || '일정 미정'}</div>
-                                            <div className="text-gray-900 text-sm flex items-center justify-center text-center">{reservation.quantity}매</div>
                                             <div className="flex items-center justify-center text-center">
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${reservation.paymentStatusColor} ${reservation.paymentStatusTextColor}`}>
                                                     {reservation.reservationStatus}
