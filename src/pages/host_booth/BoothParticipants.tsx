@@ -192,7 +192,14 @@ const BoothParticipants: React.FC = () => {
                                 currentList.map((b) => (
                                     <div key={b.boothId} className="border-b hover:bg-gray-50 transition-colors">
                                         <div className="grid gap-4 p-4 items-center" style={{ gridTemplateColumns: tableColumns as any }}>
-                                            <div className="text-gray-900 text-sm text-center whitespace-nowrap">
+                                            <div
+                                                className="text-gray-900 text-sm text-center whitespace-nowrap flex items-center justify-center gap-2">
+                                                {b.isDeleted && (
+                                                    <span
+                                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                        삭제됨
+                                                    </span>
+                                                )}
                                                 {b.boothTitle}
                                             </div>
                                             <div className="text-gray-900 text-sm text-center whitespace-nowrap">{b.startDate}</div>
