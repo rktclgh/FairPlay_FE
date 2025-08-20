@@ -22,6 +22,7 @@ import type {
 import { useTranslation } from 'react-i18next';
 import "swiper/css/effect-coverflow";
 import type { HotPick } from "../services/event";
+import NewLoader from "../components/NewLoader";
 
 
 // 유료광고 행사 인터페이스
@@ -169,7 +170,7 @@ export const Main: React.FC = () => {
 
     const authHeaders = () => {
         const token = localStorage.getItem("accessToken");
-   return token ? { Authorization: `Bearer ${token}` } : {};
+        return token ? { Authorization: `Bearer ${token}` } : {};
     };
 
     const toggleWish = async (eventId: number) => {
@@ -415,22 +416,22 @@ export const Main: React.FC = () => {
                 // 유료광고 데이터 로드
                 await loadPaidAdvertisements();
 
-                 // HOT PICKS 백엔드 연동
+                // HOT PICKS 백엔드 연동
                 try {
-        const hot = await eventAPI.getHotPicks({ size: 10 });
-        setHotPicks(hot); // 매핑 없이 바로
-      } catch (e) {
-        console.error("HOT PICKS 로드 실패:", e);
-      }
-    } catch (error) {
-      console.error("데이터 로드 실패:", error);
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-  loadData();
-}, []);
+                    const hot = await eventAPI.getHotPicks({ size: 10 });
+                    setHotPicks(hot); // 매핑 없이 바로
+                } catch (e) {
+                    console.error("HOT PICKS 로드 실패:", e);
+                }
+            } catch (error) {
+                console.error("데이터 로드 실패:", error);
+                setEvents([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, []);
 
     // 카테고리 필터링
     // const handleCategoryChange = async (category: string) => {
@@ -447,10 +448,10 @@ export const Main: React.FC = () => {
     // Hot Picks는 Swiper로 전환하여 수동 인덱스 제어 제거
 
     // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
-  const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
-  const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
-    
-  // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
+    const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
+    const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
+
+    // 임시 Hot Picks 데이터 (백엔드 연결 전까지 사용)
     // 실제 행사 ID로 매핑 (events 배열에서 제목으로 찾기)
     const tempHotPicks: HotPick[] = [
         {
@@ -536,47 +537,47 @@ export const Main: React.FC = () => {
     ];
 
     // Hot Picks 데이터 (백엔드 연결 후 hotPicks로 교체)
-const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
+    const allHotPicks = hotPicks.length > 0 ? hotPicks : tempHotPicks;
 
-const todayKey = dayjs().format("YYYY-MM-DD");
+    const todayKey = dayjs().format("YYYY-MM-DD");
 
-const getMdPickIdsForToday = (): Set<number> => {
-  try {
-    if (typeof window === "undefined") return new Set<number>(); // SSR 대비(필요시)
-    const raw = localStorage.getItem(`mdpick:${todayKey}`);
-    const arr = raw ? JSON.parse(raw) : null;
-    return Array.isArray(arr)
-      ? new Set<number>(
-          arr.slice(0, 2)
-             .map((v: unknown) => Number(v))
-             .filter((n) => Number.isFinite(n))
-        )
-      : new Set<number>();
-  } catch {
-    return new Set<number>();
-  }
-};
+    const getMdPickIdsForToday = (): Set<number> => {
+        try {
+            if (typeof window === "undefined") return new Set<number>(); // SSR 대비(필요시)
+            const raw = localStorage.getItem(`mdpick:${todayKey}`);
+            const arr = raw ? JSON.parse(raw) : null;
+            return Array.isArray(arr)
+                ? new Set<number>(
+                    arr.slice(0, 2)
+                        .map((v: unknown) => Number(v))
+                        .filter((n) => Number.isFinite(n))
+                )
+                : new Set<number>();
+        } catch {
+            return new Set<number>();
+        }
+    };
 
     // MD PICK 우선 노출 인식: 로컬스토리지에서 오늘 날짜의 ID/제목을 모두 읽는다
     // [백엔드 연동 필요]
     // - 오늘 노출할 MD PICK 이벤트 ID 목록을 API로 전달받아 사용하세요.
     // - 현재는 로컬스토리지 키 'mdpick:YYYY-MM-DD'에서 읽도록 남겨두었습니다. API 적용 시 이 함수들을 대체하세요.
-    
-    
+
+
     // [백엔드 연동 필요]
     // - 임시 보조: 제목 기반 매칭용 키입니다. 백엔드가 ID를 제공하면 제거해도 됩니다.
     const getMdPickTitlesForToday = (): Set<string> => {
-  try {
-    if (typeof window === "undefined") return new Set<string>(); // SSR 대비(필요시)
-    const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
-    const arr = raw ? JSON.parse(raw) : null;
-    return Array.isArray(arr)
-      ? new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)))
-      : new Set<string>();
-  } catch {
-    return new Set<string>();
-  }
-};
+        try {
+            if (typeof window === "undefined") return new Set<string>(); // SSR 대비(필요시)
+            const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
+            const arr = raw ? JSON.parse(raw) : null;
+            return Array.isArray(arr)
+                ? new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)))
+                : new Set<string>();
+        } catch {
+            return new Set<string>();
+        }
+    };
 
     const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
 
@@ -609,7 +610,7 @@ const getMdPickIdsForToday = (): Set<number> => {
     if (loading) {
         return (
             <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
-                <div className="text-xl">{t('common.loading')}</div>
+                <NewLoader />
             </div>
         );
     }

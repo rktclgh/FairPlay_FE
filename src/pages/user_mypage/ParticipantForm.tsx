@@ -8,7 +8,8 @@ import type {
     AttendeeSaveRequestDto,
     ShareTicketInfoResponseDto
 } from "../../services/types/attendeeType";
-interface Participant{
+import NewLoader from "../../components/NewLoader";
+interface Participant {
     id: number;
     name: string;
     phone: string;
@@ -31,7 +32,7 @@ export default function ParticipantForm(): JSX.Element {
     const [warningMessage, setWarningMessage] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
-        // 토큰 검증 API 호출
+    // 토큰 검증 API 호출
     const validateToken = async () => {
         try {
             // URL에서 토큰 추출 (예: ?token=abc123)
@@ -85,7 +86,7 @@ export default function ParticipantForm(): JSX.Element {
     // 페이지 로드 시 토큰 검증
     useEffect(() => {
         validateToken();
-    },[])
+    }, [])
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -128,7 +129,7 @@ export default function ParticipantForm(): JSX.Element {
 
         const attendeeData: AttendeeSaveRequestDto = {
             name: formData.name,
-            email: formData.email, 
+            email: formData.email,
             phone: formData.phone,
             agreeToTerms: formData.agreeToTerms
         }
@@ -142,7 +143,7 @@ export default function ParticipantForm(): JSX.Element {
             phone: res.phone,
             email: res.email,
         }
-        
+
         // 성공 모달 표시
         setRegisteredParticipant(resParticipant);
         setIsSuccessModalOpen(true);
@@ -172,8 +173,8 @@ export default function ParticipantForm(): JSX.Element {
                 <div className="w-full flex flex-col items-center">
                     <div className="w-full max-w-[800px] mt-20 mb-8 flex items-center justify-center">
                         <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                            <p className="text-gray-600">링크를 확인하는 중입니다...</p>
+                            <NewLoader />
+                            <p className="text-gray-600 mt-4">링크를 확인하는 중입니다...</p>
                         </div>
                     </div>
                 </div>
