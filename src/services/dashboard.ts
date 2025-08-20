@@ -64,7 +64,7 @@ export interface SessionSalesItem {
 }
 
 export interface SalesDailyTrend{
-    date: String;
+    date: string;
     amount: number;
     count: number;
 }

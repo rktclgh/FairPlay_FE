@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
-import { 
-    LineChart, 
-    Line, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
     ResponsiveContainer,
     BarChart,
     Bar,
@@ -118,14 +118,6 @@ export const RevenueSummary: React.FC = () => {
     const cancellations = salesStats?.summary?.cancelled?.count || 0;
     const refunded =  salesStats?.summary?.refunded?.amount || 0;
 
-    // 결제율 분석 데이터
-
-    const paidAmount = salesStats?.statusBreakdown?.amount || 0;
-    const percentage = 50;
-    /* const totalReservations = salesStats?.summary?.totalReservations || 0;
-    const paid = salesStats?.summary?.paid?.count || 0;
-    const cancellations = salesStats?.summary?.cancelled?.count || 0;
-    const refunded =  salesStats?.summary?.refunded?.amount || 0; */
 
    // 색상 코드
     const colorPalette = [
@@ -152,16 +144,17 @@ export const RevenueSummary: React.FC = () => {
 
       // 2) 티켓별 데이터 배열로 변환하며 랜덤 색상 할당
       return Object.keys(grouped).map(name => {
-        const randomColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-        return {
-          name,
-          revenue: grouped[name],
-          fill: randomColor
-        };
+          const colorIndex =
+              Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % colorPalette.length;
+          const color = colorPalette[colorIndex];
+          return {
+              name,
+              revenue: grouped[name],
+              fill: color
+          };
       });
-    };
 
-
+}
     // 카테고리별 매출 데이터
    const categoryRevenueData = salesStats?.sessionSales ? getTicketRevenueData(salesStats.sessionSales) : [];
 
@@ -206,11 +199,11 @@ export const RevenueSummary: React.FC = () => {
 
 
     // 통계 카드 컴포넌트
-    const StatCard: React.FC<{ title: string; value: string; unit?: string; trend?: string; isPositive?: boolean; color?: string }> = ({ 
-        title, 
-        value, 
-        unit, 
-        trend, 
+    const StatCard: React.FC<{ title: string; value: string; unit?: string; trend?: string; isPositive?: boolean; color?: string }> = ({
+        title,
+        value,
+        unit,
+        trend,
         isPositive,
         color = "text-gray-900"
     }) => (
@@ -334,7 +327,7 @@ export const RevenueSummary: React.FC = () => {
                                         />
                                         <Area 
                                             type="monotone" 
-                                            dataKey="revenue" 
+                                            dataKey="amount"
                                             stackId="1"
                                             stroke="#3B82F6" 
                                             fill="#3B82F6" 
@@ -412,9 +405,9 @@ export const RevenueSummary: React.FC = () => {
                                         <div
                                           className={`h-2 rounded-full ${
                                             item.label === "결제 완료"
-                                              ? "bg-red-500"
+                                              ? "bg-green-500"
                                               : item.label === "결제 취소"
-                                              ? "bg-orange-500"
+                                              ? "bg-red-500"
                                               : "bg-blue-500"
                                           }`}
                                           style={{ width: `${item.percentage}%` }}
