@@ -189,7 +189,7 @@ export const MyPageInfo = () => {
                 {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
                 <button
                     onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-                    className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+                    className="md:hidden fixed top-16 left-4 z-50 p-3 bg-transparent"
                 >
                     {isMobileSidebarOpen ? (
                         <HiOutlineX className="w-6 h-6 text-gray-600" />
@@ -227,15 +227,15 @@ export const MyPageInfo = () => {
 
                 <TopNav />
 
-                {/* 제목 - 웹화면에서 원래 위치로 유지 */}
-                <div className="md:absolute md:top-[137px] md:left-64 left-4 right-4 top-16 relative md:static">
+                {/* 제목 - 웹화면에서 원래 위치로 복구, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-16 relative md:static">
                     <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
                         {t('mypage.info.title')}
                     </div>
                 </div>
 
-                {/* 콘텐츠 - 웹화면에서 원래 위치로 유지 */}
-                <div className={`md:absolute md:w-[949px] md:left-64 left-4 right-4 top-16 relative md:static ${showPasswordChange ? 'md:h-[600px]' : 'md:h-[213px]'} md:top-[195px] md:pb-20`}>
+                {/* 콘텐츠 - 웹화면에서 원래 위치로 복구, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className={`md:absolute md:w-[949px] md:left-64 left-0 right-4 top-16 relative md:static ${showPasswordChange ? 'md:h-[600px]' : 'md:h-[213px]'} md:top-[195px] md:pb-20`}>
                     <div className="md:absolute md:top-0 md:left-0 left-0 top-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl tracking-[0] leading-[54px] whitespace-nowrap">
                         {t('mypage.info.myAccount')}
                     </div>
@@ -344,8 +344,8 @@ export const MyPageInfo = () => {
                     )}
                 </div>
 
-                {/* 개인 정보 섹션 - 비밀번호 변경 폼이 표시되면 아래로 이동 */}
-                <div className={`md:absolute md:w-[949px] md:h-[335px] md:left-64 left-4 right-4 top-16 relative md:static ${showPasswordChange ? 'md:top-[600px]' : 'md:top-[455px]'}`}>
+                {/* 개인 정보 섹션 - 웹화면에서 원래 위치로 복구, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className={`md:absolute md:w-[949px] md:h-[335px] md:left-64 left-0 right-4 top-16 relative md:static ${showPasswordChange ? 'md:top-[600px]' : 'md:top-[455px]'}`}>
                     <div className="md:absolute md:top-0 md:left-0 left-0 top-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl tracking-[0] leading-[54px] whitespace-nowrap">
                         {t('mypage.info.personalInfo')}
                     </div>
@@ -392,7 +392,7 @@ export const MyPageInfo = () => {
                     </div>
                 </div>
 
-                <div className={`md:absolute md:left-64 left-4 right-4 top-16 relative md:static ${showPasswordChange ? 'md:top-[1179px]' : 'md:top-[879px]'}`}>
+                <div className={`md:absolute md:left-64 left-0 right-4 top-16 relative md:static ${showPasswordChange ? 'md:top-[1179px]' : 'md:top-[879px]'}`}>
                     <div
                         className="[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap cursor-pointer hover:text-black underline"
                         onClick={() => navigate('/mypage/withdrawal')}
