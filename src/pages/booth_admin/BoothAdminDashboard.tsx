@@ -307,7 +307,7 @@ const BoothAdminDashboard: React.FC = () => {
                                                 {booth.boothBannerUrl && (
                                                     <div className="mb-4">
                                                         <label className="block text-sm font-medium text-gray-500 mb-2">부스 배너</label>
-                                                        <div className="w-64 h-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                                        <div className="w-64 h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                                                             <img 
                                                                 src={booth.boothBannerUrl} 
                                                                 alt="부스 배너" 
