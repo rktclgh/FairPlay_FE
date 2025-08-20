@@ -161,7 +161,7 @@ export default function MyTickets(): JSX.Element {
 
 
         if (eventDateTime.getTime() < today.getTime()) {
-            alert("이미 지난 예약은 조회할 수 없습니다.");
+            toast.error("입력 기한은 행사 시작 전 까지입니다.");
             return;
         }
 
