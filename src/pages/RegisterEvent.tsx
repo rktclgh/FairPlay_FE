@@ -7,7 +7,6 @@ import { toast } from "react-toastify";
 import { useFileUpload } from "../hooks/useFileUpload";
 import { businessAPI, BusinessVerificationRequest } from "../services/business";
 
-
 declare global {
     interface Window {
         kakao: any;
@@ -51,16 +50,16 @@ export const RegisterEvent = () => {
     const [searchKeyword, setSearchKeyword] = useState("");
     const [searchResults, setSearchResults] = useState<KakaoPlace[]>([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
-    
+
     // 파일 업로드 훅 사용
-    const { 
-        uploadedFiles, 
-        isUploading, 
-        uploadFile, 
-        removeFile, 
-        getFileByUsage, 
+    const {
+        uploadedFiles,
+        isUploading,
+        uploadFile,
+        removeFile,
+        getFileByUsage,
         getFileUploadDtos,
-        clearAllFiles 
+        clearAllFiles
     } = useFileUpload();
 
 
@@ -185,7 +184,7 @@ export const RegisterEvent = () => {
     const formatPhoneNumber = (value: string): string => {
         // 숫자만 추출
         const phoneNumber = value.replace(/[^\d]/g, '');
-        
+
         // 길이에 따라 포맷팅
         if (phoneNumber.length <= 3) {
             return phoneNumber;
@@ -229,8 +228,8 @@ export const RegisterEvent = () => {
 
         // 메인카테고리가 변경되면 서브카테고리 초기화
         if (name === "mainCategory") {
-        setFormData(prev => ({
-            ...prev,
+            setFormData(prev => ({
+                ...prev,
                 [name]: processedValue,
                 subCategory: "" // 서브카테고리 초기화
             }));
@@ -277,7 +276,7 @@ export const RegisterEvent = () => {
     const selectPlace = (place: KakaoPlace) => {
         // 도로명 주소가 있으면 우선 사용, 없으면 지번 주소 사용
         const preferredAddress = place.road_address_name || place.address_name;
-        
+
         setFormData(prev => ({
             ...prev,
             address: preferredAddress,
@@ -293,12 +292,12 @@ export const RegisterEvent = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         try {
             // 폼 데이터 검증
-            if (!formData.eventNameKr || !formData.eventNameEn || !formData.startDate || 
+            if (!formData.eventNameKr || !formData.eventNameEn || !formData.startDate ||
                 !formData.endDate || !formData.businessNumber || !formData.businessName ||
-                !formData.businessDate || !formData.managerName || 
+                !formData.businessDate || !formData.managerName ||
                 !formData.phone || !formData.contactEmail || !formData.email) {
                 toast.error("필수 항목을 모두 입력해주세요.");
                 return;
@@ -343,7 +342,7 @@ export const RegisterEvent = () => {
                 titleEng: formData.eventNameEn,
                 startDate: formatDateForBackend(formData.startDate), // YYYY-MM-DD 형식
                 endDate: formatDateForBackend(formData.endDate), // YYYY-MM-DD 형식
-                
+
                 // 장소 정보 직접 전송
                 locationId: null,
                 address: formData.address || undefined,
@@ -352,7 +351,7 @@ export const RegisterEvent = () => {
                 longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
                 placeUrl: formData.placeUrl || undefined,
                 locationDetail: formData.detailAddress || undefined,
-                
+
                 mainCategoryId: categoryIds.mainCategoryId || null,
                 subCategoryId: categoryIds.subCategoryId || null,
                 tempFiles: getFileUploadDtos(), // 업로드된 파일 정보 추가
@@ -362,10 +361,10 @@ export const RegisterEvent = () => {
 
             // API 호출
             const response = await eventAPI.submitEventApplication(requestData);
-            
+
             console.log("행사 등록 신청 성공:", response);
             toast.success("행사 등록 신청이 완료되었습니다. 승인 검토 후 연락드리겠습니다.");
-            
+
             // 폼 초기화 (선택사항)
             setFormData({
                 eventNameKr: "",
@@ -389,10 +388,10 @@ export const RegisterEvent = () => {
                 longitude: "",
                 placeUrl: "",
             });
-            
+
             // 업로드된 파일들 초기화
             clearAllFiles();
-            
+
             // 검색 관련 state 초기화
             setSearchKeyword("");
             setSearchResults([]);
@@ -405,91 +404,92 @@ export const RegisterEvent = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
-            <TopNav />
+            <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
+                <TopNav />
 
-                {/* 페이지 제목 */}
-                <div className="top-[137px] left-[153px] [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    행사 등록 신청
+                {/* 페이지 제목 - 웹화면에서 원래 위치로 유지, 모바일에서는 중앙정렬 */}
+                <div className="md:absolute md:top-[137px] md:left-[153px] left-4 right-4 top-24 relative md:static text-center md:text-left">
+                    <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+                        행사 등록 신청
+                    </div>
                 </div>
 
-                {/* 메인 콘텐츠 */}
-                <div className="absolute left-1/2 transform -translate-x-1/2 top-[195px] w-[949px]">
-
+                {/* 메인 콘텐츠 - 웹화면에서 원래 위치로 유지, 모바일에서는 왼쪽으로 이동 */}
+                <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:top-[195px] md:w-[949px] left-1 right-10 top-32 relative md:static w-full max-w-4xl md:mx-0">
                     {/* 폼 컨테이너 시작 */}
                     <form onSubmit={handleSubmit} className="bg-white">
                         {/* 행사 정보 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">
-                                행사 정보
-                            </h2>
-                            <div className="grid grid-cols-2 gap-8">
-                                {/* 행사명(국문) */}
-                                <div>
-                                    <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                        행사명(국문)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="eventNameKr"
-                                        value={formData.eventNameKr}
-                                        onChange={handleInputChange}
-                                        placeholder="국문 행사명을 입력하세요"
-                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameKr ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                    />
-                                </div>
-                                {/* 행사명(영문) */}
-                                <div>
-                                    <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                        행사명(영문)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="eventNameEn"
-                                        value={formData.eventNameEn}
-                                        onChange={handleInputChange}
-                                        placeholder="영문 행사명을 입력하세요"
-                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameEn ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                    />
-                                </div>
-                                {/* 시작일 */}
-                                <div>
-                                    <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                        시작일
-                                    </label>
-                                    <input
-                                        type="date"
-                                        name="startDate"
-                                        value={formData.startDate}
-                                        onChange={handleInputChange}
-                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.startDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                    />
-                                </div>
-                                {/* 종료일 */}
-                                <div>
-                                    <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
-                                        종료일
-                                    </label>
-                                    <input
-                                        type="date"
-                                        name="endDate"
-                                        value={formData.endDate}
-                                        onChange={handleInputChange}
-                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.endDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
-                                    />
-                                </div>
+                            <div className="bg-white rounded-lg shadow-md p-6 md:p-6">
+                                <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">
+                                    행사 정보
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                                    {/* 행사명(국문) */}
+                                    <div>
+                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            행사명(국문)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="eventNameKr"
+                                            value={formData.eventNameKr}
+                                            onChange={handleInputChange}
+                                            placeholder="국문 행사명을 입력하세요"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameKr ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
+                                    </div>
+                                    {/* 행사명(영문) */}
+                                    <div>
+                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            행사명(영문)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="eventNameEn"
+                                            value={formData.eventNameEn}
+                                            onChange={handleInputChange}
+                                            placeholder="영문 행사명을 입력하세요"
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.eventNameEn ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
+                                    </div>
+                                    {/* 시작일 */}
+                                    <div>
+                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            시작일
+                                        </label>
+                                        <input
+                                            type="date"
+                                            name="startDate"
+                                            value={formData.startDate}
+                                            onChange={handleInputChange}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.startDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
+                                    </div>
+                                    {/* 종료일 */}
+                                    <div>
+                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                            종료일
+                                        </label>
+                                        <input
+                                            type="date"
+                                            name="endDate"
+                                            value={formData.endDate}
+                                            onChange={handleInputChange}
+                                            className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.endDate ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                        />
+                                    </div>
                                     {/* 행사 장소 */}
-                                    <div className="col-span-2">
-                                <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                    <div className="col-span-1 md:col-span-2">
+                                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             행사 장소
-                                </label>
+                                        </label>
 
                                         <div className="space-y-4">
                                             {/* 장소 검색 */}
                                             <div>
-                                                <div className="relative w-1/2">
-                                    <input
+                                                <div className="relative w-full md:w-1/2">
+                                                    <input
                                                         type="text"
                                                         value={searchKeyword}
                                                         onChange={(e) => setSearchKeyword(e.target.value)}
@@ -509,7 +509,7 @@ export const RegisterEvent = () => {
                                                     >
                                                         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                            </svg>
+                                                        </svg>
                                                     </button>
                                                 </div>
 
@@ -568,7 +568,7 @@ export const RegisterEvent = () => {
                                     </div>
 
                                     {/* 카테고리 선택 */}
-                                    <div className="col-span-2">
+                                    <div className="col-span-1 md:col-span-2">
                                         <div className="grid grid-cols-2 gap-8">
                                             {/* 메인카테고리 */}
                                             <div>
@@ -588,7 +588,7 @@ export const RegisterEvent = () => {
                                                     <option value="공연">공연</option>
                                                     <option value="축제">축제</option>
                                                 </select>
-                                        </div>
+                                            </div>
 
                                             {/* 서브카테고리 */}
                                             <div>
@@ -624,7 +624,7 @@ export const RegisterEvent = () => {
                                     </div>
 
                                     {/* 행사 배너 이미지 */}
-                                    <div className="col-span-2">
+                                    <div className="col-span-1 md:col-span-2">
                                         <div className="grid grid-cols-2 gap-8">
                                             {/* 세로형 배너 */}
                                             <div>
@@ -632,7 +632,7 @@ export const RegisterEvent = () => {
                                                     행사 배너 이미지 (세로형)
                                                 </label>
                                                 <span className="[font-family:'Roboto',Helvetica] font-medium text-indigo-800 text-[13px] leading-[30px] tracking-[0] block text-left mb-1">사이즈: 320*400</span>
-                                                <div 
+                                                <div
                                                     className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative"
                                                     onDragOver={(e) => {
                                                         e.preventDefault();
@@ -653,9 +653,9 @@ export const RegisterEvent = () => {
                                                 >
                                                     {getFileByUsage('thumbnail') ? (
                                                         <div className="space-y-2">
-                                                            <img 
-                                                                src={getFileByUsage('thumbnail')?.url} 
-                                                                alt="세로형 배너 미리보기" 
+                                                            <img
+                                                                src={getFileByUsage('thumbnail')?.url}
+                                                                alt="세로형 배너 미리보기"
                                                                 className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                             />
                                                             <p className="text-xs text-green-600">✓ {getFileByUsage('thumbnail')?.name}</p>
@@ -713,7 +713,7 @@ export const RegisterEvent = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                        </div>
+                                            </div>
 
                                             {/* 가로형 배너 */}
                                             <div>
@@ -722,7 +722,7 @@ export const RegisterEvent = () => {
                                                 </label>
                                                 <span className="[font-family:'Roboto',Helvetica] font-medium text-indigo-800 text-[13px] leading-[30px] tracking-[0] block text-left mb-1">사이즈: 1920*1080</span>
 
-                                                <div 
+                                                <div
                                                     className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative"
                                                     onDragOver={(e) => {
                                                         e.preventDefault();
@@ -743,9 +743,9 @@ export const RegisterEvent = () => {
                                                 >
                                                     {getFileByUsage('banner') ? (
                                                         <div className="space-y-2">
-                                                            <img 
-                                                                src={getFileByUsage('banner')?.url} 
-                                                                alt="가로형 배너 미리보기" 
+                                                            <img
+                                                                src={getFileByUsage('banner')?.url}
+                                                                alt="가로형 배너 미리보기"
                                                                 className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                             />
                                                             <p className="text-xs text-green-600">✓ {getFileByUsage('banner')?.name}</p>
@@ -805,14 +805,14 @@ export const RegisterEvent = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        </div>
+                                    </div>
 
                                     {/* 행사 개요서 */}
-                                    <div className="col-span-2">
+                                    <div className="col-span-1 md:col-span-2">
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
                                             행사 개요서
                                         </label>
-                                        <div 
+                                        <div
                                             className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
                                             onDragOver={(e) => {
                                                 e.preventDefault();
@@ -895,12 +895,12 @@ export const RegisterEvent = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* 사업자 정보 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="bg-white rounded-lg shadow-md p-6 md:p-6">
                                 <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">사업자 정보</h2>
-                                <div className="grid grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                                     {/* 첫 번째 행 */}
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">사업자 등록번호</label>
@@ -926,7 +926,7 @@ export const RegisterEvent = () => {
                                             className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.businessName ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                         />
                                     </div>
-                                    
+
                                     {/* 두 번째 행 */}
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">개업일자</label>
@@ -945,9 +945,9 @@ export const RegisterEvent = () => {
 
                         {/* 담당자 정보 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="bg-white rounded-lg shadow-md p-6 md:p-6">
                                 <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">담당자 정보</h2>
-                                <div className="grid grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                                     {/* 첫 번째 행 */}
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">담당자 이름</label>
@@ -971,7 +971,7 @@ export const RegisterEvent = () => {
                                             className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.phone ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                         />
                                     </div>
-                                    
+
                                     {/* 두 번째 행 */}
                                     <div>
                                         <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">이메일</label>
@@ -991,20 +991,20 @@ export const RegisterEvent = () => {
 
                         {/* FairPlay에 등록할 이메일 섹션 */}
                         <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="bg-white rounded-lg shadow-md p-6 md:p-6">
                                 <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-2">FairPlay에 등록할 이메일</h2>
                                 <p className="text-sm text-gray-600 mb-6">행사 승인 시 작성된 이메일로 계정이 생성됩니다.</p>
-                                
-                                                                <div className="mb-4">
+
+                                <div className="mb-4">
                                     <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-2">이메일</label>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                                         <input
                                             type="text"
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
                                             placeholder="example"
-                                            className="w-[200px] h-[48px] border border-gray-300 rounded-lg px-3 font-normal text-base outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                            className="w-full md:w-[200px] h-[48px] border border-gray-300 rounded-lg px-3 font-normal text-base outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                         />
                                         <span className="text-gray-600 font-medium">
                                             @fair-play.ink
@@ -1013,9 +1013,9 @@ export const RegisterEvent = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* 폼 컨테이너 끝 */}
-                        <div className="flex flex-col items-center space-y-4 mt-8">
+                        <div className="flex flex-col items-center space-y-4 mt-8 mb-16">
                             <button
                                 type="submit"
                                 disabled={!formData.eventNameKr || !formData.eventNameEn || !formData.startDate || !formData.endDate || !formData.businessNumber || !formData.businessName || !formData.businessDate || !formData.managerName || !formData.phone || !formData.contactEmail || !formData.email || isUploading}

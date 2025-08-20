@@ -28,19 +28,6 @@ const authHeaders = () => {
 
 const isAuthed = () => !!localStorage.getItem("accessToken");
 
-// 디바운스 함수 (깜빡임 방지용)
-const debounce = (func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout;
-    return function executedFunction(...args: any[]) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-};
-
 // 캘린더 api 데이터 함수
 type CalendarGroupedDto = { date: string; titles: string[] };
 
@@ -581,22 +568,7 @@ export default function EventOverview() {
             return;
         }
 
-        // 기존 마커들과 새로운 이벤트 비교하여 필요한 경우만 업데이트
-        const currentEventIds = new Set(events.map(e => e.id));
-        const existingMarkerIds = new Set(markersRef.current.map((marker: any) => 
-            marker.eventId || parseInt(marker.getContent()?.getAttribute('data-event-id') || '0')
-        ));
-        
-        // 동일한 이벤트 세트인 경우 마커 재생성 건너뛰기
-        const eventsChanged = currentEventIds.size !== existingMarkerIds.size || 
-            [...currentEventIds].some(id => !existingMarkerIds.has(id));
-            
-        if (!eventsChanged && markersRef.current.length > 0) {
-            console.log('마커 재생성 건너뛰기 - 동일한 이벤트 세트');
-            return; // 마커 재생성 건너뛰기
-        }
-
-        // 기존 마커 제거 (변경이 필요한 경우에만)
+        // 기존 마커 제거
         markersRef.current.forEach(overlay => {
             if (overlay && overlay.setMap) {
                 overlay.setMap(null);
@@ -708,8 +680,6 @@ export default function EventOverview() {
                     zIndex: 1000
                 });
 
-                // 마커에 이벤트 ID 저장 (최적화를 위해)
-                customOverlay.eventId = primaryEvent.id;
                 customOverlay.setMap(mapInstance);
                 newOverlays.push(customOverlay);
                 bounds.extend(coords);
@@ -779,10 +749,8 @@ export default function EventOverview() {
                     overlayContent.style.transform = 'scale(1) translateY(0)';
                     overlayContent.style.filter = `hue-rotate(${getHueRotation(primaryEvent.mainCategory)}deg) drop-shadow(0 2px 4px rgba(0,0,0,0.3))`;
 
-                    // 호버 카드 즉시 숨기기 (지연 없이)
-                    setHoveredEvents([]);
-                    setCurrentEventIndex(0);
-                    setHoverCardPosition(null);
+                    // 핀에서 마우스가 나가도 카드는 유지 - 카드 클릭을 위해
+                    // 카드는 지도 빈 공간 클릭 시에만 사라짐
                 };
 
                 const handleClick = () => {
@@ -833,22 +801,19 @@ export default function EventOverview() {
         }
     }, [filteredEvents, map, viewMode, createMarkers]);
 
-    // 마커 호버 카드 위치 동기화 (지도 이동/줌 시) - 깜빡임 방지 버전
+    // 마커 호버 카드 위치 동기화 (지도 이동/줌 시) - 개선된 버전
     React.useEffect(() => {
         if (!map || hoveredEvents.length === 0) return;
 
-        let isUpdating = false;
+        let animationFrame: number;
         const updateCardPosition = () => {
-            // 이미 업데이트 중이면 건너뛰기 (깜빡임 방지)
-            if (isUpdating) return;
-            isUpdating = true;
+            // 애니메이션 프레임을 사용해 부드러운 업데이트
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
 
-            // requestAnimationFrame으로 부드러운 업데이트
-            requestAnimationFrame(() => {
-                if (hoveredEvents.length === 0 || !map || !mapRef.current) {
-                    isUpdating = false;
-                    return;
-                }
+            animationFrame = requestAnimationFrame(() => {
+                if (hoveredEvents.length === 0 || !map || !mapRef.current) return;
 
                 const currentEvent = hoveredEvents[0]; // 대표 이벤트 사용
 
@@ -898,39 +863,59 @@ export default function EventOverview() {
                     x = Math.max(padding, Math.min(x, rect.width - cardWidth - padding));
                     y = Math.max(padding, Math.min(y, rect.height - cardHeight - padding));
 
-                    const finalPosition = { x, y };
-
-                    // 이전 위치와 비교하여 변화가 있을 때만 업데이트 (깜빡임 방지)
-                    const prevPosition = hoverCardPosition;
-                    if (!prevPosition || 
-                        Math.abs(prevPosition.x - finalPosition.x) > 3 || 
-                        Math.abs(prevPosition.y - finalPosition.y) > 3) {
-                        setHoverCardPosition(finalPosition);
-                    }
+                    // 위치 설정
+                    setHoverCardPosition({ x, y });
                 }
-                isUpdating = false;
             });
         };
 
-        // 디바운싱을 더 짧게 설정하여 반응성 향상
-        const debouncedUpdate = debounce(updateCardPosition, 8); // 120fps
+        // 지도 이벤트 리스너 등록 - 디바운스 적용
+        let debounceTimer: NodeJS.Timeout;
+        const debouncedUpdate = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateCardPosition, 16); // ~60fps
+        };
 
-        // 지도 이벤트 리스너 등록
-        if (map) {
-            window.kakao.maps.event.addListener(map, 'zoom_changed', debouncedUpdate);
-            window.kakao.maps.event.addListener(map, 'center_changed', debouncedUpdate);
-        }
+        window.kakao.maps.event.addListener(map, 'zoom_changed', debouncedUpdate);
+        window.kakao.maps.event.addListener(map, 'center_changed', debouncedUpdate);
 
         // 초기 위치 설정
         updateCardPosition();
 
         // 클린업
         return () => {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            clearTimeout(debounceTimer);
             window.kakao.maps.event.removeListener(map, 'zoom_changed', debouncedUpdate);
             window.kakao.maps.event.removeListener(map, 'center_changed', debouncedUpdate);
         };
     }, [map, hoveredEvents, mapRef]);
 
+    // 지도 클릭 이벤트 추가 - 빈 공간 클릭 시 카드 숨기기
+    React.useEffect(() => {
+        if (!map || viewMode !== 'map') return;
+
+        const handleMapClick = (e: any) => {
+            // 클릭된 요소가 마커나 카드가 아닌 경우에만 카드 숨기기
+            const clickedElement = e.originalEvent.target;
+            const isMarker = clickedElement.closest('.map-pin-overlay');
+            const isCard = clickedElement.closest('.hover-card-container');
+
+            if (!isMarker && !isCard) {
+                setHoveredEvents([]);
+                setCurrentEventIndex(0);
+                setHoverCardPosition(null);
+            }
+        };
+
+        window.kakao.maps.event.addListener(map, 'click', handleMapClick);
+
+        return () => {
+            window.kakao.maps.event.removeListener(map, 'click', handleMapClick);
+        };
+    }, [map, viewMode]);
 
     // 렌더 하단에서 공용 Footer 적용
     return (
@@ -1549,7 +1534,7 @@ export default function EventOverview() {
                                 {/* 호버 카드 (3장 카드 슬라이드 지원) */}
                                 {hoveredEvents.length > 0 && hoverCardPosition && (
                                     <div
-                                        className="absolute z-50"
+                                        className="hover-card-container absolute z-50"
                                         style={{
                                             left: `${hoverCardPosition.x - (hoveredEvents.length > 1 ? 60 : 0)}px`, // 3장 카드를 위한 중앙 정렬
                                             top: `${hoverCardPosition.y}px`,
@@ -1558,17 +1543,13 @@ export default function EventOverview() {
                                             pointerEvents: 'auto',
                                             position: 'absolute'
                                         }}
-                                        onMouseLeave={(e) => {
-                                            // 마우스가 완전히 카드 영역을 벗어날 때만 숨기기 (깜빡임 방지)
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const { clientX, clientY } = e;
-                                            
-                                            if (clientX < rect.left || clientX > rect.right || 
-                                                clientY < rect.top || clientY > rect.bottom) {
-                                                setHoveredEvents([]);
-                                                setCurrentEventIndex(0);
-                                                setHoverCardPosition(null);
-                                            }
+                                        onMouseEnter={() => {
+                                            // 카드에 마우스가 들어오면 카드 유지
+                                            // 아무것도 하지 않음 - 카드가 계속 표시됨
+                                        }}
+                                        onMouseLeave={() => {
+                                            // 카드에서 마우스가 나가도 카드는 유지 - 지도 빈 공간 클릭 시에만 사라짐
+                                            // 아무것도 하지 않음
                                         }}
                                     >
                                         {hoveredEvents.length === 1 ? (

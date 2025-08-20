@@ -1,6 +1,31 @@
 import React, { useState, useEffect } from "react";
+import dayjs from "dayjs";
+import api from "../../api/axios";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
+
+// 상태코드 변환
+const mapStatus = (statusCode: string) => {
+  switch (statusCode) {
+    case "ACTIVE": return "active";
+    case "INACTIVE": return "inactive";
+    case "EXPIRED": return "expired";
+    default: return "inactive"; // fallback
+  }
+};
+
+// 타입 매핑
+const TYPE_IDS = {
+  hero: 1,
+  mdpick: 2,
+  searchTop: 3,
+  new: 4,
+} as const;
+
+const mapType = (id: number) => {
+  const entry = Object.entries(TYPE_IDS).find(([_, val]) => val === id);
+  return entry ? entry[0] : "unknown";
+};
 
 // 배너 데이터 인터페이스
 interface BannerData {
@@ -20,10 +45,28 @@ interface MdPickData {
     id: string;
     eventTitle: string;
     hostName: string;
+    imageUrl: string;         
     date: string;
     priority: number;
     status: 'active' | 'inactive';
 }
+
+// 백엔드 DTO (관리자 배너 응답)
+type AdminBanner = {
+  id: number;
+  title: string | null;
+  imageUrl: string | null;
+  linkUrl: string | null;
+  priority: number | null;
+  startDate: string; // ISO
+  endDate: string; // ISO
+  statusCode: "ACTIVE" | "INACTIVE" | "EXPIRED";
+  bannerTypeCode: "HERO" | "HOT_PICK" | "HOT_PICK" | "NEW" | string;
+  eventId?: number | null;
+};
+
+
+
 
 export const VipBannerManagement: React.FC = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -31,57 +74,174 @@ export const VipBannerManagement: React.FC = () => {
     const [mdPickBanners, setMdPickBanners] = useState<MdPickData[]>([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-    // 더미 데이터 로드
-    useEffect(() => {
-        // 메인 배너 더미 데이터
-        const dummyHeroBanners: BannerData[] = [
-            {
-                id: '1',
-                eventTitle: 'G-DRAGON 2025 WORLD TOUR IN JAPAN',
-                hostName: 'YG Entertainment',
-                imageUrl: '/images/gd1.png',
-                startDate: '2025-05-20',
-                endDate: '2025-05-25',
-                rank: 1,
-                status: 'active',
-                type: 'hero'
-            },
-            {
-                id: '2',
-                eventTitle: 'YE LIVE IN KOREA',
-                hostName: 'Def Jam Recordings',
-                imageUrl: '/images/YE3.png',
-                startDate: '2025-06-10',
-                endDate: '2025-06-15',
-                rank: 2,
-                status: 'active',
-                type: 'hero'
-            }
-        ];
+    // 대시보드 요약
+type Summary = {
+  totalSales: number | string;
+  activeCount: number;
+  recentCount: number;
+  expiringCount: number;
+};
 
-        // MD PICK 더미 데이터
-        const dummyMdPickBanners: MdPickData[] = [
-            {
-                id: '1',
-                eventTitle: '테스트',
-                hostName: 'Netflix Korea',
-                date: '2025-01-20',
-                priority: 1,
-                status: 'active'
-            },
-            {
-                id: '2',
-                eventTitle: 'YE LIVE IN KOREA',
-                hostName: 'Disney+ Korea',
-                date: '2025-01-20',
-                priority: 2,
-                status: 'active'
-            }
-        ];
+// 요약 상태
+const [summary, setSummary] = useState<Summary>({
+  totalSales: 0,
+  activeCount: 0,
+  recentCount: 0,
+  expiringCount: 0,
+});
 
-        setHeroBanners(dummyHeroBanners);
-        setMdPickBanners(dummyMdPickBanners);
-    }, []);
+
+
+
+  // 추가 폼
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState<{
+    type: "hero" | "mdpick";
+    eventId: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    imageUrl: string;
+    priority?: string; // mdpick에서만 사용
+  }>({
+    type: "hero",
+    eventId: "",
+    title: "",
+    startDate: "",
+    endDate: "",
+    imageUrl: "",
+    priority: "",
+  });
+
+  // ---------- helpers ----------
+  const priorityBadgeClass = (p: number) =>
+  p === 1 ? "bg-red-100 text-red-800" :
+  p === 2 ? "bg-orange-100 text-orange-800" :
+  p === 3 ? "bg-yellow-100 text-yellow-800" :
+            "bg-blue-100 text-blue-800";
+
+  const mapToUI = (b: AdminBanner): BannerData => ({
+    id: String(b.id),
+    eventTitle: b.title ?? "",
+    hostName: "", // 필요 시 BE 확장
+    imageUrl: b.imageUrl ?? "",
+    startDate: dayjs(b.startDate).format("YYYY-MM-DD"),
+    endDate: dayjs(b.endDate).format("YYYY-MM-DD"),
+    rank: b.priority ?? 0,
+    status:
+      b.statusCode === "ACTIVE"
+        ? "active"
+        : b.statusCode === "INACTIVE"
+        ? "inactive"
+        : "expired",
+    type: b.bannerTypeCode === "HERO" ? "hero" 
+    : b.bannerTypeCode === "SEARCH_TOP" ? "mdpick"
+      : "mdpick",
+  });
+
+  const mapToMdPickUI = (b: AdminBanner): MdPickData => ({
+    id: String(b.id),
+    eventTitle: b.title ?? "",
+    hostName: "",
+    imageUrl: b.imageUrl ?? "",        
+    date: dayjs(b.startDate).format("YYYY-MM-DD"), // 1일 노출 가정
+    priority: b.priority ?? 0,
+    status: b.statusCode === "ACTIVE" ? "active" : "inactive",
+  });
+
+  // KRW 포맷 유틸
+const formatKRW = (n: number | string) =>
+  typeof n === "number"
+    ? new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(n)
+    : n; // 서버가 문자열로 주면 그대로 표시
+
+
+  // ---------- API ----------
+  const fetchSummary = async () => {
+    const { data } = await api.get<Summary>("/api/admin/banners/summary", {
+      params: { expiringDays: 7 },
+    });
+    setSummary(data);
+  };
+
+ const fetchVip = async () => {
+  // HERO
+  const hero = await api.get<AdminBanner[]>("/api/admin/banners/vip", {
+    params: { type: "HERO" },
+  });
+  setHeroBanners(hero.data.map(mapToUI));
+
+  // MD PICK (= 검색 상단 고정)
+  const md = await api.get<AdminBanner[]>("/api/admin/banners/vip", {
+    params: { type: "SEARCH_TOP" },
+  });
+  setMdPickBanners(
+    md.data
+      .filter(b => b.bannerTypeCode === "SEARCH_TOP")
+      .map(mapToMdPickUI)
+  );
+};
+
+
+
+   const createBanner = async () => {
+  const bannerTypeCode = addForm.type === "hero" ? "HERO" : "SEARCH_TOP";
+
+  const payload = {
+    eventId: Number(addForm.eventId),
+    title: addForm.title || null,
+    startDate: dayjs(addForm.startDate).startOf("day").toISOString(),
+    endDate: dayjs(addForm.endDate).endOf("day").toISOString(),
+    imageUrl: addForm.imageUrl || null,
+    priority:
+      bannerTypeCode === "SEARCH_TOP" && addForm.priority
+        ? Number(addForm.priority)
+        : null,
+    statusCode: "ACTIVE",
+    bannerTypeCode, // 백엔드와 필드/값 통일
+  };
+
+  try {
+    await api.post("/api/admin/banners", payload);
+    await fetchVip();
+    setShowAdd(false);
+    setAddForm({
+      type: "hero",
+      eventId: "",
+      title: "",
+      startDate: "",
+      endDate: "",
+      imageUrl: "",
+      priority: "",
+    });
+  } catch (err: any) {
+    console.error("createBanner error:", err?.response?.data || err);
+    alert(`[${err?.response?.status ?? ""}] ${err?.response?.data?.message ?? "요청 실패"}`);
+  }
+};
+
+ 
+
+  const activateBanner = async (id: string) => {
+  await api.patch(`/api/admin/banners/${id}/status`, {
+    statusCode: "ACTIVE"
+  });
+};
+
+const deactivateBanner = async (id: string) => {
+  await api.patch(`/api/admin/banners/${id}/status`, {
+    statusCode: "INACTIVE"
+  });
+};
+
+
+useEffect(() => {
+  (async () => {
+    await Promise.all([fetchSummary(), fetchVip()]);
+  })();
+}, []);
+
+
 
     // 대시보드 컴포넌트
     const DashboardTab = () => (
@@ -97,7 +257,11 @@ export const VipBannerManagement: React.FC = () => {
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-blue-600">활성 배너</p>
-                            <p className="text-2xl font-bold text-blue-900">{heroBanners.filter(b => b.status === 'active').length}</p>
+      <p className="text-2xl font-bold text-blue-900">
+        {heroBanners.filter(b => b.status === 'active').length +
+         mdPickBanners.filter(b => b.status === 'active').length}
+                              </p>
+
                         </div>
                     </div>
                 </div>
@@ -125,7 +289,9 @@ export const VipBannerManagement: React.FC = () => {
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-yellow-600">만료 예정</p>
-                            <p className="text-2xl font-bold text-yellow-900">3</p>
+<p className="text-2xl font-bold text-yellow-900">
+  {summary.expiringCount}
+</p>
                         </div>
                     </div>
                 </div>
@@ -139,39 +305,135 @@ export const VipBannerManagement: React.FC = () => {
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-purple-600">이번 달 수익</p>
-                            <p className="text-2xl font-bold text-purple-900">₩12.5M</p>
+{/* 이번 달 수익 */}
+<p className="text-2xl font-bold text-purple-900">
+  {formatKRW(summary.totalSales)}
+</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* 현재 노출 중인 배너들 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">현재 노출 중인 배너</h3>
-                <div className="space-y-4">
-                    {heroBanners.filter(b => b.status === 'active').map((banner) => (
-                        <div key={banner.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                            <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
-                            <div className="flex-1">
-                                <h4 className="font-medium text-gray-900">{banner.eventTitle}</h4>
-                                <p className="text-sm text-gray-600">{banner.hostName}</p>
-                                <p className="text-xs text-gray-500">{banner.startDate} ~ {banner.endDate}</p>
-                            </div>
-                            <div className="text-right">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${banner.rank === 1 ? 'bg-red-100 text-red-800' :
-                                    banner.rank === 2 ? 'bg-orange-100 text-orange-800' :
-                                        banner.rank === 3 ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-blue-100 text-blue-800'
-                                    }`}>
-                                    {banner.rank}순위
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">현재 노출 중인 배너</h3>
+          <button
+            className="px-3 py-2 text-sm rounded-md bg-black text-white"
+            onClick={() => setShowAdd(v => !v)}
+          >
+            {showAdd ? "닫기" : "배너 추가"}
+          </button>
         </div>
-    );
+
+        {/* 추가 폼 */}
+        {showAdd && (
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-6 gap-3 p-4 border rounded-md">
+            <select
+              className="border px-2 py-2 rounded"
+              value={addForm.type}
+              onChange={e => setAddForm(f => ({ ...f, type: e.target.value as "hero" | "mdpick" }))}
+            >
+              <option value="hero">HERO</option>
+              <option value="mdpick">MD_PICK</option>
+            </select>
+            <input className="border px-2 py-2 rounded" placeholder="이벤트ID" value={addForm.eventId}
+                   onChange={e => setAddForm(f => ({ ...f, eventId: e.target.value }))}/>
+            <input className="border px-2 py-2 rounded" placeholder="제목" value={addForm.title}
+                   onChange={e => setAddForm(f => ({ ...f, title: e.target.value }))}/>
+            <input type="date" className="border px-2 py-2 rounded" value={addForm.startDate}
+                   onChange={e => setAddForm(f => ({ ...f, startDate: e.target.value }))}/>
+            <input type="date" className="border px-2 py-2 rounded" value={addForm.endDate}
+                   onChange={e => setAddForm(f => ({ ...f, endDate: e.target.value }))}/>
+            <input className="border px-2 py-2 rounded" placeholder="이미지 URL" value={addForm.imageUrl}
+                   onChange={e => setAddForm(f => ({ ...f, imageUrl: e.target.value }))}/>
+            {addForm.type === "mdpick" && (
+              <input className="border px-2 py-2 rounded md:col-span-2" placeholder="우선순위(숫자)" value={addForm.priority}
+                     onChange={e => setAddForm(f => ({ ...f, priority: e.target.value }))}/>
+            )}
+            <div className="md:col-span-6 flex justify-end">
+              <button className="px-3 py-2 text-sm rounded-md bg-blue-600 text-white"
+                      onClick={createBanner}>
+                추가
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+            {mdPickBanners
+  .filter(b => b.status === "active")
+  .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
+  .map((banner) => (
+    <div
+      key={`md-${banner.id}`}
+      className="group flex items-center space-x-4 p-4 border rounded-lg hover:shadow-sm transition"
+    >
+      <img
+        src={banner.imageUrl || "/images/placeholder.png"}
+        alt={banner.eventTitle || "MD PICK"}
+        className="w-16 h-12 object-cover rounded"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h4 className="font-medium text-gray-900 truncate">{banner.eventTitle}</h4>
+          <span className="px-1.5 py-0.5 text-[10px] rounded bg-green-100 text-green-800">
+            MD PICK
+          </span>
+        </div>
+        {banner.hostName && (
+          <p className="text-sm text-gray-600 truncate">{banner.hostName}</p>
+        )}
+        <p className="text-xs text-gray-500">노출 날짜: {banner.date}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityBadgeClass(banner.priority)}`}>
+          {banner.priority}순위
+        </span>
+        <button
+          className="ml-1 px-2 py-1 text-xs rounded border"
+          onClick={() => deactivateBanner(banner.id)}
+          aria-label={`${banner.eventTitle} 비활성화`}
+        >
+          삭제(비활성)
+        </button>
+      </div>
+    </div>
+))}
+
+          {heroBanners
+            .filter(b => b.status === "active")
+            .map((banner) => (
+              <div key={banner.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">{banner.eventTitle}</h4>
+                  <p className="text-sm text-gray-600">{banner.hostName}</p>
+                  <p className="text-xs text-gray-500">{banner.startDate} ~ {banner.endDate}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    banner.rank === 1 ? "bg-red-100 text-red-800" :
+                    banner.rank === 2 ? "bg-orange-100 text-orange-800" :
+                    banner.rank === 3 ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800"
+                  }`}>
+                    {banner.rank}순위
+                  </span>
+                  <button
+                    className="ml-3 px-2 py-1 text-xs rounded border"
+                    onClick={() => deactivateBanner(banner.id)}
+                  >
+                    삭제(비활성)
+                  </button>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+
+
 
     // 메인 배너 관리 컴포넌트
     const HeroBannerTab = () => (
