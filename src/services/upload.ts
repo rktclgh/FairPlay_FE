@@ -35,7 +35,8 @@ export const uploadAPI = {
      * @returns 다운로드 URL
      */
     getDownloadUrl: (key: string): string => {
-        return `/api/uploads/download?key=${encodeURIComponent(key)}`;
+        const baseUrl = import.meta.env.VITE_BACKEND_BASE_URL || 'https://fair-play.ink';
+        return `${baseUrl}/api/uploads/download?key=${encodeURIComponent(key)}`;
     },
 
     /**

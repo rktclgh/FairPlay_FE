@@ -24,6 +24,8 @@ import "swiper/css/effect-coverflow";
 import type { HotPick } from "../services/event";
 import NewLoader from "../components/NewLoader";
 
+// imports 밑에 위치
+const ENABLE_NEW_PICKS = import.meta.env.VITE_ENABLE_NEW_PICKS === "true";
 
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
@@ -134,6 +136,61 @@ type SearchTopDto = {
   eventId: number;   // ★ 스티커/이동용 핵심
 };
 
+// ★ NEW 픽 응답 (백엔드 /api/banner/new-picks)
+type NewPickDto = {
+  id: number;         // = eventId
+  title: string;
+  image: string | null;
+  date: string | null;
+  location: string | null;
+  category: string | null;
+  createdAt: string;   // ISO string "2025-08-20T13:25:30"
+  isNew?: boolean;
+};
+
+
+const NEW_DAYS = 3;
+
+const getCreated = (o: NewPickDto) =>
+  (o.createdAt ?? o.created_at ?? "") as string;
+
+//const getEventId = (o: NewPickDto) =>
+  //Number.isFinite(o.id) ? o.id :
+ // Number.isFinite(o.eventId as number) ? (o.eventId as number) : NaN;
+
+const fetchNewPicks = async (size = 20): Promise<NewPickDto[]> => {
+  try {
+    const { data } = await api.get<NewPickDto[] | NewPickDto>("/api/banners/new-picks", {
+      params: { size },
+    });
+    const list = Array.isArray(data) ? data : data ? [data] : [];
+    if (!list.length) return [];
+
+    const today = dayjs();
+    const isNew = (created: string) => created && today.diff(dayjs(created), "day") < NEW_DAYS;
+
+    return list.map(item => {
+      const created = getCreated(item) || "";
+  const eid =
+    Number.isFinite(item.id) ? item.id
+    : Number.isFinite((item as any).eventId) ? (item as any).eventId
+    : NaN;
+      return {
+        ...item,
+        id: Number.isFinite(eid) ? eid : NaN,
+        createdAt: created || undefined,
+        isNew: created ? isNew(created) : false,
+      } as NewPickDto & { isNew?: boolean };
+    });
+  } catch (e) {
+    console.warn("[NEW-PICKS] request failed:", e);
+    return [];
+  }
+};
+
+
+
+
 const fetchSearchTopToday = async (): Promise<SearchTopDto[]> => {
   // 오늘 날짜 기준 (백엔드는 date null이면 today 처리하지만 명시적으로 줘도 OK)
   const today = dayjs().format("YYYY-MM-DD");
@@ -146,6 +203,33 @@ const fetchSearchTopToday = async (): Promise<SearchTopDto[]> => {
 
 
 export const Main: React.FC = () => {
+// NEW 뱃지용 상태
+const [newEventIds, setNewEventIds] = useState<Set<number>>(new Set());
+const [newAdded, setNewAdded] = useState<number[]>([]);
+const [newRemoved, setNewRemoved] = useState<number[]>([]);
+const [showNewDeltaBanner, setShowNewDeltaBanner] = useState(false);
+
+// 오늘 키 (일자별 스냅샷 저장)
+const newTodayKey = `newpick:${dayjs().format("YYYY-MM-DD")}`;
+
+const readNewSnapshot = (): Set<number> => {
+  try {
+    const raw = localStorage.getItem(newTodayKey);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set<number>(
+      (Array.isArray(arr) ? arr : []).map((v: unknown) => Number(v)).filter(Number.isFinite)
+    );
+  } catch {
+    return new Set<number>();
+  }
+};
+
+const writeNewSnapshot = (ids: Set<number>) => {
+  localStorage.setItem(newTodayKey, JSON.stringify(Array.from(ids)));
+};
+
+// NEW 여부 체크
+const isEventNew = (e: EventSummaryDto) => newEventIds.has(e.id);
 
 const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
 
@@ -519,11 +603,11 @@ const loadHeroAdvertisements = async () => {
 
 
     // 데이터 로드
-    useEffect(() => {
+   /* useEffect(() => {
         const loadData = async () => {
             try {
                 setLoading(true);
-                const eventsData = await eventAPI.getEventList({ size: 15, includeHidden: false });
+ const eventsData = await eventAPI.getEventList({ size: 60, includeHidden: false });
 setEvents(eventsData?.events ?? []);
 
 
@@ -549,12 +633,138 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
         };
         loadData();
     }, []);
+*/
 
-  
+
+  useEffect(() => {
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      // 1) 오늘 검색 상단 불러오기
+      const searchTop = await fetchSearchTopToday();
+      const mdIds = new Set<number>();
+
+      for (const s of searchTop) {
+        const n = Number(s.eventId);
+        if (Number.isFinite(n) && n > 0) mdIds.add(n);
+
+        const fromUrl = extractEventId(s.linkUrl || "");
+        if (fromUrl) mdIds.add(fromUrl);
+      }
+
+      // NEW 픽 불러오기 ★ 별도 try/catch 로 분리
+ if (ENABLE_NEW_PICKS) {
+  try {
+    const newPicks = await fetchNewPicks(20);
+    const currNewSet = new Set<number>(
+   newPicks.map(p => p.id).filter(n => Number.isFinite(n) && n > 0)
+ );
+    const prevNewSet = readNewSnapshot();
+    const added: number[] = [];
+    const removed: number[] = [];
+
+    currNewSet.forEach(id => { if (!prevNewSet.has(id)) added.push(id); });
+    prevNewSet.forEach(id => { if (!currNewSet.has(id)) removed.push(id); });
+
+    setNewEventIds(currNewSet);
+    setNewAdded(added);
+    setNewRemoved(removed);
+    writeNewSnapshot(currNewSet);
+
+    if (added.length || removed.length) {
+      setShowNewDeltaBanner(true);
+      setTimeout(() => setShowNewDeltaBanner(false), 3500);
+    }
+  } catch (err: any) {
+    if (err?.response?.status === 403) {
+      console.warn("[NEW-PICKS] 403: 인증/권한 이슈. NEW 배지는 숨김 처리.");
+    } else {
+      console.warn("[NEW-PICKS] 로드 실패:", err);
+    }
+    setNewEventIds(new Set());
+    setNewAdded([]);
+    setNewRemoved([]);
+    setShowNewDeltaBanner(false);
+  }
+}
+      // 2) 기본 리스트
+      const eventsData = await eventAPI.getEventList({ size: 30, includeHidden: false });
+      let baseEvents = eventsData?.events ?? [];
+
+      // 제목으로도 보강
+      for (const s of searchTop) {
+        const m = findEventByTitle(s.title, baseEvents);
+        if (m?.id) mdIds.add(m.id);
+      }
+
+      // ★ 최종 업데이트
+      setMdPickEventIds(new Set(mdIds));
+
+      // 3) 메인 리스트에 없는 MD PICK id 구하기
+      const missingIds = [...mdIds].filter(id => !baseEvents.some(e => e.id === id));
+
+      // 4) 누락된 것 개별 조회해서 합치기
+      if (missingIds.length) {
+        const extras: EventSummaryDto[] = [];
+        for (const id of missingIds) {
+          try {
+            const d = await eventAPI.getEventDetail(id);
+            extras.push({
+              id: d.id,
+              title: d.title,
+              thumbnailUrl: d.thumbnailUrl,
+              startDate: d.startDate,
+              endDate: d.endDate,
+              location: d.location,
+              mainCategory: d.mainCategory,
+              minPrice: d.minPrice,
+            } as EventSummaryDto);
+          } catch (e) {
+            console.warn("MD PICK 개별 조회 실패:", id, e);
+          }
+        }
+        const merged = [...extras, ...baseEvents].filter(
+          (e, i, arr) => arr.findIndex(x => x.id === e.id) === i
+        );
+        setEvents(merged);
+      } else {
+        setEvents(baseEvents);
+      }
+
+      // 6) 나머지 섹션 그대로
+      await loadHeroAdvertisements();
+      try {
+        const hot = await eventAPI.getHotPicks({ size: 10 });
+        setHotPicks(hot);
+      } catch {}
+    } catch (error) {
+      console.error("데이터 로드 실패:", error);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadData();
+}, []);
+
+
     // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
   const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
   const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
-    
+   
+useEffect(() => {
+  const keys = paidAdvertisements.map((ad, i) => `hero-${ad.id ?? 'na'}-${i}`);
+  const dup = keys.filter((k, i) => keys.indexOf(k) !== i);
+  if (dup.length) console.warn('[HERO DUP KEYS]', dup, keys);
+}, [paidAdvertisements]);
+
+useEffect(() => {
+  const keys = hotPicks.map((it, i) => `hot-${it.id ?? 'na'}-${i}`);
+  const dup = keys.filter((k, i) => keys.indexOf(k) !== i);
+  if (dup.length) console.warn('[HOT DUP KEYS]', dup, keys);
+}, [hotPicks]);
+
   const todayKey = dayjs().format("YYYY-MM-DD");
 
 function getMdPickIdsForToday(): Set<number> {
@@ -613,7 +823,7 @@ const hasMdPickInCurrentList = events.some(e => mdPickEventIds.has(e.id));
     const heroLoop = paidAdvertisements.length >= 2;
 const hasHero  = paidAdvertisements.length > 0;
 const hasHot  = hotPicks.length > 0;
-const hotLoop = hotPicks.length >= 2;
+const hotLoop = hotPicks.length >= 3;
     return (
         <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
             <TopNav />
@@ -695,14 +905,14 @@ const hotLoop = hotPicks.length >= 2;
                             ))}
                         </div>
                         <div className="grid grid-cols-7 gap-1 mb-4">
-                            {generateCalendarDays().map((day, index) => {
+                            {generateCalendarDays().map((day) => {
                                 const isSelected = selectedDate === day.dateString;
                                 const isPast = !isDateInFuture(day.dateString);
                                 const isPastDate = !isDateInFuture(day.dateString);
 
                                 return (
                                     <button
-                                        key={index}
+                                        key={`${day.dateString}-${day.isCurrentMonth ? 'cur' : 'adj'}`}
                                         onClick={() => (isPastDate) ? handleDateSelect(day.dateString) : null}
                                         className={`p-1.5 text-xs rounded transition-colors relative h-8 ${isPast
                                             ? isSelected
@@ -762,6 +972,19 @@ const hotLoop = hotPicks.length >= 2;
                 </div>
             )}
 
+{/* NEW 변화 토스트 */}
+{showNewDeltaBanner && (newAdded.length || newRemoved.length) ? (
+  <div className="max-w-7xl mx-auto px-4 md:px-8 mt-4">
+    <div className="rounded-[10px] border border-gray-200 bg-white/90 backdrop-blur px-4 py-3 shadow flex items-center gap-3">
+      <img src="/images/new-badge.png" alt="NEW" className="w-5 h-5" onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.display='none'; }} />
+      <div className="text-sm font-semibold text-gray-800">
+        {newAdded.length > 0 && <span className="mr-3">NEW <span className="text-blue-600">{newAdded.length}</span>개 추가</span>}
+        {newRemoved.length > 0 && <span className="mr-3">NEW <span className="text-rose-600">{newRemoved.length}</span>개 종료</span>}
+        <span className="text-gray-500">최신 등록 기준으로 표시됩니다.</span>
+      </div>
+    </div>
+  </div>
+) : null}
 
             {/* 히어로 섹션 */}
 {hasHero && (
@@ -774,8 +997,9 @@ const hotLoop = hotPicks.length >= 2;
       className="w-full h-full"
       onSwiper={(swiper) => { (window as any).heroSwiper = swiper; }}
     >
-      {paidAdvertisements.map((ad) => (
-        <SwiperSlide key={ad.id}>
+
+    {paidAdvertisements.map((ad, index) => (
+  <SwiperSlide key={`hero-${ad.id ?? 'na'}-${index}`}>
           <div className="w-full h-full cursor-pointer" onClick={() => gotoAdDetail(ad, events, navigate)}>
             <img
               src={ad.imageUrl || '/images/FPlogo.png'}
@@ -792,8 +1016,7 @@ const hotLoop = hotPicks.length >= 2;
     {heroLoop && (
       <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
         {paidAdvertisements.map((ad, index) => (
-          <div
-            key={ad.id}
+  <div key={`hero-thumb-${ad.id ?? 'na'}-${index}`}
             className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
             onMouseEnter={() => (window as any).heroSwiper?.slideToLoop(index)}
           >
@@ -833,8 +1056,8 @@ const hotLoop = hotPicks.length >= 2;
         onSwiper={(swiper) => setActiveHotPickIndex(swiper.realIndex % hotPicks.length)}
         onSlideChange={(swiper) => setActiveHotPickIndex(swiper.realIndex % hotPicks.length)}
       >
-        {hotPicks.map((item, index) => (
-          <SwiperSlide key={item.id} className="hotpick-slide">
+       {hotPicks.map((item, index) => (
+  <SwiperSlide key={`hot-${item.id ?? 'na'}-${index}`} className="hotpick-slide">
             <div
               className="group relative w-full rounded-[10px] overflow-hidden cursor-pointer"
               onClick={() => navigate(`/eventdetail/${item.id}`)}
@@ -885,9 +1108,9 @@ const hotLoop = hotPicks.length >= 2;
                     {/* 필터 버튼들 */}
                     <div className="mb-6 md:mb-8">
                         <div className="flex md:flex-wrap overflow-x-auto md:overflow-visible whitespace-nowrap no-scrollbar gap-2 md:gap-4 -mx-4 px-4">
-                            {getTranslatedCategories().map((category, index) => (
+                            {getTranslatedCategories().map((category) => (
                                 <button
-                                    key={index}
+                                    key={category.key}  
                                     onClick={() => handleCategoryChange(category.key)}
                                     className={`shrink-0 inline-flex px-3 py-3 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
                                         ? (isDark
@@ -906,12 +1129,22 @@ const hotLoop = hotPicks.length >= 2;
 
                     {/* 행사 카드들 */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {displayEvents.map((event) => (
-                            <div key={event.id} className="relative">
+                        {displayEvents.map((event, index) => (
+  <div key={`ev-${event?.id ?? 'na'}-${index}`} className="relative">
                                 <Link to={`/eventdetail/${event.id}`}>
                                     <div className="relative group">
+{/* NEW 스티커 */}
+{isEventNew(event) && (
+  <div className={`absolute top-2 left-2 z-10 ${isEventMdPick(event) ? 'translate-y-[34px]' : ''}`}>
+    <div className="inline-flex items-center gap-1.5 bg-yellow-50/95 backdrop-blur px-2.5 py-1 rounded-full border border-yellow-200 shadow">
+      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+      <span className="text-[11px] font-extrabold text-yellow-700 tracking-tight">NEW</span>
+    </div>
+  </div>
+)}
+
                                         {/* MD PICK 스티커 */}
-                                        {hasMdPickInCurrentList && isEventMdPick(event) && (
+ {isEventMdPick(event) && (
   <div className="absolute top-2 left-2 z-10">
     <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
       <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />

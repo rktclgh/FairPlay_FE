@@ -8,7 +8,7 @@ import {
 } from '../types/payment.types';
 import authManager from "../../../utils/auth";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL || 'https://fair-play.ink';
 
 // 검색 조건을 쿼리 파라미터로 변환
 const buildQueryParams = (criteria: PaymentSearchCriteria): URLSearchParams => {

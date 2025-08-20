@@ -21,6 +21,10 @@ const KakaoCallback = () => {
 
         const handleKakaoLogin = async (code: string) => {
             try {
+                console.log('카카오 로그인 시도 - code:', code);
+                console.log('User Agent:', navigator.userAgent);
+                console.log('Current URL:', window.location.href);
+                
                 const response = await api.post('/api/auth/kakao', { code }); // POST JSON!
                 const { accessToken, refreshToken } = response.data;
 
@@ -46,7 +50,15 @@ const KakaoCallback = () => {
                     console.error("토큰 파싱 실패:", error);
                     navigate("/"); // 기본적으로 메인 페이지로
                 }
-            } catch (error) {
+            } catch (error: any) {
+                console.error('카카오 로그인 에러 상세:', {
+                    status: error?.response?.status,
+                    data: error?.response?.data,
+                    headers: error?.response?.headers,
+                    config: error?.config,
+                    message: error?.message,
+                    name: error?.name
+                });
                 toast.error('카카오 로그인에 실패했습니다.');
                 navigate('/login');
             }

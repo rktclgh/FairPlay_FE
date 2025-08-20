@@ -3,11 +3,51 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/images/fav.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>FairPlay</title>
+    <style>
+      /* Critical CSS for iOS */
+      #root { 
+        min-height: 100vh; 
+        background: #ffffff;
+      }
+      /* Loading spinner */
+      .loading { 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="loading">로딩 중...</div>
+    </div>
+    
+    <!-- iOS Safari 에러 핸들링 -->
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('Global error:', e);
+        document.getElementById('root').innerHTML = '<div class="loading">앱 로딩 중 오류가 발생했습니다. 새로고침해주세요.</div>';
+      });
+      
+      // iOS에서 모듈 로딩 실패시 폴백
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('Unhandled promise rejection:', e);
+      });
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- iOS Safari 모듈 로딩 폴백 -->
+    <script nomodule>
+      document.getElementById('root').innerHTML = '<div class="loading">이 브라우저는 지원되지 않습니다. 최신 Safari를 사용해주세요.</div>';
+    </script>
   </body>
 </html>

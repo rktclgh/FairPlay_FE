@@ -5,11 +5,13 @@ import QrTicket from "../../components/QrTicket";
 import { QrCode, RefreshCw, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import reservationService, { ReservationResponseDto } from "../../services/reservationService";
+import reservationService from "../../services/reservationService";
+import type { ReservationResponseDto } from "../../services/reservationService";
 import type {
     QrTicketRequestDto,
     QrTicketData
 } from "../../services/types/qrTicketType";
+import { eventAPI } from "../../services/event";
 import {
     getQrTicketForMypage,
 } from "../../services/qrTicket"
@@ -72,7 +74,10 @@ export default function MyTickets(): JSX.Element {
         setWaitingCount(parseInt(msg));
     }, []);
 
-    // ✅ QR 티켓 웹소켓
+    // 카테고리 정보 캐시
+    const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
+
+    // ✅ 여기서 웹소켓 구독 시작
     useQrTicketSocket(qrTicketId, (msg) => {
         console.log("qrTicketId:" + qrTicketId);
         setSuccessMessage(msg);   // 메시지를 state에 저장
@@ -83,16 +88,44 @@ export default function MyTickets(): JSX.Element {
 
     //======= 예약 내역 조회 ======= // 
     useEffect(() => {
-        const loadMyReservations = async () => {
+        const loadMyReservationsWithCategories = async () => {
             try {
                 setLoading(true);
-                const data = await reservationService.getMyReservations();
-                setReservations(data);
+                const reservations = await reservationService.getMyReservations();
+
+                // 각 예약에 대해 카테고리 정보 추가 (캐시 활용)
+                const reservationsWithCategories = await Promise.all(
+                    reservations.map(async (reservation) => {
+                        // 캐시된 카테고리 정보가 있으면 사용
+                        if (eventCategoryCache.current.has(reservation.eventId)) {
+                            const cached = eventCategoryCache.current.get(reservation.eventId)!;
+                            return { ...reservation, ...cached };
+                        }
+
+                        try {
+                            const eventDetail = await eventAPI.getEventDetail(reservation.eventId);
+                            const categoryInfo = {
+                                mainCategory: eventDetail.mainCategory,
+                                subCategory: eventDetail.subCategory
+                            };
+
+                            // 캐시에 저장
+                            eventCategoryCache.current.set(reservation.eventId, categoryInfo);
+
+                            return { ...reservation, ...categoryInfo };
+                        } catch (error) {
+                            console.error(`이벤트 ${reservation.eventId} 카테고리 로드 실패:`, error);
+                            return reservation;
+                        }
+                    })
+                );
+
+                setReservations(reservationsWithCategories);
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 // QR 티켓 사용 가능 여부: 관람일자 1일 전부터 행사 날까지 버튼 활성화
-                const canUseList = data.map((reservation: ReservationResponseDto) => {
+                const canUseList = reservationsWithCategories.map((reservation: ReservationResponseDto) => {
                     if (!reservation.scheduleDate || !reservation.startTime) return false;
                     const eventDate = new Date(reservation.scheduleDate); // 행사일
                     eventDate.setHours(0, 0, 0, 0);
@@ -106,7 +139,7 @@ export default function MyTickets(): JSX.Element {
                 setLoading(false);
             }
         };
-        loadMyReservations();
+        loadMyReservationsWithCategories();
     }, [t]);
 
     //======= QR 티켓 창 열기 ======= //    
@@ -389,8 +422,30 @@ export default function MyTickets(): JSX.Element {
                                                         <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.eventName')}
                                                         </div>
-                                                        <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base md:text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-                                                            {reservation.eventName}
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base md:text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                                                                {reservation.eventName}
+                                                            </div>
+
+                                                            {/* 카테고리 정보 - 행사 타이틀 오른쪽에 배치 */}
+                                                            {reservation.mainCategory && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`px-3 py-1 rounded text-xs ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                                                                        reservation.mainCategory === "공연" ? "bg-red-100 text-red-800 border border-red-200" :
+                                                                            reservation.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border border-green-200" :
+                                                                                reservation.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
+                                                                                    reservation.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border border-gray-300" :
+                                                                                        "bg-gray-100 text-gray-700 border border-gray-200"
+                                                                        }`}>
+                                                                        {reservation.mainCategory}
+                                                                    </span>
+                                                                    {reservation.subCategory && (
+                                                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
+                                                                            {reservation.subCategory}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
 
@@ -501,24 +556,26 @@ export default function MyTickets(): JSX.Element {
                                                     </div>
                                                 )}
 
-                                                {/* 모바일 팜플렛 버튼 */}
-                                                <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-10">
-                                                    <button
-                                                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handlePamphletOpen(reservation.eventId);
-                                                        }}
-                                                        className="w-full h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
-                                                        style={{ pointerEvents: 'auto' }}
-                                                    >
-                                                        <span className="font-semibold text-white text-xs tracking-wide">
-                                                            모바일 팜플렛
-                                                        </span>
-                                                        <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                                                    </button>
-                                                </div>
+                                                {/* 모바일 팜플렛 버튼 - 박람회 카테고리인 경우에만 표시 */}
+                                                {reservation.mainCategory === "박람회" && (
+                                                    <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-10">
+                                                        <button
+                                                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handlePamphletOpen(reservation.eventId);
+                                                            }}
+                                                            className="w-full h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                                            style={{ pointerEvents: 'auto' }}
+                                                        >
+                                                            <span className="font-semibold text-white text-xs tracking-wide">
+                                                                모바일 팜플렛
+                                                            </span>
+                                                            <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

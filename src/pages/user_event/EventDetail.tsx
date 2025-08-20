@@ -90,6 +90,13 @@ const EventDetail = (): JSX.Element => {
 
     const id = Number(eventId); // 컴포넌트 내부에서 계산
 
+    // 페이지 로드 시 스크롤을 맨 위로 이동
+    React.useEffect(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    }, []); // 컴포넌트 마운트 시 한 번만 실행
+
     // 초기 위시 상태 로드
     React.useEffect(() => {
         if (!isAuthed()) return;
@@ -503,11 +510,43 @@ const EventDetail = (): JSX.Element => {
         setSelectedDate(date);
         setSelectedScheduleId(null); // 기존 회차 선택 초기화
         filterSchedulesForDate(date);
+
+        // 전체행사현황에서 해당 날짜로 자동 스크롤
+        setTimeout(() => {
+            const selectedDateElement = document.querySelector(`[data-date="${date}"]`);
+            if (selectedDateElement) {
+                const container = selectedDateElement.closest('.max-h-60');
+                if (container) {
+                    selectedDateElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }
+        }, 100);
     };
 
     // 회차 선택 핸들러
     const handleScheduleSelect = (scheduleId: number) => {
         setSelectedScheduleId(scheduleId);
+
+        // 선택된 날짜가 있으면 해당 날짜로 자동 스크롤
+        if (selectedDate) {
+            setTimeout(() => {
+                const selectedDateElement = document.querySelector(`[data-date="${selectedDate}"]`);
+                if (selectedDateElement) {
+                    const container = selectedDateElement.closest('.max-h-60');
+                    if (container) {
+                        selectedDateElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }
+                }
+            }, 100);
+        }
     };
 
     // 선택된 회차 정보 가져오기
@@ -610,9 +649,26 @@ const EventDetail = (): JSX.Element => {
                                 </button>
 
                             </div>
-                            <p className="text-[#00000099] text-xl mt-1">
+                            <p className="text-    [#00000099] text-xl mt-1">
                                 {eventData.titleEng}
                             </p>
+                            {/* 카테고리 정보 */}
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className={`px-3 py-1 text-sm font-medium rounded border ${eventData.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                    eventData.mainCategory === "공연" ? "bg-red-100 text-red-800 border-red-200" :
+                                        eventData.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border-green-200" :
+                                            eventData.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                                eventData.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border-gray-300" :
+                                                    "bg-gray-100 text-gray-700 border-gray-200"
+                                    }`}>
+                                    {eventData.mainCategory}
+                                </span>
+                                {eventData.subCategory && (
+                                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded border border-gray-200">
+                                        {eventData.subCategory}
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         <hr className="h-[3px] my-6 bg-black" />
@@ -647,34 +703,30 @@ const EventDetail = (): JSX.Element => {
                             </div>
 
                             <div className="flex flex-col lg:flex-row items-start gap-4">
-                                <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">가격</span>
-                                <div className="flex-1">
-                                    {ticketPrices.length > 0 ? (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                                            <div className="space-y-1">
+                                <div className="flex items-start gap-4 flex-1">
+                                    <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">가격</span>
+                                    <div className="flex-1">
+                                        {ticketPrices.length > 0 ? (
+                                            <div className="space-y-2">
                                                 {ticketPrices.map((ticket, index) => (
-                                                    <p key={index} className="text-base">
-                                                        {ticket.name}
-                                                    </p>
+                                                    <div key={index} className="flex items-center gap-4">
+                                                        <span className="text-base min-w-[60px]">{ticket.name}</span>
+                                                        <span className="text-base font-semibold">
+                                                            {ticket.price === 0 ? '무료' : `${ticket.price.toLocaleString()}원`}
+                                                        </span>
+                                                    </div>
                                                 ))}
                                             </div>
-                                            <div className="space-y-1 font-semibold">
-                                                {ticketPrices.map((ticket, index) => (
-                                                    <p key={index} className="text-base">
-                                                        {ticket.price === 0 ? '무료' : `${ticket.price.toLocaleString()}원`}
-                                                    </p>
-                                                ))}
+                                        ) : (
+                                            <div className="text-gray-500 text-base">
+                                                티켓이 등록되지 않았습니다
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-gray-500 text-base">
-                                            티켓이 등록되지 않았습니다
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                                 <button
                                     onClick={handleInquiry}
-                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm lg:ml-4 w-full lg:w-auto"
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-md shadow-sm transition-colors text-sm w-full lg:w-auto lg:ml-4"
                                 >
                                     담당자에게 문의하기
                                 </button>
@@ -874,7 +926,9 @@ const EventDetail = (): JSX.Element => {
                                         <div className="p-3 border-b bg-gray-50">
                                             <h5 className="text-sm font-medium text-gray-900">전체 행사일 현황</h5>
                                         </div>
-                                        <div className="max-h-60 overflow-y-auto">
+                                        <div
+                                            className="max-h-60 overflow-y-auto custom-scrollbar"
+                                        >
                                             {eventDates.map((date) => {
                                                 const isBookable = isDateBookable(date);
                                                 const isSelected = selectedDate === date;
@@ -882,13 +936,19 @@ const EventDetail = (): JSX.Element => {
                                                 const dateObj = new Date(date + 'T00:00:00');
                                                 const dayName = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
 
+                                                // 선택된 날짜의 경우 해당 회차 정보 가져오기
+                                                const schedulesForDate = isSelected ? availableSchedules : [];
+
                                                 return (
                                                     <div
                                                         key={date}
-                                                        className={`flex items-center justify-between p-3 border-b last:border-b-0 ${isPastDate
-                                                            ? 'cursor-not-allowed opacity-60'
-                                                            : 'cursor-pointer hover:bg-gray-50'
-                                                            } ${isSelected ? 'bg-blue-50' : ''}`}
+                                                        data-date={date}
+                                                        className={`flex items-center justify-between p-3 ${isPastDate
+                                                            ? 'cursor-not-allowed opacity-60 border-b'
+                                                            : isSelected
+                                                                ? 'cursor-pointer bg-blue-50 border-2 border-blue-500 rounded'
+                                                                : 'cursor-pointer hover:bg-gray-50 border-b'
+                                                            } ${!isPastDate && !isSelected ? 'last:border-b-0' : ''}`}
                                                         onClick={() => !isPastDate ? handleDateSelect(date) : null}
                                                     >
                                                         <div className="flex items-center gap-3">
@@ -900,18 +960,22 @@ const EventDetail = (): JSX.Element => {
                                                                         ? 'bg-green-100 border border-green-300'
                                                                         : 'bg-pink-100 border border-pink-300'
                                                                 }`}></div>
-                                                            <div>
-                                                                <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
-                                                                    {date}
-                                                                </span>
-                                                                <span className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                                    ({dayName})
-                                                                </span>
-                                                                {isPastDate && (
-                                                                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
-                                                                        지난 날짜
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center">
+                                                                    <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
+                                                                        {date}
                                                                     </span>
-                                                                )}
+                                                                    <span className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                        ({dayName})
+                                                                    </span>
+                                                                    {isPastDate && (
+                                                                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
+                                                                            지난 날짜
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
@@ -928,11 +992,7 @@ const EventDetail = (): JSX.Element => {
                                                                     예매불가
                                                                 </span>
                                                             )}
-                                                            {isSelected && (
-                                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                                                    선택됨
-                                                                </span>
-                                                            )}
+
                                                         </div>
                                                     </div>
                                                 );

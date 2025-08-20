@@ -19,12 +19,12 @@ export default defineConfig(({ mode }) => {
       historyApiFallback: true,
       proxy: {
         "/api": {
-          target: env.VITE_BACKEND_BASE_URL || "http://localhost:8080",
+          target: env.VITE_BACKEND_BASE_URL || "https://fair-play.ink",
           changeOrigin: true,
         },
         // 이 부분! → 정규식 대신 prefix 전체로 처리
         "/ws": {
-          target: env.VITE_BACKEND_BASE_URL || "http://localhost:8080",
+          target: env.VITE_BACKEND_BASE_URL || "https://fair-play.ink",
           ws: true,
           changeOrigin: true,
         },
@@ -32,10 +32,20 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: "dist",
+      target: "es2015", // iOS Safari 호환성 강화
+      minify: "terser",
+      sourcemap: true, // iOS 디버깅용
       rollupOptions: {
         // SPA 라우팅을 위한 히스토리 API 폴백 지원
         input: {
           main: "./index.html"
+        },
+        output: {
+          // iOS Safari를 위한 청크 분할 최적화
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            router: ['react-router-dom']
+          }
         }
       }
     },
