@@ -56,7 +56,7 @@ const [error, setError] = useState<string | null>(null);
 
 
 //백엔드 베이스 URL & 토큰
- const BASE_URL = useMemo(() => import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080', []);
+ const BASE_URL = useMemo(() => import.meta.env.VITE_API_BASE_URL ?? 'https://fair-play.ink', []);
  const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
     return token ? { Authorization: `Bearer ${token}` } : {};

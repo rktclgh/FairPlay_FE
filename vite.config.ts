@@ -19,12 +19,12 @@ export default defineConfig(({ mode }) => {
       historyApiFallback: true,
       proxy: {
         "/api": {
-          target: env.VITE_BACKEND_BASE_URL || "http://localhost:8080",
+          target: env.VITE_BACKEND_BASE_URL || "https://fair-play.ink",
           changeOrigin: true,
         },
         // 이 부분! → 정규식 대신 prefix 전체로 처리
         "/ws": {
-          target: env.VITE_BACKEND_BASE_URL || "http://localhost:8080",
+          target: env.VITE_BACKEND_BASE_URL || "https://fair-play.ink",
           ws: true,
           changeOrigin: true,
         },

@@ -62,7 +62,7 @@ interface CreateApplicationRequestDto {
 
 // ---- axios 인스턴스 ----
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_BASE_URL ?? "http://localhost:8080",
+  baseURL: import.meta.env.VITE_BACKEND_BASE_URL ?? "https://fair-play.ink",
   withCredentials: true,
 });
 
