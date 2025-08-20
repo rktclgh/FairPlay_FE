@@ -62,8 +62,11 @@ const BoothAdminDashboard: React.FC = () => {
         }
     ]);
 
+    // boothId, eventId 전달 필요
     const handleQRScan = () => {
-        navigate('/booth-admin/qr-scan');
+        navigate('/booth-admin/qr-scan', {
+            state: { eventId: 1, boothId: 1 } // 상태 전달
+        });
     };
 
     const handleExperienceManagement = () => {

@@ -5,7 +5,12 @@ import { QrCode, Camera, X, CheckCircle, AlertCircle, Users, Clock, Calendar } f
 import { toast } from 'react-toastify';
 import jsQR from 'jsqr';
 import type { BoothEntryRequestDto } from "../../services/types/qrTicketType";
-import {checkBoothQr } from "../../services/qrTicket";
+import type { BoothExperience } from "../../services/types/boothExperienceType";
+import type { BoothDetailResponse } from '../../types/booth';
+import { checkBoothQr } from "../../services/qrTicket";
+import { getBoothExperiences } from "../../services/boothExperienceService";
+import {getBoothDetails} from "../../api/boothApi";
+import { useLocation } from 'react-router-dom';
 
 interface ScannedTicket {
     id: string;
@@ -29,15 +34,32 @@ interface Experience {
 
 
 const BoothQRScanPage: React.FC = () => {
+    const location = useLocation();
+    const { eventId, boothId } = location.state;
     const [isScanning, setIsScanning] = useState(false);
     const [scannedTickets, setScannedTickets] = useState<ScannedTicket[]>([]);
     const [currentTicket, setCurrentTicket] = useState<ScannedTicket | null>(null);
     const [showResult, setShowResult] = useState(false);
-    const [selectedExperience, setSelectedExperience] = useState<Experience | null>(null);
-    const [booth, setBooths] = useState();
+    const [experiences, setExperiences] = useState<BoothExperience[] | null>(null);
+    const [selectedExperience, setSelectedExperience] = useState<BoothExperience | null>(null);
+    const [booth, setBooths] = useState<BoothDetailResponse | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
+
+    useEffect(() => {
+        const fetchBooths = async (): number => {
+            const res = getBoothDetails(eventId, boothId);
+            setBooths(res);
+        };
+        const fetchExperiences = async () =>  {
+            const res = await getBoothExperiences(boothId);
+            setExperiences(res);
+        };
+
+        fetchBooths();
+        fetchExperiences();
+    },[])
 
     // 더미 체험 데이터
     const [boothExperiences] = useState([
@@ -356,9 +378,9 @@ const BoothQRScanPage: React.FC = () => {
                                     체험리스트
                                 </h3>
                                 <div className="space-y-3">
-                                    {boothExperiences.map((experience) => (
-                                        <div key={experience.id} className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer
-                                            ${experience.id === selectedExperience?.id ? 'border-blue-500' : 'border-gray-200'}`}
+                                    {experiences?.map((experience) => (
+                                        <div key={experience.experienceId} className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer
+                                            ${experience.experienceId === selectedExperience?.experienceId ? 'border-blue-500' : 'border-gray-200'}`}
                                             onClick={() => setSelectedExperience(experience)}
                                         >
                                             <div className="flex items-center justify-between mb-2">
@@ -373,11 +395,11 @@ const BoothQRScanPage: React.FC = () => {
                                             <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                                                 <div className="flex items-center">
                                                     <Calendar className="w-4 h-4 mr-2" />
-                                                    <span>{experience.date}</span>
+                                                    <span>{experience.experienceDate}</span>
                                                 </div>
                                                 <div className="flex items-center">
                                                     <Clock className="w-4 h-4 mr-2" />
-                                                    <span>{experience.time}</span>
+                                                    <span>{experience.startTime}</span>
                                                 </div>
                                             </div>
                                             <div className="mt-3 pt-3 border-t border-gray-100">
