@@ -71,6 +71,7 @@ export const BoothApplicationList = () => {
             case 'PENDING':
             case '결제 대기':
             case '결제대기':
+            case '결제 전':
                 return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
             case 'UNPAID':
             case '미결제':

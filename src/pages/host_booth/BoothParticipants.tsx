@@ -78,7 +78,7 @@ const BoothParticipants: React.FC = () => {
     const tableColumns = useMemo(() => '200px 160px 160px 120px 90px 100px', []);
     const navigate = useNavigate();
     const handleView = (boothId: number) => {
-        navigate(`/host/events/${eventId}/booths/${boothId}`);
+        navigate(`/host/events/${eventId}/booth-participants/${boothId}`);
     };
 
     if (loading) {

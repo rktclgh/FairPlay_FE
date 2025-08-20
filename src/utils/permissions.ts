@@ -49,6 +49,7 @@ export const getUserRoleFromToken = (): string | null => {
 export const getRedirectPathByRole = (role: string): string => {
   if (role === USER_ROLES.ADMIN) return "/admin_dashboard";
   if (hasHostPermission(role)) return "/host/dashboard";
+  if (hasBoothManagerPermission(role)) return "/booth-admin/dashboard";
   return "/";
 };
 
@@ -59,4 +60,8 @@ export const canAccessHostMenu = (role: string): boolean => {
 
 export const canAccessAdminMenu = (role: string): boolean => {
   return hasAdminPermission(role);
+};
+
+export const canAccessBoothAdminMenu = (role: string): boolean => {
+  return hasBoothManagerPermission(role);
 };

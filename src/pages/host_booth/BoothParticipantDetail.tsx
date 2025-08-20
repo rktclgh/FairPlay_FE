@@ -1,14 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
 import { useParams, useNavigate } from "react-router-dom";
 import { getBoothDetails, updateBooth, deleteBooth, updateBoothAdminInfo } from "../../api/boothApi";
 import { BoothDetailResponse, BoothUpdateRequest, BoothAdminRequest } from "../../types/booth";
+import { useFileUpload } from "../../hooks/useFileUpload";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 
 const BoothParticipantDetail = () => {
     const { eventId, boothId } = useParams<{ eventId: string; boothId: string }>();
     const navigate = useNavigate();
+    
+    // 파일 업로드 훅
+    const { uploadFile } = useFileUpload();
+    
+    // ReactQuill 참조
+    const quillRef = useRef<ReactQuill>(null);
+    
+    // 이미지 업로드 핸들러
+    const handleImageUpload = async (file: File): Promise<string | null> => {
+        const response = await uploadFile(file, `description_image_${Date.now()}`);
+        return response ? response.url : null;
+    };
+    
+    // ReactQuill 이미지 핸들러
+    const imageHandler = () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+        
+        input.onchange = async () => {
+            const file = input.files?.[0];
+            if (file) {
+                try {
+                    const imageUrl = await handleImageUpload(file);
+                    if (imageUrl && quillRef.current) {
+                        const quill = quillRef.current.getEditor();
+                        const range = quill.getSelection();
+                        quill.insertEmbed(range?.index || 0, 'image', imageUrl);
+                    }
+                } catch (error) {
+                    console.error('이미지 업로드 실패:', error);
+                }
+            }
+        };
+    };
 
     // 상태 관리
     const [detail, setDetail] = useState<BoothDetailResponse | null>(null);
@@ -226,20 +265,73 @@ const BoothParticipantDetail = () => {
                                         <div className="grid grid-cols-2 gap-8">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">외부 링크</label>
-                                                <div className={`flex items-center w-full h-[54px] border-0 border-b border-[#0000001a] pl-0 font-normal text-base bg-transparent outline-none text-left text-black font-medium`}>
-                                                    {detail.boothExternalLinks && detail.boothExternalLinks.length > 0 ? (
-                                                        <div className="space-y-1">
-                                                            {detail.boothExternalLinks.map((link, index) => (
-                                                                <div key={index} className="flex items-center space-x-2">
-                                                                    <span className="text-gray-700">{link.displayText}:</span>
-                                                                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                                                                        {link.url}
-                                                                    </a>
+                                                <div className={`w-full min-h-[54px] border-0 border-b border-[#0000001a] pl-0 font-normal text-base bg-transparent outline-none text-left text-black font-medium`}>
+                                                    {editing ? (
+                                                        <div className="space-y-2">
+                                                            {(editData.boothExternalLinks || []).map((link, index) => (
+                                                                <div key={index} className="flex gap-2 items-center">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="링크 이름"
+                                                                        value={link.displayText}
+                                                                        onChange={(e) => {
+                                                                            const updatedLinks = [...(editData.boothExternalLinks || [])];
+                                                                            updatedLinks[index] = {...updatedLinks[index], displayText: e.target.value};
+                                                                            setEditData({...editData, boothExternalLinks: updatedLinks});
+                                                                        }}
+                                                                        className="p-2 border border-gray-300 rounded text-sm"
+                                                                        style={{ flex: '3' }}
+                                                                    />
+                                                                    <input
+                                                                        type="url"
+                                                                        placeholder="https://..."
+                                                                        value={link.url}
+                                                                        onChange={(e) => {
+                                                                            const updatedLinks = [...(editData.boothExternalLinks || [])];
+                                                                            updatedLinks[index] = {...updatedLinks[index], url: e.target.value};
+                                                                            setEditData({...editData, boothExternalLinks: updatedLinks});
+                                                                        }}
+                                                                        className="p-2 border border-gray-300 rounded text-sm"
+                                                                        style={{ flex: '5' }}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const updatedLinks = (editData.boothExternalLinks || []).filter((_, i) => i !== index);
+                                                                            setEditData({...editData, boothExternalLinks: updatedLinks});
+                                                                        }}
+                                                                        className="px-2 py-1 bg-red-500 text-white rounded text-sm"
+                                                                    >
+                                                                        삭제
+                                                                    </button>
                                                                 </div>
                                                             ))}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const updatedLinks = [...(editData.boothExternalLinks || []), {displayText: '', url: ''}];
+                                                                    setEditData({...editData, boothExternalLinks: updatedLinks});
+                                                                }}
+                                                                className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
+                                                            >
+                                                                링크 추가
+                                                            </button>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[#0000004c]">등록된 외부 링크가 없습니다</span>
+                                                        detail.boothExternalLinks && detail.boothExternalLinks.length > 0 ? (
+                                                            <div className="space-y-1">
+                                                                {detail.boothExternalLinks.map((link, index) => (
+                                                                    <div key={index} className="flex items-center space-x-2">
+                                                                        <span className="text-gray-700">{link.displayText}:</span>
+                                                                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                                                                            {link.url}
+                                                                        </a>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[#0000004c]">등록된 외부 링크가 없습니다</span>
+                                                        )
                                                     )}
                                                 </div>
                                             </div>
@@ -270,16 +362,47 @@ const BoothParticipantDetail = () => {
                             <div className="bg-white rounded-lg shadow-md p-6">
                                 <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left mb-6">부스 소개</h2>
                                 {editing ? (
-                                    <textarea
-                                        value={editData.boothDescription || ''}
-                                        onChange={(e) => setEditData({...editData, boothDescription: e.target.value})}
-                                        className="w-full min-h-[150px] border-0 border-b border-[#0000001a] pl-0 pb-4 font-normal text-base bg-transparent outline-none text-left text-black font-medium leading-relaxed resize-none"
-                                        placeholder="부스 소개를 입력하세요"
-                                    />
-                                ) : (
-                                    <div className="w-full min-h-[150px] border-0 border-b border-[#0000001a] pl-0 pb-4 font-normal text-base bg-transparent outline-none text-left text-black font-medium leading-relaxed whitespace-pre-line">
-                                        {detail.boothDescription || '부스 소개가 없습니다.'}
+                                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                                        <style>
+                                            {`
+                                                .ql-editor {
+                                                    min-height: 200px !important;
+                                                }
+                                            `}
+                                        </style>
+                                        <ReactQuill
+                                            ref={quillRef}
+                                            theme="snow"
+                                            value={editData.boothDescription || ''}
+                                            onChange={(value) => setEditData({...editData, boothDescription: value})}
+                                            placeholder="부스 소개를 입력하세요"
+                                            modules={{
+                                                toolbar: [
+                                                    [{ 'header': [1, 2, 3, false] }],
+                                                    ['bold', 'italic', 'underline', 'strike'],
+                                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                    [{ 'color': [] }, { 'background': [] }],
+                                                    ['link', 'image'],
+                                                    ['clean']
+                                                ],
+                                                handlers: {
+                                                    image: imageHandler
+                                                }
+                                            }}
+                                            formats={[
+                                                'header', 'bold', 'italic', 'underline', 'strike',
+                                                'list', 'bullet', 'color', 'background', 'link', 'image'
+                                            ]}
+                                            style={{ 
+                                                minHeight: '250px'
+                                            }}
+                                        />
                                     </div>
+                                ) : (
+                                    <div 
+                                        className="w-full min-h-[150px] border-0 border-b border-[#0000001a] pl-0 pb-4 font-normal text-base bg-transparent outline-none text-left text-black font-medium leading-relaxed prose prose-sm max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: detail.boothDescription || '부스 소개가 없습니다.' }}
+                                    />
                                 )}
                             </div>
                         </div>

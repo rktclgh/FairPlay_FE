@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getBooths, getBoothDetails, applyForBooth, getBoothTypes } from "../../api/boothApi";
 import {BoothDetailResponse, BoothSummary, BoothType} from "../../types/booth";
 import { eventAPI } from "../../services/event";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
+import { useFileUpload } from "../../hooks/useFileUpload";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 interface Booth {
     id: number;
@@ -31,19 +34,115 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
     const [showApplicationForm, setShowApplicationForm] = useState(false);
     const [boothTypes, setBoothTypes] = useState<BoothType[]>([]);
     const [eventDetail, setEventDetail] = useState<EventDetailResponseDto | null>(null);
+    
+    // 파일 업로드 훅
+    const { uploadFile, getFileByUsage, removeFile, getFileUploadDtos, isUploading } = useFileUpload();
+    
+    // ReactQuill 참조
+    const quillRef = useRef<ReactQuill>(null);
+    
+    // 파일 선택
+    const pickImageFile = () =>
+        new Promise<File | null>((resolve) => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.onchange = () => resolve(input.files?.[0] || null);
+            input.click();
+        });
+
+    // 이미지 삽입
+    const insertImage = (url: string) => {
+        const quill = quillRef.current?.getEditor();
+        if (!quill) return;
+        const range = quill.getSelection(true) ?? { index: quill.getLength(), length: 0 };
+        quill.insertEmbed(range.index, "image", url, "user");
+        quill.setSelection(range.index + 1, 0, "user");
+    };
+
+    // 서버 업로드 → CDN URL
+    const uploadEditorImageAndGetUrl = async (file: File) => {
+        try {
+            const uploaded: any = await uploadFile(file, "editor_image");
+            return uploaded?.url || null;
+        } catch (error) {
+            console.error("이미지 업로드 실패:", error);
+            return null;
+        }
+    };
+
+    // 에디터 모듈 설정
+    const editorModules = useMemo(() => ({
+        toolbar: {
+            container: [
+                [{ header: [1, 2, 3, false] }],
+                ["bold", "italic", "underline"],
+                [{ list: "ordered" }, { list: "bullet" }],
+                ["link", "image"],
+                ["clean"],
+            ],
+            handlers: {
+                image: async () => {
+                    const file = await pickImageFile();
+                    if (!file) return;
+                    const url = await uploadEditorImageAndGetUrl(file);
+                    if (url) insertImage(url);
+                },
+            },
+        },
+        clipboard: { matchVisual: false },
+        history: { delay: 1000, maxStack: 100, userOnly: true },
+    }), []);
+
+    const quillFormats = [
+        "header", "bold", "italic", "underline", "strike",
+        "list", "bullet", "indent", "link", "image"
+    ];
     const [applicationForm, setApplicationForm] = useState({
         startDate: '',
         endDate: '',
         boothTypeId: '',
         boothName: '',
-        bannerImage: null as File | null,
         description: '',
         representativeName: '',
         contactEmail: '',
         contactPhone: '',
-        websiteLink: '',
+        externalLinks: [] as { displayText: string; url: string }[],
         fairPlayEmail: ''
     });
+
+    const formatPhoneNumber = (value: string) => {
+        const digits = value.replace(/\D/g, "");
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 7) return `${digits.slice(0,3)}-${digits.slice(3)}`;
+        return `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7,11)}`;
+    };
+
+    const handlePhoneChange = (raw: string) => {
+        const formatted = formatPhoneNumber(raw);
+        setApplicationForm(prev => ({
+            ...prev,
+            contactPhone: formatted, // 화면 표시값은 하이픈 포함
+        }));
+    };
+
+    // 파일 업로드 핸들러
+    const handleFileUpload = async (file: File, usage: string) => {
+        await uploadFile(file, usage);
+    };
+
+    // 파일 제거 핸들러
+    const handleFileRemove = (usage: string) => {
+        removeFile(usage);
+    };
+
+    // 이미지 업로드 핸들러 (에디터용)
+    const handleImageUpload = async (file: File): Promise<string | null> => {
+        const response = await uploadFile(file, `description_image_${Date.now()}`);
+        return response ? response.url : null;
+    };
+
+
 
     // 목업 부스 데이터
     // const mockBooths: Booth[] = [
@@ -251,8 +350,8 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         
         const startDate = new Date(applicationForm.startDate);
         const endDate = new Date(applicationForm.endDate);
-        const eventStartDate = new Date(eventDetail.eventStartDate);
-        const eventEndDate = new Date(eventDetail.eventEndDate);
+        const eventStartDate = new Date(eventDetail.startDate);
+        const eventEndDate = new Date(eventDetail.endDate);
         
         // 시작일이 종료일보다 늦을 수 없음
         if (startDate > endDate) {
@@ -261,7 +360,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         
         // 부스 참가 일정이 행사 일정 범위 내에 있어야 함
         if (startDate < eventStartDate || endDate > eventEndDate) {
-            return `참가 일정은 행사 기간(${eventDetail.eventStartDate} ~ ${eventDetail.eventEndDate}) 내에 있어야 합니다.`;
+            return `참가 일정은 행사 기간(${eventDetail.startDate} ~ ${eventDetail.endDate}) 내에 있어야 합니다.`;
         }
         
         return true;
@@ -277,7 +376,6 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
             applicationForm.endDate &&
             applicationForm.boothTypeId &&
             applicationForm.boothName &&
-            applicationForm.bannerImage &&
             applicationForm.description &&
             applicationForm.representativeName &&
             applicationForm.contactEmail &&
@@ -302,34 +400,32 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         try {
             setLoading(true);
             
-            // FormData 생성 (파일 업로드를 위해)
-            const formData = new FormData();
-            
             // 부스 신청 데이터 생성
+            const uploadedFiles = getFileUploadDtos();
+            const bannerFile = getFileByUsage('banner');
+            
             const applicationData = {
                 boothTitle: applicationForm.boothName,
                 boothDescription: applicationForm.description,
                 boothEmail: `${applicationForm.fairPlayEmail}@fair-play.ink`,
                 managerName: applicationForm.representativeName,
                 contactEmail: applicationForm.contactEmail,
-                contactNumber: applicationForm.contactPhone,
+                contactNumber: applicationForm.contactPhone.replace(/\D/g, ""),
                 boothTypeId: Number(applicationForm.boothTypeId),
                 startDate: applicationForm.startDate,
                 endDate: applicationForm.endDate,
-                boothExternalLinks: applicationForm.websiteLink ? [
-                    { url: applicationForm.websiteLink, displayText: "웹사이트" }
-                ] : []
+                tempBannerUrl: bannerFile ? {
+                    s3Key: bannerFile.key,
+                    originalFileName: bannerFile.name,
+                    fileType: bannerFile.type,
+                    fileSize: bannerFile.fileSize || 0
+                } : null,
+                boothExternalLinks: applicationForm.externalLinks.filter(link => 
+                    link.url.trim() && link.displayText.trim()
+                )
             };
             
-            // JSON 데이터 추가
-            formData.append('data', JSON.stringify(applicationData));
-            
-            // 파일 추가
-            if (applicationForm.bannerImage) {
-                formData.append('files', applicationForm.bannerImage);
-            }
-            
-            await applyForBooth(Number(eventId), formData);
+            await applyForBooth(Number(eventId), applicationData);
             
             alert('부스 신청이 완료되었습니다. 1~2일 내에 검토 결과를 알려드립니다.');
             setShowApplicationForm(false);
@@ -338,14 +434,16 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                 endDate: '',
                 boothTypeId: '',
                 boothName: '',
-                bannerImage: null,
                 description: '',
                 representativeName: '',
                 contactEmail: '',
                 contactPhone: '',
-                websiteLink: '',
+                externalLinks: [],
                 fairPlayEmail: ''
             });
+            
+            // 업로드된 파일들도 초기화
+            removeFile('banner');
         } catch (error) {
             console.error('부스 신청 실패:', error);
             alert('부스 신청 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -452,7 +550,10 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                         {/* 부스 설명 */}
                         <div className="mt-8 pt-6 border-t border-gray-200">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">부스 소개</h3>
-                            <p className="text-gray-700 leading-relaxed">{selectedBooth.boothDescription}</p>
+                            <div 
+                                className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{ __html: selectedBooth.boothDescription }}
+                            />
                         </div>
                     </div>
                 </div>
@@ -492,14 +593,14 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         type="date"
                                         value={applicationForm.startDate}
                                         onChange={(e) => handleFormChange('startDate', e.target.value)}
-                                        min={eventDetail?.eventStartDate}
-                                        max={eventDetail?.eventEndDate}
+                                        min={eventDetail?.startDate}
+                                        max={eventDetail?.endDate}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
                                     {eventDetail && (
                                         <p className="text-xs text-gray-500 mt-1">
-                                            행사 기간: {eventDetail.eventStartDate} ~ {eventDetail.eventEndDate}
+                                            행사 기간: {eventDetail.startDate} ~ {eventDetail.endDate}
                                         </p>
                                     )}
                                 </div>
@@ -511,8 +612,8 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         type="date"
                                         value={applicationForm.endDate}
                                         onChange={(e) => handleFormChange('endDate', e.target.value)}
-                                        min={applicationForm.startDate || eventDetail?.eventStartDate}
-                                        max={eventDetail?.eventEndDate}
+                                        min={applicationForm.startDate || eventDetail?.startDate}
+                                        max={eventDetail?.endDate}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
@@ -557,7 +658,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                             {/* 배너 업로드 */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    배너 업로드 <span className="text-red-500">*</span>
+                                    배너 이미지 업로드 (선택사항)
                                 </label>
                                 <div
                                     className="border-2 border-dashed border-gray-300 rounded-[10px] p-6 text-center hover:border-gray-400 transition-colors relative"
@@ -574,18 +675,18 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
                                         const files = e.dataTransfer.files;
                                         if (files && files[0] && files[0].type.startsWith('image/')) {
-                                            handleFormChange('bannerImage', files[0]);
+                                            handleFileUpload(files[0], 'banner');
                                         }
                                     }}
                                 >
-                                    {applicationForm.bannerImage ? (
+                                    {getFileByUsage('banner') ? (
                                         <div className="space-y-2">
                                             <img
-                                                src={URL.createObjectURL(applicationForm.bannerImage)}
+                                                src={getFileByUsage('banner')?.url}
                                                 alt="배너 미리보기"
                                                 className="mx-auto max-h-48 max-w-full object-contain rounded"
                                             />
-                                            <p className="text-xs text-green-600">✓ {applicationForm.bannerImage.name}</p>
+                                            <p className="text-xs text-green-600">✓ {getFileByUsage('banner')?.name}</p>
                                             <div className="text-sm text-gray-600 space-x-2">
                                                 <label htmlFor="banner-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                                                     <span>이미지 변경</span>
@@ -598,15 +699,14 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                                         onChange={(e) => {
                                                             const file = e.target.files?.[0];
                                                             if (file) {
-                                                                handleFormChange('bannerImage', file);
+                                                                handleFileUpload(file, 'banner');
                                                             }
                                                         }}
-                                                        required
                                                     />
                                                 </label>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleFormChange('bannerImage', null)}
+                                                    onClick={() => handleFileRemove('banner')}
                                                     className="text-red-600 hover:text-red-500"
                                                 >
                                                     삭제
@@ -619,10 +719,10 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                             <div className="text-sm text-gray-600">
-                                                <label htmlFor="banner-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                <label htmlFor="banner-upload-empty" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                                                     <span>이미지 업로드</span>
                                                     <input
-                                                        id="banner-upload"
+                                                        id="banner-upload-empty"
                                                         name="bannerImage"
                                                         type="file"
                                                         accept="image/*"
@@ -630,15 +730,19 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                                         onChange={(e) => {
                                                             const file = e.target.files?.[0];
                                                             if (file) {
-                                                                handleFormChange('bannerImage', file);
+                                                                handleFileUpload(file, 'banner');
                                                             }
                                                         }}
-                                                        required
                                                     />
                                                 </label>
                                                 <p className="pl-1">또는 드래그 앤 드롭</p>
                                             </div>
                                             <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 10MB</p>
+                                            {isUploading && (
+                                                <div className="text-sm text-blue-600">
+                                                    업로드 중...
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -649,14 +753,28 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     부스 소개 <span className="text-red-500">*</span>
                                 </label>
-                                <textarea
-                                    value={applicationForm.description}
-                                    onChange={(e) => handleFormChange('description', e.target.value)}
-                                    placeholder="부스 및 전시 내용을 자세히 설명해주세요"
-                                    rows={4}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                    required
-                                />
+                                <div className="overflow-hidden">
+                                    <style>
+                                        {`
+                                            .ql-editor {
+                                                min-height: 200px !important;
+                                            }
+                                        `}
+                                    </style>
+                                    <ReactQuill
+                                        ref={quillRef}
+                                        theme="snow"
+                                        value={applicationForm.description}
+                                        onChange={(value) => handleFormChange('description', value)}
+                                        placeholder="부스 및 전시 내용을 자세히 설명해주세요"
+                                        modules={editorModules}
+                                        formats={quillFormats}
+                                        style={{ 
+                                            minHeight: '250px',
+                                            borderRadius: '10px',
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             {/* 담당자 정보 */}
@@ -687,9 +805,6 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                         required
                                     />
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         담당자 연락처 <span className="text-red-500">*</span>
@@ -697,24 +812,92 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                     <input
                                         type="tel"
                                         value={applicationForm.contactPhone}
-                                        onChange={(e) => handleFormChange('contactPhone', e.target.value)}
+                                        onChange={(e) => handlePhoneChange(e.target.value)}
                                         placeholder="연락처를 입력하세요"
+                                        maxLength={13} // 010-1234-5678
                                         className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        대표 사이트 or SNS 링크
+                            </div>
+
+
+                            {/* 외부 링크 섹션 */}
+                            <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        대표 사이트/SNS 링크
                                     </label>
-                                    <input
-                                        type="url"
-                                        value={applicationForm.websiteLink}
-                                        onChange={(e) => handleFormChange('websiteLink', e.target.value)}
-                                        placeholder="웹사이트 주소를 입력하세요"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const newLinks = [...applicationForm.externalLinks, { displayText: '', url: '' }];
+                                            setApplicationForm(prev => ({ ...prev, externalLinks: newLinks }));
+                                        }}
+                                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                                    >
+                                        링크 추가
+                                    </button>
                                 </div>
+                                
+                                {applicationForm.externalLinks.length === 0 ? (
+                                    <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
+                                        <p className="text-gray-500 text-sm">홈페이지, SNS 등의 링크를 추가할 수 있습니다.</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newLinks = [{ displayText: '', url: '' }];
+                                                setApplicationForm(prev => ({ ...prev, externalLinks: newLinks }));
+                                            }}
+                                            className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200 transition-colors"
+                                        >
+                                            첫 번째 링크 추가
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {applicationForm.externalLinks.map((link, index) => (
+                                            <div key={index} className="flex gap-2 items-center">
+                                                <div className="flex gap-2 flex-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="링크 이름 (예: 홈페이지, 인스타그램)"
+                                                        value={link.displayText}
+                                                        onChange={(e) => {
+                                                            const newLinks = [...applicationForm.externalLinks];
+                                                            newLinks[index] = { ...newLinks[index], displayText: e.target.value };
+                                                            setApplicationForm(prev => ({ ...prev, externalLinks: newLinks }));
+                                                        }}
+                                                        className="w-3/8 px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                        style={{ flex: '3' }}
+                                                    />
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        value={link.url}
+                                                        onChange={(e) => {
+                                                            const newLinks = [...applicationForm.externalLinks];
+                                                            newLinks[index] = { ...newLinks[index], url: e.target.value };
+                                                            setApplicationForm(prev => ({ ...prev, externalLinks: newLinks }));
+                                                        }}
+                                                        className="w-5/8 px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                        style={{ flex: '5' }}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newLinks = applicationForm.externalLinks.filter((_, i) => i !== index);
+                                                        setApplicationForm(prev => ({ ...prev, externalLinks: newLinks }));
+                                                    }}
+                                                    className="px-3 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600 transition-colors"
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* FairPlay 계정 등록 이메일 */}
@@ -756,7 +939,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                     신청하기
                                 </button>
                                 <p className="text-sm text-gray-600 mt-4">
-                                    신청 후 1~2일 내에 주최 측에서 검토 결과를 알려드립니다.
+                                    신청 후 1~2일 내에 입력하신 담당자 이메일로 검토 결과를 알려드립니다.
                                 </p>
                             </div>
                         </form>
