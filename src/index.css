@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iOS Safari 호환성 */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* iOS 스크롤 개선 */
+  position: relative;
+}
+
+/* iOS Safari viewport 버그 수정 */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+}
+
 @layer utilities {
   .line-clamp-1 {
     display: -webkit-box;
