@@ -7,16 +7,20 @@ import {BoothAdminSideNav} from "../../components/BoothAdminSideNav";
 import {QrCode, Plus, Users, Clock} from 'lucide-react';
 
 interface BoothApplication {
-    applicationId: number;
-    eventTitle: string;
+    boothApplicationId: number;
     boothTitle: string;
+    applyAt: string;
+    statusCode: string;
+    statusName: string;
+    paymentStatus: string;
+    paymentStatusCode: string;
     boothTypeName: string;
     boothTypeSize: string;
     price: number;
     managerName: string;
     contactEmail: string;
-    paymentStatus: 'PENDING' | 'PAID';
-    applicationStatus: string;
+    boothTypeId: number;
+    eventTitle: string;
     startDate: string;
     endDate: string;
 }
@@ -72,7 +76,7 @@ const BoothAdminDashboard: React.FC = () => {
 
     const fetchBoothApplications = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/booths/my-applications`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/my-applications`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
@@ -80,54 +84,96 @@ const BoothAdminDashboard: React.FC = () => {
 
             if (!response.ok) {
                 if (response.status === 401) {
+                    toast.error('로그인이 필요합니다. 다시 로그인해주세요.');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
                     navigate('/login');
                     return;
                 }
-                throw new Error('부스 신청 정보를 불러올 수 없습니다.');
+                throw new Error(`HTTP ${response.status}: 부스 신청 정보를 불러올 수 없습니다.`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('Response is not JSON:', await response.text());
+                throw new Error('서버에서 올바르지 않은 응답을 받았습니다. 로그인 상태를 확인해주세요.');
             }
 
             const data = await response.json();
             setApplications(data);
         } catch (error) {
             console.error('Booth applications fetch error:', error);
-            toast.error(error instanceof Error ? error.message : '데이터를 불러오는 중 오류가 발생했습니다.');
+            if (error instanceof Error && error.message.includes('JSON')) {
+                toast.error('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                navigate('/login');
+            } else {
+                toast.error(error instanceof Error ? error.message : '데이터를 불러오는 중 오류가 발생했습니다.');
+            }
         } finally {
             setLoading(false);
         }
     };
 
     const handlePayment = async (application: BoothApplication) => {
-        if (application.paymentStatus === 'PAID') {
+        if (application.paymentStatusCode === 'PAID') {
             toast.info('이미 결제가 완료된 부스입니다.');
             return;
         }
 
-        setPaymentLoading(application.applicationId);
+        setPaymentLoading(application.boothApplicationId);
 
         try {
-            // 1. 아임포트 초기화
+            // 1. 결제 요청 데이터 준비
+            const merchantUid = `booth_${Date.now()}`;
+            const paymentRequestData = {
+                merchantUid: merchantUid,
+                impUid: null, // 아직 없음
+                targetId: application.boothApplicationId,
+                price: application.price,
+                quantity: 1,
+                amount: application.price,
+                paymentMethod: 'card',
+                paymentTargetType: 'BOOTH_APPLICATION'
+            };
+
+            // 2. 백엔드에 결제 정보 저장
+            const requestResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/payment/request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                },
+                body: JSON.stringify(paymentRequestData),
+            });
+
+            if (!requestResponse.ok) {
+                throw new Error('결제 정보 저장 실패');
+            }
+
+            // 3. 아임포트 초기화
             await paymentService.initialize();
 
-            // 2. 결제 요청 데이터 준비
+            // 4. 아임포트 결제 요청
             const paymentRequest = {
                 pg: 'uplus',
                 pay_method: 'card',
-                merchant_uid: `booth_${Date.now()}`,
-                name: `${application.eventTitle} - ${application.boothTitle}`,
+                merchant_uid: merchantUid,
+                name: `${application.eventTitle || '이벤트'} - ${application.boothTitle}`,
                 amount: application.price,
                 buyer_email: application.contactEmail,
                 buyer_name: application.managerName
             };
 
-            // 3. 아임포트 결제 요청
             const paymentResponse = await paymentService.requestPayment(paymentRequest);
 
             if (!paymentResponse.success) {
                 throw new Error(paymentResponse.error_msg || '결제가 취소되었습니다.');
             }
 
-            // 4. 결제 성공 시 백엔드에 결제 완료 알림
-            const completeResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/booths/payment/complete`, {
+            // 5. 결제 성공 시 백엔드에 결제 완료 알림
+            const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/payment/complete`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -136,7 +182,7 @@ const BoothAdminDashboard: React.FC = () => {
                 body: JSON.stringify({
                     merchantUid: paymentResponse.merchant_uid,
                     impUid: paymentResponse.imp_uid,
-                    targetId: application.applicationId,
+                    targetId: application.boothApplicationId,
                     status: 'PAID'
                 }),
             });
@@ -159,7 +205,7 @@ const BoothAdminDashboard: React.FC = () => {
     };
 
     const canAccessOtherFeatures = (application: BoothApplication) => {
-        return application.paymentStatus === 'PAID' && application.applicationStatus === 'APPROVED';
+        return application.paymentStatusCode === 'PAID' && application.statusCode === 'APPROVED';
     };
 
     if (loading) {
@@ -206,33 +252,31 @@ const BoothAdminDashboard: React.FC = () => {
                     ) : (
                         <div className="space-y-6">
                             {applications.map((application) => (
-                                <div key={application.applicationId}
+                                <div key={application.boothApplicationId}
                                      className="bg-white rounded-lg shadow-sm overflow-hidden">
                                     <div className="p-6">
                                         {/* Status Bar */}
                                         <div className="flex justify-between items-center mb-6">
                                             <div>
                                                 <h2 className="text-xl font-semibold text-gray-900">{application.boothTitle}</h2>
-                                                <p className="text-gray-600">{application.eventTitle}</p>
+                                                <p className="text-gray-600">{application.eventTitle || '이벤트 정보 없음'}</p>
                                             </div>
                                             <div className="flex space-x-2">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          application.applicationStatus === 'APPROVED'
+                          application.statusCode === 'APPROVED'
                               ? 'bg-green-100 text-green-800'
-                              : application.applicationStatus === 'PENDING'
+                              : application.statusCode === 'PENDING'
                                   ? 'bg-yellow-100 text-yellow-800'
                                   : 'bg-red-100 text-red-800'
                       }`}>
-                        {application.applicationStatus === 'APPROVED' ? '승인됨'
-                            : application.applicationStatus === 'PENDING' ? '검토중'
-                                : '반려됨'}
+                        {application.statusName || application.statusCode}
                       </span>
                                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                                    application.paymentStatus === 'PAID'
+                                                    application.paymentStatusCode === 'PAID'
                                                         ? 'bg-blue-100 text-blue-800'
                                                         : 'bg-orange-100 text-orange-800'
                                                 }`}>
-                        {application.paymentStatus === 'PAID' ? '결제완료' : '결제대기'}
+                        {application.paymentStatus || application.paymentStatusCode}
                       </span>
                                             </div>
                                         </div>
@@ -245,24 +289,29 @@ const BoothAdminDashboard: React.FC = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-500">크기</label>
-                                                <div className="mt-1 text-gray-900">{application.boothTypeSize}</div>
+                                                <div className="mt-1 text-gray-900">
+                                                    {application.boothTypeSize 
+                                                        ? application.boothTypeSize.replace('x', 'm x ') + 'm'
+                                                        : '미지정'
+                                                    }
+                                                </div>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-500">운영 기간</label>
                                                 <div className="mt-1 text-gray-900">
-                                                    {new Date(application.startDate).toLocaleDateString()} ~ {new Date(application.endDate).toLocaleDateString()}
+                                                    {application.startDate ? new Date(application.startDate).toLocaleDateString() : ''} ~ {application.endDate ? new Date(application.endDate).toLocaleDateString() : ''}
                                                 </div>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-500">결제 금액</label>
                                                 <div className="mt-1 text-lg font-semibold text-gray-900">
-                                                    {application.price.toLocaleString()}원
+                                                    {application.price?.toLocaleString() || 0}원
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Payment Section */}
-                                        {application.applicationStatus === 'APPROVED' && application.paymentStatus === 'PENDING' && (
+                                        {application.statusCode === 'APPROVED' && application.paymentStatusCode === 'PENDING' && (
                                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                                                 <div className="flex items-center justify-between">
                                                     <div>
@@ -272,10 +321,10 @@ const BoothAdminDashboard: React.FC = () => {
                                                     </div>
                                                     <button
                                                         onClick={() => handlePayment(application)}
-                                                        disabled={paymentLoading === application.applicationId}
+                                                        disabled={paymentLoading === application.boothApplicationId}
                                                         className="bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-yellow-700 transition-colors disabled:opacity-50"
                                                     >
-                                                        {paymentLoading === application.applicationId ? '결제 중...' : '결제하기'}
+                                                        {paymentLoading === application.boothApplicationId ? '결제 중...' : '결제하기'}
                                                     </button>
                                                 </div>
                                             </div>
