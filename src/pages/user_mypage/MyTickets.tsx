@@ -17,6 +17,7 @@ import { getFormLink } from "../../services/attendee";
 import { useQrTicketSocket } from "../../utils/useQrTicketSocket";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
@@ -33,6 +34,9 @@ export default function MyTickets(): JSX.Element {
         qrTicketId: 0
     });
     const [successMessage, setSuccessMessage] = useState("");
+
+    // 모바일 사이드바 상태
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     // ✅ 여기서 웹소켓 구독 시작
     useQrTicketSocket(qrTicketId, (msg) => {
@@ -71,12 +75,12 @@ export default function MyTickets(): JSX.Element {
         try {
 
             if (!reservation.scheduleDate || !reservation.startTime) {
-                throw new Error("예약 정보가 올바르지 않습니다."); 
+                throw new Error("예약 정보가 올바르지 않습니다.");
             }
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const scheduleDateObj = new Date(reservation.scheduleDate); 
+            const scheduleDateObj = new Date(reservation.scheduleDate);
             scheduleDateObj.setHours(0, 0, 0, 0);
 
             if (reservation.scheduleDate && scheduleDateObj.getTime() !== today.getTime()) {
@@ -207,15 +211,57 @@ export default function MyTickets(): JSX.Element {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
-                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    {t('mypage.tickets.title')}
+            <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
+                {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+                <button
+                    onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                    className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+                >
+                    {isMobileSidebarOpen ? (
+                        <HiOutlineX className="w-6 h-6 text-gray-600" />
+                    ) : (
+                        <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+                    )}
+                </button>
+
+                {/* 모바일 사이드바 오버레이 */}
+                {isMobileSidebarOpen && (
+                    <div
+                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                    />
+                )}
+
+                {/* 모바일 사이드바 */}
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
+                    <div className="p-4">
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className="absolute top-4 right-4 p-2"
+                        >
+                            <HiOutlineX className="w-6 h-6 text-gray-600" />
+                        </button>
+                        <AttendeeSideNav className="!relative !top-0 !left-0" />
+                    </div>
                 </div>
 
-                <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+                <div className="hidden md:block">
+                    <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                </div>
+
                 <TopNav />
 
-                <div className="absolute top-[239px] left-64 right-0">
+                {/* 제목 - 웹화면에서 원래 위치로 유지 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-4 right-4 top-24 relative md:static">
+                    <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+                        {t('mypage.tickets.title')}
+                    </div>
+                </div>
+
+                {/* 콘텐츠 - 웹화면에서 원래 위치로 유지 */}
+                <div className="md:absolute md:top-[239px] md:left-64 md:right-0 left-4 right-4 top-32 relative md:static">
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="text-lg">{t('mypage.tickets.loading')}</div>
@@ -225,7 +271,7 @@ export default function MyTickets(): JSX.Element {
                             <div className="text-gray-500">{t('mypage.tickets.noReservations')}</div>
                         </div>
                     ) : (
-                        <div className="space-y-[47px]">
+                        <div className="space-y-[47px] w-full md:w-[921px]">
                             {reservations.map((reservation, index) => {
                                 console.log('reservation:', reservation);
 
@@ -235,67 +281,67 @@ export default function MyTickets(): JSX.Element {
                                 return (
                                     <div
                                         key={reservation.reservationId}
-                                        className="w-[921px] h-[240px] bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] relative"
+                                        className="w-full h-auto md:h-[240px] bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] relative"
                                     >
-                                        <div className="p-6 relative h-full flex items-center">
-                                            <div className="grid grid-cols-2 gap-[40px] w-full">
-                                                <div className="space-y-[15px] pt-[20px] pb-[20px]">
-                                                    <div className="pt-[10px]">
-                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
+                                        <div className="p-4 md:p-6 relative h-full flex flex-col md:flex-row md:items-center">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-[40px] w-full mb-4 md:mb-0">
+                                                <div className="space-y-3 md:space-y-[15px] pt-2 md:pt-[20px] pb-2 md:pb-[20px]">
+                                                    <div className="pt-1 md:pt-[10px]">
+                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.eventName')}
                                                         </div>
-                                                        <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                                                        <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base md:text-lg tracking-[0] leading-[27px] whitespace-nowrap">
                                                             {reservation.eventName}
                                                         </div>
                                                     </div>
 
                                                     <div>
-                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
+                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.reservationStatus')}
                                                         </div>
-                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-6 tracking-[0] whitespace-nowrap">
+                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm md:text-base leading-6 tracking-[0] whitespace-nowrap">
                                                             {reservation.reservationStatus}
                                                         </div>
                                                     </div>
 
-                                                    <div className="pt-[-10px]">
-                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
+                                                    <div className="pt-0 md:pt-[-10px]">
+                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.bookingDate')}
                                                         </div>
-                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-6 tracking-[0] whitespace-nowrap">
+                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm md:text-base leading-6 tracking-[0] whitespace-nowrap">
                                                             {bookingDate}
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-[15px] pt-[20px] pb-[20px]">
-                                                    <div className="pt-[10px]">
-                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
+                                                <div className="space-y-3 md:space-y-[15px] pt-2 md:pt-[20px] pb-2 md:pb-[20px]">
+                                                    <div className="pt-1 md:pt-[10px]">
+                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.eventDateTime')}
                                                         </div>
-                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-6 tracking-[0] whitespace-nowrap">
+                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm md:text-base leading-6 tracking-[0] whitespace-nowrap">
                                                             {eventDate}
                                                         </div>
                                                     </div>
 
                                                     <div>
-                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
+                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.ticketInfo')}
                                                         </div>
-                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm md:text-base tracking-[0] leading-6 whitespace-nowrap">
                                                             {reservation.ticketName} {reservation.quantity}{t('mypage.tickets.ticketCount')} (₩{reservation.ticketPrice.toLocaleString()})
                                                         </div>
                                                     </div>
 
                                                     {reservation.quantity >= 2 && (
-                                                        <div className="pt-[-10px]">
-                                                            <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-[8px]">
+                                                        <div className="pt-0 md:pt-[-10px]">
+                                                            <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                                 {t('mypage.tickets.participantInput')}
                                                             </div>
-                                                            <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-6 tracking-[0] whitespace-nowrap">
+                                                            <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-sm md:text-base leading-6 tracking-[0] whitespace-nowrap">
                                                                 <button
                                                                     onClick={() => handleShowFormLink(reservation.reservationId)}
-                                                                    className="text-blue-600 hover:text-blue-800 underline bg-transparent border-none cursor-pointer p-0 font-normal text-base focus:outline-none"
+                                                                    className="text-blue-600 hover:text-blue-800 underline bg-transparent border-none cursor-pointer p-0 font-normal text-sm md:text-base focus:outline-none"
                                                                 >
                                                                     {t('mypage.tickets.participantInputTitle')}
                                                                 </button>
@@ -305,12 +351,12 @@ export default function MyTickets(): JSX.Element {
                                                 </div>
                                             </div>
 
-                                            <div className="absolute top-6 right-6 flex flex-col space-y-2">
+                                            <div className="flex flex-col space-y-2 md:absolute md:top-6 md:right-6">
                                                 <button
                                                     onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                                     onClick={(e) => { (e.currentTarget as HTMLButtonElement).blur(); e.stopPropagation(); handleQrTicketOpen(reservation); }}
                                                     disabled={!canUseQrTicket[index]} // ❗️여기서 QR 티켓 사용 가능 여부 제어
-                                                    className={`relative z-10 w-[140px] h-[56px] rounded-xl border-0 shadow-lg transition-all duration-200 flex items-center justify-center group focus:outline-none focus:ring-0
+                                                    className={`relative z-10 w-full md:w-[140px] h-[48px] md:h-[56px] rounded-xl border-0 shadow-lg transition-all duration-200 flex items-center justify-center group focus:outline-none focus:ring-0
                                                         ${canUseQrTicket[index]
                                                             ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-xl cursor-pointer"
                                                             : "bg-gray-400 opacity-60 cursor-not-allowed"
@@ -333,7 +379,7 @@ export default function MyTickets(): JSX.Element {
                                                     <button
                                                         onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                                         onClick={(e) => { (e.currentTarget as HTMLButtonElement).blur(); e.stopPropagation(); handleParticipantListOpen(reservation, reservation.createdAt); }}
-                                                        className="w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                                        className="w-full md:w-[140px] h-[40px] bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
                                                     >
                                                         <span className="font-semibold text-white text-xs tracking-wide">
                                                             {t('mypage.tickets.participantList')}
