@@ -1,9 +1,10 @@
+
 import { useEffect, useRef, useCallback } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
 
-export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) => void) {
+export function useWaitingSocket(userId: number, onMessage: (msg: string) => void) {
     const clientRef = useRef<Stomp.Client | null>(null);
     const subscriptionsRef = useRef<Stomp.Subscription[]>([]);
     const onMessageRef = useRef(onMessage);
@@ -18,7 +19,7 @@ export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) =
     }, []);
 
   useEffect(() => {
-    if (!qrTicketId) return;
+    if (!userId) return;
 
     // 이미 연결된 상태라면 중복 연결 방지
     if (clientRef.current && clientRef.current.connected) {
@@ -26,7 +27,7 @@ export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) =
         return;
     }
 
-    const sock = new SockJS(`${import.meta.env.VITE_BACKEND_BASE_URL}/ws/qr-sockjs`);
+    const sock = new SockJS(`${import.meta.env.VITE_BACKEND_BASE_URL}/ws/waiting-sockjs`);
     const stomp = Stomp.over(sock);
 
     stomp.debug = () => {}; // 로그 끔
@@ -35,33 +36,19 @@ export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) =
     stomp.connect(
           {},
       () => {
-            console.log("🔌 QR 웹소켓 연결 성공, 구독 시작");
+            console.log("🔌 웨이팅 웹소켓 연결 성공, 구독 시작");
 
-            const subCheckIn = stomp.subscribe(
-            `/topic/check-in/${qrTicketId}`,
-            (message) => {
-                handleMessage(message.body);
-            }
-            );
-
-            const subCheckOut = stomp.subscribe(
-            `/topic/check-out/${qrTicketId}`,
+            const subWaiting = stomp.subscribe(
+            `/queue/waiting/${userId}`,
             (message) => {
                 handleMessage(message.body);
             }
             );
         
-            const subBooth = stomp.subscribe(
-          `/topic/booth/${qrTicketId}`,
-            (message) => {
-              handleMessage(message.body);
-            }
-            );
-        
-            subscriptionsRef.current = [subCheckIn, subCheckOut, subBooth];
+            subscriptionsRef.current = [subWaiting];
       },
       (err) => {
-        console.error("QR socket error:", err);
+        console.error("웨이팅 socket error:", err);
       }
     );
 
@@ -83,5 +70,5 @@ export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) =
       }
       clientRef.current = null;
     };
-  }, [qrTicketId, handleMessage]); // onMessage 제거, handleMessage 사용
+  }, [userId, handleMessage]); // onMessage 제거, handleMessage 사용
 }

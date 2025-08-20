@@ -13,7 +13,6 @@ import {getBoothDetails} from "../../api/boothApi";
 import { useLocation } from 'react-router-dom';
 
 interface ScannedTicket {
-    id: string;
     participantName: string;
     experienceTitle: string;
     experienceDate: string;
@@ -42,44 +41,17 @@ const BoothQRScanPage: React.FC = () => {
     const [showResult, setShowResult] = useState(false);
     const [experiences, setExperiences] = useState<BoothExperience[] | null>(null);
     const [selectedExperience, setSelectedExperience] = useState<BoothExperience | null>(null);
-    const [booth, setBooths] = useState<BoothDetailResponse | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
 
     useEffect(() => {
-        const fetchBooths = async (): number => {
-            const res = getBoothDetails(eventId, boothId);
-            setBooths(res);
-        };
         const fetchExperiences = async () =>  {
             const res = await getBoothExperiences(boothId);
             setExperiences(res);
         };
-
-        fetchBooths();
         fetchExperiences();
     },[])
-
-    // 더미 체험 데이터
-    const [boothExperiences] = useState([
-        {
-            id: 1,
-            title: '더미 체험 A',
-            date: '2024-01-15',
-            time: '10:00 - 11:00',
-            maxCapacity: 10,
-            currentParticipants: 3
-        },
-        {
-            id: 2,
-            title: '더미 체험 B',
-            date: '2024-01-15',
-            time: '14:00 - 15:30',
-            maxCapacity: 12,
-            currentParticipants: 5
-        }
-    ]);
 
     useEffect(() => {
         return () => {
@@ -116,7 +88,6 @@ const BoothQRScanPage: React.FC = () => {
         }
         if (videoRef.current) {
             try {
-                // @ts-expect-error: srcObject exists on HTMLVideoElement
                 videoRef.current.srcObject = null;
             } catch { }
         }
@@ -130,7 +101,6 @@ const BoothQRScanPage: React.FC = () => {
         if (!isScanning || !video || !stream) return;
 
         try {
-            // @ts-expect-error: srcObject exists on HTMLVideoElement
             video.srcObject = stream;
             const playPromise = video.play?.();
             if (playPromise) {
@@ -185,11 +155,11 @@ const BoothQRScanPage: React.FC = () => {
                 return;
             }
 
-            // 부스 QR 스캔 위한 dto 생성 (현재 더미데이터)
+            // 부스 QR 스캔 위한 dto 생성
             const boothEntryRequestDto: BoothEntryRequestDto = {
-                boothExperienceId: selectedExperience.id,
-                boothId: 1,
-                eventId: 1,
+                boothExperienceId: selectedExperience.experienceId,
+                boothId: boothId,
+                eventId: eventId,
                 qrCode: qrCode
             };
 
@@ -198,12 +168,11 @@ const BoothQRScanPage: React.FC = () => {
             
             // 스캔 결과에 따라 스캔된 티켓 정보 생성
             const scannedTicket: ScannedTicket = {
-                id: ticketData.id || Math.random().toString(36).substr(2, 9),
                 participantName: res.name|| '김참가자',
-                experienceTitle: ticketData.experienceTitle || '더미 체험 A',
-                experienceDate: ticketData.experienceDate || '2024-01-15',
-                startTime: ticketData.startTime || '10:00',
-                endTime: ticketData.endTime || '11:00',
+                experienceTitle: selectedExperience.title || '더미 체험 A',
+                experienceDate: selectedExperience.experienceDate || '2024-01-15',
+                startTime: selectedExperience.startTime || '10:00',
+                endTime: selectedExperience.endTime || '11:00',
                 status: 'VALID',
                 scannedAt: res.checkInTime
             };
@@ -446,8 +415,8 @@ const BoothQRScanPage: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {scannedTickets.map((ticket) => (
-                                            <tr key={ticket.id} className="hover:bg-gray-50">
+                                        {scannedTickets.map((ticket, index) => (
+                                            <tr key={index+1} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 text-center text-sm text-gray-900">
                                                     {ticket.scannedAt.toLocaleTimeString('ko-KR')}
                                                 </td>
