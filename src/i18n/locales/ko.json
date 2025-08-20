@@ -129,7 +129,9 @@
     "eventRegistration": "이벤트 등록",
     "mypage": "마이페이지",
     "admin": "관리자",
-    "host": "호스트"
+    "host": "호스트",
+    "tickets": "TICKET",
+    "my": "MY"
   },
   "search": {
     "placeholder": "검색어를 입력해주세요.",
@@ -137,7 +139,9 @@
   },
   "notification": {
     "title": "알림",
-    "noNotifications": "새로운 알림이 없습니다."
+    "noNotifications": "알림이 없습니다.",
+    "unreadCount": "개의 읽지 않은 알림",
+    "viewAll": "모든 알림 보기"
   },
   "theme": {
     "switchToLight": "라이트 모드로 전환",
@@ -462,11 +466,13 @@
       "phonePlaceholder": "010-1234-5678",
       "emailPlaceholder": "example@email.com",
       "register": "등록",
+      "registerSuccess": "참여자 등록이 완료되었습니다.",
       "validationError": "모든 필수 항목을 입력하고 개인정보 수집 및 이용에 동의해주세요.",
       "checkingLink": "링크를 확인하는 중입니다..."
     },
     "participantList": {
       "title": "참여자 목록",
+      "editTitle": "참여자 정보 수정",
       "participantCount": "명의 참여자",
       "noParticipants": "등록된 참여자가 없습니다",
       "noParticipantsDesc": "참여자 정보 입력을 통해 참여자를 등록해주세요.",
@@ -552,7 +558,12 @@
     "performance": "공연",
     "lecture": "강연/세미나",
     "event": "전시/행사",
-    "festival": "축제"
+    "festival": "축제",
+    "박람회": "박람회",
+    "공연": "공연",
+    "강연/세미나": "강연/세미나",
+    "전시/행사": "전시/행사",
+    "축제": "축제"
   },
   "wishlist": {
     "addSuccess": "천 등록 성공",
@@ -658,6 +669,12 @@
     "allRegions": "모든지역",
     "allCategories": "카테고리",
     "allStatuses": "전체",
+    "noEvents": "이벤트가 없습니다",
+    "noPriceInfo": "가격 정보 없음",
+    "upcoming": "진행 예정",
+    "ongoing": "진행중", 
+    "ended": "종료",
+    "free": "무료",
     "viewModes": {
       "list": "목록",
       "calendar": "캘린더",  
@@ -675,13 +692,96 @@
       "ongoing": "진행중",
       "ended": "종료"
     },
+    "regions": {
+      "all": "모든지역",
+      "seoul": "서울",
+      "gyeonggi": "경기",
+      "incheon": "인천",
+      "gangwon": "강원",
+      "busan": "부산",
+      "gyeongnam": "경남",
+      "daegu": "대구",
+      "gyeongbuk": "경북",
+      "daejeon": "대전",
+      "chungnam": "충남",
+      "chungbuk": "충북",
+      "gwangju": "광주",
+      "jeonbuk": "전북",
+      "jeonnam": "전남",
+      "jeju": "제주",
+      "ulsan": "울산",
+      "overseas": "해외"
+    },
     "searchPlaceholder": "행사명으로 검색...",
-    "noEvents": "조건에 맞는 행사가 없습니다",
     "loadingEvents": "행사 목록을 불러오는 중...",
     "eventDetails": "행사 상세",
     "wishlistAdd": "관심 등록",
-    "wishlistRemove": "관심 취소",
-    "free": "무료"
+    "wishlistRemove": "관심 취소"
+  },
+  "qrTicket": {
+    "idNotFound": "예약 ID와 QR 티켓 ID 값이 조회되지 않습니다.",
+    "expired": "티켓 유효기간이 만료되었습니다.",
+    "validTicket": "유효한 티켓",
+    "seatInfo": "좌석 정보",
+    "bookingDate": "예매일",
+    "entryTime": "관람 시간",
+    "validTime": "유효시간",
+    "entryGuide": "입장 안내",
+    "entryGuideText": "공연 시작 30분 전부터 입장 가능하며, QR코드를 입구에서 스캔해주세요.",
+    "refresh": "새로고침",
+    "oneTimeUse": "이 티켓은 1회용입니다"
+  },
+  "admin": {
+    "title": "ADMIN PAGE",
+    "dashboard": {
+      "title": "대시보드",
+      "platformKpi": "플랫폼 KPI",
+      "eventComparison": "행사별 비교"
+    },
+    "eventManagement": {
+      "title": "행사 관리",
+      "eventList": "행사 목록",
+      "eventApproval": "행사 등록 승인",
+      "eventEditRequests": "행사 수정 요청"
+    },
+    "accountManagement": {
+      "title": "계정 관리",
+      "roleSettings": "권한 설정"
+    },
+    "vipBanner": {
+      "title": "VIP 배너 광고",
+      "bannerManagement": "배너 관리",
+      "adApplications": "광고 신청 목록"
+    },
+    "settlement": {
+      "title": "정산 관리",
+      "revenueStats": "매출 통계",
+      "remittanceSettlement": "송금 정산"
+    },
+    "paymentManagement": {
+      "title": "결제 관리",
+      "paymentInfo": "결제 정보 관리",
+      "refundManagement": "환불 신청 관리"
+    },
+    "statistics": {
+      "title": "통합 통계",
+      "reservationStats": "예약 통계",
+      "popularEvents": "인기 행사"
+    },
+    "systemSettings": {
+      "title": "시스템 설정",
+      "integrationSettings": "연동 설정",
+      "emailTemplates": "이메일 템플릿"
+    },
+    "security": {
+      "title": "로그/보안",
+      "accessLogs": "접속 이력",
+      "changeLogs": "변경 기록"
+    },
+    "profile": {
+      "title": "내 정보 관리",
+      "myInfo": "내 정보 조회"
+    }
   }
 }
 

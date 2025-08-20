@@ -8,6 +8,7 @@ import {
     Check,
     Ban
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import {
     reissueQrTicketByMember
@@ -42,6 +43,7 @@ interface QrTicketProps {
 }
 
 const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, updateIds, message }) => {
+    const { t } = useTranslation();
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const [qrCode, setQrCode] = useState(ticketData?.qrCode || ""); // QR 코드 상태
@@ -97,7 +99,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
     const handleRefresh = async () => {
 
         if ((updateData?.reservationId === 0) || (updateData?.qrTicketId === 0)) {
-            alert("예약 ID와 QR 티켓 ID 값이 조회되지 앟습니다.");
+            alert(t('qrTicket.idNotFound'));
             return;
         } 
 
@@ -161,7 +163,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                     {timeLeft === 0 && (
                         <div className="text-center mb-4 p-2 rounded-lg font-semibold 
                                         bg-red-100 text-red-800">
-                            ⛔ 티켓 유효기간이 만료되었습니다.
+                            ⛔ {t('qrTicket.expired')}
                         </div>
                     )}
                     <div className="bg-white rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-2 sm:mb-3">
@@ -188,7 +190,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                             <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">TicketNo.{resData?.ticketNumber}</p>
                             <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span>유효한 티켓</span>
+                                <span>{t('qrTicket.validTicket')}</span>
                             </div>
                         </div>
                     </div>
@@ -197,7 +199,7 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                     <div className="bg-blue-50 rounded-lg sm:rounded-xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex items-center space-x-2">
                             <User className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
-                            <span className="text-xs sm:text-sm font-medium text-blue-900">좌석 정보</span>
+                            <span className="text-xs sm:text-sm font-medium text-blue-900">{t('qrTicket.seatInfo')}</span>
                         </div>
                         <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 mt-1">{resData?.seatInfo}</p>
                     </div>
@@ -205,15 +207,15 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                     {/* 티켓 상세 정보 */}
                     <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-3 mb-2 sm:mb-3">
                         <div className="flex justify-between items-center py-1 sm:py-2 border-b border-gray-100">
-                            <span className="text-xs sm:text-sm text-gray-600">예매일</span>
+                            <span className="text-xs sm:text-sm text-gray-600">{t('qrTicket.bookingDate')}</span>
                             <span className="text-xs sm:text-sm font-medium">{resData?.bookingDate}</span>
                         </div>
                         <div className="flex justify-between items-center py-1 sm:py-2 border-b border-gray-100">
-                            <span className="text-xs sm:text-sm text-gray-600">관람 시간</span>
+                            <span className="text-xs sm:text-sm text-gray-600">{t('qrTicket.entryTime')}</span>
                             <span className="text-xs sm:text-sm font-medium">{resData?.entryTime}</span>
                         </div>
                         <div className="flex justify-between items-center py-1 sm:py-2">
-                            <span className="text-xs sm:text-sm text-gray-600">유효시간</span>
+                            <span className="text-xs sm:text-sm text-gray-600">{t('qrTicket.validTime')}</span>
                             <span className={`text-xs sm:text-sm font-medium ${timeLeft <= 30 ? 'text-red-600' : 'text-green-600'}`}>
                                 {formatTime(timeLeft)}
                             </span>
@@ -225,9 +227,9 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                         <div className="flex items-start space-x-2 sm:space-x-3">
                             <AlertCircle className="w-3 h-3 sm:w-4 md:w-5 sm:h-4 md:h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <div>
-                                <h4 className="text-xs sm:text-sm font-medium text-amber-800 mb-1">입장 안내</h4>
+                                <h4 className="text-xs sm:text-sm font-medium text-amber-800 mb-1">{t('qrTicket.entryGuide')}</h4>
                                 <p className="text-xs text-amber-700 leading-relaxed">
-                                    공연 시작 30분 전부터 입장 가능하며, QR코드를 입구에서 스캔해주세요.
+                                    {t('qrTicket.entryGuideText')}
                                 </p>
                             </div>
                         </div>
@@ -240,14 +242,14 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
                             className="flex items-center space-x-2 px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 bg-gray-100 rounded-md sm:rounded-lg hover:bg-gray-200 transition-colors focus:outline-none focus:ring-0"
                         >
                             <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span className="text-xs sm:text-sm">새로고침</span>
+                            <span className="text-xs sm:text-sm">{t('qrTicket.refresh')}</span>
                         </button>
                     </div>
                 </div>
 
                 {/* 하단 구분선 */}
                 <div className="border-t border-gray-100 p-1 sm:p-2 text-center">
-                    <p className="text-xs text-gray-500">이 티켓은 1회용입니다</p>
+                    <p className="text-xs text-gray-500">{t('qrTicket.oneTimeUse')}</p>
                 </div>
             </div>
         </div>

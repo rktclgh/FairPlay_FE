@@ -312,7 +312,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					</Link>
 					<Link to="/mypage/tickets" className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none">
 						<HiOutlineTicket className="w-6 h-6 text-gray-500" />
-						<span className="text-gray-500">TICKET</span>
+						<span className="text-gray-500">{t('navigation.tickets')}</span>
 					</Link>
 					<button
 						className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none"
@@ -336,7 +336,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 						}}
 					>
 						<HiOutlineUser className="w-6 h-6 text-gray-500" />
-						<span className="text-gray-500">MY</span>
+						<span className="text-gray-500">{t('navigation.my')}</span>
 					</button>
 				</div>
 			</div>

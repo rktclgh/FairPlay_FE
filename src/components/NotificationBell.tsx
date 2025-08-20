@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bell, X, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNotificationSocket, Notification } from "../hooks/useNotificationSocket";
 import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
+import { ko, enUS } from "date-fns/locale";
 
 export function NotificationBell() {
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
@@ -96,16 +98,16 @@ export function NotificationBell() {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
           <div className="p-3 border-b border-gray-100 flex-none">
-            <h3 className="font-semibold text-gray-900">알림</h3>
+            <h3 className="font-semibold text-gray-900">{t('notification.title')}</h3>
             {unreadCount > 0 && (
-              <p className="text-sm text-gray-500">{unreadCount}개의 읽지 않은 알림</p>
+              <p className="text-sm text-gray-500">{unreadCount}{t('notification.unreadCount')}</p>
             )}
           </div>
           
           <div className="overflow-y-auto flex-1">
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
-                알림이 없습니다.
+                {t('notification.noNotifications')}
               </div>
             ) : (
               notifications.map((notification) => {
@@ -134,7 +136,7 @@ export function NotificationBell() {
                         <p className="text-xs text-gray-400 mt-1">
                           {formatDistanceToNow(new Date(notification.createdAt), {
                             addSuffix: true,
-                            locale: ko
+                            locale: i18n.language === 'ko' ? ko : enUS
                           })}
                         </p>
                       </div>
@@ -167,7 +169,7 @@ export function NotificationBell() {
                 onClick={() => setIsOpen(false)}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
-                모든 알림 보기
+                {t('notification.viewAll')}
               </button>
             </div>
           )}

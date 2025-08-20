@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type {
     AttendeeInfoResponseDto
 } from "../services/types/attendeeType";
@@ -17,6 +18,7 @@ export default function EditParticipantModal({
     participant,
     onSave
 }: EditParticipantModalProps): JSX.Element {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
@@ -65,7 +67,7 @@ export default function EditParticipantModal({
         e.preventDefault();
 
         if (!formData.name || !formData.phone || !formData.email) {
-            alert("모든 필드를 입력해주세요.");
+            alert(t('mypage.participantForm.validationError'));
             return;
         }
 
@@ -90,7 +92,7 @@ export default function EditParticipantModal({
                 {/* 헤더 */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl tracking-[0] leading-[30px]">
-                        참여자 정보 수정
+                        {t('mypage.participantList.editTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -106,14 +108,14 @@ export default function EditParticipantModal({
                         {/* 이름 */}
                         <div>
                             <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-2">
-                                이름
+                                {t('common.name')}
                             </label>
                             <input
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleInputChange}
-                                placeholder="이름을 입력하세요"
+                                placeholder={t('mypage.participantForm.namePlaceholder')}
                                 className="w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left text-black"
                             />
                         </div>
@@ -121,14 +123,14 @@ export default function EditParticipantModal({
                         {/* 휴대폰 번호 */}
                         <div>
                             <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-2">
-                                휴대폰 번호
+                                {t('common.phone')}
                             </label>
                             <input
                                 type="tel"
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleInputChange}
-                                placeholder="010-1234-5678"
+                                placeholder={t('mypage.participantForm.phonePlaceholder')}
                                 maxLength={13}
                                 className="w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left text-black"
                             />
@@ -137,14 +139,14 @@ export default function EditParticipantModal({
                         {/* 이메일 */}
                         <div>
                             <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-2">
-                                이메일
+                                {t('common.email')}
                             </label>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleInputChange}
-                                placeholder="example@email.com"
+                                placeholder={t('mypage.participantForm.emailPlaceholder')}
                                 className="w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left text-black"
                             />
                         </div>
@@ -157,7 +159,7 @@ export default function EditParticipantModal({
                             onClick={onClose}
                             className="px-6 py-2 bg-gray-300 text-gray-700 rounded-[10px] hover:bg-gray-400 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium text-sm"
                         >
-                            취소
+                            {t('common.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -167,7 +169,7 @@ export default function EditParticipantModal({
                                 : 'bg-gray-400 text-white cursor-not-allowed'
                                 }`}
                         >
-                            수정 완료
+                            {t('common.save')}
                         </button>
                     </div>
                 </form>

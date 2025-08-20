@@ -129,7 +129,9 @@
     "eventRegistration": "Event Registration",
     "mypage": "My Page",
     "admin": "Admin",
-    "host": "Host"
+    "host": "Host",
+    "tickets": "TICKET",
+    "my": "MY"
   },
   "search": {
     "placeholder": "Please enter search terms.",
@@ -137,7 +139,9 @@
   },
   "notification": {
     "title": "Notifications",
-    "noNotifications": "No new notifications."
+    "noNotifications": "No notifications.",
+    "unreadCount": " unread notifications",
+    "viewAll": "View all notifications"
   },
   "theme": {
     "switchToLight": "Switch to light mode",
@@ -462,11 +466,13 @@
       "phonePlaceholder": "010-1234-5678",
       "emailPlaceholder": "example@email.com",
       "register": "Register",
+      "registerSuccess": "Participant registration has been completed.",
       "validationError": "Please fill in all required fields and agree to the collection and use of personal information.",
       "checkingLink": "Checking the link..."
     },
     "participantList": {
       "title": "Participant List",
+      "editTitle": "Edit Participant Information",
       "participantCount": " participants",
       "noParticipants": "No registered participants",
       "noParticipantsDesc": "Please register participants through participant information input.",
@@ -552,7 +558,12 @@
     "performance": "Performance",
     "lecture": "Lecture/Seminar",
     "event": "Event/Show",
-    "festival": "Festival"
+    "festival": "Festival",
+    "박람회": "Exhibition",
+    "공연": "Performance",
+    "강연/세미나": "Lecture/Seminar",
+    "전시/행사": "Event/Show",
+    "축제": "Festival"
   },
   "wishlist": {
     "addSuccess": "Added to wishlist",
@@ -658,6 +669,12 @@
     "allRegions": "All Regions",
     "allCategories": "Category",
     "allStatuses": "All",
+    "noEvents": "No events found",
+    "noPriceInfo": "No price information",
+    "upcoming": "Upcoming",
+    "ongoing": "Ongoing",
+    "ended": "Ended",
+    "free": "Free",
     "viewModes": {
       "list": "List",
       "calendar": "Calendar",  
@@ -675,13 +692,96 @@
       "ongoing": "Ongoing",
       "ended": "Ended"
     },
+    "regions": {
+      "all": "All Regions",
+      "seoul": "Seoul",
+      "gyeonggi": "Gyeonggi",
+      "incheon": "Incheon",
+      "gangwon": "Gangwon",
+      "busan": "Busan",
+      "gyeongnam": "Gyeongnam",
+      "daegu": "Daegu",
+      "gyeongbuk": "Gyeongbuk",
+      "daejeon": "Daejeon",
+      "chungnam": "Chungnam",
+      "chungbuk": "Chungbuk",
+      "gwangju": "Gwangju",
+      "jeonbuk": "Jeonbuk",
+      "jeonnam": "Jeonnam",
+      "jeju": "Jeju",
+      "ulsan": "Ulsan",
+      "overseas": "Overseas"
+    },
     "searchPlaceholder": "Search by event name...",
-    "noEvents": "No events found matching your criteria",
     "loadingEvents": "Loading events...",
     "eventDetails": "Event Details",
     "wishlistAdd": "Add to Wishlist",
-    "wishlistRemove": "Remove from Wishlist",
-    "free": "Free"
+    "wishlistRemove": "Remove from Wishlist"
+  },
+  "qrTicket": {
+    "idNotFound": "Reservation ID and QR ticket ID values not found.",
+    "expired": "Ticket validity period has expired.",
+    "validTicket": "Valid Ticket",
+    "seatInfo": "Seat Information",
+    "bookingDate": "Booking Date",
+    "entryTime": "Entry Time",
+    "validTime": "Valid Time",
+    "entryGuide": "Entry Guide",
+    "entryGuideText": "Entry is available 30 minutes before the performance starts. Please scan the QR code at the entrance.",
+    "refresh": "Refresh",
+    "oneTimeUse": "This ticket is for one-time use"
+  },
+  "admin": {
+    "title": "ADMIN PAGE",
+    "dashboard": {
+      "title": "Dashboard",
+      "platformKpi": "Platform KPI",
+      "eventComparison": "Event Comparison"
+    },
+    "eventManagement": {
+      "title": "Event Management",
+      "eventList": "Event List",
+      "eventApproval": "Event Registration Approval",
+      "eventEditRequests": "Event Edit Requests"
+    },
+    "accountManagement": {
+      "title": "Account Management",
+      "roleSettings": "Role Settings"
+    },
+    "vipBanner": {
+      "title": "VIP Banner Ads",
+      "bannerManagement": "Banner Management",
+      "adApplications": "Ad Applications"
+    },
+    "settlement": {
+      "title": "Settlement Management",
+      "revenueStats": "Revenue Statistics",
+      "remittanceSettlement": "Remittance Settlement"
+    },
+    "paymentManagement": {
+      "title": "Payment Management",
+      "paymentInfo": "Payment Information Management",
+      "refundManagement": "Refund Request Management"
+    },
+    "statistics": {
+      "title": "Integrated Statistics",
+      "reservationStats": "Reservation Statistics",
+      "popularEvents": "Popular Events"
+    },
+    "systemSettings": {
+      "title": "System Settings",
+      "integrationSettings": "Integration Settings",
+      "emailTemplates": "Email Templates"
+    },
+    "security": {
+      "title": "Logs/Security",
+      "accessLogs": "Access Logs",
+      "changeLogs": "Change Logs"
+    },
+    "profile": {
+      "title": "My Profile Management",
+      "myInfo": "View My Information"
+    }
   }
 }
 
