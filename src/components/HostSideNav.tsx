@@ -463,6 +463,51 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                             </Link>
                         </div>
                     </div>
+
+                    {/* 전자명함 카테고리 */}
+                    <div className="mb-4 space-y-0">
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">전자명함</h3>
+                        <div className="space-y-1">
+                            <Link
+                                to="/mypage/business-card"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/business-card"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/business-card" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/business-card" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/business-card" ? "black" : "#00000080";
+                                }}
+                            >
+                                내 전자명함
+                            </Link>
+                            <Link
+                                to="/mypage/business-card-wallet"
+                                className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/business-card-wallet"
+                                    ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
+                                    : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
+                                }`}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: location.pathname === "/mypage/business-card-wallet" ? "black" : "#00000080"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/business-card-wallet" ? "black" : "#00000080";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = location.pathname === "/mypage/business-card-wallet" ? "black" : "#00000080";
+                                }}
+                            >
+                                명함 지갑
+                            </Link>
+                        </div>
+                    </div>
                 </nav>
             </div>
         </div>
