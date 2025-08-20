@@ -1,150 +1,40 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { HostSideNav } from "../../components/HostSideNav";
 import { TopNav } from "../../components/TopNav";
 import { HiChevronDown } from 'react-icons/hi';
-import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto } from "../../services/dashboard";
-import type { EventDetailResponseDto } from "../../services/types/eventType";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { toast } from "react-toastify";
-import dayjs from 'dayjs';
 
 export const ReservationStats = () => {
-    const [selectedPeriod, setSelectedPeriod] = React.useState('일별');
+    const [selectedPeriod, setSelectedPeriod] = React.useState('최근 7일');
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-    const [dashboardStats, setDashboardStats] = useState<EventDashboardStatsDto | null>(null);
-    const [selectedEvent, setSelectedEvent] = useState<EventDetailResponseDto | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [hasError, setHasError] = useState(false);
-
-    const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-    // 데이터 로드
-        useEffect(() => {
-            const loadDashboardData = async () => {
-                try {
-                    setLoading(true);
-
-                    console.log('사용자 이벤트 목록 조회 시작...');
-
-                    // 사용자 담당 이벤트와 상세 정보 조회
-                    const myEvent = await dashboardAPI.getMyEventWithDetails();
-                    console.log('조회된 담당 이벤트:', myEvent);
-
-                    if (myEvent) {
-                        setSelectedEvent(myEvent);
-                        console.log('담당 이벤트 설정 완료:', myEvent);
-
-                        // 선택된 이벤트의 통계 데이터 로드
-                        console.log('통계 데이터 로드 시작...', {
-                            eventId: myEvent.eventId,
-                            startDate,
-                            endDate
-                        });
-
-                        try {
-                            const dashStats = await dashboardAPI.getEventDashboardStats(myEvent.eventId, startDate, endDate);
-                            console.log('예약 통계 데이터:', dashStats);
-                            setDashboardStats(dashStats);
-                        } catch (dashError: any) {
-                            console.error('예약 통계 조회 실패:', dashError);
-                            toast.error('예약 통계를 불러올 수 없습니다.');
-                        }
-
-
-                    } else {
-                        console.log('등록된 이벤트가 없습니다.');
-                        toast.info('등록된 이벤트가 없습니다.');
-                    }
-                } catch (error: any) {
-                    console.error('통계 데이터 로드 실패:', error);
-                    console.error('오류 상세:', error.response?.data || error.message);
-                    setHasError(true); // Set error state
-
-                    // 401 오류인 경우 로그인 페이지로 리다이렉트
-                    if (error.response?.status === 401) {
-                        toast.error('로그인이 필요합니다.');
-                        // window.location.href = '/login'; // 필요시 주석 해제
-                    } else {
-                        toast.error(`통계 데이터를 불러오는데 실패했습니다: ${error.response?.data?.message || error.message}`);
-                    }
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            loadDashboardData();
-        }, []);
-
-    // 이벤트 변경 시 통계 데이터 다시 로드
-        useEffect(() => {
-            if (selectedEvent) {
-                const loadEventStats = async () => {
-                    try {
-                        const [dashStats] = await Promise.all([
-                            dashboardAPI.getEventDashboardStats(selectedEvent.eventId, startDate, endDate),
-
-                        ]);
-
-                        setDashboardStats(dashStats);
-
-                    } catch (error: any) {
-                        console.error('통계 데이터 로드 실패:', error);
-                        console.error('오류 상세:', error.response?.data || error.message);
-                        toast.error(`통계 데이터를 불러오는데 실패했습니다: ${error.response?.data?.message || error.message}`);
-                    }
-                };
-
-                loadEventStats();
-            }
-        }, [selectedEvent]);
-
-    const totalReservations = dashboardStats?.summary?.totalReservations || 0;
-    const checkedIn = dashboardStats?.summary?.totalCheckins || 0;
-    const cancellations = dashboardStats?.summary?.totalCancellations || 0;
-    const noShows =  dashboardStats?.summary?.totalNoShows || 0;
 
     // 최근 7일 데이터 (7일간, 오른쪽이 당일)
-    const weeklyData =  dashboardStats?.dailyTrend?.map(d => ({
-                         date: dayjs(d.date).format("MM/DD"), // 보기 좋게 "08/04"
-                         reservations: d.reservations             // key 이름 변경
-                       })) || [];
+    const weeklyData = [
+        { date: '08/04', bookings: 145 },
+        { date: '08/05', bookings: 167 },
+        { date: '08/06', bookings: 134 },
+        { date: '08/07', bookings: 189 },
+        { date: '08/08', bookings: 156 },
+        { date: '08/09', bookings: 123 },
+        { date: '08/10', bookings: 121 },
+    ];
 
-
-
-
-    const convertDailyToMonthly = (dailyTrend: ReservationDailyTrendDto[]): ReservationDailyTrendDto[] => {
-      // 1. 월별로 그룹핑하고 합계 계산
-      const monthlyMap = dailyTrend.reduce((acc, item) => {
-
-        const month = dayjs(item.date).format('MM월');
-        if (!acc[month]) {
-          acc[month] = 0;
-        }
-        acc[month] += item.reservations;
-
-        return acc;
-      }, {} as Record<string, number>);
-
-      // 2. 배열로 변환하고 월 순서대로 정렬
-        const monthlyArray = Object.entries(monthlyMap).map(
-          ([month, reservations]) => ({
-            date: month,
-            reservations,
-          })
-        );
-
-      // 3. 월 순서대로 정렬 (01월, 02월, ... 12월)
-      return monthlyArray.sort((a, b) => {
-        const monthA = parseInt(a.date.replace('월', ''));
-        const monthB = parseInt(b.date.replace('월', ''));
-        return monthA - monthB;
-      });
-    };
     // 월별 데이터 (6개월간, 오른쪽이 이번달)
-    const monthlyData = convertDailyToMonthly(dashboardStats?.dailyTrend || []);
+    const monthlyData = [
+        { date: '03월', bookings: 2834 },
+        { date: '04월', bookings: 3456 },
+        { date: '05월', bookings: 2987 },
+        { date: '06월', bookings: 4123 },
+        { date: '07월', bookings: 3890 },
+        { date: '08월', bookings: 4567 },
+    ];
 
-
+    // 년별 데이터 (최근 3년간)
+    const yearlyData = [
+        { date: '2022', bookings: 28456 },
+        { date: '2023', bookings: 34789 },
+        { date: '2024', bookings: 41234 },
+    ];
 
     // 성별 분포 데이터
     const genderData = [
@@ -163,8 +53,9 @@ export const ReservationStats = () => {
 
     // 데이터 매핑
     const dataMap = {
-        '일별': weeklyData,
-        '월별': monthlyData
+        '최근 7일': weeklyData,
+        '최근 30일': monthlyData,
+        '최근 1년': yearlyData
     };
 
     const currentData = dataMap[selectedPeriod as keyof typeof dataMap] || weeklyData;
@@ -224,53 +115,18 @@ export const ReservationStats = () => {
 
                     {/* 통계 카드 */}
                     <div className="grid grid-cols-4 gap-6 mb-8">
-                      {/* 전체 예약 */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-sm font-medium text-gray-500 mb-2">전체 예약</h3>
-                        <div className="flex items-baseline justify-between">
-                          <p className="text-2xl font-bold text-gray-900">{totalReservations}</p>
-                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
-                          </span>  */}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">누적 예약 수</p>
-                      </div>
-
-                      {/* 체크인 */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-sm font-medium text-gray-500 mb-2">체크인</h3>
-                        <div className="flex items-baseline justify-between">
-                          <p className="text-2xl font-bold text-gray-900">{checkedIn}</p>
-                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
-                          </span> */}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">실제 행사 참석 수</p>
-                      </div>
-
-                      {/* 취소 */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-sm font-medium text-gray-500 mb-2">취소</h3>
-                        <div className="flex items-baseline justify-between">
-                          <p className="text-2xl font-bold text-gray-900">{cancellations}</p>
-                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
-                                                    </span> */}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">예약 취소 수</p>
-                      </div>
-
-                      {/* 노쇼 */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-sm font-medium text-gray-500 mb-2">노쇼</h3>
-                        <div className="flex items-baseline justify-between">
-                          <p className="text-2xl font-bold text-gray-900">{noShows}</p>
-                          {/* <span className={`text-sm font-medium ${dashboardStats?.summary?.totalReservationsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {dashboardStats?.summary?.totalReservationsChange >= 0 ? '+' : ''}{dashboardStats?.summary?.totalReservationsChange}%
-                                                    </span> */}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">예약 후 미참석</p>
-                      </div>
+                        {statsCards.map((card, index) => (
+                            <div key={index} className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-sm font-medium text-gray-500 mb-2">{card.title}</h3>
+                                <div className="flex items-baseline justify-between">
+                                    <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+                                    <span className={`text-sm font-medium ${card.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                        {card.change}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">{card.subtitle}</p>
+                            </div>
+                        ))}
                     </div>
 
                     {/* 예약 추이 차트 */}
@@ -290,7 +146,7 @@ export const ReservationStats = () => {
 
                                 {isDropdownOpen && (
                                     <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                        {['일별', '월별'].map((period) => (
+                                        {['최근 7일', '최근 30일', '최근 1년'].map((period) => (
                                             <button
                                                 key={period}
                                                 onClick={() => handlePeriodChange(period)}
@@ -329,7 +185,7 @@ export const ReservationStats = () => {
                                     />
                                     <Line
                                         type="monotone"
-                                        dataKey="reservations"
+                                        dataKey="bookings"
                                         stroke="#3B82F6"
                                         strokeWidth={3}
                                         dot={{ fill: '#3B82F6', strokeWidth: 2, r: 5 }}
