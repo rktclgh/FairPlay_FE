@@ -9,6 +9,7 @@ import paymentService from "../../services/paymentService";
 import ticketReservationService from "../../services/ticketReservationService";
 import { saveAttendeeAndShareTicket } from "../../services/attendee";
 import type { ShareTicketSaveRequestDto } from "../../services/types/attendeeType";
+import NewLoader from "../../components/NewLoader";
 
 // 이벤트 회차 정보
 interface EventSchedule {
@@ -59,7 +60,7 @@ export const TicketReservation = () => {
     const { eventId } = useParams();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    
+
     // URL 파라미터에서 scheduleId 가져오기
     const scheduleIdParam = searchParams.get('scheduleId');
     const scheduleId = scheduleIdParam ? parseInt(scheduleIdParam) : null;
@@ -95,7 +96,7 @@ export const TicketReservation = () => {
                     buyer_name: userData.name || "",
                     buyer_phone: userData.phone || "",
                     buyer_email: userData.email || "",
-                    buyer_id:userData.userId || ""
+                    buyer_id: userData.userId || ""
                 }));
             } catch {
                 console.error("사용자 정보 로드 실패");
@@ -109,20 +110,20 @@ export const TicketReservation = () => {
         const loadEventData = async () => {
             try {
                 // URL에 scheduleId가 없으면 에러
-            if (!scheduleId) {
-                        throw new Error('회차 ID가 없습니다. 이벤트 상세 페이지에서 회차를 선택해주세요.');
-                     }
-                
-            // 1. 이벤트 상세 정보 조회
-            const eventResponse = await authManager.authenticatedFetch(`/api/events/${eventId}/details`);
+                if (!scheduleId) {
+                    throw new Error('회차 ID가 없습니다. 이벤트 상세 페이지에서 회차를 선택해주세요.');
+                }
 
-            if (!eventResponse.ok) {
+                // 1. 이벤트 상세 정보 조회
+                const eventResponse = await authManager.authenticatedFetch(`/api/events/${eventId}/details`);
+
+                if (!eventResponse.ok) {
                     throw new Error(`이벤트 정보 조회 실패: ${eventResponse.status}`);
                 }
-                
+
                 const eventDetail = await eventResponse.json();
                 console.log('이벤트 상세 정보:', eventDetail);
-                
+
                 setEventData({
                     titleKr: eventDetail.titleKr,
                     address: eventDetail.address,
@@ -134,14 +135,14 @@ export const TicketReservation = () => {
 
                 // 2. 선택된 회차의 상세 정보 조회
                 const scheduleResponse = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule/${scheduleId}`);
-                
+
                 if (!scheduleResponse.ok) {
                     throw new Error(`회차 상세 정보 조회 실패: ${scheduleResponse.status}`);
                 }
-                
+
                 const scheduleDetail = await scheduleResponse.json();
                 console.log('회차 상세 정보:', scheduleDetail);
-                
+
                 // 회차 정보 설정
                 setSelectedSchedule({
                     scheduleId: scheduleDetail.scheduleId,
@@ -152,14 +153,14 @@ export const TicketReservation = () => {
                     hasActiveTickets: scheduleDetail.hasActiveTickets || false,
                     soldTicketCount: scheduleDetail.soldTicketCount || 0
                 });
-                
+
                 // 3. 회차별 티켓 조회
                 loadScheduleTickets(scheduleId);
-                
+
             } catch (error) {
                 console.error('이벤트/회차 정보 조회 실패:', error);
                 toast.error(error instanceof Error ? error.message : '이벤트 정보를 불러올 수 없습니다.');
-                
+
                 // 에러 발생 시 이벤트 상세 페이지로 돌아가기
                 setTimeout(() => {
                     navigate(`/event/${eventId}`);
@@ -181,14 +182,14 @@ export const TicketReservation = () => {
     const loadScheduleTickets = async (scheduleId: number) => {
         try {
             const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule/${scheduleId}/tickets`);
-            
+
             if (!response.ok) {
                 throw new Error(`회차별 티켓 조회 실패: ${response.status}`);
             }
-            
+
             const ticketList = await response.json();
             console.log('회차별 티켓 목록:', ticketList);
-            
+
             // 회차별 티켓 정보
             const formattedTickets = ticketList.map((ticket: any) => ({
                 ticketId: ticket.ticketId,
@@ -201,11 +202,11 @@ export const TicketReservation = () => {
                 salesEndAt: ticket.salesEndAt,
                 visible: ticket.visible !== false // 기본값 true
             }));
-            
+
             // 판매 활성화된 티켓만 필터링
             const visibleTickets = formattedTickets.filter(ticket => ticket.visible);
             setAvailableTickets(visibleTickets);
-            
+
         } catch (error) {
             console.error('회차별 티켓 로드 실패:', error);
             toast.error('티켓 정보를 불러올 수 없습니다.');
@@ -221,7 +222,7 @@ export const TicketReservation = () => {
     // 최대 구매 가능 수량 계산
     const getMaxQuantity = (ticket: TicketReservationOption | undefined) => {
         if (!ticket) return 1;
-        
+
         // 1인 최대 구매 수량이 설정되어 있으면 해당 수량과 재고 중 작은 값
         if (ticket.maxPurchase && ticket.maxPurchase > 0) {
             return Math.min(ticket.maxPurchase, ticket.saleQuantity);
@@ -233,7 +234,7 @@ export const TicketReservation = () => {
     // 수량 제한 안내 텍스트
     const getQuantityLimitText = (ticket: TicketReservationOption | undefined) => {
         if (!ticket) return "";
-        
+
         if (ticket.maxPurchase && ticket.maxPurchase > 0) {
             const effectiveMax = Math.min(ticket.maxPurchase, ticket.saleQuantity);
             if (effectiveMax === ticket.maxPurchase) {
@@ -255,7 +256,7 @@ export const TicketReservation = () => {
     const handleQuantityChange = (newQuantity: number) => {
         const selectedTicket = getSelectedTicket();
         const maxQuantity = getMaxQuantity(selectedTicket);
-        
+
         if (newQuantity >= 1 && newQuantity <= maxQuantity) {
             setTicketReservationForm(prev => ({ ...prev, quantity: newQuantity }));
         }
@@ -348,8 +349,8 @@ export const TicketReservation = () => {
 
             // 참석자 저장 및 폼 생성
             const shareTicketData: ShareTicketSaveRequestDto = {
-                reservationId:result.targetId,
-                totalAllowed:ticketReservationForm.quantity 
+                reservationId: result.targetId,
+                totalAllowed: ticketReservationForm.quantity
             }
             await saveAttendeeAndShareTicket(shareTicketData);
 
@@ -369,7 +370,7 @@ export const TicketReservation = () => {
             <div className="min-h-screen bg-gray-50">
                 <TopNav />
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-lg">로딩 중...</div>
+                    <NewLoader />
                 </div>
             </div>
         );
@@ -467,19 +468,17 @@ export const TicketReservation = () => {
                     <div className="flex items-center justify-between">
                         {[0, 1, 2].map((step) => (
                             <div key={step} className="flex items-center">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white ${
-                                    currentStep === step
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white ${currentStep === step
                                         ? 'animate-pulse-blue'  // 현재 단계: 깜박이는 파란색
                                         : currentStep > step
-                                        ? 'bg-blue-600'  // 완료된 단계: 파란색
-                                        : 'bg-gray-200 text-gray-600'  // 미진행 단계: 회색
-                                }`}>
+                                            ? 'bg-blue-600'  // 완료된 단계: 파란색
+                                            : 'bg-gray-200 text-gray-600'  // 미진행 단계: 회색
+                                    }`}>
                                     {step + 1}
                                 </div>
                                 {step < 2 && (
-                                    <div className={`w-24 h-1 mx-2 ${
-                                        currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
-                                    }`} />
+                                    <div className={`w-24 h-1 mx-2 ${currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
+                                        }`} />
                                 )}
                             </div>
                         ))}
@@ -506,11 +505,10 @@ export const TicketReservation = () => {
                                 {ticketReservationOptions.map((option) => (
                                     <div
                                         key={option.ticketId}
-                                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                                            ticketReservationForm.selectedOption === option.ticketId.toString()
+                                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${ticketReservationForm.selectedOption === option.ticketId.toString()
                                                 ? 'border-blue-500 bg-blue-50'
                                                 : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                                            }`}
                                         onClick={() => handleOptionSelect(option.ticketId)}
                                     >
                                         <div className="flex justify-between items-start">
