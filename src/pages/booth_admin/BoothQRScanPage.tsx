@@ -4,6 +4,8 @@ import { BoothAdminSideNav } from "../../components/BoothAdminSideNav";
 import { QrCode, Camera, X, CheckCircle, AlertCircle, Users, Clock, Calendar } from 'lucide-react';
 import { toast } from 'react-toastify';
 import jsQR from 'jsqr';
+import type { BoothEntryRequestDto } from "../../services/types/qrTicketType";
+import {checkBoothQr } from "../../services/qrTicket";
 
 interface ScannedTicket {
     id: string;
@@ -16,11 +18,23 @@ interface ScannedTicket {
     scannedAt: Date;
 }
 
+interface Experience {
+    id: number;
+    title: string;
+    date: string;
+    time: string;
+    maxCapacity: number;
+    currentParticipants: number;
+}
+
+
 const BoothQRScanPage: React.FC = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [scannedTickets, setScannedTickets] = useState<ScannedTicket[]>([]);
     const [currentTicket, setCurrentTicket] = useState<ScannedTicket | null>(null);
     const [showResult, setShowResult] = useState(false);
+    const [selectedExperience, setSelectedExperience] = useState<Experience | null>(null);
+    const [booth, setBooths] = useState();
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
@@ -141,23 +155,36 @@ const BoothQRScanPage: React.FC = () => {
         scanFrame();
     };
 
-    const handleQRCodeScanned = (qrData: string) => {
+    const handleQRCodeScanned = async (qrCode: string) => {
         try {
-            // QR 코드 데이터 파싱 (실제 구현에서는 백엔드 API 호출)
-            const ticketData = JSON.parse(qrData);
 
-            // 더미 티켓 데이터 생성
+            if (!selectedExperience) {
+                toast.error('체험을 선택해주세요.');
+                return;
+            }
+
+            // 부스 QR 스캔 위한 dto 생성 (현재 더미데이터)
+            const boothEntryRequestDto: BoothEntryRequestDto = {
+                boothExperienceId: selectedExperience.id,
+                boothId: 1,
+                eventId: 1,
+                qrCode: qrCode
+            };
+
+            // 부스 QR 스캔 API호출
+            const res = await checkBoothQr(boothEntryRequestDto);
+            
+            // 스캔 결과에 따라 스캔된 티켓 정보 생성
             const scannedTicket: ScannedTicket = {
                 id: ticketData.id || Math.random().toString(36).substr(2, 9),
-                participantName: ticketData.participantName || '김참가자',
+                participantName: res.name|| '김참가자',
                 experienceTitle: ticketData.experienceTitle || '더미 체험 A',
                 experienceDate: ticketData.experienceDate || '2024-01-15',
                 startTime: ticketData.startTime || '10:00',
                 endTime: ticketData.endTime || '11:00',
                 status: 'VALID',
-                scannedAt: new Date()
+                scannedAt: res.checkInTime
             };
-
             setCurrentTicket(scannedTicket);
             setShowResult(true);
             stopScanning();
@@ -330,7 +357,10 @@ const BoothQRScanPage: React.FC = () => {
                                 </h3>
                                 <div className="space-y-3">
                                     {boothExperiences.map((experience) => (
-                                        <div key={experience.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                        <div key={experience.id} className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer
+                                            ${experience.id === selectedExperience?.id ? 'border-blue-500' : 'border-gray-200'}`}
+                                            onClick={() => setSelectedExperience(experience)}
+                                        >
                                             <div className="flex items-center justify-between mb-2">
                                                 <h4 className="font-medium text-gray-900">{experience.title}</h4>
                                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${experience.currentParticipants >= experience.maxCapacity
