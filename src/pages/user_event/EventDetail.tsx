@@ -624,6 +624,9 @@ const EventDetail = (): JSX.Element => {
                                 </button>
 
                             </div>
+                            <p className="text-[#00000099] text-xl mt-1">
+                                {eventData.titleEng}
+                            </p>
                             {/* 카테고리 정보 */}
                             <div className="flex items-center gap-2 mt-2">
                                 <span className={`px-3 py-1 text-sm font-medium rounded border ${eventData.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border-blue-200" :
@@ -641,9 +644,6 @@ const EventDetail = (): JSX.Element => {
                                     </span>
                                 )}
                             </div>
-                            <p className="text-[#00000099] text-xl mt-1">
-                                {eventData.titleEng}
-                            </p>
                         </div>
 
                         <hr className="h-[3px] my-6 bg-black" />
