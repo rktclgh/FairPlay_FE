@@ -170,7 +170,7 @@ const BoothParticipantDetail = () => {
         try {
             await deleteBooth(Number(eventId), Number(boothId));
             alert('부스가 성공적으로 삭제되었습니다.');
-            navigate(`/host/booth-participants`);
+            navigate(`/host/events/${eventId}/booth-participants`);
         } catch (err) {
             console.error(err);
             alert('부스 삭제에 실패했습니다.');
@@ -179,7 +179,7 @@ const BoothParticipantDetail = () => {
         }
     };
 
-    const handleBackToList = () => navigate("/host/booth-participants");
+    const handleBackToList = () => navigate(`/host/events/${eventId}/booth-participants`);
     const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
 
     return (
@@ -529,51 +529,6 @@ const BoothParticipantDetail = () => {
                                 ) : (
                                     <div className="text-gray-500 text-sm">등록된 배너 이미지가 없습니다.</div>
                                 )}
-                            </div>
-                        </div>
-
-                        {/* 관리 버튼 */}
-                        <div className="mb-8">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg leading-[30px] tracking-[0] block text-left">부스 관리</h2>
-                                    <div className="space-x-2">
-                                        {!editing ? (
-                                            <>
-                                                <button
-                                                    onClick={() => setEditing(true)}
-                                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                                >
-                                                    편집
-                                                </button>
-                                                <button
-                                                    onClick={handleUpdateAdmin}
-                                                    disabled={updating}
-                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                                                >
-                                                    {updating ? '저장 중...' : '관리자 정보 저장'}
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    onClick={handleUpdateBooth}
-                                                    disabled={updating}
-                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                                                >
-                                                    {updating ? '저장 중...' : '부스 정보 저장'}
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditing(false)}
-                                                    disabled={updating}
-                                                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
-                                                >
-                                                    취소
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
