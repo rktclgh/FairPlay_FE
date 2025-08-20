@@ -235,29 +235,29 @@ export const MyPageInfo = () => {
                 </div>
 
                 {/* 콘텐츠 - 웹화면에서 원래 위치로 유지 */}
-                <div className={`md:absolute md:w-[949px] md:left-64 left-4 right-4 top-20 relative md:static ${showPasswordChange ? 'md:h-[500px]' : 'md:h-[213px]'} md:top-[195px] md:pb-20`}>
+                <div className={`md:absolute md:w-[949px] md:left-64 left-4 right-4 top-16 relative md:static ${showPasswordChange ? 'md:h-[600px]' : 'md:h-[213px]'} md:top-[195px] md:pb-20`}>
                     <div className="md:absolute md:top-0 md:left-0 left-0 top-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl tracking-[0] leading-[54px] whitespace-nowrap">
                         {t('mypage.info.myAccount')}
                     </div>
 
-                    <div className="md:absolute md:top-11 md:left-0 left-0 top-6 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] leading-[54px] whitespace-nowrap">
+                    <div className="md:absolute md:top-11 md:left-0 left-0 top-4 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] tracking-[0] md:leading-[54px] leading-6 whitespace-nowrap">
                         {t('mypage.info.emailAddress')}
                     </div>
 
-                    <div className="md:absolute md:top-[71px] md:left-0 left-0 top-12 [font-family:'desktop-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-[54px] whitespace-nowrap">
+                    <div className="md:absolute md:top-[71px] md:left-0 left-0 top-8 [font-family:'desktop-Regular',Helvetica] font-normal text-black text-base tracking-[0] md:leading-[54px] leading-6 whitespace-nowrap">
                         {blurredData.email}
                     </div>
 
-                    <div className="w-full md:w-[947px] h-[79px] top-[50px] md:top-[50px] top-8 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
+                    <div className="w-full md:w-[947px] md:h-[79px] h-4 top-[50px] md:top-[50px] top-0 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
 
                     {showPasswordChange ? (
                         // 비밀번호 변경 폼
                         <>
-                            <div className="md:absolute md:top-32 md:left-0 left-0 top-16 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] tracking-[0] leading-[54px] whitespace-nowrap">
+                            <div className="md:absolute md:top-32 md:left-0 left-0 -top-4 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] tracking-[0] leading-[54px] whitespace-nowrap">
                                 {t('mypage.info.changePassword')}
                             </div>
 
-                            <div className="md:absolute md:top-[161px] md:left-0 left-0 top-24 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] tracking-[0] leading-[54px] whitespace-nowrap">
+                            <div className="md:absolute md:top-[161px] md:left-0 left-0 -top-2 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] tracking-[0] leading-[54px] whitespace-nowrap">
                                 {t('mypage.info.oldPassword')}
                             </div>
 
@@ -266,12 +266,12 @@ export const MyPageInfo = () => {
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
                                 placeholder={t('mypage.info.passwordRule')}
-                                className="md:absolute md:top-[191px] md:left-0 left-0 top-28 w-full md:w-[947px] h-[54px] [font-family:'Roboto-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-[15px] tracking-[0] leading-[54px] bg-transparent border-none outline-none z-10"
+                                className="md:absolute md:top-[191px] md:left-0 left-0 top-0 w-full md:w-[947px] h-[54px] [font-family:'Roboto-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-[15px] tracking-[0] leading-[54px] bg-transparent border-none outline-none z-10"
                             />
 
-                            <div className="w-full md:w-[947px] h-[140px] top-[110px] md:top-[110px] top-20 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
+                            <div className="w-full md:w-[947px] h-4 md:h-[140px] top-[110px] md:top-[110px] -top-4 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
 
-                            <div className="md:absolute md:top-[255px] md:left-0 left-0 top-32 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
+                            <div className="md:absolute md:top-[255px] md:left-0 left-0 top-2 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
                                 {t('mypage.info.newPassword')}
                             </div>
 
@@ -280,18 +280,18 @@ export const MyPageInfo = () => {
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 placeholder={t('mypage.info.passwordRule')}
-                                className="md:absolute md:top-[285px] md:left-0 left-0 top-36 w-full md:w-[947px] h-[54px] [font-family:'Roboto-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-[15px] tracking-[0] leading-[54px] bg-transparent border-none outline-none z-10"
+                                className="md:absolute md:top-[285px] md:left-0 left-0 top-4 w-full md:w-[947px] h-[54px] [font-family:'Roboto-Regular',Helvetica] font-normal text-black placeholder:text-gray-400 text-[15px] tracking-[0] leading-[54px] bg-transparent border-none outline-none z-10"
                             />
 
-                            <div className="w-full md:w-[947px] h-[90px] top-[254px] md:top-[254px] top-20 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:top-[254px] md:left-0 left-0 flex justify-center" />
+                            <div className="w-full md:w-[947px] h-4 md:h-[90px] top-[254px] md:top-[254px] -top-2 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:top-[254px] md:left-0 left-0 flex justify-center" />
 
                             {passwordError && (
-                                <div className="md:absolute md:top-[340px] md:left-0 left-0 top-44 text-red-500 text-sm">
+                                <div className="md:absolute md:top-[400px] md:left-0 left-0 top-8 text-red-500 text-sm">
                                     {passwordError}
                                 </div>
                             )}
 
-                            <div className="md:absolute md:top-[370px] md:left-0 md:right-0 left-0 right-0 top-48 flex justify-center space-x-4">
+                            <div className="md:absolute md:top-[370px] md:left-0 md:right-0 left-0 right-0 top-12 flex justify-center space-x-4">
                                 <button
                                     onClick={() => {
                                         setShowPasswordChange(false);
@@ -318,25 +318,28 @@ export const MyPageInfo = () => {
                     ) : (
                         // 기본 비밀번호 표시
                         <>
-                            <div className="md:absolute md:top-32 md:left-0 left-0 top-16 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
+                            <div className="md:absolute md:top-32 md:left-0 left-0 top-12 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                                 {t('mypage.info.password')}
                             </div>
 
-                            <div className="md:absolute md:top-[155px] md:left-0 left-0 top-24 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
+                            <div className="md:absolute md:top-[155px] md:left-0 left-0 top-20 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                                 {blurredData.password}
                             </div>
 
-                            <div className="w-full md:w-[947px] h-[79px] top-[134px] md:top-[134px] top-20 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
+                            <div className="w-full md:w-[947px] md:h-[79px] h-4 top-[134px] md:top-[134px] top-8 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
 
-                            <div className="md:absolute md:w-[58px] md:h-[54px] md:top-[156px] md:left-[891px] left-0 top-28 w-full">
-                                <button
-                                    onClick={() => setShowPasswordChange(true)}
-                                    className="px-4 py-2 border border-gray-300 rounded-[10px] text-gray-600 bg-white hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
-                                    style={{ outline: 'none' }}
-                                >
-                                    {t('mypage.info.change')}
-                                </button>
-                            </div>
+                            {/* 비밀번호 변경 버튼 - 기본 상태에서만 표시 */}
+                            {!showPasswordChange && (
+                                <div className="md:absolute md:top-[156px] md:right-0 left-0 top-24 w-full md:w-auto flex justify-end">
+                                    <button
+                                        onClick={() => setShowPasswordChange(true)}
+                                        className="px-4 py-2 border border-gray-300 rounded-[10px] text-gray-600 bg-white hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
+                                        style={{ outline: 'none' }}
+                                    >
+                                        {t('mypage.info.change')}
+                                    </button>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -347,35 +350,35 @@ export const MyPageInfo = () => {
                         {t('mypage.info.personalInfo')}
                     </div>
 
-                    <div className="md:absolute md:top-11 md:left-0 left-0 top-6 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
+                    <div className="md:absolute md:top-11 md:left-0 left-0 top-6 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                         {t('mypage.info.name')}
                     </div>
 
-                    <div className="md:absolute md:top-[71px] md:left-0 left-0 top-12 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
+                    <div className="md:absolute md:top-[71px] md:left-0 left-0 top-12 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                         {userInfo.name}
                     </div>
 
-                    <div className="w-full md:w-[947px] h-[79px] top-[50px] md:top-[50px] top-8 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
+                    <div className="w-full md:w-[947px] md:h-[79px] h-4 top-[50px] md:top-[50px] top-4 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
 
-                    <div className="md:absolute md:top-32 md:left-0 left-0 top-16 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
+                    <div className="md:absolute md:top-32 md:left-0 left-0 top-16 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                         {t('mypage.info.nickname')}
                     </div>
 
-                    <div className="md:absolute md:top-[155px] md:left-0 left-0 top-20 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
+                    <div className="md:absolute md:top-[155px] md:left-0 left-0 top-20 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                         {userInfo.nickname}
                     </div>
 
-                    <div className="w-full md:w-[947px] h-[79px] top-[134px] md:top-[134px] top-16 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
+                    <div className="w-full md:w-[947px] md:h-[79px] h-4 top-[134px] md:top-[134px] top-8 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
 
-                    <div className="md:absolute md:top-[209px] md:left-0 left-0 top-24 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] leading-[54px] tracking-[0] whitespace-nowrap">
+                    <div className="md:absolute md:top-[209px] md:left-0 left-0 top-24 [font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080] text-[15px] md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                         {t('mypage.info.phoneNumber')}
                     </div>
 
-                    <p className="md:absolute md:top-[237px] md:left-0 left-0 top-28 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base leading-[54px] tracking-[0] whitespace-nowrap">
+                    <p className="md:absolute md:top-[237px] md:left-0 left-0 top-28 [font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base md:leading-[54px] leading-6 tracking-[0] whitespace-nowrap">
                         {blurredData.phone}
                     </p>
 
-                    <div className="w-full md:w-[947px] h-[79px] top-[216px] md:top-[216px] top-16 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
+                    <div className="w-full md:w-[947px] md:h-[79px] h-4 top-[216px] md:top-[216px] top-8 border-b [border-bottom-style:solid] border-[#0000001a] md:absolute md:left-0 left-0" />
 
                     {/* 개인정보 수정 버튼 - 휴대폰 번호 아래 오른쪽 정렬 */}
                     <div className="md:absolute md:top-[305px] md:right-0 left-0 right-0 top-32 flex justify-end">
