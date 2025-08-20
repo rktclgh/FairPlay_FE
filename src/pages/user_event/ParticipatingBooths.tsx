@@ -261,8 +261,9 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                     getBoothTypes(Number(eventId)),
                     eventAPI.getEventDetail(Number(eventId))
                 ]);
-                
+
                 setBooths(boothsData);
+                console.log('boothsData:', boothsData);
                 setBoothTypes(boothTypesData);
                 setEventDetail(eventDetailData);
             } catch (error) {

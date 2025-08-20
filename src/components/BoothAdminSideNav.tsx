@@ -64,6 +64,13 @@ export const BoothAdminSideNav: React.FC<BoothAdminSideNavProps> = ({ className 
                         </h3>
                         <div className="space-y-1">
                             <Link
+                                to="/booth-admin/info-management"
+                                className={linkClass("/booth-admin/info-management")}
+                                style={linkStyle("/booth-admin/info-management")}
+                            >
+                                부스 정보 관리
+                            </Link>
+                            <Link
                                 to="/booth-admin/experience-management"
                                 className={linkClass("/booth-admin/experience-management")}
                                 style={linkStyle("/booth-admin/experience-management")}
@@ -85,6 +92,13 @@ export const BoothAdminSideNav: React.FC<BoothAdminSideNavProps> = ({ className 
                                 style={linkStyle("/booth-admin/experience-reserver-management")}
                             >
                                 예약 현황
+                            </Link>
+                            <Link
+                                to="/booth-admin/qr-scan"
+                                className={linkClass("/booth-admin/qr-scan")}
+                                style={linkStyle("/booth-admin/qr-scan")}
+                            >
+                                QR 스캔
                             </Link>
                         </div>
                     </div>
