@@ -90,19 +90,12 @@ const EventDetail = (): JSX.Element => {
 
     const id = Number(eventId); // 컴포넌트 내부에서 계산
 
-    // 페이지 로드 시 스크롤을 맨 위로 이동 (강제)
-    React.useLayoutEffect(() => {
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-    }, [eventId]);
-
-    // 추가로 useEffect도 사용
+    // 페이지 로드 시 스크롤을 맨 위로 이동
     React.useEffect(() => {
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
-    }, [eventId]);
+    }, []); // 컴포넌트 마운트 시 한 번만 실행
 
     // 초기 위시 상태 로드
     React.useEffect(() => {
@@ -517,11 +510,43 @@ const EventDetail = (): JSX.Element => {
         setSelectedDate(date);
         setSelectedScheduleId(null); // 기존 회차 선택 초기화
         filterSchedulesForDate(date);
+
+        // 전체행사현황에서 해당 날짜로 자동 스크롤
+        setTimeout(() => {
+            const selectedDateElement = document.querySelector(`[data-date="${date}"]`);
+            if (selectedDateElement) {
+                const container = selectedDateElement.closest('.max-h-60');
+                if (container) {
+                    selectedDateElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }
+        }, 100);
     };
 
     // 회차 선택 핸들러
     const handleScheduleSelect = (scheduleId: number) => {
         setSelectedScheduleId(scheduleId);
+
+        // 선택된 날짜가 있으면 해당 날짜로 자동 스크롤
+        if (selectedDate) {
+            setTimeout(() => {
+                const selectedDateElement = document.querySelector(`[data-date="${selectedDate}"]`);
+                if (selectedDateElement) {
+                    const container = selectedDateElement.closest('.max-h-60');
+                    if (container) {
+                        selectedDateElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }
+                }
+            }, 100);
+        }
     };
 
     // 선택된 회차 정보 가져오기
@@ -902,23 +927,7 @@ const EventDetail = (): JSX.Element => {
                                             <h5 className="text-sm font-medium text-gray-900">전체 행사일 현황</h5>
                                         </div>
                                         <div
-                                            ref={(el) => {
-                                                // 선택된 날짜가 변경될 때 해당 날짜가 보이도록 자동 스크롤
-                                                if (el && selectedDate) {
-                                                    setTimeout(() => {
-                                                        // 선택된 날짜 요소 찾기
-                                                        const selectedDateElement = el.querySelector(`[data-date="${selectedDate}"]`);
-                                                        if (selectedDateElement) {
-                                                            selectedDateElement.scrollIntoView({
-                                                                behavior: 'smooth',
-                                                                block: 'center',
-                                                                inline: 'nearest'
-                                                            });
-                                                        }
-                                                    }, 100);
-                                                }
-                                            }}
-                                            className="max-h-60 overflow-y-auto"
+                                            className="max-h-60 overflow-y-auto custom-scrollbar"
                                         >
                                             {eventDates.map((date) => {
                                                 const isBookable = isDateBookable(date);
