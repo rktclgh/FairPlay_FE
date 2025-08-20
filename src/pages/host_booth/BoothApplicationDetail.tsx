@@ -6,7 +6,7 @@ import { getBoothApplicationDetails, updateApplicationStatus, updatePaymentStatu
 import { BoothApplication, BoothApplicationStatusUpdate, BoothPaymentStatusUpdate } from "../../types/booth";
 
 export const BoothApplicationDetail = () => {
-    const { eventId, applicationId } = useParams<{ eventId: string; applicationId: string }>();
+    const { eventId, id: applicationId } = useParams<{ eventId: string; id: string }>();
     const navigate = useNavigate();
 
     const [applicationDetail, setApplicationDetail] = useState<BoothApplication | null>(null);
@@ -17,20 +17,28 @@ export const BoothApplicationDetail = () => {
 
     // 백엔드에서 데이터 로드
     useEffect(() => {
-        if (eventId && applicationId) {
-            setLoading(true);
-            getBoothApplicationDetails(Number(eventId), Number(applicationId))
-                .then(data => {
-                    setApplicationDetail(data);
-                    setAdminComment(data.adminComment || "");
-                    setLoading(false);
-                })
-                .catch(err => {
-                    setError('부스 신청 상세 정보를 불러오는 데 실패했습니다.');
-                    setLoading(false);
-                    console.error(err);
-                });
-        }
+        const loadData = async () => {
+            if (!eventId || !applicationId) {
+                setLoading(false);
+                return;
+            }
+            
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const data = await getBoothApplicationDetails(Number(eventId), Number(applicationId));
+                setApplicationDetail(data);
+                setAdminComment(data.adminComment || "");
+            } catch (err) {
+                console.error('BoothApplicationDetail error:', err);
+                setError('부스 신청 상세 정보를 불러오는 데 실패했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        loadData();
     }, [eventId, applicationId]);
 
     // 상태에 따른 색상 반환
@@ -224,7 +232,10 @@ export const BoothApplicationDetail = () => {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">부스 설명</label>
-                                <div className="p-3 bg-gray-50 rounded-md">{applicationDetail.boothDescription}</div>
+                                <div 
+                                    className="p-3 bg-gray-50 rounded-md prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: applicationDetail.boothDescription || '부스 설명이 없습니다.' }}
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">부스 이메일</label>

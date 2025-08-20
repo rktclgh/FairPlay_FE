@@ -318,7 +318,7 @@ export const BoothTypeManagement = () => {
         if (!eventId) return;
         
         await createBoothType(parseInt(eventId), boothType);
-        await loadBoothTypes(); // 목록 새로고침
+        await loadBoothTypes(eventId); // 목록 새로고침
     };
 
     // 부스 타입 수정
@@ -326,7 +326,7 @@ export const BoothTypeManagement = () => {
         if (!eventId) return;
         
         await updateBoothType(parseInt(eventId), boothType.id, boothType);
-        await loadBoothTypes(); // 목록 새로고침
+        await loadBoothTypes(eventId); // 목록 새로고침
     };
 
     // 삭제 핸들러
@@ -336,7 +336,7 @@ export const BoothTypeManagement = () => {
         if (window.confirm("정말로 이 부스 타입을 삭제하시겠습니까?")) {
             try {
                 await deleteBoothType(parseInt(eventId), boothTypeId);
-                await loadBoothTypes(); // 목록 새로고침
+                await loadBoothTypes(eventId); // 목록 새로고침
                 alert("부스 타입이 삭제되었습니다.");
             } catch (error) {
                 console.error('부스 타입 삭제 실패:', error);
