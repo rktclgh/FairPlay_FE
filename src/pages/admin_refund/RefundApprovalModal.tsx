@@ -49,8 +49,6 @@ interface ApprovalRequest {
 
 const RefundApprovalModal: React.FC<RefundApprovalModalProps> = ({ isOpen, refund, onClose, onSuccess, apiBaseUrl = '/api/admin' }) => {
     const [adminComment, setAdminComment] = useState('');
-    const [adjustedAmount, setAdjustedAmount] = useState(refund.refundAmount);
-    const [processImmediately, setProcessImmediately] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
     if (!isOpen) return null;
@@ -62,8 +60,8 @@ const RefundApprovalModal: React.FC<RefundApprovalModalProps> = ({ isOpen, refun
             return;
         }
 
-        if (adjustedAmount <= 0 || adjustedAmount > refund.paymentAmount) {
-            alert('환불 금액이 올바르지 않습니다.');
+        // 환불 승인 확인
+        if (!confirm('환불을 승인하시겠습니까?')) {
             return;
         }
 
@@ -72,11 +70,11 @@ const RefundApprovalModal: React.FC<RefundApprovalModalProps> = ({ isOpen, refun
             const approvalData: ApprovalRequest = {
                 action: 'APPROVE',
                 adminComment: adminComment.trim(),
-                refundAmount: adjustedAmount,
-                processImmediately
+                refundAmount: refund.refundAmount,
+                processImmediately: true
             };
 
-            const response = await authManager.authenticatedFetch(`${apiBaseUrl}/refunds/${refund.refundId}/approve`, {
+            const response = await authManager.authenticatedFetch(`/api/refunds/${refund.refundId}/approve`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -103,6 +101,11 @@ const RefundApprovalModal: React.FC<RefundApprovalModalProps> = ({ isOpen, refun
     const handleReject = async () => {
         if (!adminComment.trim()) {
             alert('거부 사유를 입력해주세요.');
+            return;
+        }
+
+        // 환불 거부 확인
+        if (!confirm('환불을 거부하시겠습니까?')) {
             return;
         }
 
@@ -260,43 +263,21 @@ const RefundApprovalModal: React.FC<RefundApprovalModalProps> = ({ isOpen, refun
                         <div className="mt-6">
                             <h3 className="text-lg font-medium text-gray-900 mb-3">관리자 검토</h3>
                             
-                            {/* 환불 금액 조정 */}
+                            {/* 환불 요청 금액 */}
                             <div className="bg-gray-50 rounded-lg p-4 mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    환불 금액 조정
+                                    환불 요청 금액
                                 </label>
                                 <div className="flex items-center gap-4">
                                     <input
-                                        type="number"
-                                        min="0"
-                                        max={refund.paymentAmount}
-                                        value={adjustedAmount}
-                                        onChange={(e) => setAdjustedAmount(Number(e.target.value))}
-                                        className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        type="text"
+                                        value={`${refund.refundAmount.toLocaleString()}원`}
+                                        readOnly
+                                        className="w-48 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 cursor-not-allowed"
                                     />
-                                    <span className="text-sm text-gray-500">
-                                        원 (최대: {refund.paymentAmount.toLocaleString()}원)
-                                    </span>
                                 </div>
                             </div>
 
-                            {/* 즉시 처리 여부 */}
-                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={processImmediately}
-                                        onChange={(e) => setProcessImmediately(e.target.checked)}
-                                        className="mr-2 rounded border-gray-300"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700">
-                                        승인 후 즉시 PG사 환불 처리
-                                    </span>
-                                </label>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    체크 해제 시 승인만 처리되고, PG사 환불은 별도로 처리해야 합니다.
-                                </p>
-                            </div>
 
                             {/* 검토 의견 입력 */}
                             <div>
@@ -353,7 +334,7 @@ const RefundApprovalModal: React.FC<RefundApprovalModalProps> = ({ isOpen, refun
                             </button>
                             <button
                                 onClick={handleApprove}
-                                disabled={submitting || !adminComment.trim() || adjustedAmount <= 0}
+                                disabled={submitting || !adminComment.trim()}
                                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
                             >
                                 <Check className="w-4 h-4" />
