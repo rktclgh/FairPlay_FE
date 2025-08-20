@@ -33,7 +33,7 @@ export interface SlotResponseDto {
   price: number;               // 원/일
 }
 
-interface LockSlotsRequestDto {
+/*interface LockSlotsRequestDto {
   typeCode: BannerSlotType;    // 'SEARCH_TOP' | 'HERO'
   items: { slotDate: string; priority: number }[];
   holdHours?: number | null;   // 생략 시 서버 기본(48h)
@@ -42,7 +42,7 @@ interface LockSlotsResponseDto {
   slotIds: number[];
   totalAmount: number;
   lockedUntil: string;         // ISO LocalDateTime
-}
+}*/
 
 // [추가] 백엔드 CreateApplicationRequestDto에 맞춘 타입
 interface CreateApplicationItem {
@@ -79,10 +79,10 @@ async function getSlots(params: { type: BannerSlotType; from: string; to: string
   const { data } = await api.get("/api/banner/slots", { params: { type: params.type, from: params.from, to: params.to } });
   return data;
 }
-async function lockSlots(body: LockSlotsRequestDto): Promise<LockSlotsResponseDto> {
+/*async function lockSlots(body: LockSlotsRequestDto): Promise<LockSlotsResponseDto> {
   const { data } = await api.post("/api/banner/slots/lock", body);
   return data;
-}
+}*/
 
 // [추가] 신청 생성 API
 async function createApplication(body: CreateApplicationRequestDto): Promise<number> {
@@ -249,6 +249,12 @@ const AdvertisementApplication: React.FC = () => {
     return { priority: available[0].priority ?? 1, price: available[0].price };
   };
 
+  const [mdPickMeta, setMdPickMeta] = useState<{
+  eventId: string;
+  title: string;
+  linkUrl: string;
+}>({ eventId: '', title: '', linkUrl: '' });
+
   const getMdPickStatusText = (date: string) => {
     const slots = getDateSlots(date); // slotsByDate[date] ?? []
     if (!slots.length) return "신청 가능"; // 데이터 없으면 가용으로 간주
@@ -405,39 +411,51 @@ const AdvertisementApplication: React.FC = () => {
     try {
       // 1) MD PICK(SEARCH_TOP)만 처리
       if (selectedTypes.searchTop && searchTopForm.startDate && searchTopForm.endDate) {
-        const dates = getAvailableDates();
-        if (!dates.length) {
-          alert("선택한 기간에 신청 가능한 날짜가 없습니다.");
-          return;
-        }
-        const items = dates
-          .map(d => {
-            const chosen = chooseSlotForDate(d);
-            return chosen ? { slotDate: d, priority: chosen.priority } : null;
-          })
-          .filter(Boolean) as { slotDate: string; priority: number }[];
+  const dates = getAvailableDates();
+  if (!dates.length) {
+    alert("선택한 기간에 신청 가능한 날짜가 없습니다.");
+    return;
+  }
 
-        if (!items.length) {
-          alert("신청 가능한 날짜가 없습니다.");
-          return;
-        }
+  // 이미지 URL(필수) 준비: 업로드한 md_pick 파일 사용
+  const mdPickFile = uploadedFiles.get?.('md_pick') ?? null; // useFileUpload가 Map 기반이라고 가정
+  if (!mdPickFile) {
+    alert("MD PICK 이미지를 업로드해주세요.");
+    return;
+  }
+  if (!mdPickMeta.eventId) {
+    alert("MD PICK: 이벤트 ID를 입력해주세요.");
+    return;
+  }
 
-        const res = await lockSlots({ typeCode: "SEARCH_TOP", items });
+  const mdPickImageUrl =
+    `${import.meta.env.VITE_BACKEND_BASE_URL ?? window.location.origin}${mdPickFile.url}`;
 
+  // ❗ DTO는 date 필드명 사용 (slotDate 아님)
+  const items = dates
+    .map(d => {
+      const chosen = chooseSlotForDate(d);
+      return chosen ? { date: d, priority: chosen.priority } : null;
+    })
+    .filter(Boolean) as { date: string; priority: number }[];
 
-        const appliedFrom = searchTopForm.startDate;
-        const appliedTo = searchTopForm.endDate;
-        const appliedDays = getAvailableDays();
+  if (!items.length) {
+    alert("신청 가능한 날짜가 없습니다.");
+    return;
+  }
 
-        alert(
-          [
-            "MD PICK 신청이 완료되었습니다.",
-            `신청한 기간: ${dateRangeOf(appliedFrom, appliedTo)}`,
-            `신청일수: ${appliedDays}일`,
-            `총 결제 금액: ${res.totalAmount.toLocaleString()}원`,
-            `신청 유지 만료: ${fmtKST(res.lockedUntil)}`
-          ].join("\n")
-        );
+  const appId = await createApplication({
+    eventId: Number(mdPickMeta.eventId),
+    bannerType: "SEARCH_TOP",
+    title: mdPickMeta.title || "MD PICK 광고",
+    imageUrl: mdPickImageUrl,                  // DTO상 필수 + URL 형식
+    linkUrl: mdPickMeta.linkUrl || undefined,  // 빈 문자열 보내지 말 것
+    items,
+    // lockMinutes: 2880,
+  });
+
+        alert(`MD PICK 신청이 접수되었습니다. 신청번호: ${appId}`);
+
       }
 
       // 2) 메인 배너(HERO)만 처리
@@ -685,6 +703,7 @@ const AdvertisementApplication: React.FC = () => {
                 </div>
               </div>
             </div>
+
 
             {/* 선택사항 - 이벤트 디테일 페이지와 정확히 동일한 스타일 */}
             <div className="mt-8 border border-gray-200 rounded-lg">
@@ -1067,6 +1086,98 @@ const AdvertisementApplication: React.FC = () => {
                     />
                   </div>
                 </div>
+<div className="space-y-2 pt-2">
+  <label className="block text-sm text-gray-700">이벤트 ID</label>
+  <input
+    type="number"
+    value={mdPickMeta.eventId}
+    onChange={(e) => setMdPickMeta(v => ({ ...v, eventId: e.target.value }))}
+    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+    placeholder="예: 456"
+  />
+</div>
+
+<div className="space-y-4 mt-4">
+  <h4 className="font-semibold text-gray-800">MD PICK 이미지 업로드</h4>
+  <div
+    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative h-64 flex items-center justify-center"
+    onDragOver={(e) => {
+      e.preventDefault();
+      e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+    }}
+    onDragLeave={(e) => {
+      e.preventDefault();
+      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+    }}
+    onDrop={(e) => {
+      e.preventDefault();
+      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+      const files = e.dataTransfer.files;
+      if (files && files[0] && files[0].type.startsWith('image/')) {
+        handleImageUpload(files[0], 'md_pick');
+      }
+    }}
+  >
+    {(() => {
+      const file = uploadedFiles.get?.('md_pick') ?? null;
+      return file ? (
+        <div className="space-y-2">
+          <img
+            src={file.url}
+            alt="MD PICK 이미지 미리보기"
+            className="mx-auto max-h-48 max-w-full object-contain rounded"
+          />
+          <p className="text-xs text-green-600">✓ {file.name}</p>
+          <div className="text-sm text-gray-600 space-x-2">
+            <label htmlFor="mdPickImage" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+              <span>이미지 변경</span>
+              <input
+                id="mdPickImage"
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImageUpload(f, 'md_pick');
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => removeFile('md_pick')}
+              className="text-red-600 hover:text-red-500"
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div className="text-sm text-gray-600">
+            <label htmlFor="mdPickImage" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+              <span>이미지 업로드</span>
+              <input
+                id="mdPickImage"
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImageUpload(f, 'md_pick');
+                }}
+              />
+            </label>
+            <p className="pl-1">또는 드래그 앤 드롭</p>
+          </div>
+          <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 5MB</p>
+        </div>
+      );
+    })()}
+  </div>
+</div>
 
                 {/* MD PICK 상태 확인 */}
                 {searchTopForm.startDate && searchTopForm.endDate && (
