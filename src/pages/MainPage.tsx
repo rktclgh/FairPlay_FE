@@ -122,9 +122,32 @@ type BannerResp = {
   bannerTypeCode?: string | null;    // "HERO"
 };
 
+// 서버 응답 (FixedTopDto 가정: eventId 필수)
+type SearchTopDto = {
+  id: number;
+  title: string;
+  imageUrl: string;
+  linkUrl: string | null;
+  priority: number;
+  startDate: string; // ISO
+  endDate: string;   // ISO
+  eventId: number;   // ★ 스티커/이동용 핵심
+};
+
+const fetchSearchTopToday = async (): Promise<SearchTopDto[]> => {
+  // 오늘 날짜 기준 (백엔드는 date null이면 today 처리하지만 명시적으로 줘도 OK)
+  const today = dayjs().format("YYYY-MM-DD");
+  const { data } = await api.get<SearchTopDto[]>("/api/banner/search-top", {
+    params: { date: today },
+  });
+  return Array.isArray(data) ? data : [];
+};
+
 
 
 export const Main: React.FC = () => {
+
+const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
 
     const [showBirthdayModal, setShowBirthdayModal] = useState(false);
     const [gender, setGender] = useState<string>("")
@@ -507,6 +530,8 @@ setEvents(eventsData?.events ?? []);
                 // 유료광고 데이터 로드
                 //await loadPaidAdvertisements();
 await loadHeroAdvertisements();
+const searchTop = await fetchSearchTopToday(); // ★ 추가
+setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.isFinite)));
 
                 // HOT PICKS 백엔드 연동
                 try {
@@ -566,20 +591,10 @@ function getMdPickTitlesForToday(): Set<string> {
     const mdPickTitles = getMdPickTitlesForToday();
     const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
 
-    // [백엔드 연동 필요]
-    // - API에서 받은 MD PICK 세트를 기준으로 판단하도록 바꾸세요.
-    const isEventMdPick = (e: EventSummaryDto) => {
-        if (mdPickIds.has(e.id)) return true;
-        if (mdPickTitleNorms.size > 0) {
-            const nt = normalize(e.title);
-            for (const t of mdPickTitleNorms) {
-                if (nt.includes(t)) return true;
-            }
-        }
-        return false;
-    };
 
-    const hasMdPickInCurrentList = events.some(e => isEventMdPick(e));
+    const isEventMdPick = (e: EventSummaryDto) => mdPickEventIds.has(e.id);
+const hasMdPickInCurrentList = events.some(e => mdPickEventIds.has(e.id));
+
     const displayEvents = hasMdPickInCurrentList
         ? [...events].sort((a, b) => {
             const aPick = isEventMdPick(a) ? 1 : 0;
@@ -897,13 +912,14 @@ const hotLoop = hotPicks.length >= 2;
                                     <div className="relative group">
                                         {/* MD PICK 스티커 */}
                                         {hasMdPickInCurrentList && isEventMdPick(event) && (
-                                            <div className="absolute top-2 left-2 z-10">
-                                                <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
-                                                    <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
-                                                    <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
-                                                </div>
-                                            </div>
-                                        )}
+  <div className="absolute top-2 left-2 z-10">
+    <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+      <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+      <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+    </div>
+  </div>
+)}
+
                                         <img
                                             className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
                                             alt={event.title}
