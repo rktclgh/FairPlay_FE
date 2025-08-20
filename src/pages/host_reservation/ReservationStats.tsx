@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { HostSideNav } from "../../components/HostSideNav";
 import { TopNav } from "../../components/TopNav";
 import { HiChevronDown } from 'react-icons/hi';
-import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto,EventDetailResponseDto } from "../../services/dashboard";
+import { dashboardAPI, EventDashboardStatsDto,ReservationDailyTrendDto } from "../../services/dashboard";
+import type { EventDetailResponseDto } from "../../services/types/eventType";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from "react-toastify";
 import dayjs from 'dayjs';
@@ -141,7 +142,7 @@ export const ReservationStats = () => {
       });
     };
     // 월별 데이터 (6개월간, 오른쪽이 이번달)
-    const monthlyData = convertDailyToMonthly(weeklyData);
+    const monthlyData = convertDailyToMonthly(dashboardStats?.dailyTrend || []);
 
 
 
