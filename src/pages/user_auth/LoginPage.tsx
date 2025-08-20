@@ -86,14 +86,19 @@ export const LoginPage = () => {
 
     const handleKakaoLogin = () => {
         const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
-        const KAKAO_REDIRECT_URI = `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`;
+        // 운영 환경에서는 현재 도메인 사용, 개발 환경에서는 env 값 사용
+        const currentOrigin = window.location.origin;
+        const KAKAO_REDIRECT_URI = currentOrigin.includes('localhost') 
+            ? `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`
+            : `${currentOrigin}/auth/kakao/callback`;
 
-        if (!KAKAO_CLIENT_ID || !import.meta.env.VITE_FRONTEND_BASE_URL) {
+        if (!KAKAO_CLIENT_ID) {
             toast.error(t('auth.kakaoNotConfigured'));
-            console.error("VITE_KAKAO_CLIENT_ID or VITE_FRONTEND_BASE_URL is not set in .env file");
+            console.error("VITE_KAKAO_CLIENT_ID is not set in .env file");
             return;
         }
 
+        console.log('카카오 로그인 redirect URI:', KAKAO_REDIRECT_URI);
         const kakaoURL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
         window.location.href = kakaoURL;
     };

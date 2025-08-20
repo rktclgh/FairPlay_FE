@@ -21,6 +21,10 @@ const KakaoCallback = () => {
 
         const handleKakaoLogin = async (code: string) => {
             try {
+                console.log('카카오 로그인 시도 - code:', code);
+                console.log('User Agent:', navigator.userAgent);
+                console.log('Current URL:', window.location.href);
+                
                 const response = await api.post('/api/auth/kakao', { code }); // POST JSON!
                 const { accessToken, refreshToken } = response.data;
 
