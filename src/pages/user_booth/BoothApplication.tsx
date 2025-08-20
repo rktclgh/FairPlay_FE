@@ -1,11 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { applyForBooth, getBoothTypes } from '../../api/boothApi';
-import { BoothType, BoothApplicationRequest } from '../../types/booth';
+import { BoothType, BoothApplicationRequest, BoothExternalLink } from '../../types/booth';
+import { useFileUpload } from '../../hooks/useFileUpload';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const BoothApplication: React.FC = () => {
     const { eventId } = useParams<{ eventId: string }>();
     const navigate = useNavigate();
+    
+    // 파일 업로드 훅
+    const { uploadFile } = useFileUpload();
+    
+    // ReactQuill 참조
+    const quillRef = useRef<ReactQuill>(null);
+    
+    // 이미지 업로드 핸들러
+    const handleImageUpload = async (file: File): Promise<string | null> => {
+        const response = await uploadFile(file, `description_image_${Date.now()}`);
+        return response ? response.url : null;
+    };
+    
+    // ReactQuill 이미지 핸들러
+    const imageHandler = () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+        
+        input.onchange = async () => {
+            const file = input.files?.[0];
+            if (file) {
+                try {
+                    const imageUrl = await handleImageUpload(file);
+                    if (imageUrl && quillRef.current) {
+                        const quill = quillRef.current.getEditor();
+                        const range = quill.getSelection();
+                        quill.insertEmbed(range?.index || 0, 'image', imageUrl);
+                    }
+                } catch (error) {
+                    console.error('이미지 업로드 실패:', error);
+                }
+            }
+        };
+    };
+    
     const [formData, setFormData] = useState<BoothApplicationRequest>({
         boothTitle: '',
         boothDescription: '',
@@ -34,6 +74,31 @@ const BoothApplication: React.FC = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleExternalLinkChange = (index: number, field: 'displayText' | 'url', value: string) => {
+        setFormData(prev => {
+            const updatedLinks = [...(prev.boothExternalLinks || [])];
+            updatedLinks[index] = {
+                ...updatedLinks[index],
+                [field]: value
+            };
+            return { ...prev, boothExternalLinks: updatedLinks };
+        });
+    };
+
+    const addExternalLink = () => {
+        setFormData(prev => ({
+            ...prev,
+            boothExternalLinks: [...(prev.boothExternalLinks || []), { displayText: '', url: '' }]
+        }));
+    };
+
+    const removeExternalLink = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            boothExternalLinks: (prev.boothExternalLinks || []).filter((_, i) => i !== index)
+        }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -67,7 +132,42 @@ const BoothApplication: React.FC = () => {
                 </div>
                 <div style={{ marginBottom: '1rem' }}>
                     <label>부스 설명</label>
-                    <textarea name="boothDescription" value={formData.boothDescription} onChange={handleChange} required style={{ width: '100%', padding: '0.5rem', minHeight: '120px' }} />
+                    <div style={{ border: '1px solid #ccc', borderRadius: '8px', overflow: 'hidden' }}>
+                        <style>
+                            {`
+                                .ql-editor {
+                                    min-height: 200px !important;
+                                }
+                            `}
+                        </style>
+                        <ReactQuill
+                            ref={quillRef}
+                            theme="snow"
+                            value={formData.boothDescription}
+                            onChange={(value) => setFormData(prev => ({ ...prev, boothDescription: value }))}
+                            placeholder="부스 및 전시 내용을 자세히 설명해주세요"
+                            modules={{
+                                toolbar: [
+                                    [{ 'header': [1, 2, 3, false] }],
+                                    ['bold', 'italic', 'underline', 'strike'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    [{ 'color': [] }, { 'background': [] }],
+                                    ['link', 'image'],
+                                    ['clean']
+                                ],
+                                handlers: {
+                                    image: imageHandler
+                                }
+                            }}
+                            formats={[
+                                'header', 'bold', 'italic', 'underline', 'strike',
+                                'list', 'bullet', 'color', 'background', 'link', 'image'
+                            ]}
+                            style={{ 
+                                minHeight: '250px'
+                            }}
+                        />
+                    </div>
                 </div>
                 <div style={{ marginBottom: '1rem' }}>
                     <label>부스 이메일</label>
@@ -94,6 +194,46 @@ const BoothApplication: React.FC = () => {
                     <label>부스 배너 URL (선택사항)</label>
                     <input type="url" name="boothBannerUrl" value={formData.boothBannerUrl || ''} onChange={handleChange} style={{ width: '100%', padding: '0.5rem' }} />
                 </div>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <label>외부 링크 (홈페이지, SNS 등)</label>
+                        <button type="button" onClick={addExternalLink} style={{ padding: '0.3rem 0.8rem', fontSize: '0.9rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>
+                            링크 추가
+                        </button>
+                    </div>
+                    {(formData.boothExternalLinks || []).map((link, index) => (
+                        <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                            <input 
+                                type="text" 
+                                placeholder="링크 이름 (예: 홈페이지, 인스타그램)" 
+                                value={link.displayText}
+                                onChange={(e) => handleExternalLinkChange(index, 'displayText', e.target.value)}
+                                style={{ flex: '3', padding: '0.5rem' }}
+                            />
+                            <input 
+                                type="url" 
+                                placeholder="https://..." 
+                                value={link.url}
+                                onChange={(e) => handleExternalLinkChange(index, 'url', e.target.value)}
+                                style={{ flex: '5', padding: '0.5rem' }}
+                            />
+                            <button 
+                                type="button" 
+                                onClick={() => removeExternalLink(index)}
+                                style={{ padding: '0.5rem', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}
+                            >
+                                삭제
+                            </button>
+                        </div>
+                    ))}
+                    {(!formData.boothExternalLinks || formData.boothExternalLinks.length === 0) && (
+                        <p style={{ color: '#666', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                            부스 홈페이지, SNS 계정 등의 링크를 추가할 수 있습니다.
+                        </p>
+                    )}
+                </div>
+                
                 <hr style={{ margin: '2rem 0' }} />
                 <h2>담당자 정보</h2>
                 <div style={{ marginBottom: '1rem' }}>

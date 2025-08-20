@@ -116,6 +116,15 @@ export interface QrTicketData {
     manualCode: string; // 수동코드
 }
 
-// export interface BoothEntryRequestDto {
-//     boothReservationId: string,
-// }
+export interface BoothEntryRequestDto {
+    boothExperienceId: number,
+    boothId: number,
+    eventId: number,
+    qrCode: string
+}
+
+export interface BoothEntryResponseDto {
+    name: string,
+    message: string,
+    checkInTime: Date
+}

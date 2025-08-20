@@ -261,6 +261,7 @@ function AppContent() {
 
 
                         {/* 부스 관리자 전용 페이지 */}
+                        <Route path="/booth-admin/dashboard" element={<BoothAdminRouteGuard><BoothAdminDashboard /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/profile" element={<BoothAdminRouteGuard><BoothAdminProfile /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/dashboard" element={<BoothAdminRouteGuard><BoothAdminDashboard /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/qr-scan" element={<BoothAdminRouteGuard><BoothQRScanPage /></BoothAdminRouteGuard>} />
@@ -277,7 +278,6 @@ function AppContent() {
                         <Route path="/host/booth-applications" element={<BoothApplicationList />} />
                         <Route path="/host/booth-participants" element={<BoothParticipants />} />
                         <Route path="/host/booth-participants/:id" element={<BoothParticipantDetail />} />
-                        <Route path="/host/booth-applications/:id" element={<BoothApplicationDetail />} />
                         <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
                         <Route path="/host/revenue-summary" element={<RevenueSummary />} />
                         <Route path="/host/time-analysis" element={<TimeAnalysis />} />
