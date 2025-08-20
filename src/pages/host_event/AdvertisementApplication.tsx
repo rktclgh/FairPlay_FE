@@ -502,12 +502,9 @@ const AdvertisementApplication: React.FC = () => {
   };
 
 
-  // 내일부터 선택 가능한 날짜 계산
-  const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return toLocalDateStr(tomorrow);
-  };
+  // 선택 가능한 날짜 계산
+  const getToday = () => toLocalDateStr(new Date());
+
 
   // 달력 날짜 생성 함수
   const generateCalendarDays = () => {
@@ -768,8 +765,8 @@ const AdvertisementApplication: React.FC = () => {
                         const isEventDate = day.date <= 31; // 예시 달력 범위
                         const isSelected = mainBannerForm.some(item => item.date === day.dateString);
                         const isCurrentMonth = day.isCurrentMonth;
-                        const isBookable = isEventDate && day.dateString >= getMinDate();
-                        const isPastDate = day.dateString < getMinDate();
+                        const isBookable = isEventDate && day.dateString >= getToday();
+const isPastDate = day.dateString < getToday();
 
                         return (
                           <button
@@ -1067,7 +1064,7 @@ const AdvertisementApplication: React.FC = () => {
                     </label>
                     <input
                       type="date"
-                      min={getMinDate()}
+                      min={getToday()}
                       value={searchTopForm.startDate}
                       onChange={(e) => handleSearchTopChange('startDate', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1079,7 +1076,7 @@ const AdvertisementApplication: React.FC = () => {
                     </label>
                     <input
                       type="date"
-                      min={searchTopForm.startDate || getMinDate()}
+                      min={searchTopForm.startDate || getToday()}
                       value={searchTopForm.endDate}
                       onChange={(e) => handleSearchTopChange('endDate', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
