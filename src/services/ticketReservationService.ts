@@ -26,10 +26,22 @@ class TicketReservationService {
      */
     async processTicketReservation(
         eventId: number,
-        reservationData: ReservationRequest
+        reservationData: {
+            eventId: any;
+            scheduleId: any;
+            ticketId: any;
+            quantity: any;
+            price: any;
+            customerName: any;
+            customerPhone: any;
+            customerEmail: any;
+            paymentMethod: any;
+            paymentData: { imp_uid: any; merchant_uid: any; paid_amount: any; apply_num: any };
+        },
+        paymentId: number
     ): Promise<any> {
         try {
-            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/reservations`, {
+            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/reservations?paymentId=${paymentId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

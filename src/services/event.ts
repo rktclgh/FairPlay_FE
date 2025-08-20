@@ -11,6 +11,7 @@ import type {
     EventApplyResponseDto,
     Page, PageResponse, EventApplyListItem, EventApplyDetail
 } from './types/eventType';
+import type { HotPick } from "./event";
 
 export interface HotPick {
   id: number;
@@ -23,9 +24,27 @@ export interface HotPick {
 
 export const eventAPI = {
 
-    getHotPicks: async ({ size = 10 }: { size?: number }) => {
-    const res = await api.get<HotPick[]>("/api/banner/hot-picks", { params: { size } });
-    return res.data;
+    async getHotPicks({ size = 10 }: { size?: number } = {}): Promise<HotPick[]> {
+    // 1순위: /banners, 2순위: /banner (서버 환경에 따라 다를 수 있어 폴백)
+    const tries: Array<[string, any]> = [
+      ["/api/banners/hot-picks", { size }],
+      ["/api/banner/hot-picks", { size }],
+    ];
+
+    for (const [url, params] of tries) {
+      try {
+        const { data } = await api.get(url, { params });
+        // 서버가 배열 혹은 페이징 형태로 줄 수 있으니 안전하게 파싱
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.items)) return data.items;
+        if (Array.isArray(data?.content)) return data.content;
+        return [];
+      } catch {
+        // 다음 후보로 폴백
+      }
+    }
+    // 모든 시도가 실패한 경우에도 프론트는 깨지지 않게
+    return [];
   },
 
     /**

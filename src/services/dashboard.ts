@@ -63,11 +63,19 @@ export interface SessionSalesItem {
     status: string;
 }
 
+export interface SalesDailyTrend{
+    date: string;
+    amount: number;
+    count: number;
+}
+
 export interface SalesDashboardResponse {
     summary: SalesSummarySection;
     statusBreakdown: StatusBreakdownItem[];
     sessionSales: SessionSalesItem[];
+    salesDailyTrend : SalesDailyTrend[];
 }
+
 
 // 이벤트 기본 정보 타입 (백엔드 EventResponseDto에 맞게 수정)
 export interface EventBasicInfo {
@@ -95,7 +103,7 @@ export const dashboardAPI = {
         console.log('getMyEvent API 호출 시작');
         const token = localStorage.getItem('accessToken');
         console.log('토큰 확인:', token ? '토큰 있음' : '토큰 없음');
-        
+
         const response = await api.get('/api/events/my-event');
         console.log('담당 이벤트 응답:', response.data);
         return response.data;
@@ -106,12 +114,12 @@ export const dashboardAPI = {
      */
     getMyEventWithDetails: async (): Promise<EventDetailResponseDto | null> => {
         console.log('getMyEventWithDetails API 호출 시작');
-        
+
         try {
             // 담당 이벤트 조회
             const event = await dashboardAPI.getMyEvent();
             console.log('조회된 담당 이벤트:', event);
-            
+
             // 이벤트 상세 정보 조회
             try {
                 const detail = await dashboardAPI.getEventDetail(event.eventId);
@@ -135,8 +143,8 @@ export const dashboardAPI = {
      * 특정 이벤트의 예약 통계 조회
      */
     getEventDashboardStats: async (
-        eventId: number, 
-        startDate: string, 
+        eventId: number,
+        startDate: string,
         endDate: string
     ): Promise<EventDashboardStatsDto> => {
         console.log('예약 통계 API 호출:', { eventId, startDate, endDate });
@@ -154,8 +162,8 @@ export const dashboardAPI = {
      * 특정 이벤트의 매출 통계 조회
      */
     getSalesStatistics: async (
-        eventId: number, 
-        startDate: string, 
+        eventId: number,
+        startDate: string,
         endDate: string
     ): Promise<SalesDashboardResponse> => {
         console.log('매출 통계 API 호출:', { eventId, startDate, endDate });

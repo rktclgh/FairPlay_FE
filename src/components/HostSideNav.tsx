@@ -207,7 +207,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     e.currentTarget.style.color = location.pathname === "/host/reservation-list" ? "black" : "#00000080";
                                 }}
                             >
-                                예약자 명단
+                                참가자 명단
                             </Link>
                             <Link
                                 to="/host/reservation-stats"
