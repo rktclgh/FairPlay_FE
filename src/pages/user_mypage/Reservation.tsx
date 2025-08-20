@@ -3,12 +3,15 @@ import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
-import reservationService, { ReservationResponseDto } from "../../services/reservationService";
+import reservationService from "../../services/reservationService";
+import type { ReservationResponseDto } from "../../services/reservationService";
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 export default function Reservation(): JSX.Element {
     const { t } = useTranslation();
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
 
 
@@ -33,7 +36,7 @@ export default function Reservation(): JSX.Element {
     // 결제 상태에 따른 색상 결정
     const getPaymentStatusColor = (paymentStatus?: string) => {
         if (!paymentStatus) return 'bg-[#2196f3]'; // 결제 대기 (파란색)
-        
+
         switch (paymentStatus) {
             case '결제 완료':
             case 'COMPLETED':
@@ -71,15 +74,57 @@ export default function Reservation(): JSX.Element {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
-                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    {t('mypage.reservation.title')}
+            <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
+                {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+                <button
+                    onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                    className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+                >
+                    {isMobileSidebarOpen ? (
+                        <HiOutlineX className="w-6 h-6 text-gray-600" />
+                    ) : (
+                        <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+                    )}
+                </button>
+
+                {/* 모바일 사이드바 오버레이 */}
+                {isMobileSidebarOpen && (
+                    <div
+                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                    />
+                )}
+
+                {/* 모바일 사이드바 */}
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
+                    <div className="p-4">
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className="absolute top-4 right-4 p-2"
+                        >
+                            <HiOutlineX className="w-6 h-6 text-gray-600" />
+                        </button>
+                        <AttendeeSideNav className="!relative !top-0 !left-0" />
+                    </div>
                 </div>
 
-                <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-                                    <TopNav />
+                {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+                <div className="hidden md:block">
+                    <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                </div>
 
-                <div className="absolute top-[239px] left-64 right-0">
+                <TopNav />
+
+                {/* 제목 - 웹화면에서 원래 위치로 복원 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-4 right-4 top-24 relative">
+                    <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+                        {t('mypage.reservation.title')}
+                    </div>
+                </div>
+
+                {/* 콘텐츠 - 웹화면에서 원래 위치로 복원 */}
+                <div className="md:absolute md:top-[195px] md:left-64 md:right-0 left-4 right-4 top-32 relative">
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="text-lg">{t('mypage.reservation.loading')}</div>
@@ -95,22 +140,21 @@ export default function Reservation(): JSX.Element {
                                     key={reservation.reservationId}
                                     className="border-none shadow-none bg-transparent"
                                 >
-                                    <div className="p-0 flex items-start gap-[31px] relative">
+                                    <div className="p-0 flex flex-col md:flex-row items-start gap-[31px] relative">
                                         <img
-                                            className="w-[158px] h-[190px] object-cover rounded"
+                                            className="w-full md:w-[158px] h-[190px] object-cover rounded"
                                             alt="Event"
                                             src={reservation.eventThumbnailUrl || "/images/NoImage.png"}
                                         />
 
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-4 mb-[15px]">
+                                        <div className="flex-1 w-full">
+                                            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-[15px]">
                                                 <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[27px] whitespace-nowrap">
                                                     {reservation.eventName}
                                                 </h3>
-                                                {/* 부스 예약 버튼은 특정 조건에서만 표시 - 현재는 제거 */}
                                             </div>
 
-                                            <div className="mb-[15px] flex gap-[100px]">
+                                            <div className="mb-[15px] flex flex-col md:flex-row gap-4 md:gap-[100px]">
                                                 <div>
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
                                                         {t('mypage.reservation.bookingDate')}
@@ -138,7 +182,7 @@ export default function Reservation(): JSX.Element {
                                                 )}
                                             </div>
 
-                                            <div className="flex gap-[100px]">
+                                            <div className="flex flex-col md:flex-row gap-4 md:gap-[100px]">
                                                 <div>
                                                     <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
                                                         {t('mypage.reservation.paymentAmount')}
