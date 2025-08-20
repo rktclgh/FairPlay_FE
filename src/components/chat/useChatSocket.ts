@@ -73,7 +73,7 @@ export function useChatSocket(
       const token = localStorage.getItem("accessToken");
       
       // 환경변수에서 백엔드 URL 가져오기 (포트 불일치 문제 해결)
-      const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:8080';
+      const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL || 'https://fair-play.ink';
       const sockjsUrl = window.location.hostname === "localhost"
         ? `${backendUrl}/ws/chat-sockjs`
         : `${window.location.protocol}//${window.location.host}/ws/chat-sockjs`;
