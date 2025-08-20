@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
 import reservationService from "../../services/reservationService";
 import type { ReservationResponseDto } from "../../services/reservationService";
+import { eventAPI } from "../../services/event";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 export default function Reservation(): JSX.Element {
@@ -13,15 +14,46 @@ export default function Reservation(): JSX.Element {
     const [loading, setLoading] = useState(true);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+    // 카테고리 정보 캐시
+    const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
+
 
 
 
     useEffect(() => {
-        const loadReservations = async () => {
+        const loadReservationsWithCategories = async () => {
             try {
                 setLoading(true);
-                const data = await reservationService.getMyReservations();
-                setReservations(data);
+                const reservations = await reservationService.getMyReservations();
+
+                // 각 예약에 대해 카테고리 정보 추가 (캐시 활용)
+                const reservationsWithCategories = await Promise.all(
+                    reservations.map(async (reservation) => {
+                        // 캐시된 카테고리 정보가 있으면 사용
+                        if (eventCategoryCache.current.has(reservation.eventId)) {
+                            const cached = eventCategoryCache.current.get(reservation.eventId)!;
+                            return { ...reservation, ...cached };
+                        }
+
+                        try {
+                            const eventDetail = await eventAPI.getEventDetail(reservation.eventId);
+                            const categoryInfo = {
+                                mainCategory: eventDetail.mainCategory,
+                                subCategory: eventDetail.subCategory
+                            };
+
+                            // 캐시에 저장
+                            eventCategoryCache.current.set(reservation.eventId, categoryInfo);
+
+                            return { ...reservation, ...categoryInfo };
+                        } catch (error) {
+                            console.error(`이벤트 ${reservation.eventId} 카테고리 로드 실패:`, error);
+                            return reservation;
+                        }
+                    })
+                );
+
+                setReservations(reservationsWithCategories);
             } catch (error) {
                 console.error('예약 목록 로드 실패:', error);
                 toast.error(t('mypage.reservation.loadReservationsError'));
@@ -30,7 +62,7 @@ export default function Reservation(): JSX.Element {
             }
         };
 
-        loadReservations();
+        loadReservationsWithCategories();
     }, []);
 
     // 결제 상태에 따른 색상 결정
@@ -152,6 +184,26 @@ export default function Reservation(): JSX.Element {
                                                 <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[27px] whitespace-nowrap">
                                                     {reservation.eventName}
                                                 </h3>
+
+                                                {/* 카테고리 정보 - 행사 타이틀 오른쪽에 배치 */}
+                                                {reservation.mainCategory && (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`px-3 py-1 rounded text-xs ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                                                            reservation.mainCategory === "공연" ? "bg-red-100 text-red-800 border border-red-200" :
+                                                                reservation.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border border-green-200" :
+                                                                    reservation.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
+                                                                        reservation.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border border-gray-300" :
+                                                                            "bg-gray-100 text-gray-700 border border-gray-200"
+                                                            }`}>
+                                                            {reservation.mainCategory}
+                                                        </span>
+                                                        {reservation.subCategory && (
+                                                            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
+                                                                {reservation.subCategory}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="mb-[15px] flex flex-col md:flex-row gap-4 md:gap-[100px]">
