@@ -1,48 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
-
-interface AccessLog {
-    id: number;
-    userId: number;
-    name: string;
-    user_role_code_id: number;
-    ip: string;
-    userAgent: string;
-    loginTime: string;
-}
-
-interface PageableResponse {
-    content: AccessLog[];
-    pageable: {
-        pageNumber: number;
-        pageSize: number;
-        sort: {
-            empty: boolean;
-            sorted: boolean;
-            unsorted: boolean;
-        };
-        offset: number;
-        unpaged: boolean;
-        paged: boolean;
-    };
-    last: boolean;
-    totalElements: number;
-    totalPages: number;
-    size: number;
-    number: number;
-    sort: {
-        empty: boolean;
-        sorted: boolean;
-        unsorted: boolean;
-    };
-    first: boolean;
-    numberOfElements: number;
-    empty: boolean;
-}
+import { adminSecurityService, type LoginHistoryDto } from "../../services/adminSecurity.service";
 
 export const AccessLogs: React.FC = () => {
-    const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
+    const [accessLogs, setAccessLogs] = useState<LoginHistoryDto[]>([]);
     const [totalElements, setTotalElements] = useState<number>(0);
     const [totalPages, setTotalPages] = useState<number>(0);
     const [currentPage, setCurrentPage] = useState<number>(0);
@@ -72,132 +34,65 @@ export const AccessLogs: React.FC = () => {
         return `${browser} / ${os}`;
     };
 
-    // 날짜 포맷 함수
-    const formatDateTime = (dateString: string) => {
-        return dateString;
+    // 사용자 역할 코드를 문자열로 변환
+    const getRoleName = (roleCodeId: number) => {
+        switch (roleCodeId) {
+            case 1:
+                return '전체 관리자';
+            case 2:
+                return '행사 관리자';
+            case 3:
+                return '부스 관리자';
+            default:
+                return '일반 유저';
+        }
     };
 
-    // 전체 목업 데이터
-    const allMockData: AccessLog[] = [
-        {
-            id: 1,
-            userId: 1,
-            name: "테스트",
-            user_role_code_id: 1,
-            ip: "0:0:0:0:0:0:0:1",
-            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-            loginTime: "2025-08-08T16:42:40"
-        },
-        {
-            id: 2,
-            userId: 2,
-            name: "관리자",
-            user_role_code_id: 3,
-            ip: "192.168.1.100",
-            userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-            loginTime: "2025-08-08T15:30:15"
-        },
-        {
-            id: 3,
-            userId: 3,
-            name: "김민수",
-            user_role_code_id: 1,
-            ip: "192.168.1.105",
-            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-            loginTime: "2025-08-09T09:15:22"
-        },
-        {
-            id: 4,
-            userId: 4,
-            name: "이영희",
-            user_role_code_id: 2,
-            ip: "203.123.45.67",
-            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-            loginTime: "2025-08-09T14:23:11"
-        },
-        {
-            id: 5,
-            userId: 5,
-            name: "박철수",
-            user_role_code_id: 1,
-            ip: "10.0.0.50",
-            userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-            loginTime: "2025-08-10T11:45:33"
-        }
-    ];
+    // 날짜 포맷 함수
+    const formatDateTime = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
 
-    // 접속 이력 데이터 로드 (실제 API 연동 시 구현)
-    const loadAccessLogs = async (page: number = 0) => {
+    // 접속 이력 데이터 로드 (실제 API 호출)
+    const loadAccessLogs = useCallback(async (page: number = 0) => {
         setLoading(true);
         try {
-            // 필터링 적용
-            let filteredData = allMockData;
+            const response = await adminSecurityService.getLoginLogs({
+                page,
+                size: pageSize,
+                email: filters.userEmail || undefined,
+                from: filters.fromDate || undefined,
+                to: filters.toDate || undefined
+            });
 
-            // 사용자 이메일로 필터링 (이름으로 검색)
-            if (filters.userEmail) {
-                filteredData = filteredData.filter(log =>
-                    log.name.toLowerCase().includes(filters.userEmail.toLowerCase()) ||
-                    `user${log.userId}@example.com`.toLowerCase().includes(filters.userEmail.toLowerCase())
-                );
-            }
-
-            // From 날짜로 필터링
-            if (filters.fromDate) {
-                filteredData = filteredData.filter(log =>
-                    log.loginTime >= filters.fromDate
-                );
-            }
-
-            // To 날짜로 필터링
-            if (filters.toDate) {
-                filteredData = filteredData.filter(log =>
-                    log.loginTime <= filters.toDate + 'T23:59:59'
-                );
-            }
-
-            // 페이지네이션 적용
-            const totalElements = filteredData.length;
-            const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
-            const startIndex = page * pageSize;
-            const endIndex = startIndex + pageSize;
-            const pageData = filteredData.slice(startIndex, endIndex);
-
-            const mockData: PageableResponse = {
-                content: pageData,
-                pageable: {
-                    pageNumber: page,
-                    pageSize: 10,
-                    sort: { empty: false, sorted: true, unsorted: false },
-                    offset: page * 10,
-                    unpaged: false,
-                    paged: true
-                },
-                last: page >= totalPages - 1,
-                totalElements: totalElements,
-                totalPages: totalPages,
-                size: 10,
-                number: page,
-                sort: { empty: false, sorted: true, unsorted: false },
-                first: page === 0,
-                numberOfElements: pageData.length,
-                empty: pageData.length === 0
-            };
-
-            setAccessLogs(mockData.content);
-            setTotalElements(mockData.totalElements);
-            setTotalPages(mockData.totalPages);
-            setCurrentPage(mockData.number);
+            setAccessLogs(response.content);
+            setTotalElements(response.totalElements);
+            setTotalPages(response.totalPages);
+            setCurrentPage(response.number);
         } catch (error) {
             console.error('접속 이력 로드 중 오류:', error);
+            // 에러 시 안전한 초기값으로 설정
+            setAccessLogs([]);
+            setTotalElements(0);
+            setTotalPages(1);
+            setCurrentPage(0);
         } finally {
             setLoading(false);
         }
-    };
+    }, [pageSize, filters.userEmail, filters.fromDate, filters.toDate]);
 
     useEffect(() => {
         setCurrentPage(0); // 필터 변경 시 첫 페이지로 이동
         loadAccessLogs(0);
-    }, [filters]);
+    }, [loadAccessLogs]);
 
     // 초기화 핸들러
     const handleReset = () => {
@@ -294,6 +189,9 @@ export const AccessLogs: React.FC = () => {
                                             이름
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            역할
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             이메일
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -310,18 +208,18 @@ export const AccessLogs: React.FC = () => {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                                            <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                                                 로딩 중...
                                             </td>
                                         </tr>
-                                    ) : accessLogs.length === 0 ? (
+                                    ) : !accessLogs || accessLogs.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                                            <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                                                 접속 이력이 없습니다.
                                             </td>
                                         </tr>
                                     ) : (
-                                        accessLogs.map((log) => (
+                                        (accessLogs || []).map((log) => (
                                             <tr key={log.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {formatDateTime(log.loginTime)}
@@ -330,7 +228,18 @@ export const AccessLogs: React.FC = () => {
                                                     {log.name}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    user{log.userId}@example.com
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        log.user_role_code_id === 3 
+                                                            ? 'bg-red-100 text-red-800' 
+                                                            : log.user_role_code_id === 2 
+                                                            ? 'bg-blue-100 text-blue-800' 
+                                                            : 'bg-green-100 text-green-800'
+                                                    }`}>
+                                                        {getRoleName(log.user_role_code_id)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {log.email}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {log.ip}
@@ -365,7 +274,7 @@ export const AccessLogs: React.FC = () => {
                                     이전
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
+                                {Array.from({ length: totalPages || 1 }, (_, i) => i).map((page) => (
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}

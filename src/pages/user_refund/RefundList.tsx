@@ -92,44 +92,44 @@ export const RefundList = () => {
                 const data: RefundData[] = await response.json();
                 // 클라이언트 측에서 필터링 및 페이징 처리
                 let filteredData = data;
-                
+
                 // 행사명 필터링
                 if (filters.eventName && filters.eventName.trim()) {
-                    filteredData = filteredData.filter(item => 
+                    filteredData = filteredData.filter(item =>
                         item.eventName?.toLowerCase().includes(filters.eventName!.toLowerCase())
                     );
                 }
-                
+
                 // 결제일자 필터링
                 if (filters.paymentDateFrom) {
                     const fromDate = new Date(filters.paymentDateFrom);
-                    filteredData = filteredData.filter(item => 
+                    filteredData = filteredData.filter(item =>
                         new Date(item.paidAt) >= fromDate
                     );
                 }
-                
+
                 if (filters.paymentDateTo) {
                     const toDate = new Date(filters.paymentDateTo);
                     toDate.setHours(23, 59, 59, 999);
-                    filteredData = filteredData.filter(item => 
+                    filteredData = filteredData.filter(item =>
                         new Date(item.paidAt) <= toDate
                     );
                 }
-                
+
                 // 환불 상태 필터링
                 if (filters.refundStatus) {
-                    filteredData = filteredData.filter(item => 
+                    filteredData = filteredData.filter(item =>
                         item.refundStatus === filters.refundStatus
                     );
                 }
-                
+
                 // 결제 유형 필터링
                 if (filters.paymentTargetType) {
-                    filteredData = filteredData.filter(item => 
+                    filteredData = filteredData.filter(item =>
                         item.paymentTargetType === filters.paymentTargetType
                     );
                 }
-                
+
                 // 정렬
                 filteredData.sort((a, b) => {
                     const aValue = a.refundCreatedAt;
@@ -140,12 +140,12 @@ export const RefundList = () => {
                         return new Date(aValue).getTime() - new Date(bValue).getTime();
                     }
                 });
-                
+
                 // 페이징
                 const startIndex = filters.page * filters.size;
                 const endIndex = startIndex + filters.size;
                 const paginatedData = filteredData.slice(startIndex, endIndex);
-                
+
                 setRefunds(paginatedData);
                 setTotalElements(filteredData.length);
                 setTotalPages(Math.ceil(filteredData.length / filters.size));
@@ -219,7 +219,7 @@ export const RefundList = () => {
                     </div>
 
                     {/* 검색 필터 */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 mb-6">
+                    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                         {/* 검색 조건 헤더 */}
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium text-gray-900">검색 조건</h3>
@@ -232,7 +232,7 @@ export const RefundList = () => {
                                 초기화
                             </button>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -242,7 +242,7 @@ export const RefundList = () => {
                                     type="text"
                                     value={filters.eventName || ""}
                                     onChange={(e) => setFilters(prev => ({ ...prev, eventName: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="행사명 검색"
                                 />
                             </div>
@@ -254,7 +254,7 @@ export const RefundList = () => {
                                     type="date"
                                     value={filters.paymentDateFrom || ""}
                                     onChange={(e) => setFilters(prev => ({ ...prev, paymentDateFrom: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                             <div>
@@ -265,7 +265,7 @@ export const RefundList = () => {
                                     type="date"
                                     value={filters.paymentDateTo || ""}
                                     onChange={(e) => setFilters(prev => ({ ...prev, paymentDateTo: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                             <div>
@@ -275,7 +275,7 @@ export const RefundList = () => {
                                 <select
                                     value={filters.refundStatus || ""}
                                     onChange={(e) => setFilters(prev => ({ ...prev, refundStatus: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="">전체</option>
                                     <option value="REQUESTED">요청</option>
@@ -290,7 +290,7 @@ export const RefundList = () => {
                                 <select
                                     value={filters.paymentTargetType || ""}
                                     onChange={(e) => setFilters(prev => ({ ...prev, paymentTargetType: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="">전체</option>
                                     <option value="RESERVATION">예약</option>
@@ -302,7 +302,7 @@ export const RefundList = () => {
                         <div className="flex justify-end items-center mt-6">
                             <button
                                 onClick={handleRefundRequest}
-                                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+                                className="border border-green-600 text-green-600 px-6 py-2 rounded-[10px] hover:bg-green-50 flex items-center gap-2 transition-colors"
                             >
                                 <Plus className="w-4 h-4" />
                                 환불 요청
@@ -311,7 +311,7 @@ export const RefundList = () => {
                     </div>
 
                     {/* 검색 결과 요약 */}
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
                         <div className="flex justify-between items-center">
                             <div className="text-sm text-gray-600">
                                 전체 <span className="font-bold text-blue-600">{totalElements}</span>건의 환불 요청
@@ -455,11 +455,10 @@ export const RefundList = () => {
                                                     <button
                                                         key={pageNum}
                                                         onClick={() => handlePageChange(pageNum)}
-                                                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                                            pageNum === currentPage
+                                                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pageNum === currentPage
                                                                 ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                                                                 : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {pageNum + 1}
                                                     </button>
