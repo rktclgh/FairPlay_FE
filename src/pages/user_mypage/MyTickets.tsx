@@ -73,10 +73,10 @@ export default function MyTickets(): JSX.Element {
     // 모바일 사이드바 상태
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-    // ✅  웨이팅 메세지 설정
-    const handleWebSocketMessage = useCallback((msg: string) => {
-        setWaitingCount(parseInt(msg));
-    }, []);
+    // // ✅  웨이팅 메세지 설정
+    // const handleWebSocketMessage = useCallback((msg: string) => {
+    //     setWaitingCount(parseInt(msg));
+    // }, []);
 
     // 카테고리 정보 캐시
     const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
@@ -88,7 +88,7 @@ export default function MyTickets(): JSX.Element {
     });
 
     // ✅ 부스 웨이팅 웹소켓 - 주석처리 (더미 데이터 사용)
-    useWaitingSocket(userId > 0 ? userId : 0, handleWebSocketMessage);
+    // useWaitingSocket(userId > 0 ? userId : 0, handleWebSocketMessage);
 
     //======= 예약 내역 조회 ======= // 
     useEffect(() => {
@@ -254,6 +254,10 @@ export default function MyTickets(): JSX.Element {
         setSearchTerm("");
         setSavedEventId(0);
         setBooths(null);
+        setSelectedBooth(null);
+        setIsWaiting(false);
+        setAgreeToTerms(false);
+        setSelectedExperience(null);
     };
 
     const handleBoothDetailOpen = async (boothId: number) => {
@@ -291,6 +295,7 @@ export default function MyTickets(): JSX.Element {
         setSelectedBooth(null);
         setIsWaiting(false);
         setAgreeToTerms(false);
+        setSelectedExperience(null);
     };
 
     const handleSelectExperience = (exp: BoothExperience) => {
@@ -317,11 +322,17 @@ export default function MyTickets(): JSX.Element {
         const requestData: BoothExperienceReservationRequest = {
             notes: "부스 웨이팅"
         };
-        const res = await createReservation(selectedExperience.experienceId, userId, requestData);
-        setSavedExperience(res);
-        // 실제 대기 등록 로직은 여기에 구현
-        alert("대기 등록이 완료되었습니다.");
-        handleBoothDetailClose();
+
+
+        try {
+            const res = await createReservation(selectedExperience.experienceId, userId, requestData);
+            setSavedExperience(res);
+            // 실제 대기 등록 로직은 여기에 구현
+            alert("대기 등록이 완료되었습니다.");
+            handleBoothDetailClose();   
+        } catch (error) {
+            alert(error.response.data);
+        }
     };
 
     const handleParticipantListOpen = (reservation: ReservationResponseDto, bookingDate: string) => {

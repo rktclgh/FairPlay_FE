@@ -9,10 +9,10 @@ import type { BoothExperience } from "../../services/types/boothExperienceType";
 import type { BoothDetailResponse } from '../../types/booth';
 import { checkBoothQr } from "../../services/qrTicket";
 import { getBoothExperiences } from "../../services/boothExperienceService";
-import {getBoothDetails} from "../../api/boothApi";
-import { useLocation } from 'react-router-dom';
+import { getBoothDetails } from "../../api/boothApi";
 
 interface ScannedTicket {
+    qrCode: string;
     participantName: string;
     experienceTitle: string;
     experienceDate: string;
@@ -24,9 +24,7 @@ interface ScannedTicket {
 
 
 const BoothQRScanPage: React.FC = () => {
-    const location = useLocation();
-    const { eventId, boothId } = location.state;
-    const [isScanning, setIsScanning] = useState(false);
+    const [isCameraActive, setIsCameraActive] = useState(false);
     const [scannedTickets, setScannedTickets] = useState<ScannedTicket[]>([]);
     const [currentTicket, setCurrentTicket] = useState<ScannedTicket | null>(null);
     const [showResult, setShowResult] = useState(false);
@@ -35,24 +33,9 @@ const BoothQRScanPage: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const [booth, setBooth] = useState<BoothDetailResponse | null>();
 
-    useEffect(() => {
-        const fetchExperiences = async () =>  {
-            const res = await getBoothExperiences(boothId);
-            setExperiences(res);
-        };
-        fetchExperiences();
-    },[])
-
-    useEffect(() => {
-        return () => {
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-            }
-        };
-    }, []);
-
-    const startScanning = async () => {
+        const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -65,116 +48,139 @@ const BoothQRScanPage: React.FC = () => {
 
             // 먼저 스트림을 저장하고, 비디오가 렌더되도록 상태를 변경
             streamRef.current = stream;
-            setIsScanning(true);
+            setIsCameraActive(true);
         } catch (error) {
-            console.error('카메라 접근 실패:', error);
-            toast.error('카메라에 접근할 수 없습니다.');
+            console.error('카메라를 시작할 수 없습니다:', error);
+            alert('카메라 접근 권한이 필요합니다.');
         }
-    };
+        };
+    
+    useEffect(() => {
+        const fetchBooth = async () => {
+            const res = await getBoothDetails(5, 12);
+            setBooth(res);
 
-    const stopScanning = () => {
+        }
+        const fetchExperiences = async () =>  {
+            const res = await getBoothExperiences(5);
+            setExperiences(res);
+        };
+        fetchBooth();
+        fetchExperiences();
+    },[])
+
+    // 컴포넌트 언마운트 시 카메라 정리
+    useEffect(() => {
+        return () => {
+            stopCamera();
+        };
+    }, []);
+
+
+
+    // 카메라 중지
+    const stopCamera = () => {
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
         }
         if (videoRef.current) {
-            try {
-                videoRef.current.srcObject = null;
-            } catch { }
+            videoRef.current.srcObject = null;
         }
-        setIsScanning(false);
+        setIsCameraActive(false);
     };
 
-    // 비디오 엘리먼트가 렌더된 뒤 스트림을 연결하고 재생 및 스캔 시작
-    useEffect(() => {
-        const video = videoRef.current;
-        const stream = streamRef.current;
-        if (!isScanning || !video || !stream) return;
 
+       // 비디오 엘리먼트가 렌더된 뒤 스트림을 연결
+       useEffect(() => {
+           const video = videoRef.current;
+           const stream = streamRef.current;
+   
+           if (!isCameraActive || !video || !stream) {
+               return;
+           }
+   
+           try {
+               (video as HTMLVideoElement).srcObject = stream;
+               const playPromise = video.play();
+               if (playPromise !== undefined) {
+                   playPromise.catch((err) => {
+                       console.error('비디오 재생 실패:', err);
+                   });
+               }
+           } catch (err) {
+               console.error('비디오 소스 연결 실패:', err);
+           }
+   
+           video.onloadedmetadata = () => {
+               console.log('비디오 메타데이터 로드 완료');
+               console.log('비디오 크기:', video.videoWidth, 'x', video.videoHeight);
+           };
+   
+           video.onplay = () => {
+               console.log('비디오 재생 시작');
+           };
+   
+           video.onerror = (e) => {
+               console.error('비디오 에러:', e);
+           };
+       }, [isCameraActive]);
+
+
+    const handleQRCodeScanned = async () => {
         try {
-            video.srcObject = stream;
-            const playPromise = video.play?.();
-            if (playPromise) {
-                playPromise.catch(() => {
-                    /* autoplay가 막혀도 사용자 제스처 버튼으로 시작되므로 무시 */
-                });
-            }
-        } catch (err) {
-            console.error('비디오 소스 연결 실패:', err);
-        }
 
-        // 비디오 연결 후 스캔 루프 시작
-        scanQRCode();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isScanning]);
+            // if (!selectedExperience) {
+            //     toast.error('체험을 선택해주세요.');
+            //     return;
+            // }
 
-    const scanQRCode = () => {
-        if (!isScanning || !videoRef.current || !canvasRef.current) return;
+            if (!videoRef.current) return;
+        
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            if (!context) return;
 
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-
-        if (!context) return;
-
-        const scanFrame = () => {
-            if (!isScanning) return;
-
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // 현재 비디오 프레임 캡처
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+            console.log(qrCode.data);
+            if (qrCode) {
+             
+                // 부스 QR 스캔 위한 dto 생성
+                const boothEntryRequestDto: BoothEntryRequestDto = {
+                    boothExperienceId: 2,
+                    boothId: 12,
+                    eventId: 5,
+                    qrCode: qrCode
+                };
 
-            if (code) {
-                handleQRCodeScanned(code.data);
-                return;
+                // 부스 QR 스캔 API호출
+                const res = await checkBoothQr(boothEntryRequestDto);
+                
+                // 스캔 결과에 따라 스캔된 티켓 정보 생성
+                const scannedTicket: ScannedTicket = {
+                    qrCode: qrCode.data,
+                    participantName: res.name || '김참가자',
+                    experienceTitle:  res.name,
+                    experienceDate: selectedExperience?.experienceDate || '2024-01-15',
+                    startTime: selectedExperience?.startTime || '10:00',
+                    endTime: selectedExperience?.endTime || '11:00',
+                    status: 'VALID',
+                    scannedAt: new Date(res.checkInTime)
+                };
+                setCurrentTicket(scannedTicket);
+                setShowResult(true);
+                stopCamera();
+
+                // 스캔된 티켓을 목록에 추가
+                setScannedTickets(prev => [scannedTicket, ...prev]);
+
             }
-
-            requestAnimationFrame(scanFrame);
-        };
-
-        scanFrame();
-    };
-
-    const handleQRCodeScanned = async (qrCode: string) => {
-        try {
-
-            if (!selectedExperience) {
-                toast.error('체험을 선택해주세요.');
-                return;
-            }
-
-            // 부스 QR 스캔 위한 dto 생성
-            const boothEntryRequestDto: BoothEntryRequestDto = {
-                boothExperienceId: selectedExperience.experienceId,
-                boothId: boothId,
-                eventId: eventId,
-                qrCode: qrCode
-            };
-
-            // 부스 QR 스캔 API호출
-            const res = await checkBoothQr(boothEntryRequestDto);
-            
-            // 스캔 결과에 따라 스캔된 티켓 정보 생성
-            const scannedTicket: ScannedTicket = {
-                participantName: res.name|| '김참가자',
-                experienceTitle: selectedExperience.title || '더미 체험 A',
-                experienceDate: selectedExperience.experienceDate || '2024-01-15',
-                startTime: selectedExperience.startTime || '10:00',
-                endTime: selectedExperience.endTime || '11:00',
-                status: 'VALID',
-                scannedAt: res.checkInTime
-            };
-            setCurrentTicket(scannedTicket);
-            setShowResult(true);
-            stopScanning();
-
-            // 스캔된 티켓을 목록에 추가
-            setScannedTickets(prev => [scannedTicket, ...prev]);
-
-            toast.success('QR 코드가 성공적으로 스캔되었습니다!');
         } catch (error) {
             console.error('QR 코드 파싱 실패:', error);
             toast.error('유효하지 않은 QR 코드입니다.');
@@ -186,7 +192,7 @@ const BoothQRScanPage: React.FC = () => {
             // 티켓 상태를 '사용됨'으로 변경
             setScannedTickets(prev =>
                 prev.map(ticket =>
-                    ticket.id === currentTicket.id
+                    ticket.qrCode === currentTicket.qrCode
                         ? { ...ticket, status: 'ALREADY_USED' }
                         : ticket
                 )
@@ -202,7 +208,7 @@ const BoothQRScanPage: React.FC = () => {
             // 티켓 상태를 '무효'로 변경
             setScannedTickets(prev =>
                 prev.map(ticket =>
-                    ticket.id === currentTicket.id
+                    ticket.qrCode === currentTicket.qrCode
                         ? { ...ticket, status: 'INVALID' }
                         : ticket
                 )
@@ -255,7 +261,7 @@ const BoothQRScanPage: React.FC = () => {
 
                             {/* 스캔 영역 */}
                             <div className="bg-gray-50 border-2 border-gray-200 rounded-[10px] p-8 mb-6 flex flex-col items-center justify-center min-h-[300px]">
-                                {isScanning ? (
+                                {isCameraActive ? (
                                     <div className="w-full flex flex-col items-center">
                                         <div className="relative w-full max-w-md h-64 bg-black rounded-lg overflow-hidden mb-4">
                                             <video
@@ -264,6 +270,7 @@ const BoothQRScanPage: React.FC = () => {
                                                 playsInline
                                                 muted
                                                 className="w-full h-full object-cover"
+                                                onClick={handleQRCodeScanned}
                                             />
                                             {/* 스캔 가이드 오버레이 */}
                                             <div className="absolute inset-0 border-2 border-blue-500 border-dashed pointer-events-none"></div>
@@ -287,16 +294,16 @@ const BoothQRScanPage: React.FC = () => {
 
                             {/* 카메라 제어 버튼 */}
                             <div className="text-center">
-                                {isScanning ? (
+                                {isCameraActive ? (
                                     <button
-                                        onClick={stopScanning}
+                                        onClick={stopCamera}
                                         className="px-6 py-2 rounded-[10px] transition-colors text-sm bg-red-500 text-white hover:bg-red-600"
                                     >
                                         카메라 중지
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={startScanning}
+                                        onClick={startCamera}
                                         className="px-6 py-2 rounded-[10px] transition-colors text-sm bg-blue-500 text-white hover:bg-blue-600"
                                     >
                                         카메라 시작
@@ -315,19 +322,19 @@ const BoothQRScanPage: React.FC = () => {
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                         <span className="font-medium text-gray-700">부스명</span>
-                                        <span className="text-gray-900">더미 부스 A</span>
+                                        <span className="text-gray-900">{ booth?.boothTitle}</span>
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                         <span className="font-medium text-gray-700">이벤트명</span>
-                                        <span className="text-gray-900">더미 이벤트</span>
+                                        <span className="text-gray-900">{ booth?.boothTitle}</span>
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                         <span className="font-medium text-gray-700">위치</span>
-                                        <span className="text-gray-900">A구역 1번</span>
+                                        <span className="text-gray-900">{ booth?.location}</span>
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                         <span className="font-medium text-gray-700">운영시간</span>
-                                        <span className="text-gray-900">09:00 - 18:00</span>
+                                        <span className="text-gray-900">{booth?.startDate} - { booth?.endDate}</span>
                                     </div>
                                 </div>
                             </div>

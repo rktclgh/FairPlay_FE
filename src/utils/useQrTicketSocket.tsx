@@ -52,7 +52,7 @@ export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) =
             );
         
             const subBooth = stomp.subscribe(
-          `/topic/booth/${qrTicketId}`,
+          `/topic/booth/qr/${qrTicketId}`,
             (message) => {
               handleMessage(message.body);
             }
