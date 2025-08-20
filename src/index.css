@@ -8,7 +8,8 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* iOS 스크롤 개선 */
@@ -63,6 +64,22 @@ html, body {
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* 커스텀 스크롤바 */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
   }
 }
 
