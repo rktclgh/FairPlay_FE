@@ -54,17 +54,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
 
     setIsCheckingNickname(true);
-    
+
     try {
       const response = await api.get('/api/users/check-nickname', {
         params: {
           nickname: nickname
         }
       });
-      
+
       // 백엔드에서 duplicate: true면 중복됨, false면 사용 가능
       const isDuplicated = response.data.duplicate;
-      
+
       if (!isDuplicated) {
         setNicknameCheckResult({
           checked: true,
@@ -104,7 +104,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   // 휴대폰 번호 포맷팅 함수
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/[^0-9]/g, '');
-    
+
     if (numbers.length <= 3) {
       return numbers;
     } else if (numbers.length <= 7) {
@@ -121,7 +121,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!phone.trim() || !nickname.trim()) {
       toast.error('모든 필드를 입력해주세요.');
       return;
@@ -145,13 +145,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
 
     setLoading(true);
-    
+
     try {
       await api.post('/api/users/mypage/edit', {
         phone: phone,
         nickname: nickname
       });
-      
+
       toast.success('개인정보가 수정되었습니다.');
       onSuccess();
       onClose();
@@ -165,7 +165,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
       <div className="bg-white rounded-[10px] shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
         {/* 모달 헤더 */}
         <div className="flex items-center justify-center p-6 border-b border-gray-200">

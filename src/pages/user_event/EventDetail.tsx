@@ -610,6 +610,23 @@ const EventDetail = (): JSX.Element => {
                                 </button>
 
                             </div>
+                            {/* 카테고리 정보 */}
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className={`px-3 py-1 text-sm font-medium rounded border ${eventData.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                    eventData.mainCategory === "공연" ? "bg-red-100 text-red-800 border-red-200" :
+                                        eventData.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border-green-200" :
+                                            eventData.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                                eventData.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border-gray-300" :
+                                                    "bg-gray-100 text-gray-700 border-gray-200"
+                                    }`}>
+                                    {eventData.mainCategory}
+                                </span>
+                                {eventData.subCategory && (
+                                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded border border-gray-200">
+                                        {eventData.subCategory}
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-[#00000099] text-xl mt-1">
                                 {eventData.titleEng}
                             </p>

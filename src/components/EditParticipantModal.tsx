@@ -87,7 +87,7 @@ export default function EditParticipantModal({
     if (!isOpen || !participant) return <></>;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
                 {/* 헤더 */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
