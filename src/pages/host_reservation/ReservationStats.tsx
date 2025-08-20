@@ -146,7 +146,6 @@ export const ReservationStats = () => {
 
 
 
-
     // 성별 분포 데이터
     const genderData = [
         { name: '남성', value: 60, color: '#3B82F6' },
