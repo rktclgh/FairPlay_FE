@@ -43,7 +43,7 @@ export const updateBoothAdminInfo = (eventId: number, boothId: number, data: Boo
 
 export const getUserRecentlyEventWaitingCount = async (eventId: number): Promise<BoothUserRecentlyWaitingCount> => {
     const accessToken = localStorage.getItem("accessToken");
-    const res = await api.get<BoothUserRecentlyWaitingCount>(`/user/${eventId}/waiting-count`, {
+    const res = await api.get<BoothUserRecentlyWaitingCount>(`/api/booth-experiences/user/${eventId}/waiting-count`, {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
     return res.data;

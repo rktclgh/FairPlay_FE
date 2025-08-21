@@ -143,5 +143,6 @@ export interface BoothAdminResponse {
 export interface BoothUserRecentlyWaitingCount{
     eventId: number;
     eventName: string;
-    waitingCount: number
+    waitingCount: number;
+    message: string;
 }

@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { createReservation, getAvailableExperiences } from "../../services/boothExperienceService";
-import { getBooths, /* getUserRecentlyEventWaitingCount, */ getBoothDetails } from "../../api/boothApi";
+import { getBooths,  getUserRecentlyEventWaitingCount,  getBoothDetails } from "../../api/boothApi";
 import type { BoothExperienceReservationRequest, BoothExperienceFilters, BoothExperience, BoothExperienceReservation } from "../../services/types/boothExperienceType";
 import type { BoothSummary } from '../../types/booth';
 
@@ -56,6 +56,7 @@ export default function MyTickets(): JSX.Element {
     //======= 웨이팅 순서 ======= //
     const [waitingCount, setWaitingCount] = useState(0);
     const [savedExperience, setSavedExperience] = useState<BoothExperienceReservation | null>();
+    const [waitingMessage, setWaitingMessage] = useState("");
 
     //======= 조회중인 사용자 ID ======= //
     const [userId, setUserId] = useState(0);
@@ -74,9 +75,12 @@ export default function MyTickets(): JSX.Element {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     // // ✅  웨이팅 메세지 설정
-    // const handleWebSocketMessage = useCallback((msg: string) => {
-    //     setWaitingCount(parseInt(msg));
-    // }, []);
+    const handleWebSocketMessage = useCallback((msg: string) => {
+        const data = JSON.parse(msg);
+        console.log(data.waitingCount)
+        setWaitingCount(parseInt(data.waitingCount));
+        setWaitingMessage(data.statusMessage);
+    }, []);
 
     // 카테고리 정보 캐시
     const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
@@ -88,7 +92,7 @@ export default function MyTickets(): JSX.Element {
     });
 
     // ✅ 부스 웨이팅 웹소켓 - 주석처리 (더미 데이터 사용)
-    // useWaitingSocket(userId > 0 ? userId : 0, handleWebSocketMessage);
+    useWaitingSocket(userId > 0 ? userId : 0, handleWebSocketMessage);
 
     //======= 예약 내역 조회 ======= // 
     useEffect(() => {
@@ -233,14 +237,16 @@ export default function MyTickets(): JSX.Element {
         try {
             const boothsData = await getBooths(eventId); // 부스 요약 목록
             console.log('getBooths 응답:', boothsData);
-            // const res = await getUserRecentlyEventWaitingCount(eventId); // 웨이팅 API 주석처리
+            const waitingData = await getUserRecentlyEventWaitingCount(eventId); // 웨이팅 API 주석처리
 
             // 현재 이벤트 정보를 찾아서 selectedEventForPamphlet에 설정
             const currentEvent = reservations.find(r => r.eventId === eventId);
 
             setSavedEventId(eventId);
             setSelectedEventForPamphlet(currentEvent || null);
-            // setWaitingCount(res.waitingCount); // 더미 데이터로 대체
+            setWaitingCount(waitingData.waitingCount); // 웨이팅 번호에 대해 초기값 설정
+            setWaitingMessage(waitingData.message);
+            console.log("waitingCount:",waitingData.waitingCount,"message:",waitingData.message)
             setBooths(boothsData);
             setIsPamphletModalOpen(true);
         } catch (error) {
@@ -268,14 +274,11 @@ export default function MyTickets(): JSX.Element {
 
         try {
             console.log('부스 상세정보 로드 시작 - eventId:', savedEventId, 'boothId:', boothId);
-            // 부스 상세정보 API 호출 - eventId와 boothId 모두 필요
             const boothDetails = await getBoothDetails(savedEventId, boothId);
             console.log('부스 상세정보 응답:', boothDetails);
             const filters: BoothExperienceFilters = {
-                startDate: boothDetails.startDate || undefined,
-                endDate: boothDetails.endDate || undefined,
                 boothName: boothDetails.boothTitle || undefined,
-                isAvailable: true,
+                isAvailable: false,
                 eventId: savedEventId,
                 sortBy: 'startTime',
                 sortDirection: 'asc'
@@ -724,8 +727,16 @@ export default function MyTickets(): JSX.Element {
                                     </div>
                                     <div className="flex items-center space-x-3">
                                         <div className="text-right">
-                                            <span className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">3</span>
-                                            <span className="text-gray-600 font-medium text-sm ml-1">번째</span>
+                                           {waitingCount <=0 || !waitingCount ? (
+                                                <span className="text-gray-600 font-medium text-sm">{waitingMessage}</span>
+                                                ) : (
+                                                <>
+                                                    <span className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                                                    {waitingCount}
+                                                    </span>
+                                                    <span className="text-gray-600 font-medium text-sm ml-1">번째</span>
+                                                </>
+                                                )}
                                         </div>
                                         <button
                                             onClick={() => {
