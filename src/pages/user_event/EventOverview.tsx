@@ -29,6 +29,105 @@ const authHeaders = () => {
 
 const isAuthed = () => !!localStorage.getItem("accessToken");
 
+// 카테고리 번역 함수
+const translateCategory = (category: string, t: any): string => {
+    // 번역 키 매핑
+    const categoryMap: Record<string, string> = {
+        "박람회": "categories.박람회",
+        "공연": "categories.공연", 
+        "강연/세미나": "categories.강연/세미나",
+        "전시/행사": "categories.전시/행사",
+        "축제": "categories.축제"
+    };
+    
+    return categoryMap[category] ? t(categoryMap[category]) : category;
+};
+
+// 서브 카테고리 번역 함수
+const translateSubCategory = (subCategory: string, t: any): string => {
+    // 번역 키 매핑
+    const subCategoryMap: Record<string, string> = {
+        // 박람회 관련
+        "취업/채용": "subCategories.취업/채용",
+        "산업/기술": "subCategories.산업/기술",
+        "유학/이민/해외취업": "subCategories.유학/이민/해외취업",
+        "프랜차이즈/창업": "subCategories.프랜차이즈/창업",
+        "뷰티/패션": "subCategories.뷰티/패션",
+        "식품/음료": "subCategories.식품/음료",
+        "반려동물": "subCategories.반려동물",
+        "교육/도서": "subCategories.교육/도서",
+        "IT/전자": "subCategories.IT/전자",
+        "스포츠/레저": "subCategories.스포츠/레저",
+        "기타(박람회)": "subCategories.기타(박람회)",
+        
+        // 강연/세미나 관련
+        "취업/진로": "subCategories.취업/진로",
+        "창업/스타트업": "subCategories.창업/스타트업",
+        "과학/기술": "subCategories.과학/기술",
+        "자기계발/라이프스타일": "subCategories.자기계발/라이프스타일",
+        "인문/문화/예술": "subCategories.인문/문화/예술",
+        "건강/의학": "subCategories.건강/의학",
+        "기타(세미나)": "subCategories.기타(세미나)",
+        
+        // 전시/행사 관련
+        "미술/디자인": "subCategories.미술/디자인",
+        "사진/영상": "subCategories.사진/영상",
+        "공예/수공예": "subCategories.공예/수공예",
+        "패션/주얼리": "subCategories.패션/주얼리",
+        "역사/문화": "subCategories.역사/문화",
+        "체험 전시": "subCategories.체험 전시",
+        "아동/가족": "subCategories.아동/가족",
+        "행사/축제": "subCategories.행사/축제",
+        "브랜드 프로모션": "subCategories.브랜드 프로모션",
+        "기타(전시/행사)": "subCategories.기타(전시/행사)",
+        
+        // 공연 관련
+        "콘서트": "subCategories.콘서트",
+        "연극/뮤지컬": "subCategories.연극/뮤지컬",
+        "클래식/무용": "subCategories.클래식/무용",
+        "아동/가족(공연)": "subCategories.아동/가족(공연)",
+        "기타(공연)": "subCategories.기타(공연)",
+        
+        // 축제 관련
+        "음악 축제": "subCategories.음악 축제",
+        "영화 축제": "subCategories.영화 축제",
+        "문화 축제": "subCategories.문화 축제",
+        "음식 축제": "subCategories.음식 축제",
+        "전통 축제": "subCategories.전통 축제",
+        "지역 축제": "subCategories.지역 축제",
+        "기타(축제)": "subCategories.기타(축제)"
+    };
+    
+    return subCategoryMap[subCategory] ? t(subCategoryMap[subCategory]) : subCategory;
+};
+
+// 이벤트 제목 선택 함수 (번역 여부에 따라 한글/영문 제목 선택)
+const getEventTitle = (event: EventSummaryDto, i18n: any): string => {
+    // 현재 언어가 영어이고 영문 제목이 있는 경우 영문 제목 사용
+    if (i18n.language === 'en' && event.titleEng && event.titleEng.trim() !== '') {
+        return event.titleEng;
+    }
+    // 그 외의 경우 한글 제목 사용
+    return event.title;
+};
+
+// 선택된 서브카테고리 표시용 번역 함수
+const getDisplayedSubCategory = (selectedSubCategory: string, t: any): string => {
+    // "전체" 관련 키워드들을 번역 키로 변환
+    if (selectedSubCategory === "전체" || selectedSubCategory === "All Categories") {
+        return t('eventOverview.allCategories');
+    }
+    
+    // "카테고리명 (전체)" 형식인 경우 처리
+    if (selectedSubCategory.includes(" (전체)")) {
+        const categoryName = selectedSubCategory.replace(" (전체)", "");
+        return translateCategory(categoryName, t) + " (" + t('eventOverview.allCategories') + ")";
+    }
+    
+    // 서브카테고리인 경우 번역 함수 사용
+    return translateSubCategory(selectedSubCategory, t);
+};
+
 // 캘린더 api 데이터 함수
 type CalendarGroupedDto = { date: string; titles: string[] };
 
@@ -45,12 +144,12 @@ export default function EventOverview() {
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [filteredEvents, setFilteredEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
-    const [selectedSubCategory, setSelectedSubCategory] = React.useState("All Categories");
+    const [selectedSubCategory, setSelectedSubCategory] = React.useState(t("eventOverview.allCategories"));
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = React.useState(false);
     const [viewMode, setViewMode] = React.useState("list"); // "list", "calendar", or "map"
-    const [selectedRegion, setSelectedRegion] = React.useState("All Regions");
+    const [selectedRegion, setSelectedRegion] = React.useState(t("eventOverview.allRegions"));
     const [isRegionDropdownOpen, setIsRegionDropdownOpen] = React.useState(false);
-    const [selectedStatus, setSelectedStatus] = React.useState("All");
+    const [selectedStatus, setSelectedStatus] = React.useState(t("eventOverview.allStatuses"));
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = React.useState(false);
 
     const [likedEvents, setLikedEvents] = React.useState<Set<number>>(() => {
@@ -72,10 +171,23 @@ export default function EventOverview() {
         const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
 
+        const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+
+        let rangeText = "";
+
         if (currentMonth === 12) {
-            return `${currentYear}년 ${currentMonth}월 ~ ${nextYear}년 ${nextMonth}월`;
+            angeText = t("eventOverview.calendar.yearMonthRangeDiffYear", {
+                currentYear,
+                currentMonth: monthNames[currentMonth - 1],
+                nextYear,
+                nextMonth: monthNames[nextMonth - 1],
+            });
         } else {
-            return `${currentYear}년 ${currentMonth}월 ~ ${nextMonth}월`;
+            rangeText = t("eventOverview.calendar.yearMonthRangeSameYear", {
+                year: currentYear,
+                currentMonth: monthNames[currentMonth - 1],
+                nextMonth: monthNames[nextMonth - 1],
+            });
         }
     });
     const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
@@ -239,7 +351,12 @@ export default function EventOverview() {
             const newYear = calendarMonth === 1 ? calendarYear - 1 : calendarYear;
             const newMonth = calendarMonth === 1 ? 12 : calendarMonth - 1;
 
-            setSelectedDateRange(`${newYear}년 ${newMonth}월`);
+            const monthNames = t("calendar.monthNames", { returnObjects: true }) as string[];
+            const monthName = monthNames[newMonth - 1]; // 배열은 0부터 시작하므로 -1
+
+            setSelectedDateRange(
+                t("eventOverview.calendar.yearMonth", { year: newYear, month: monthName })
+            );
         }
     };
 
@@ -256,7 +373,12 @@ export default function EventOverview() {
             const newYear = calendarMonth === 12 ? calendarYear + 1 : calendarYear;
             const newMonth = calendarMonth === 12 ? 1 : calendarMonth + 1;
 
-            setSelectedDateRange(`${newYear}년 ${newMonth}월`);
+            const monthNames = t("calendar.monthNames", { returnObjects: true }) as string[];
+            const monthName = monthNames[newMonth - 1]; // 배열은 0부터 시작하므로 -1
+
+            setSelectedDateRange(
+                t("eventOverview.calendar.yearMonth", { year: newYear, month: monthName })
+            );
         }
     };
 
@@ -338,12 +460,12 @@ export default function EventOverview() {
 
     // Event data for mapping
     const categories = [
-        { id: "all", name: t('eventOverview.allCategories') },
-        { id: "박람회", name: t('categories.박람회') },
-        { id: "공연", name: t('categories.공연') },
-        { id: "강연/세미나", name: t('categories.강연/세미나') },
-        { id: "전시/행사", name: t('categories.전시/행사') },
-        { id: "축제", name: t('categories.축제') },
+        { id: "all", name: "전체" },
+        { id: "박람회", name: "박람회" },
+        { id: "공연", name: "공연" },
+        { id: "강연/세미나", name: "강연/세미나" },
+        { id: "전시/행사", name: "전시/행사" },
+        { id: "축제", name: "축제" },
     ];
 
     // 2차 카테고리 데이터
@@ -393,15 +515,32 @@ export default function EventOverview() {
                 includeHidden: false,
             };
 
-            if (selectedCategory !== "all") {
-                params.mainCategoryId = mapMainCategoryToId(selectedCategory);
+            // 서브카테고리가 "카테고리명 (전체)" 형식인 경우를 먼저 체크
+            if (selectedSubCategory.includes(" (전체)")) {
+                const categoryName = selectedSubCategory.replace(" (전체)", "");
+                const mainCategoryId = mapMainCategoryToId(categoryName);
+                console.log('📡 Debug - Category (전체) selected, mainCategoryId:', mainCategoryId);
+                params.mainCategoryId = mainCategoryId;
+                // 서브카테고리 ID는 설정하지 않음 (해당 메인 카테고리의 모든 서브카테고리 포함)
+            } else {
+                // 일반적인 탭 기반 필터링
+                if (selectedCategory !== "all") {
+                    console.log('📡 Debug - mapMainCategoryToId input:', selectedCategory);
+                    const mainCategoryId = mapMainCategoryToId(selectedCategory);
+                    console.log('📡 Debug - mapMainCategoryToId output:', mainCategoryId);
+                    params.mainCategoryId = mainCategoryId;
+                }
+
+                // 서브카테고리 필터링
+                if (selectedSubCategory !== t('eventOverview.allCategories')) {
+                    console.log('📡 Debug - mapSubCategoryToId input:', selectedSubCategory);
+                    const subCategoryId = mapSubCategoryToId(selectedSubCategory);
+                    console.log('📡 Debug - mapSubCategoryToId output:', subCategoryId);
+                    params.subCategoryId = subCategoryId;
+                }
             }
 
-            if (selectedSubCategory !== "All Categories" && selectedSubCategory !== t('eventOverview.allCategories')) {
-                params.subCategoryId = mapSubCategoryToId(selectedSubCategory);
-            }
-
-            if (selectedRegion !== "All Regions" && selectedRegion !== t('eventOverview.allRegions')) {
+            if (selectedRegion !== t('eventOverview.allRegions')) {
                 params.regionName = selectedRegion;
             }
 
@@ -455,7 +594,7 @@ export default function EventOverview() {
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(event => (
-                event.title.toLowerCase().includes(query) ||
+                getEventTitle(event, i18n).toLowerCase().includes(query) ||
                 event.mainCategory.toLowerCase().includes(query) ||
                 event.location.toLowerCase().includes(query) ||
                 event.region.toLowerCase().includes(query)
@@ -566,7 +705,7 @@ export default function EventOverview() {
         events.forEach((event) => {
             // Ensure latitude and longitude are valid for grouping
             if (event.latitude == null || event.longitude == null || isNaN(event.latitude) || isNaN(event.longitude)) {
-                console.warn("Skipping event in groupEventsByLocation due to invalid coordinates for grouping:", event.title, event.eventCode, event.latitude, event.longitude);
+                console.warn("Skipping event in groupEventsByLocation due to invalid coordinates for grouping:", getEventTitle(event, i18n), event.eventCode, event.latitude, event.longitude);
                 return;
             }
 
@@ -998,8 +1137,11 @@ export default function EventOverview() {
                             {categories.map((category) => (
                                 <li
                                     key={category.id}
-                                    className="h-full flex items-center px-2.5 cursor-pointer"
-                                    onClick={() => {
+                                    className="h-full flex items-center px-2.5 cursor-pointer relative z-10"
+                                    style={{ pointerEvents: 'auto' }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         setSelectedCategory(category.id);
                                         setSelectedSubCategory(t('eventOverview.allCategories')); // 상단 탭 변경 시 카테고리 초기화
                                     }}
@@ -1012,7 +1154,7 @@ export default function EventOverview() {
                                                 : (isDark ? 'font-normal text-gray-300 hover:text-white' : 'font-normal text-gray-600 hover:text-black')}
         `}
                                     >
-                                        {category.name}
+                                        {category.id === "all" ? t('categories.all') : translateCategory(category.name, t)}
                                     </span>
                                 </li>
                             ))}
@@ -1032,14 +1174,19 @@ export default function EventOverview() {
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <List className="w-4 h-4" />
-                                <span className="text-sm font-medium">{t('eventOverview.viewModes.list')}형</span>
+                                <span className="text-sm font-medium">{t('eventOverview.viewModes.list')}</span>
                             </button>
                             <button
                                 onClick={() => {
                                     setViewMode("calendar");
                                     // 캘린더형으로 전환할 때 상단 날짜 범위를 현재 캘린더 월로 동기화
-                                    setSelectedDateRange(`${calendarYear}년 ${calendarMonth}월`);
-                                }}
+                                    const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+                                    const monthName = monthNames[calendarMonth - 1];
+
+                                    // setSelectedDateRange(`${calendarYear}년 ${calendarMonth}월`);
+                                    setSelectedDateRange(
+                                        t("eventOverview.calendar.yearMonth", { year: calendarYear, month: monthName })
+                                    );                                }}
                                 className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
                                     ? (isDark ? 'dm-light' : 'bg-black text-white')
                                     : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
@@ -1047,7 +1194,7 @@ export default function EventOverview() {
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <Calendar className="w-4 h-4" />
-                                <span className="text-sm font-medium">{t('eventOverview.viewModes.calendar')}형</span>
+                                <span className="text-sm font-medium">{t('eventOverview.viewModes.calendar')}</span>
                             </button>
                             <button
                                 onClick={() => setViewMode("map")}
@@ -1058,7 +1205,7 @@ export default function EventOverview() {
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <MapIcon className="w-4 h-4" />
-                                <span className="text-sm font-medium">{t('eventOverview.viewModes.map')}형</span>
+                                <span className="text-sm font-medium">{t('eventOverview.viewModes.map')}</span>
                             </button>
                         </div>
 
@@ -1095,15 +1242,42 @@ export default function EventOverview() {
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
 
+                                                                const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+                                                                const startMonthName = monthNames[startMonth - 1];
+                                                                const endMonthName = monthNames[endMonth - 1];
+
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
+                                                                    setSelectedDateRange(
+                                                                        t("eventOverview.calendar.yearMonth", { year: startYear, month: startMonthName })
+                                                                    );
                                                                 } else if (startYear === endYear) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
+                                                                    setSelectedDateRange(
+                                                                        t("eventOverview.calendar.yearMonthRangeSameYear", {
+                                                                            year: startYear,
+                                                                            startMonth: startMonthName,
+                                                                            endMonth: endMonthName,
+                                                                        })
+                                                                    );
                                                                 } else {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
+                                                                    setSelectedDateRange(
+                                                                        t("eventOverview.calendar.yearMonthRangeDiffYear", {
+                                                                            startYear,
+                                                                            startMonth: startMonthName,
+                                                                            endYear,
+                                                                            endMonth: endMonthName,
+                                                                        })
+                                                                    );
                                                                 }
                                                             } else {
-                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
+                                                                const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+                                                                setSelectedDateRange(
+                                                                    t("eventOverview.calendar.yearMonthRangeSameYear", {
+                                                                        year: newYear,
+                                                                        startMonth: monthNames[6], // 7월
+                                                                        endMonth: monthNames[7],   // 8월
+                                                                    })
+                                                                );
                                                             }
                                                         }
                                                     }}
@@ -1125,15 +1299,41 @@ export default function EventOverview() {
                                                                 const endYear = endDate.getFullYear();
                                                                 const endMonth = endDate.getMonth() + 1;
 
+                                                                const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+                                                                const startMonthName = monthNames[startMonth - 1];
+                                                                const endMonthName = monthNames[endMonth - 1];
+
                                                                 if (startYear === endYear && startMonth === endMonth) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월`);
+                                                                    setSelectedDateRange(
+                                                                        t("eventOverview.calendar.yearMonth", { year: startYear, month: startMonthName })
+                                                                    );
                                                                 } else if (startYear === endYear) {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endMonth}월`);
+                                                                    setSelectedDateRange(
+                                                                        t("eventOverview.calendar.yearMonthRangeSameYear", {
+                                                                            year: startYear,
+                                                                            startMonth: startMonthName,
+                                                                            endMonth: endMonthName,
+                                                                        })
+                                                                    );
                                                                 } else {
-                                                                    setSelectedDateRange(`${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`);
+                                                                    setSelectedDateRange(
+                                                                        t("eventOverview.calendar.yearMonthRangeDiffYear", {
+                                                                            startYear,
+                                                                            startMonth: startMonthName,
+                                                                            endYear,
+                                                                            endMonth: endMonthName,
+                                                                        })
+                                                                    );
                                                                 }
                                                             } else {
-                                                                setSelectedDateRange(`${newYear}년 7월 ~ 8월`);
+                                                                const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+                                                                setSelectedDateRange(
+                                                                    t("eventOverview.calendar.yearMonthRangeSameYear", {
+                                                                        year: newYear,
+                                                                        startMonth: monthNames[6], // 7월
+                                                                        endMonth: monthNames[7],   // 8월
+                                                                    })
+                                                                );
                                                             }
                                                         }
                                                     }}
@@ -1179,12 +1379,32 @@ export default function EventOverview() {
                                                                         // 범위 텍스트 업데이트
                                                                         const startMonthNum = startMonth + 1;
                                                                         const endMonthNum = endMonth + 1;
+
+                                                                        const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+                                                                        const startMonthName = monthNames[startMonth];
+                                                                        const endMonthName = monthNames[endMonth];
+
                                                                         if (startYear === endYear && startMonthNum === endMonthNum) {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월`);
+                                                                            setSelectedDateRange(
+                                                                                t("eventOverview.calendar.yearMonth", { year: startYear, month: startMonthName })
+                                                                            );
                                                                         } else if (startYear === endYear) {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endMonthNum}월`);
+                                                                            setSelectedDateRange(
+                                                                                t("eventOverview.calendar.yearMonthRangeSameYear", {
+                                                                                    year: startYear,
+                                                                                    startMonth: startMonthName,
+                                                                                    endMonth: endMonthName,
+                                                                                })
+                                                                            );
                                                                         } else {
-                                                                            setSelectedDateRange(`${startYear}년 ${startMonthNum}월 ~ ${endYear}년 ${endMonthNum}월`);
+                                                                            setSelectedDateRange(
+                                                                                t("eventOverview.calendar.yearMonthRangeDiffYear", {
+                                                                                    startYear,
+                                                                                    startMonth: startMonthName,
+                                                                                    endYear,
+                                                                                    endMonth: endMonthName,
+                                                                                })
+                                                                            );
                                                                         }
                                                                         setIsDatePickerOpen(false);
                                                                     } else {
@@ -1199,7 +1419,7 @@ export default function EventOverview() {
                                                                 }
                                                             }}
                                                         >
-                                                            {i + 1}월
+                                                            {i18n.language === 'ko' ? `${i + 1}월` : t(`eventOverview.calendar.monthNames.${i}`)}
                                                         </button>
                                                     );
                                                 })}
@@ -1210,8 +1430,17 @@ export default function EventOverview() {
                                         <div className="mb-4 p-3 bg-gray-50 rounded">
                                             <div className="text-sm text-gray-600 mb-1">{t('eventOverview.selectedRange')}</div>
                                             <div className="text-sm font-medium">
-                                                {startDate ? `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월 ${startDate.getDate()}일` : t('eventOverview.startDateNotSelected')} ~
-                                                {endDate ? `${endDate.getFullYear()}년 ${endDate.getMonth() + 1}월 ${endDate.getDate()}일` : t('eventOverview.endDateNotSelected')}
+                                                {startDate
+                                                    ? (i18n.language === 'ko'
+                                                        ? `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월 ${startDate.getDate()}일`
+                                                        : `${startDate.getFullYear()}.${startDate.getMonth() + 1}.${startDate.getDate()}`)
+                                                    : t('eventOverview.startDateNotSelected')}
+                                                &nbsp;~&nbsp;
+                                                {endDate
+                                                    ? (i18n.language === 'ko'
+                                                        ? `${endDate.getFullYear()}년 ${endDate.getMonth() + 1}월 ${endDate.getDate()}일`
+                                                        : `${endDate.getFullYear()}.${endDate.getMonth() + 1}.${endDate.getDate()}`)
+                                                    : t('eventOverview.endDateNotSelected')}
                                             </div>
                                         </div>
 
@@ -1219,7 +1448,9 @@ export default function EventOverview() {
                                         <div className="mb-4">
                                             <div className="text-center">
                                                 <span className="font-medium text-sm">
-                                                    {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
+                                                    {i18n.language === 'ko'
+                                                        ? `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`
+                                                        : `${currentMonth.getFullYear()}.${String(currentMonth.getMonth() + 1).padStart(2, '0')}`}
                                                 </span>
                                             </div>
                                         </div>
@@ -1232,10 +1463,16 @@ export default function EventOverview() {
                                                     setStartDate(null);
                                                     setEndDate(null);
                                                     setSelectedYear(2025);
-                                                    setSelectedDateRange("2025년 7월 ~ 8월");
+                                                    const monthNames = t("eventOverview.calendar.monthNames", { returnObjects: true }) as string[];
+                                                    setSelectedDateRange(t("eventOverview.calendar.yearMonthRangeSameYear", {
+                                                        year: 2025,
+                                                        startMonth: monthNames[6], // 7월
+                                                        endMonth: monthNames[7],   // 8월
+                                                    }));
                                                 }}
                                             >
-                                                초기화
+                                                {i18n.language === 'ko'
+                                                    ? "초기화" : "RESET" }
                                             </button>
                                         </div>
                                     </div>
@@ -1246,52 +1483,106 @@ export default function EventOverview() {
                             <div className="relative">
                                 <button
                                     className="flex items-center justify-between w-40 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
-                                    onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                    style={{ pointerEvents: 'auto' }}
+                                    onClick={(e) => {
+                                        console.log('🔄 Category dropdown button clicked');
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
+                                    }}
                                 >
-                                    <span className="text-xs md:text-sm truncate">{selectedSubCategory}</span>
+                                    <span className="text-xs md:text-sm truncate">{getDisplayedSubCategory(selectedSubCategory, t)}</span>
                                     <FaChevronDown className={`w-3 h-3 md:w-4 md:h-4 text-gray-600 transition-transform flex-shrink-0 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* 카테고리 드롭다운 메뉴 */}
                                 {isCategoryDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto" style={{ pointerEvents: 'auto' }}>
+                                        {/* 전체 카테고리 옵션 */}
+                                        <button
+                                            className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 ${selectedSubCategory === t('eventOverview.allCategories') ? 'bg-gray-100 text-black font-medium' : 'text-gray-700'}`}
+                                            style={{ pointerEvents: 'auto' }}
+                                            onClick={(e) => {
+                                                console.log('🔄 All categories clicked');
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setSelectedSubCategory(t('eventOverview.allCategories'));
+                                                setIsCategoryDropdownOpen(false);
+                                            }}
+                                        >
+                                            {t('eventOverview.allCategories')}
+                                        </button>
                                         {selectedCategory === "all" ? (
                                             // 전체 탭일 때: 모든 1차 카테고리와 2차 카테고리 표시
                                             Object.entries(subCategories).map(([categoryKey, subCats]) => (
                                                 <div key={categoryKey}>
                                                     {/* 1차 카테고리 헤더 */}
-                                                    <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
-                                                        {categoryKey}
-                                                    </div>
+                                                    <hr className="h-1 mt-2 bg-blue-300" />
+                                                    <button 
+                                                        className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 bg-blue-50"
+                                                        style={{ pointerEvents: 'auto' }}
+                                                        onClick={(e) => {
+                                                            console.log('🔄 Main category header clicked:', categoryKey);
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            // 탭 변경하지 않고 해당 카테고리로 필터링
+                                                            setSelectedSubCategory(categoryKey + " (전체)");
+                                                            setIsCategoryDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        {translateCategory(categoryKey, t)}
+                                                    </button>
                                                     {/* 2차 카테고리들 */}
                                                     {subCats.map((subCat) => (
                                                         <button
                                                             key={subCat}
                                                             className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedSubCategory === subCat ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
-                                                            onClick={() => {
+                                                            style={{ pointerEvents: 'auto' }}
+                                                            onClick={(e) => {
+                                                                console.log('🔄 SubCategory clicked:', subCat);
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
                                                                 setSelectedSubCategory(subCat);
                                                                 setIsCategoryDropdownOpen(false);
                                                             }}
                                                         >
-                                                            {subCat}
+                                                            {translateSubCategory(subCat, t)}
                                                         </button>
                                                     ))}
                                                 </div>
                                             ))
                                         ) : (
                                             // 특정 탭일 때: 해당 탭의 2차 카테고리만 표시
-                                            subCategories[selectedCategory as keyof typeof subCategories]?.map((subCat) => (
+                                            [
+                                                // 전체 카테고리 옵션 추가
+                                                <button
+                                                    key="all-categories"
+                                                    className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 border-b ${selectedSubCategory === t('eventOverview.allCategories') ? 'bg-gray-100 text-black font-medium' : 'text-gray-700'}`}
+                                                    onClick={() => {
+                                                        setSelectedSubCategory(t('eventOverview.allCategories'));
+                                                        setIsCategoryDropdownOpen(false);
+                                                    }}
+                                                >
+                                                    {t('eventOverview.allCategories')}
+                                                </button>,
+                                                // 서브카테고리들
+                                                ...subCategories[selectedCategory as keyof typeof subCategories]?.map((subCat) => (
                                                 <button
                                                     key={subCat}
                                                     className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedSubCategory === subCat ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
-                                                    onClick={() => {
+                                                    style={{ pointerEvents: 'auto' }}
+                                                    onClick={(e) => {
+                                                        console.log('🔄 Specific SubCategory clicked:', subCat);
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
                                                         setSelectedSubCategory(subCat);
                                                         setIsCategoryDropdownOpen(false);
                                                     }}
                                                 >
-                                                    {subCat}
+                                                    {translateSubCategory(subCat, t)}
                                                 </button>
-                                            ))
+                                            )) || []
+                                            ]
                                         )}
                                     </div>
                                 )}
@@ -1394,7 +1685,7 @@ export default function EventOverview() {
                                             )}
                                             <img
                                                 className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
-                                                alt={event.title}
+                                                alt={getEventTitle(event, i18n)}
                                                 src={event.thumbnailUrl || "/images/NoImage.png"}
                                             />
                                             <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -1411,9 +1702,9 @@ export default function EventOverview() {
                                         </div>
                                         <div className="mt-4 text-left">
                                             <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
-                                                {event.mainCategory}
+                                                {translateCategory(event.mainCategory, t)}
                                             </span>
-                                            <h3 className="font-bold text-lg md:text-xl text-black mb-2 truncate">{event.title}</h3>
+                                            <h3 className="font-bold text-lg md:text-xl text-black mb-2 truncate">{getEventTitle(event, i18n)}</h3>
                                             <div className="text-xs md:text-sm text-gray-600 mb-2">
                                                 <div className="font-bold">{event.location}</div>
                                                 <div>
@@ -1541,7 +1832,7 @@ export default function EventOverview() {
                                                                             event.mainCategory === "전시/행사" ? "bg-yellow-500" :
                                                                                 event.mainCategory === "축제" ? "bg-gray-500" : "bg-gray-400"
                                                                     }`}></div>
-                                                                <span className="truncate text-gray-700">{event.title}</span>
+                                                                <span className="truncate text-gray-700">{getEventTitle(event, i18n)}</span>
                                                             </div>
                                                         ))}
                                                         {dayEvents.length > 6 && (
@@ -1601,7 +1892,7 @@ export default function EventOverview() {
                                                     className="w-3 h-3 rounded-full border border-white shadow-sm"
                                                     style={{ backgroundColor: color }}
                                                 />
-                                                <span className="text-xs text-gray-600">{category}</span>
+                                                <span className="text-xs text-gray-600">{translateCategory(category, t)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -1642,7 +1933,7 @@ export default function EventOverview() {
                                                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-90"></div>
                                                 <div className="absolute top-3 left-3 z-20">
                                                     <span className="inline-block px-2 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white border-opacity-30">
-                                                        {hoveredEvents[0]?.mainCategory}
+                                                        {hoveredEvents[0]?.mainCategory ? translateCategory(hoveredEvents[0].mainCategory, t) : ''}
                                                     </span>
                                                 </div>
 
@@ -1744,7 +2035,7 @@ export default function EventOverview() {
                                                                 {/* 카테고리 배지 */}
                                                                 <div className="absolute top-3 left-3 z-20">
                                                                     <span className="inline-block px-2 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white border-opacity-30">
-                                                                        {event.mainCategory}
+                                                                        {translateCategory(event.mainCategory, t)}
                                                                     </span>
                                                                 </div>
 
@@ -1753,7 +2044,7 @@ export default function EventOverview() {
                                                                     <div className="relative h-full overflow-hidden">
                                                                         <img
                                                                             src={event.thumbnailUrl || "/images/NoImage.png"}
-                                                                            alt={event.title}
+                                                                            alt={getEventTitle(event, i18n)}
                                                                             className="w-full h-full object-cover opacity-80"
                                                                         />
                                                                         <div className="absolute inset-0 bg-black bg-opacity-20"></div>
@@ -1763,7 +2054,7 @@ export default function EventOverview() {
                                                                     {isCenter && (
                                                                         <div className="absolute bottom-0 left-0 right-0 py-3 px-4 text-white bg-black bg-opacity-70">
                                                                             <h3 className="text-base font-bold mb-2 line-clamp-2 text-white">
-                                                                                {event.title}
+                                                                                {getEventTitle(event, i18n)}
                                                                             </h3>
 
                                                                             <div className="space-y-1 mb-3">
