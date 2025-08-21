@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { AdminSideNav } from '../../components/AdminSideNav';
+import { useNavigate } from 'react-router-dom';
 
 type Kpi = {
     title: string;
@@ -20,6 +21,7 @@ type PlatformMetric = {
 const formatNumber = (n: number) => n.toLocaleString();
 
 export const AdminDashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [totalEvents, setTotalEvents] = useState<number>(0);
     const [totalUsers, setTotalUsers] = useState<number>(0);
     const [totalReservations, setTotalReservations] = useState<number>(0);
@@ -271,36 +273,66 @@ export const AdminDashboard: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-lg font-semibold text-gray-900">최근 관리자 활동</h2>
-                                <button className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors">
+                                <button onClick={() => navigate('/admin_dashboard/activity')} className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors">
                                     전체 활동 보기
                                 </button>
                             </div>
 
                             <div className="space-y-4">
                                 <div className="bg-gray-50 rounded-lg p-4 relative">
-                                    <p className="font-medium text-gray-900 text-sm mb-2">행사 등록 승인 처리 - user1@example.com</p>
-                                    <div className="text-xs font-normal text-gray-500">2024.12.10 14:30</div>
-                                    <div className="absolute top-5 right-4 w-2 h-2 bg-green-500 rounded-full" />
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        <p className="font-bold text-gray-900 text-sm">행사 관리 작업</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-1">행사 등록, 수정, 승인, 취소 등의 작업을 수행했습니다.</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-400">admin@fairplay.com (시스템 관리자)</span>
+                                        <span className="text-xs text-gray-400">2024.12.10 14:30</span>
+                                    </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-4 relative">
-                                    <p className="font-medium text-gray-900 text-sm mb-2">계정 권한 설정 변경 - admin@fairplay.com</p>
-                                    <div className="text-xs font-normal text-gray-500">2024.12.09 16:15</div>
-                                    <div className="absolute top-5 right-4 w-2 h-2 bg-blue-500 rounded-full" />
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                        <p className="font-bold text-gray-900 text-sm">사용자 계정 관리</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-1">사용자 계정 생성, 수정, 권한 변경 등의 작업을 수행했습니다.</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-400">finance@fairplay.com (재무 담당자)</span>
+                                        <span className="text-xs text-gray-400">2024.12.09 16:15</span>
+                                    </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-4 relative">
-                                    <p className="font-medium text-gray-900 text-sm mb-2">VIP 배너 광고 등록 - marketing@event.com</p>
-                                    <div className="text-xs font-normal text-gray-500">2024.12.08 11:20</div>
-                                    <div className="absolute top-5 right-4 w-2 h-2 bg-yellow-500 rounded-full" />
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                        <p className="font-bold text-gray-900 text-sm">마케팅 활동 관리</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-1">VIP 배너 등록, 프로모션 설정, 광고 캠페인 관리 등의 작업을 수행했습니다.</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-400">marketing@fairplay.com (마케팅 담당자)</span>
+                                        <span className="text-xs text-gray-400">2024.12.08 11:20</span>
+                                    </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-4 relative">
-                                    <p className="font-medium text-gray-900 text-sm mb-2">정산 처리 완료 - finance@fairplay.com</p>
-                                    <div className="text-xs font-normal text-gray-500">2024.12.07 09:45</div>
-                                    <div className="absolute top-5 right-4 w-2 h-2 bg-green-500 rounded-full" />
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        <p className="font-bold text-gray-900 text-sm">재무 처리 작업</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-1">정산 처리, 환불 승인, 수수료 설정 등의 작업을 수행했습니다.</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-400">finance@fairplay.com (재무 담당자)</span>
+                                        <span className="text-xs text-gray-400">2024.12.07 09:45</span>
+                                    </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-4 relative">
-                                    <p className="font-medium text-gray-900 text-sm mb-2">시스템 설정 변경 - tech@fairplay.com</p>
-                                    <div className="text-xs font-normal text-gray-500">2024.12.06 15:30</div>
-                                    <div className="absolute top-5 right-4 w-2 h-2 bg-purple-500 rounded-full" />
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                                        <p className="font-bold text-gray-900 text-sm">시스템 설정 변경</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-1">플랫폼 설정, API 키 관리, 시스템 파라미터 조정 등의 작업을 수행했습니다.</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-gray-400">tech@fairplay.com (기술 담당자)</span>
+                                        <span className="text-xs text-gray-400">2024.12.06 15:30</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
