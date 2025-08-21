@@ -432,15 +432,15 @@ export default function MyTickets(): JSX.Element {
 
                 <TopNav />
 
-                {/* 제목 - 웹화면에서 원래 위치로 유지 */}
-                <div className="md:absolute md:top-[137px] md:left-64 left-4 right-4 top-24 relative md:static">
+                {/* 제목 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
                     <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
                         {t('mypage.tickets.title')}
                     </div>
                 </div>
 
-                {/* 콘텐츠 - 웹화면에서 원래 위치로 유지 */}
-                <div className="md:absolute md:top-[239px] md:left-64 md:right-0 left-4 right-4 top-32 relative md:static">
+                {/* 콘텐츠 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[239px] md:left-64 md:right-0 left-0 right-4 top-32 relative md:static">
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="text-lg">{t('mypage.tickets.loading')}</div>

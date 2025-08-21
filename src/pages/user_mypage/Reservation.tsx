@@ -148,15 +148,15 @@ export default function Reservation(): JSX.Element {
 
                 <TopNav />
 
-                {/* 제목 - 웹화면에서 원래 위치로 복원 */}
-                <div className="md:absolute md:top-[137px] md:left-64 left-4 right-4 top-24 relative">
+                {/* 제목 - 웹화면에서 원래 위치로 복원, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative">
                     <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
                         {t('mypage.reservation.title')}
                     </div>
                 </div>
 
-                {/* 콘텐츠 - 웹화면에서 원래 위치로 복원 */}
-                <div className="md:absolute md:top-[195px] md:left-64 md:right-0 left-4 right-4 top-32 relative">
+                {/* 콘텐츠 - 웹화면에서 원래 위치로 복원, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[195px] md:left-64 md:right-0 left-0 right-4 top-32 relative">
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="text-lg">{t('mypage.reservation.loading')}</div>

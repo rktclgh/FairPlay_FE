@@ -1,7 +1,7 @@
 {
   "common": {
     "login": "Login",
-    "logout": "Logout", 
+    "logout": "Logout",
     "register": "Sign Up",
     "signup": "Sign Up",
     "search": "Search",
@@ -366,7 +366,7 @@
       "changePassword": "Change Password",
       "oldPassword": "Current Password",
       "newPassword": "New Password",
-      "passwordRule": "8-20 characters with letters, numbers, and special characters",
+      "passwordRule": "8-16 characters",
       "cancel": "Cancel",
       "saving": "Changing...",
       "save": "Save",
@@ -618,7 +618,7 @@
     "noRefunds": "No refund requests.",
     "statusNames": {
       "REQUESTED": "Requested",
-      "APPROVED": "Approved", 
+      "APPROVED": "Approved",
       "REJECTED": "Rejected"
     },
     "won": ""
@@ -682,7 +682,7 @@
     "loadFailed": "Failed to load reservation list.",
     "statusBadges": {
       "WAITING": "Waiting",
-      "READY": "Ready", 
+      "READY": "Ready",
       "IN_PROGRESS": "In Progress",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
@@ -702,12 +702,12 @@
     "free": "Free",
     "viewModes": {
       "list": "List",
-      "calendar": "Calendar",  
+      "calendar": "Calendar",
       "map": "Map"
     },
     "filters": {
       "region": "Region",
-      "category": "Category", 
+      "category": "Category",
       "status": "Status",
       "dateRange": "Date Range"
     },
@@ -809,4 +809,3 @@
     }
   }
 }
-
