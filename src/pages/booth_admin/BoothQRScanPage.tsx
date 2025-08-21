@@ -8,8 +8,9 @@ import type { BoothEntryRequestDto } from "../../services/types/qrTicketType";
 import type { BoothExperience } from "../../services/types/boothExperienceType";
 import type { BoothDetailResponse } from '../../types/booth';
 import { checkBoothQr } from "../../services/qrTicket";
-import { getBoothExperiences } from "../../services/boothExperienceService";
+import { getBoothExperiences, getManageableBooths } from "../../services/boothExperienceService";
 import { getBoothDetails } from "../../api/boothApi";
+
 
 interface ScannedTicket {
     qrCode: string;
@@ -57,7 +58,16 @@ const BoothQRScanPage: React.FC = () => {
     
     useEffect(() => {
         const fetchBooth = async () => {
-            const res = await getBoothDetails(5, 12);
+            const token = localStorage.getItem("accessToken");
+            if (!token) alert("토큰이 유효하지 않습니다.");
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const userId = parseInt(payload.sub);
+
+
+            
+            const resUser = await getManageableBooths();
+            const booth = resUser.find(item => item.boothAdminId === userId);
+            const res = await getBoothDetails(Number(booth?.eventId), Number(booth?.boothId));
             setBooth(res);
 
         }
@@ -75,8 +85,6 @@ const BoothQRScanPage: React.FC = () => {
             stopCamera();
         };
     }, []);
-
-
 
     // 카메라 중지
     const stopCamera = () => {
@@ -148,7 +156,7 @@ const BoothQRScanPage: React.FC = () => {
 
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
-            console.log(qrCode.data);
+            
             if (qrCode) {
              
                 // 부스 QR 스캔 위한 dto 생성
@@ -156,7 +164,7 @@ const BoothQRScanPage: React.FC = () => {
                     boothExperienceId: 2,
                     boothId: 12,
                     eventId: 5,
-                    qrCode: qrCode
+                    qrCode: qrCode.data
                 };
 
                 // 부스 QR 스캔 API호출
