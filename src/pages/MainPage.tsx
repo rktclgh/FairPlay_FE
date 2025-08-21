@@ -770,10 +770,10 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
             // 2. 백엔드 데이터가 없으면 실제 이벤트에서 핫픽 생성
             console.log("[HOT PICKS] 실제 이벤트 데이터로 핫픽 생성");
             
-            // 현재 진행 중이거나 예정된 이벤트 중 상위 5개 선택
+            // 현재 진행 중이거나 예정된 이벤트 중 상위 10개 선택
             const hotPickCandidates = baseEvents
-              .filter(event => event.statusCode === 'ONGOING' || event.statusCode === 'UPCOMING')
-              .slice(0, 5)
+              .filter(event => event.eventStatusCode === 'ONGOING' || event.eventStatusCode === 'UPCOMING')
+              .slice(0, 10)
               .map(event => ({
                 id: event.id,
                 title: event.title,
@@ -887,9 +887,6 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
   const heroLoop = paidAdvertisements.length >= 2;
   const hasHero = paidAdvertisements.length > 0;
   const hasHot = hotPicks.length > 0;
-  
-  // 핫픽 디버깅용
-  console.log("[MAIN PAGE DEBUG] hasHot:", hasHot, "hotPicks:", hotPicks);
   const hotLoop = hotPicks.length >= 3;
   return (
     <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
@@ -1102,7 +1099,6 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
       )}
 
       {/* 핫픽스 섹션 (3D 커버플로우) - 데이터 있을 때만 */}
-      {console.log("[RENDER DEBUG] 핫픽 섹션 렌더링 시도 - hasHot:", hasHot, "hotPicks.length:", hotPicks.length)}
       {hasHot && (
         <div className="py-8 md:py-16 theme-surface theme-transition">
           <div className="max-w-7xl mx-auto px-4 md:px-8">
