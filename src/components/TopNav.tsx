@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { HiOutlineSearch, HiOutlineUser, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineUser, HiOutlineX, HiOutlineHome, HiOutlineCalendar, HiOutlineTicket, HiOutlineBell, HiOutlinePencilAlt, HiOutlineLogout, HiOutlineLogin } from 'react-icons/hi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
@@ -25,6 +25,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	const [mobileQuery, setMobileQuery] = useState<string>('');
 	const [desktopQuery, setDesktopQuery] = useState<string>('');
 	const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+	const [isMyPageModalOpen, setIsMyPageModalOpen] = useState<boolean>(false);
 	const headerRef = useRef<HTMLDivElement>(null);
 	const [headerHeight, setHeaderHeight] = useState<number>(0);
 	const searchInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +96,47 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 			setIsLoggedIn(false);
 			disconnect(); // 로그아웃 시 웹소켓 연결 해제
 			navigate('/');
+		}
+	};
+
+	const handleMyPageClick = () => {
+		setIsMyPageModalOpen(true);
+	};
+
+	const handleMyPageClose = () => {
+		setIsMyPageModalOpen(false);
+	};
+
+	const handleMyPageAction = async () => {
+		if (!isLoggedIn) {
+			navigate('/login');
+			setIsMyPageModalOpen(false);
+			return;
+		}
+
+		// 로그인된 경우 역할에 따라 페이지 이동
+		try {
+			const role = await getRoleCode();
+			if (!role) {
+				navigate('/login');
+				setIsMyPageModalOpen(false);
+				return;
+			}
+
+			if (role === 'ADMIN') {
+				navigate('/admin_dashboard');
+			} else if (hasHostPermission(role)) {
+				navigate('/host/dashboard');
+			} else if (hasBoothManagerPermission(role)) {
+				navigate('/booth-admin/dashboard');
+			} else {
+				navigate('/mypage/info');
+			}
+			setIsMyPageModalOpen(false);
+		} catch (error) {
+			console.error('역할 확인 실패:', error);
+			navigate('/login');
+			setIsMyPageModalOpen(false);
 		}
 	};
 
@@ -316,24 +358,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					</Link>
 					<button
 						className="flex flex-col items-center justify-center gap-1 text-[11px] leading-none appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none"
-						onClick={() => {
-							if (!requireAuth(navigate, t('navigation.mypage'))) {
-								return;
-							}
-							(async () => {
-								const role = await getRoleCode();
-								if (!role) { navigate('/login'); return; }
-								if (role === 'ADMIN') {
-									navigate('/admin_dashboard');
-								} else if (hasHostPermission(role)) {
-									navigate('/host/dashboard');
-								} else if (hasBoothManagerPermission(role)) {
-									navigate('/booth-admin/dashboard');
-								} else {
-									navigate('/mypage/info');
-								}
-							})();
-						}}
+						onClick={handleMyPageClick}
 					>
 						<HiOutlineUser className="w-6 h-6 text-gray-500" />
 						<span className="text-gray-500">{t('navigation.my')}</span>
@@ -415,6 +440,66 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 									>
 										{t('notification.noNotifications')}
 									</motion.div>
+								)}
+							</div>
+						</motion.div>
+					</div>
+				)}
+			</AnimatePresence>
+
+			{/* 마이페이지 사이드바 */}
+			<AnimatePresence>
+				{isMyPageModalOpen && (
+					<div className="fixed inset-0 z-[9999]">
+						{/* 어두운 배경 오버레이 */}
+						<motion.div
+							className="absolute inset-0 bg-black bg-opacity-30"
+							onClick={handleMyPageClose}
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							transition={{ duration: 0.2 }}
+						/>
+
+						{/* 마이페이지 사이드바 - 오른쪽 벽에서 슬라이드 */}
+						<motion.div
+							className="absolute bottom-20 right-0 bg-white shadow-lg min-w-[160px]"
+							initial={{ x: '100%' }}
+							animate={{ x: 0 }}
+							exit={{ x: '100%' }}
+							transition={{
+								type: "spring",
+								stiffness: 400,
+								damping: 30,
+								duration: 0.3
+							}}
+						>
+							{/* 사이드바 메뉴 */}
+							<div className="py-2">
+								{isLoggedIn ? (
+									<div>
+										<button
+											onClick={handleMyPageAction}
+											className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+										>
+											마이페이지
+										</button>
+										<button
+											onClick={handleAuthClick}
+											className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+										>
+											로그아웃
+										</button>
+									</div>
+								) : (
+									<div>
+										<button
+											onClick={handleMyPageAction}
+											className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+										>
+											로그인
+										</button>
+									</div>
 								)}
 							</div>
 						</motion.div>

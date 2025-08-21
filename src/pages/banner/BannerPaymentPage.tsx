@@ -3,22 +3,22 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import paymentService from '../../services/paymentService';
 
-interface BoothPaymentInfo {
+interface BannerPaymentInfo {
   applicationId: number;
-  eventTitle: string;
-  boothTitle: string;
-  boothTypeName: string;
-  boothTypeSize: string;
-  price: number;
-  managerName: string;
-  contactEmail: string;
+  title: string;
+  bannerType: string;
+  totalAmount: number;
+  applicantName: string;
+  applicantEmail: string;
   paymentStatus: string;
+  startDate: string;
+  endDate: string;
 }
 
-const BoothPaymentPage: React.FC = () => {
+const BannerPaymentPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [paymentInfo, setPaymentInfo] = useState<BoothPaymentInfo | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<BannerPaymentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +27,7 @@ const BoothPaymentPage: React.FC = () => {
 
   useEffect(() => {
     if (!applicationId) {
-      setError('부스 신청 ID가 필요합니다.');
+      setError('배너 신청 ID가 필요합니다.');
       setLoading(false);
       return;
     }
@@ -46,7 +46,7 @@ const BoothPaymentPage: React.FC = () => {
 
   const fetchPaymentInfo = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/payment/payment-page/${applicationId}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/banners/payment/payment-page/${applicationId}`);
       
       if (!response.ok) {
         throw new Error('결제 정보를 불러올 수 없습니다.');
@@ -70,26 +70,46 @@ const BoothPaymentPage: React.FC = () => {
       await paymentService.initialize();
       
       // 2. 결제 요청 데이터 준비
+      const merchantUid = `banner_${Date.now()}`;
       const paymentRequest = {
         pg: 'uplus', // 가장 일반적인 웹표준 결제
         pay_method: 'card',
-        merchant_uid: `booth_${Date.now()}`,
-        name: `${paymentInfo.eventTitle} - ${paymentInfo.boothTitle}`,
-        amount: paymentInfo.price,
-        buyer_email: paymentInfo.contactEmail,
-        buyer_name: paymentInfo.managerName,
-        m_redirect_url: `${window.location.origin}/booth/payment?applicationId=${paymentInfo.applicationId}&success=true`
+        merchant_uid: merchantUid,
+        name: `배너 광고 - ${paymentInfo.title}`,
+        amount: paymentInfo.totalAmount,
+        buyer_email: paymentInfo.applicantEmail,
+        buyer_name: paymentInfo.applicantName,
+        m_redirect_url: `${window.location.origin}/banner/payment?applicationId=${paymentInfo.applicationId}&success=true`
       };
 
-      // 3. 아임포트 결제 요청
+      // 3. 백엔드에 결제 요청 저장
+      const saveResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/banners/payment/request-from-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          merchantUid: merchantUid,
+          price: paymentInfo.totalAmount,
+          quantity: 1,
+          targetId: paymentInfo.applicationId,
+          paymentTargetType: 'BANNER_APPLICATION'
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('결제 요청 저장에 실패했습니다.');
+      }
+
+      // 4. 아임포트 결제 요청
       const paymentResponse = await paymentService.requestPayment(paymentRequest);
       
       if (!paymentResponse.success) {
         throw new Error(paymentResponse.error_msg || '결제가 취소되었습니다.');
       }
 
-      // 4. 결제 성공 시 백엔드에 결제 완료 알림
-      const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/payment/complete`, {
+      // 5. 결제 성공 시 백엔드에 결제 완료 알림
+      const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/banners/payment/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,8 +174,8 @@ const BoothPaymentPage: React.FC = () => {
       <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">부스 결제</h1>
-          <p className="text-gray-600">부스 운영을 위한 결제를 진행해주세요.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">배너 광고 결제</h1>
+          <p className="text-gray-600">배너 광고 운영을 위한 결제를 진행해주세요.</p>
         </div>
 
         {/* Payment Info */}
@@ -164,42 +184,42 @@ const BoothPaymentPage: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">행사명</label>
-              <div className="text-gray-900">{paymentInfo.eventTitle}</div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">광고 제목</label>
+              <div className="text-gray-900">{paymentInfo.title}</div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">부스명</label>
-              <div className="text-gray-900">{paymentInfo.boothTitle}</div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">광고 유형</label>
+              <div className="text-gray-900">{paymentInfo.bannerType}</div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">부스 타입</label>
-              <div className="text-gray-900">{paymentInfo.boothTypeName}</div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">부스 크기</label>
-              <div className="text-gray-900">{paymentInfo.boothTypeSize || '미지정'}</div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">담당자명</label>
-              <div className="text-gray-900">{paymentInfo.managerName}</div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">신청자명</label>
+              <div className="text-gray-900">{paymentInfo.applicantName}</div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">연락처 이메일</label>
-              <div className="text-gray-900">{paymentInfo.contactEmail}</div>
+              <div className="text-gray-900">{paymentInfo.applicantEmail}</div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">광고 시작일</label>
+              <div className="text-gray-900">{new Date(paymentInfo.startDate).toLocaleDateString()}</div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">광고 종료일</label>
+              <div className="text-gray-900">{new Date(paymentInfo.endDate).toLocaleDateString()}</div>
             </div>
           </div>
         </div>
 
         {/* Payment Amount */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">💳 결제 금액</h3>
-          <div className="text-3xl font-bold text-yellow-900">
-            {paymentInfo.price.toLocaleString()}원
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-semibold text-purple-800 mb-2">💳 결제 금액</h3>
+          <div className="text-3xl font-bold text-purple-900">
+            {paymentInfo.totalAmount.toLocaleString()}원
           </div>
         </div>
 
@@ -220,7 +240,7 @@ const BoothPaymentPage: React.FC = () => {
           {paymentInfo.paymentStatus !== 'PAID' && (
             <button
               onClick={handlePayment}
-              className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              className="flex-1 bg-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
             >
               💳 결제하기
             </button>
@@ -238,7 +258,7 @@ const BoothPaymentPage: React.FC = () => {
           <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="text-green-800 font-semibold">✅ 결제가 완료되었습니다!</div>
             <div className="text-green-600 text-sm mt-1">
-              부스 운영에 필요한 모든 준비가 완료되었습니다.
+              배너 광고가 승인된 일정에 따라 자동으로 노출됩니다.
             </div>
           </div>
         )}
@@ -247,4 +267,4 @@ const BoothPaymentPage: React.FC = () => {
   );
 };
 
-export default BoothPaymentPage;
+export default BannerPaymentPage;

@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 페이지 전환 시 스크롤 리셋 강제 */
+html {
+  scroll-behavior: auto !important;
+}
+
+body {
+  scroll-behavior: auto !important;
+}
+
+/* 모든 페이지 전환 시 스크롤을 최상단으로 강제 */
+* {
+  scroll-behavior: auto !important;
+}
+
+/* 스크롤바 스타일링 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 /* iOS Safari 호환성 */
 * {
   -webkit-font-smoothing: antialiased;

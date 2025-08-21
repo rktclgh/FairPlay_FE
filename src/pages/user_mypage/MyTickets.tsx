@@ -21,9 +21,10 @@ import { useWaitingSocket } from "../../utils/useWaitingSocket";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
-import { getExperienceSummary} from "../../services/boothExperienceService";
+import { createReservation, getAvailableExperiences} from "../../services/boothExperienceService";
 import { getBooths, /* getUserRecentlyEventWaitingCount, */ getBoothDetails } from "../../api/boothApi";
-import { BoothSummary } from '../../types/booth';
+import type { BoothExperienceReservationRequest, BoothExperienceFilters, BoothExperience, BoothExperienceReservation } from "../../services/types/boothExperienceType";
+import type { BoothSummary } from '../../types/booth';
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
@@ -54,6 +55,7 @@ export default function MyTickets(): JSX.Element {
 
     //======= 웨이팅 순서 ======= //
     const [waitingCount, setWaitingCount] = useState(0);
+    const [savedExperience, setSavedExperience] = useState<BoothExperienceReservation | null>();
 
     //======= 조회중인 사용자 ID ======= //
     const [userId, setUserId] = useState(0);
@@ -61,19 +63,20 @@ export default function MyTickets(): JSX.Element {
 
     //======= 부스 정보 ======= //    
     const [isBoothDetailModalOpen, setIsBoothDetailModalOpen] = useState(false); // 부스 상세정보 모달 상태
-    const [experiences, setExperiences] = useState<BoothSummary[] | null>(null); // 부스 요약 목록
+    const [experiences, setExperiences] = useState<BoothExperience[]| null>(null); // 부스 요약 목록
     const [booths, setBooths] = useState<BoothSummary[] | null>(null); // 부스 목록
     const [selectedBooth, setSelectedBooth] = useState<any | null>(null); // 부스 상세정보
+    const [selectedExperience, setSelectedExperience] = useState<BoothExperience | null>(null);
     const [isWaiting, setIsWaiting] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
 
     // 모바일 사이드바 상태
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-    // ✅  웨이팅 메세지 설정
-    const handleWebSocketMessage = useCallback((msg: string) => {
-        setWaitingCount(parseInt(msg));
-    }, []);
+    // // ✅  웨이팅 메세지 설정
+    // const handleWebSocketMessage = useCallback((msg: string) => {
+    //     setWaitingCount(parseInt(msg));
+    // }, []);
 
     // 카테고리 정보 캐시
     const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
@@ -251,6 +254,10 @@ export default function MyTickets(): JSX.Element {
         setSearchTerm("");
         setSavedEventId(0);
         setBooths(null);
+        setSelectedBooth(null);
+        setIsWaiting(false);
+        setAgreeToTerms(false);
+        setSelectedExperience(null);
     };
 
     const handleBoothDetailOpen = async (boothId: number) => {
@@ -261,8 +268,20 @@ export default function MyTickets(): JSX.Element {
             // 부스 상세정보 API 호출 - eventId와 boothId 모두 필요
             const boothDetails = await getBoothDetails(savedEventId, boothId);
             console.log('부스 상세정보 응답:', boothDetails);
+            const filters: BoothExperienceFilters = {
+                startDate: boothDetails.startDate || undefined,
+                endDate: boothDetails.endDate || undefined,
+                boothName: boothDetails.boothTitle || undefined,
+                isAvailable: true,
+                eventId: savedEventId,
+                sortBy: 'startTime',
+                sortDirection: 'asc'
+            };
+
+            const boothExperiences = await getAvailableExperiences(filters);
             
             setSelectedBooth(boothDetails);
+            setExperiences(boothExperiences);
             // setWaitingCount(boothDetails.waitingCount || 0); // 웨이팅 정보 주석처리 - 더미 데이터 사용
             setIsBoothDetailModalOpen(true);
         } catch (error) {
@@ -276,6 +295,11 @@ export default function MyTickets(): JSX.Element {
         setSelectedBooth(null);
         setIsWaiting(false);
         setAgreeToTerms(false);
+        setSelectedExperience(null);
+    };
+
+    const handleSelectExperience = (exp: BoothExperience) => {
+        setSelectedExperience(exp);
     };
 
     const handleBackToPamphlet = () => {
@@ -285,15 +309,31 @@ export default function MyTickets(): JSX.Element {
         setAgreeToTerms(false);
     };
 
-    // const handleWaitingRegistration = () => {  // 웨이팅 등록 함수 주석처리
-    //     if (!agreeToTerms) {
-    //         alert("약관에 동의해주세요.");
-    //         return;
-    //     }
-    //     setIsWaiting(true);
-    //     // 실제 대기 등록 로직은 여기에 구현
-    //     alert("대기 등록이 완료되었습니다.");
-    // };
+    const handleWaitingRegistration = async () => {  // 웨이팅 등록 함수
+        if (!agreeToTerms) {
+            alert("약관에 동의해주세요.");
+            return;
+        }
+        if (!selectedExperience) {
+            alert("체험을 선택해주세요.");
+            return;
+        }
+        setIsWaiting(true);
+        const requestData: BoothExperienceReservationRequest = {
+            notes: "부스 웨이팅"
+        };
+
+
+        try {
+            const res = await createReservation(selectedExperience.experienceId, userId, requestData);
+            setSavedExperience(res);
+            // 실제 대기 등록 로직은 여기에 구현
+            alert("대기 등록이 완료되었습니다.");
+            handleBoothDetailClose();   
+        } catch (error) {
+            alert(error.response.data);
+        }
+    };
 
     const handleParticipantListOpen = (reservation: ReservationResponseDto, bookingDate: string) => {
         console.log("handleParticipantListOpen:" + reservation.createdAt)
@@ -806,11 +846,47 @@ export default function MyTickets(): JSX.Element {
                                         )}
                                     </div>
 
-                                    {/* 실시간 웨이팅 현황 - 더미 데이터 */}
+                                    {/* 실시간 웨이팅 현황 */}
                                     <div className="bg-orange-50 p-4 rounded-lg">
-                                        <h4 className="font-semibold text-orange-700 mb-2">실시간 웨이팅 현황</h4>
-                                        <p className="text-orange-600 text-sm mb-2">실시간 대기 현황입니다.</p>
-                                        <p className="text-orange-800 font-medium">현재 대기열: 5명</p>
+                                    <h4 className="font-semibold text-orange-700 mb-3">실시간 웨이팅 현황</h4>
+                                    <p className="text-orange-600 text-sm mb-4">체험별 현재 대기열을 확인하세요.</p>
+
+                                    <div className="space-y-3">
+                                    {experiences && experiences.length > 0 ? (
+                                        experiences.map((exp, idx) => {
+                                        const isSelected = selectedExperience?.experienceId === exp.experienceId; // 선택 여부 확인
+                                        return (
+                                            <div
+                                            key={idx}
+                                            className={`
+                                                flex items-center justify-between p-3 rounded-lg shadow-sm cursor-pointer
+                                                ${isSelected ? 'border-2 border-blue-500 shadow-md' : 'border border-transparent'}
+                                                bg-white hover:bg-gray-50
+                                            `}
+                                            onClick={() => handleSelectExperience(exp)}
+                                            >
+                                            {/* 체험 이름 */}
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-gray-800">{exp.title}</span>
+                                                <span className="text-sm text-gray-500">{exp.description || '설명 없음'}</span>
+                                            </div>
+
+                                            {/* 대기 인원 */}
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-orange-600 font-semibold text-lg">
+                                                {exp.waitingCount ?? 0}명
+                                                </span>
+                                                <span className="text-sm text-gray-500">대기</span>
+                                            </div>
+                                            </div>
+                                        );
+                                        })
+                                    ) : (
+                                        <p className="text-gray-500 text-sm text-center">
+                                        등록된 체험이 없습니다.
+                                        </p>
+                                    )}
+                                    </div>
                                     </div>
 
                                     {/* 약관 동의 */}
@@ -827,15 +903,8 @@ export default function MyTickets(): JSX.Element {
                                         </label>
                                     </div>
 
-                                    {/* 대기 등록 버튼 - 더미 동작 */}
                                     <button
-                                        onClick={() => {
-                                            if (!agreeToTerms) {
-                                                alert("약관에 동의해주세요.");
-                                                return;
-                                            }
-                                            alert("대기 등록이 완료되었습니다. (더미 기능)");
-                                        }}
+                                        onClick={() => {handleWaitingRegistration()}}
                                         disabled={!agreeToTerms}
                                         className={`w-full py-3 px-4 rounded-[10px] font-semibold text-white transition-all duration-200 ${agreeToTerms
                                             ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-lg hover:shadow-xl'

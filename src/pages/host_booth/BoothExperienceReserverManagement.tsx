@@ -10,6 +10,8 @@ import {
   getManageableBoothsForReservation,
   getReservationsForManagement,
   updateReservationStatusForManagement,
+  getBoothExperiences,
+  getExperienceSummary,
   type ReservationManagementResponse,
   type Booth,
   type ReservationManagementFilters
@@ -104,20 +106,53 @@ const BoothExperienceReserverManagement: React.FC = () => {
 
   const loadBoothSummary = async (boothId: number) => {
     try {
-      // 현재는 임시 데이터를 사용. 실제로는 부스별 요약 API가 필요함
+      // 선택된 부스에 속한 첫 번째 체험의 요약 정보를 가져옵니다.
+      // 실제로는 부스별로 여러 체험이 있을 수 있으므로, 대표 체험이나 활성화된 체험을 선택해야 합니다.
       if (Array.isArray(availableBooths)) {
         const selectedBoothData = availableBooths.find(b => b.boothId === boothId);
         if (selectedBoothData) {
-          // 임시 데이터 - 실제로는 부스별 현황 요약 API에서 가져와야 함
-          setSelectedBooth({
-            boothId: boothId,
-            boothName: selectedBoothData.boothTitle,
-            maxCapacity: 10,
-            currentParticipants: 3,
-            waitingCount: 5,
-            currentParticipantNames: ['홍길동', '김영희', '이철수'],
-            nextParticipantName: '박민수'
-          });
+          try {
+            // 부스의 체험 목록을 먼저 조회
+            const experiences = await getBoothExperiences(boothId);
+            if (experiences.length > 0) {
+              // 첫 번째 체험의 요약 정보를 조회
+              const firstExperience = experiences[0];
+              const summary = await getExperienceSummary(firstExperience.experienceId);
+              
+              setSelectedBooth({
+                boothId: boothId,
+                boothName: selectedBoothData.boothTitle,
+                maxCapacity: summary.maxCapacity || 0,
+                currentParticipants: summary.currentParticipants || 0,
+                waitingCount: summary.waitingCount || 0,
+                currentParticipantNames: summary.currentParticipantNames || [],
+                nextParticipantName: summary.nextParticipantName || undefined
+              });
+            } else {
+              // 체험이 없는 경우 기본값으로 설정
+              setSelectedBooth({
+                boothId: boothId,
+                boothName: selectedBoothData.boothTitle,
+                maxCapacity: 0,
+                currentParticipants: 0,
+                waitingCount: 0,
+                currentParticipantNames: [],
+                nextParticipantName: undefined
+              });
+            }
+          } catch (apiError) {
+            console.error('체험 요약 API 호출 실패:', apiError);
+            // API 실패 시 기본값으로 설정
+            setSelectedBooth({
+              boothId: boothId,
+              boothName: selectedBoothData.boothTitle,
+              maxCapacity: 0,
+              currentParticipants: 0,
+              waitingCount: 0,
+              currentParticipantNames: [],
+              nextParticipantName: undefined
+            });
+          }
         }
       }
     } catch (error) {

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Edit2 } from "lucide-react";
+import { ArrowLeft, Edit2, Phone, Mail } from "lucide-react";
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import {
     getAttendeesReservation,
     updateAttendee
@@ -23,18 +24,19 @@ export default function ParticipantList(): JSX.Element {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [possibleDate, setPossibleDate] = useState("");
     const [selectedParticipant, setSelectedParticipant] = useState<AttendeeInfoResponseDto | null>(null);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     useEffect(() => {
         const fetchParticipant = async () => {
-            
+
             if (!isOneDayBeforeEvent(scheduleDate)) {
                 setIsPossibleEdit(false);
             }
             const res = await getAttendeesReservation(Number(reservationId));
             setParticipants(res.attendees);
             console.log("setParticipants 완료");
-            console.log("reservationDate:"+reservationDate);
-            console.log("scheduleDate:"+scheduleDate);
+            console.log("reservationDate:" + reservationDate);
+            console.log("scheduleDate:" + scheduleDate);
         }
         fetchParticipant();
     }, []);
@@ -71,12 +73,12 @@ export default function ParticipantList(): JSX.Element {
                     day: "2-digit"
                 })
             );
-            console.log("reservationDate"+reservationDate+" oneDayBefore: "+oneDayBefore);
+            console.log("reservationDate" + reservationDate + " oneDayBefore: " + oneDayBefore);
             return true;
         }
 
         // 2. 예약날짜가 행사 당일일 경우 -> 행사 당일 + 시작시간까지 수정 가능
-        if ((reservationDateObj.getTime() === eventDate.getTime()) &&  (nowTime.getTime() < eventStart.getTime()) ) {
+        if ((reservationDateObj.getTime() === eventDate.getTime()) && (nowTime.getTime() < eventStart.getTime())) {
             setPossibleDate(today.toLocaleDateString("ko-KR",
                 {
                     year: "numeric",
@@ -96,7 +98,7 @@ export default function ParticipantList(): JSX.Element {
                     day: "2-digit"
                 })
             );
-            console.log("reservationDate"+reservationDate+" twoDaysBefore: "+twoDaysBefore);
+            console.log("reservationDate" + reservationDate + " twoDaysBefore: " + twoDaysBefore);
 
             return true;
         }
@@ -127,7 +129,7 @@ export default function ParticipantList(): JSX.Element {
         const data: AttendeeUpdateRequestDto = {
             reservationId: updatedParticipant.reservationId,
             name: updatedParticipant.name,
-            email: updatedParticipant.email, 
+            email: updatedParticipant.email,
             phone: updatedParticipant.phone
         }
 
@@ -158,15 +160,52 @@ export default function ParticipantList(): JSX.Element {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
-                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    참여자 목록
+            <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
+                {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+                <button
+                    onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                    className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+                >
+                    {isMobileSidebarOpen ? (
+                        <HiOutlineX className="w-6 h-6 text-gray-600" />
+                    ) : (
+                        <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+                    )}
+                </button>
+
+                {/* 모바일 사이드바 오버레이 */}
+                {isMobileSidebarOpen && (
+                    <div
+                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                    />
+                )}
+
+                {/* 모바일 사이드바 */}
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
+                    <div className="p-4">
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className="absolute top-4 right-4 p-2"
+                        >
+                            <HiOutlineX className="w-6 h-6 text-gray-600" />
+                        </button>
+                        <AttendeeSideNav className="!relative !top-0 !left-0" />
+                    </div>
                 </div>
 
-                <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-                                    <TopNav />
+                {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+                <div className="hidden md:block">
+                    <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                </div>
 
-                <div className="absolute top-[239px] left-64 right-0">
+                <TopNav />
+
+
+
+                {/* 웹 콘텐츠 - 웹화면에서 원래 위치로 유지 */}
+                <div className="hidden md:block absolute top-[239px] left-64 right-0">
                     <div className="w-[921px] bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] p-8">
                         {/* 헤더 */}
                         <div className="flex items-center justify-between mb-8">
@@ -260,10 +299,105 @@ export default function ParticipantList(): JSX.Element {
                                             ))}
                                         </tbody>
                                     </table>
-                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-sm mt-1 text-right">
-                                            <span className="font-semibold text-gray-900">{possibleDate}</span>까지 수정 가능
+                                    <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-sm mt-1 text-right">
+                                        <span className="font-semibold text-gray-900">{possibleDate}</span>까지 수정 가능
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 모바일 콘텐츠 - 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:hidden block w-full px-4 py-4 mt-20">
+                    <div className="bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_2px_8px_#0000001a] p-4">
+                        {/* 모바일 헤더 */}
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                                <button
+                                    onClick={handleBack}
+                                    className="p-2 hover:bg-gray-100 rounded-[10px] transition-colors"
+                                >
+                                    <ArrowLeft className="w-5 h-5 text-gray-500" />
+                                </button>
+                                <div>
+                                    <h2 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[26px]">
+                                        참여자 목록
+                                    </h2>
+                                    <p className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-sm mt-1">
+                                        {eventName}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                                총 <span className="font-semibold text-gray-900">{participants.length}</span>명
+                            </div>
+                        </div>
+
+                        {/* 모바일 내용 */}
+                        <div className="space-y-4">
+                            {participants.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="text-gray-400 text-base mb-2">등록된 참여자가 없습니다</div>
+                                    <div className="text-gray-500 text-sm">참여자 정보 입력을 통해 참여자를 등록해주세요.</div>
+                                </div>
+                            ) : (
+                                <>
+                                    {participants.map((participant, index) => (
+                                        <div key={participant.attendeeId} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                                        <span className="text-blue-600 text-xs font-medium">{index + 1}</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-900 text-base">
+                                                            {participant.name}
+                                                        </span>
+                                                        {index == 0 && (
+                                                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                                                계정 주인
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {!(index == 0) && (
+                                                    <button
+                                                        onClick={() => handleEdit(participant)}
+                                                        disabled={!isPossibleEdit}
+                                                        className={`p-2 rounded-[8px] transition-colors
+                                                            ${isPossibleEdit
+                                                                ? "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                                                                : "text-gray-300 cursor-not-allowed"
+                                                            }`}
+                                                        title="수정"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center space-x-2">
+                                                    <Phone className="w-4 h-4 text-gray-500" />
+                                                    <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-700 text-sm">
+                                                        {participant.phone}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <Mail className="w-4 h-4 text-gray-500" />
+                                                    <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-700 text-sm">
+                                                        {participant.email}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                </div>   
+                                    ))}
+
+                                    <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-600 text-sm mt-4 text-center">
+                                        <span className="font-semibold text-gray-900">{possibleDate}</span>까지 수정 가능
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
