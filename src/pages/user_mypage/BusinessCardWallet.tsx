@@ -5,6 +5,7 @@ import { AdminSideNav } from '../../components/AdminSideNav';
 import { HostSideNav } from '../../components/HostSideNav';
 import { BoothAdminSideNav } from '../../components/BoothAdminSideNav';
 import { getCachedRoleCode } from '../../utils/role';
+import { hasAdminPermission, hasEventManagerPermission, hasBoothManagerPermission } from '../../utils/permissions';
 import { QRScannerModal } from '../../components/QRScannerModal';
 import { toast } from 'react-toastify';
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
@@ -221,19 +222,19 @@ export default function BusinessCardWallet(): JSX.Element {
                         >
                             <HiOutlineX className="w-6 h-6 text-gray-600" />
                         </button>
-                        {userRole === 'ADMIN' && <AdminSideNav className="!relative !top-0 !left-0" />}
-                        {userRole === 'EVENT_MANAGER' && <HostSideNav className="!relative !top-0 !left-0" />}
-                        {userRole === 'BOOTH_ADMIN' && <BoothAdminSideNav className="!relative !top-0 !left-0" />}
-                        {(!userRole || userRole === 'USER') && <AttendeeSideNav className="!relative !top-0 !left-0" />}
+                        {userRole && hasAdminPermission(userRole) && <AdminSideNav className="!relative !top-0 !left-0" />}
+                        {userRole && hasEventManagerPermission(userRole) && <HostSideNav className="!relative !top-0 !left-0" />}
+                        {userRole && hasBoothManagerPermission(userRole) && <BoothAdminSideNav className="!relative !top-0 !left-0" />}
+                        {(!userRole || (!hasAdminPermission(userRole || '') && !hasEventManagerPermission(userRole || '') && !hasBoothManagerPermission(userRole || ''))) && <AttendeeSideNav className="!relative !top-0 !left-0" />}
                     </div>
                 </div>
 
                 {/* 데스크톱 사이드바 */}
                 <div className="hidden md:block">
-                    {userRole === 'ADMIN' && <AdminSideNav className="!absolute !left-0 !top-[117px]" />}
-                    {userRole === 'EVENT_MANAGER' && <HostSideNav className="!absolute !left-0 !top-[117px]" />}
-                    {userRole === 'BOOTH_ADMIN' && <BoothAdminSideNav className="!absolute !left-0 !top-[117px]" />}
-                    {(!userRole || userRole === 'USER') && <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />}
+                    {userRole && hasAdminPermission(userRole) && <AdminSideNav className="!absolute !left-0 !top-[117px]" />}
+                    {userRole && hasEventManagerPermission(userRole) && <HostSideNav className="!absolute !left-0 !top-[117px]" />}
+                    {userRole && hasBoothManagerPermission(userRole) && <BoothAdminSideNav className="!absolute !left-0 !top-[117px]" />}
+                    {(!userRole || (!hasAdminPermission(userRole || '') && !hasEventManagerPermission(userRole || '') && !hasBoothManagerPermission(userRole || ''))) && <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />}
                 </div>
 
                 <TopNav />
