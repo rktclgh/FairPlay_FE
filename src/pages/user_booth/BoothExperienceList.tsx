@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Clock, Users, MapPin, Calendar } from 'lucide-react';
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import {
   getAvailableExperiences,
   getCongestionColor,
@@ -34,6 +35,7 @@ const BoothExperienceList: React.FC = () => {
   const [userRegisteredEvents, setUserRegisteredEvents] = useState<{ id: number, name: string }[]>([]);
   const [userEventsLoaded, setUserEventsLoaded] = useState(false);
   const [showOnlyRegisteredEvents, setShowOnlyRegisteredEvents] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // 디바운스된 검색어
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -216,27 +218,65 @@ const BoothExperienceList: React.FC = () => {
         <div className="bg-white w-full max-w-[1256px] min-h-screen relative">
           <TopNav />
 
-          {/* 페이지 제목 */}
-          <div className="top-[137px] left-4 md:left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl absolute tracking-[0] leading-[40px] md:leading-[54px] whitespace-nowrap px-4 md:px-0">
-            {t('boothExperience.list')}
+          {/* 제목 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+          <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
+            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+              {t('boothExperience.list')}
+            </div>
           </div>
 
-          {/* 사이드바 - 모바일에서는 숨김 */}
-          <AttendeeSideNav className="!absolute !left-0 !top-[117px] hidden md:block" />
+          {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+          >
+            {isMobileSidebarOpen ? (
+              <HiOutlineX className="w-6 h-6 text-gray-600" />
+            ) : (
+              <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+            )}
+          </button>
 
-          {/* 메인 콘텐츠 */}
-          <div className="ml-0 md:ml-64 mt-[195px] w-full md:w-[949px] pb-28 md:pb-36 px-4 md:px-0">
+          {/* 모바일 사이드바 오버레이 */}
+          {isMobileSidebarOpen && (
+            <div
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+          )}
+
+          {/* 모바일 사이드바 */}
+          <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="p-4">
+              <button
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="absolute top-4 right-4 p-2"
+              >
+                <HiOutlineX className="w-6 h-6 text-gray-600" />
+              </button>
+              <AttendeeSideNav className="!relative !top-0 !left-0" />
+            </div>
+          </div>
+
+          {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+          <div className="hidden md:block">
+            <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+          </div>
+
+          {/* 콘텐츠 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+          <div className="md:absolute md:top-[195px] md:left-64 md:right-0 md:pr-8 left-0 right-4 top-32 relative">
             {/* 헤더 */}
             <div className="mb-4 md:mb-6">
-              <p className="text-gray-600 text-sm md:text-base">{t('boothExperience.description')}</p>
+              <p className="text-gray-600 text-sm md:text-base">다양한 부스에서 제공하는 흥미로운 체험을 예약하세요</p>
             </div>
 
             {/* 검색 및 필터 */}
             <div className="bg-white rounded-lg shadow-md p-3 md:p-6 mb-4 md:mb-6">
               <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">{t('payment.searchConditions')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 md:gap-4 mb-3 md:mb-4">
+                {/* 모바일에서 간격을 위해 각 요소에 margin-bottom 추가 */}
                 {/* 행사 선택 */}
-                <div>
+                <div className="mb-1 sm:mb-0">
                   <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-1">{t('event.title')}</label>
                   <div className="relative">
                     <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
@@ -263,7 +303,7 @@ const BoothExperienceList: React.FC = () => {
                 </div>
 
                 {/* 검색 */}
-                <div>
+                <div className="mb-1 sm:mb-0">
                   <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">{t('boothExperience.experienceName')}</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -278,7 +318,7 @@ const BoothExperienceList: React.FC = () => {
                 </div>
 
                 {/* 날짜 필터 - 시작일과 종료일을 같은 줄에 배치 */}
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 mb-1 sm:mb-0">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">시작일</label>
