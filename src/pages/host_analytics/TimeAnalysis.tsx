@@ -206,7 +206,7 @@ export const TimeAnalysis: React.FC = () => {
 
                     {/* 첫 번째 행: 시간대별 예매 현황 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">24시간 예매 현황</h2>
+                        <h2 className="text-lg font-semibold text-gray-900 mb-6">최근 한달 24시간 평균 예매 현황</h2>
                         <div className="h-80">
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={hourlyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
