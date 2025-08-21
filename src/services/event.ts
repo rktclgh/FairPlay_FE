@@ -25,6 +25,7 @@ export const eventAPI = {
 
    async getHotPicks({ size = 10 }: { size?: number } = {}): Promise<HotPick[]> {
     const tries = [
+      ["/api/events/hot-picks", { size }],  // 새로운 예약 기반 핫픽 API
       ["/api/banners/hot-picks", { size }],
       ["/api/banner/hot-picks",  { size }],
     ] as const;
