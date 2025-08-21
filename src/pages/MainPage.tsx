@@ -28,6 +28,8 @@ import { useScrollToTop } from "../hooks/useScrollToTop";
 // imports 밑에 위치
 const ENABLE_NEW_PICKS = import.meta.env.VITE_ENABLE_NEW_PICKS === "true";
 
+// HMR 테스트 주석 제거
+
 // 카테고리 번역 함수
 const translateCategory = (category: string, t: any): string => {
     const categoryMap: Record<string, string> = {
@@ -641,13 +643,7 @@ await loadHeroAdvertisements();
 const searchTop = await fetchSearchTopToday(); // ★ 추가
 setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.isFinite)));
 
-               // HOT PICKS 백엔드 연동
-               try {
-                   const hot = await eventAPI.getHotPicks({ size: 10 });
-                   setHotPicks(hot); // 매핑 없이 바로
-               } catch (e) {
-                   console.error("HOT PICKS 로드 실패:", e);
-               }
+               // HOT PICKS 코드는 활성 useEffect로 이동됨
            } catch (error) {
                console.error("데이터 로드 실패:", error);
                setEvents([]);
@@ -758,10 +754,54 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
 
         // 6) 나머지 섹션 그대로
         await loadHeroAdvertisements();
+        
+        // HOT PICKS - 실제 이벤트 데이터 사용
         try {
+          console.log("[HOT PICKS] 로딩 시작...");
+          
+          // 1. 먼저 백엔드 핫픽 API 시도
           const hot = await eventAPI.getHotPicks({ size: 10 });
-          setHotPicks(hot);
-        } catch { }
+          console.log("[HOT PICKS] 백엔드 API 응답:", hot);
+          
+          if (hot && hot.length > 0) {
+            setHotPicks(hot);
+            console.log("[HOT PICKS] 백엔드 데이터 사용, 개수:", hot.length);
+          } else {
+            // 2. 백엔드 데이터가 없으면 실제 이벤트에서 핫픽 생성
+            console.log("[HOT PICKS] 실제 이벤트 데이터로 핫픽 생성");
+            
+            // 현재 진행 중이거나 예정된 이벤트 중 상위 10개 선택
+            const hotPickCandidates = baseEvents
+              .filter(event => event.eventStatusCode === 'ONGOING' || event.eventStatusCode === 'UPCOMING')
+              .slice(0, 10)
+              .map(event => ({
+                id: event.id,
+                title: event.title,
+                date: `${event.startDate}${event.endDate !== event.startDate ? ` ~ ${event.endDate}` : ''}`,
+                location: event.location,
+                category: event.mainCategory,
+                image: event.thumbnailUrl || '/images/FPlogo.png'
+              }));
+            
+            setHotPicks(hotPickCandidates);
+            console.log("[HOT PICKS] 실제 데이터로 핫픽 생성 완료, 개수:", hotPickCandidates.length);
+          }
+        } catch (e) {
+          console.error("HOT PICKS 로드 실패:", e);
+          // 에러 시에도 실제 이벤트 데이터로 폴백
+          const fallbackHotPicks = baseEvents
+            .slice(0, 3)
+            .map(event => ({
+              id: event.id,
+              title: event.title,
+              date: `${event.startDate}${event.endDate !== event.startDate ? ` ~ ${event.endDate}` : ''}`,
+              location: event.location,
+              category: event.mainCategory,
+              image: event.thumbnailUrl || '/images/FPlogo.png'
+            }));
+          setHotPicks(fallbackHotPicks);
+          console.log("[HOT PICKS] 에러 시 폴백 데이터 사용, 개수:", fallbackHotPicks.length);
+        }
       } catch (error) {
         console.error("데이터 로드 실패:", error);
         setEvents([]);

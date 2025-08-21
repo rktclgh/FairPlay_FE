@@ -13,6 +13,7 @@ import { Trash2, Edit3, User, Building, Phone, Mail, Globe, MapPin, Calendar, Se
 import businessCardService from '../../services/businessCardService';
 import type { CollectedCard } from '../../types/businessCard';
 import { useTranslation } from 'react-i18next';
+import FlippableBusinessCard from '../../components/FlippableBusinessCard';
 
 export default function BusinessCardWallet(): JSX.Element {
     const { t } = useTranslation();
@@ -73,6 +74,27 @@ export default function BusinessCardWallet(): JSX.Element {
                 prev.map(card =>
                     card.id === editingMemo.cardId
                         ? { ...card, memo: editingMemo.memo }
+                        : card
+                )
+            );
+            
+            setEditingMemo(null);
+            toast.success(t('businessCardWallet.memoSaved'));
+        } catch (error: any) {
+            console.error('메모 저장 실패:', error);
+            const message = error.response?.data?.message || t('businessCardWallet.memoSaveError');
+            toast.error(message);
+        }
+    };
+
+    const handleUpdateMemo = async (cardId: number, memo: string) => {
+        try {
+            await businessCardService.updateCollectedCardMemo(cardId, { memo });
+
+            setCollectedCards(prev =>
+                prev.map(card =>
+                    card.id === cardId
+                        ? { ...card, memo }
                         : card
                 )
             );
@@ -293,209 +315,17 @@ export default function BusinessCardWallet(): JSX.Element {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8 justify-items-center">
                                 {currentCards.map((card) => (
-                                <div key={card.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-                                    {/* 명함 헤더 */}
-                                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <h3 className="text-lg font-semibold mb-1">
-                                                    {card.businessCard?.name || 'Unknown'}
-                                                </h3>
-                                                {card.businessCard?.position && (
-                                                    <p className="text-blue-100 text-sm mb-1">
-                                                        {card.businessCard.position}
-                                                    </p>
-                                                )}
-                                                {card.businessCard?.company && (
-                                                    <p className="text-blue-100 text-sm">
-                                                        {card.businessCard.company}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => handleDeleteCard(card.id, card.businessCard?.name)}
-                                                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                                                title={t('common.delete')}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* 명함 내용 */}
-                                    <div className="p-4 space-y-3">
-                                        {/* 부서 */}
-                                        {card.businessCard?.department && (
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <Building className="w-4 h-4 mr-2 text-gray-400" />
-                                                <span>{card.businessCard.department}</span>
-                                            </div>
-                                        )}
-
-                                        {/* 전화번호 */}
-                                        {card.businessCard?.phoneNumber && (
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                                                <a
-                                                    href={`tel:${card.businessCard.phoneNumber}`}
-                                                    className="hover:text-blue-600 transition-colors"
-                                                >
-                                                    {businessCardService.formatPhoneNumber(card.businessCard.phoneNumber)}
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        {/* 이메일 */}
-                                        {card.businessCard?.email && (
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                                                <a
-                                                    href={`mailto:${card.businessCard.email}`}
-                                                    className="hover:text-blue-600 transition-colors break-all"
-                                                >
-                                                    {card.businessCard.email}
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        {/* 웹사이트 */}
-                                        {card.businessCard?.website && (
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <Globe className="w-4 h-4 mr-2 text-gray-400" />
-                                                <a
-                                                    href={businessCardService.normalizeWebsiteUrl(card.businessCard.website)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="hover:text-blue-600 transition-colors break-all"
-                                                >
-                                                    {card.businessCard.website}
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        {/* 주소 */}
-                                        {card.businessCard?.address && (
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                                                <span>{card.businessCard.address}</span>
-                                            </div>
-                                        )}
-
-                                        {/* 소셜 미디어 링크들 */}
-                                        {(card.businessCard?.linkedIn || card.businessCard?.instagram || card.businessCard?.facebook || card.businessCard?.twitter) && (
-                                            <div className="flex space-x-2">
-                                                {card.businessCard.linkedIn && (
-                                                    <a
-                                                        href={getSocialMediaUrl('linkedIn', card.businessCard.linkedIn)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-600 hover:text-blue-800 text-sm"
-                                                    >
-                                                        LinkedIn
-                                                    </a>
-                                                )}
-                                                {card.businessCard.instagram && (
-                                                    <a
-                                                        href={getSocialMediaUrl('instagram', card.businessCard.instagram)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-pink-600 hover:text-pink-800 text-sm"
-                                                    >
-                                                        Instagram
-                                                    </a>
-                                                )}
-                                                {card.businessCard.facebook && (
-                                                    <a
-                                                        href={getSocialMediaUrl('facebook', card.businessCard.facebook)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-700 hover:text-blue-900 text-sm"
-                                                    >
-                                                        Facebook
-                                                    </a>
-                                                )}
-                                                {card.businessCard.twitter && (
-                                                    <a
-                                                        href={getSocialMediaUrl('twitter', card.businessCard.twitter)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-400 hover:text-blue-600 text-sm"
-                                                    >
-                                                        Twitter
-                                                    </a>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* 자기소개 */}
-                                        {card.businessCard?.description && (
-                                            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                                                <p className="whitespace-pre-wrap">{card.businessCard.description}</p>
-                                            </div>
-                                        )}
-
-                                        {/* 메모 섹션 */}
-                                        <div className="border-t pt-3 mt-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm font-medium text-gray-700">{t('businessCardWallet.memo')}</span>
-                                                {editingMemo?.cardId !== card.id && (
-                                                    <button
-                                                        onClick={() => setEditingMemo({
-                                                            cardId: card.id,
-                                                            memo: card.memo || ''
-                                                        })}
-                                                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                                        title={t('common.edit')}
-                                                    >
-                                                        <Edit3 className="w-3 h-3 text-gray-400" />
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {editingMemo?.cardId === card.id ? (
-                                                <div className="space-y-2">
-                                                    <textarea
-                                                        value={editingMemo.memo}
-                                                        onChange={(e) => setEditingMemo({
-                                                            ...editingMemo,
-                                                            memo: e.target.value
-                                                        })}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                        rows={3}
-                                                        placeholder={t('businessCardWallet.memoPlaceholder')}
-                                                    />
-                                                    <div className="flex space-x-2">
-                                                        <button
-                                                            onClick={handleSaveMemo}
-                                                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                                                        >
-                                                            {t('common.save')}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setEditingMemo(null)}
-                                                            className="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 transition-colors"
-                                                        >
-                                                            {t('common.cancel')}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <p className="text-sm text-gray-600 min-h-[20px]">
-                                                    {card.memo || t('businessCardWallet.noMemo')}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* 수집 날짜 */}
-                                        <div className="flex items-center text-xs text-gray-400 pt-2 border-t">
-                                            <Calendar className="w-3 h-3 mr-1" />
-                                            {formatDate(card.collectedAt)} {t('businessCardWallet.collected')}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                    <FlippableBusinessCard
+                                        key={card.id}
+                                        card={card}
+                                        onDelete={handleDeleteCard}
+                                        onMemoUpdate={handleUpdateMemo}
+                                        editingMemo={editingMemo}
+                                        onEditMemo={setEditingMemo}
+                                    />
+                                ))}
                             </div>
                             
                             {/* 페이징 */}

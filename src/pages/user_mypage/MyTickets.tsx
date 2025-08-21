@@ -503,24 +503,24 @@ export default function MyTickets(): JSX.Element {
                                 return (
                                     <div
                                         key={reservation.reservationId}
-                                        className="w-full h-auto md:h-[240px] bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] relative"
+                                        className="w-full h-auto bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] relative"
                                     >
-                                        <div className="p-4 md:p-6 relative h-full flex flex-col md:flex-row md:items-center">
+                                        <div className="p-4 md:p-6 relative flex flex-col md:flex-row md:items-start">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-[40px] w-full mb-4 md:mb-0">
                                                 <div className="space-y-3 md:space-y-[15px] pt-2 md:pt-[20px] pb-2 md:pb-[20px]">
                                                     <div className="pt-1 md:pt-[10px]">
                                                         <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.eventName')}
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base md:text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2">
+                                                            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base md:text-lg tracking-[0] leading-[27px] break-words min-w-0 flex-1">
                                                                 {reservation.eventName}
                                                             </div>
 
-                                                            {/* 카테고리 정보 - 행사 타이틀 오른쪽에 배치 */}
+                                                            {/* 카테고리 정보 - 행사 타이틀 아래에 배치 */}
                                                             {reservation.mainCategory && (
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`px-3 py-1 rounded text-xs ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                                                                <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                                                                    <span className={`px-3 py-1 rounded text-xs whitespace-nowrap ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
                                                                         reservation.mainCategory === "공연" ? "bg-red-100 text-red-800 border border-red-200" :
                                                                             reservation.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border border-green-200" :
                                                                                 reservation.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
@@ -530,7 +530,7 @@ export default function MyTickets(): JSX.Element {
                                                                         {reservation.mainCategory}
                                                                     </span>
                                                                     {reservation.subCategory && (
-                                                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
+                                                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200 whitespace-nowrap">
                                                                             {reservation.subCategory}
                                                                         </span>
                                                                     )}
@@ -595,7 +595,7 @@ export default function MyTickets(): JSX.Element {
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-col space-y-3 md:space-y-4 mt-4 md:mt-0 md:absolute md:top-6 md:right-6">
+                                            <div className="flex flex-col space-y-3 md:space-y-4 mt-4 md:mt-0 md:absolute md:top-[55px] md:right-6">
                                                 {/* QR 티켓 버튼 */}
                                                 <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-10">
                                                     <button
@@ -657,7 +657,7 @@ export default function MyTickets(): JSX.Element {
                                                                 console.log('모바일 팜플렛 버튼 클릭:', reservation.eventId);
                                                                 handlePamphletOpen(reservation.eventId);
                                                             }}
-                                                            className="relative z-20 w-full h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
+                                                            className="relative z-20 w-full h-full bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black rounded-xl border-0 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center cursor-pointer group focus:outline-none focus:ring-0"
                                                             style={{ pointerEvents: 'auto' }}
                                                         >
                                                             <span className="font-semibold text-white text-xs tracking-wide">
@@ -687,42 +687,75 @@ export default function MyTickets(): JSX.Element {
 
             {/* 모바일 팜플렛 모달 */}
             {isPamphletModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm w-full h-[92vh] overflow-y-auto scrollbar-hide">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full h-[95vh] flex flex-col overflow-hidden">
                         {/* 모달 헤더 */}
-                        <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white p-6">
-                            <h2 className="text-xl font-bold">{selectedEventForPamphlet?.eventName || '모바일 팜플렛'}</h2>
-                            <button
-                                onClick={handlePamphletClose}
-                                className="absolute top-2 right-2 sm:top-3 md:top-4 sm:right-3 md:right-4 w-6 h-6 flex items-center justify-center bg-transparent hover:bg-white/20 transition-colors text-white font-bold text-lg focus:outline-none focus:ring-0"
-                            >
-                                ×
-                            </button>
+                        <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white p-6 flex-shrink-0">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">{selectedEventForPamphlet?.eventName || '모바일 팜플렛'}</h2>
+                                    <p className="text-gray-300 text-sm mt-1">부스 정보 및 체험 현황</p>
+                                </div>
+                                <button
+                                    onClick={handlePamphletClose}
+                                    className="w-14 h-9 flex items-center justify-center text-white/70 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-0 bg-transparent"
+                                >
+                                    <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         {/* 모달 콘텐츠 */}
-                        <div className="p-6 space-y-6">
-                            {/* 나의 실시간 순서 - 더미 데이터 */}
-                            <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                                <div className="flex items-center space-x-3">
-                                    <span className="text-gray-700 font-medium">나의 실시간 순서:</span>
-                                    <span className="text-2xl font-bold text-orange-600">3번째</span>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-8 scrollbar-hide">
+                            {/* 나의 실시간 순서 - 세련된 디자인 */}
+                            <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-indigo-50 p-5 rounded-3xl border border-emerald-200/50 shadow-lg backdrop-blur-sm">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="relative">
+                                            <div className="w-4 h-4 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-full animate-pulse"></div>
+                                            <div className="absolute inset-0 w-4 h-4 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-full animate-ping opacity-75"></div>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-gray-800 font-semibold text-sm">나의 실시간 순서</span>
+                                            <span className="text-gray-500 text-xs">현재 대기열</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-3">
+                                        <div className="text-right">
+                                            <span className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">3</span>
+                                            <span className="text-gray-600 font-medium text-sm ml-1">번째</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                // 새로고침 로직 추가
+                                                console.log('실시간 순서 새로고침');
+                                            }}
+                                            className="p-2 rounded-full bg-white/80 hover:bg-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                        >
+                                            <RefreshCw className="w-4 h-4 text-gray-600 group-hover:text-emerald-600 transition-colors duration-200" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* 부스 상세정보가 열려있지 않을 때만 부스 목록 표시 */}
                             {!isBoothDetailModalOpen && (
                                 <>
-                                    {/* 검색창 */}
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-[10px] focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                        />
+                                    {/* 세련된 검색창 */}
+                                    <div className="relative group">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl blur-sm opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
+                                        <div className="relative bg-white rounded-2xl border border-gray-200/60 shadow-sm group-focus-within:shadow-lg group-focus-within:border-gray-300 transition-all duration-300">
+                                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-gray-600 transition-colors duration-200" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full pl-12 pr-4 py-4 bg-transparent border-none rounded-2xl focus:outline-none focus:ring-0 text-gray-700 placeholder-gray-400 transition-all duration-200"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* 부스 카드 그리드 */}
@@ -730,10 +763,9 @@ export default function MyTickets(): JSX.Element {
                                         {booths?.filter(booth => (booth.boothTitle || '').toLowerCase().includes(searchTerm.toLowerCase()))
                                             .map((booth, index) => {
                                                 console.log('부스 데이터:', booth);
-                                                // boothId가 없을 경우 다른 필드들도 확인
                                                 const id = booth.boothId || booth.id || index;
                                                 return (
-                                                    <div key={id} className="text-center cursor-pointer hover:scale-105 transition-transform" onClick={() => {
+                                                    <div key={id} className="group cursor-pointer" onClick={() => {
                                                         console.log('부스 클릭 - boothId:', booth.boothId, 'id:', booth.id, 'index:', index);
                                                         const validId = booth.boothId || booth.id;
                                                         if (validId && typeof validId === 'number') {
@@ -743,17 +775,19 @@ export default function MyTickets(): JSX.Element {
                                                             toast.error('부스 정보가 올바르지 않습니다.');
                                                         }
                                                     }}>
-                                                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
+                                                        <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3 group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
                                                             <img
                                                                 src={booth.boothBannerUrl || '/placeholder-image.jpg'}
                                                                 alt={booth.boothTitle || '부스'}
-                                                                className="w-full h-full object-cover"
+                                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                                                 onError={(e) => {
                                                                     e.currentTarget.src = '/placeholder-image.jpg';
                                                                 }}
                                                             />
                                                         </div>
-                                                        <p className="text-sm font-medium text-gray-800">{booth.boothTitle || '제목 없음'}</p>
+                                                        <p className="text-sm font-medium text-gray-800 text-center group-hover:text-gray-900 transition-colors">
+                                                            {booth.boothTitle || '제목 없음'}
+                                                        </p>
                                                     </div>
                                                 );
                                             })}
@@ -768,31 +802,31 @@ export default function MyTickets(): JSX.Element {
                                     <div className="flex justify-start">
                                         <button
                                             onClick={handleBackToPamphlet}
-                                            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"
                                         >
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                             </svg>
-                                            <span>뒤로가기</span>
+                                            <span className="font-medium">뒤로가기</span>
                                         </button>
                                     </div>
 
                                     {/* 선택된 부스 카드 */}
                                     <div className="text-center">
-                                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
+                                        <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3 shadow-lg">
                                             <img
                                                 src={selectedBooth.boothBannerUrl}
                                                 alt={selectedBooth.boothTitle}
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>
-                                        <p className="text-sm font-medium text-gray-800">{selectedBooth.boothTitle}</p>
+                                        <p className="text-lg font-semibold text-gray-900">{selectedBooth.boothTitle}</p>
                                     </div>
 
                                     {/* 부스 설명 */}
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <h4 className="font-semibold text-gray-700 mb-2">부스 소개</h4>
-                                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                                    <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                                        <h4 className="font-semibold text-gray-900 mb-3 text-lg">부스 소개</h4>
+                                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
                                             {selectedBooth.boothDescription
                                                 ? stripHtmlTags(selectedBooth.boothDescription)
                                                 : '부스 설명이 없습니다.'}
@@ -800,27 +834,27 @@ export default function MyTickets(): JSX.Element {
                                     </div>
 
                                     {/* 부스 담당자 정보 */}
-                                    <div className="bg-blue-50 p-4 rounded-lg">
-                                        <h4 className="font-semibold text-blue-700 mb-3">부스 담당자</h4>
-                                        <div className="flex items-center space-x-3 mb-3">
-                                            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                                                <span className="text-white font-bold text-lg">
+                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-2xl border border-gray-200">
+                                        <h4 className="font-semibold text-gray-900 mb-4 text-lg">부스 담당자</h4>
+                                        <div className="flex items-center space-x-4 mb-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center shadow-lg">
+                                                <span className="text-white font-bold text-xl">
                                                     {(selectedBooth.managerName || 'N').charAt(0)}
                                                 </span>
                                             </div>
                                             <div className="flex-1">
-                                                <p className="font-medium text-blue-800">{selectedBooth.managerName || '담당자 미등록'}</p>
-                                                <p className="text-blue-600 text-sm">{selectedBooth.contactEmail || '이메일 미등록'}</p>
-                                                <p className="text-blue-600 text-sm">{selectedBooth.contactNumber || '연락처 미등록'}</p>
+                                                <p className="font-semibold text-gray-900 text-lg">{selectedBooth.managerName || '담당자 미등록'}</p>
+                                                <p className="text-gray-600 text-sm">{selectedBooth.contactEmail || '이메일 미등록'}</p>
+                                                <p className="text-gray-600 text-sm">{selectedBooth.contactNumber || '연락처 미등록'}</p>
                                             </div>
                                         </div>
 
                                         {/* 외부 링크 */}
                                         {((selectedBooth.boothExternalLinks && selectedBooth.boothExternalLinks.length > 0) ||
                                             (selectedBooth.externalLinks && selectedBooth.externalLinks.length > 0)) && (
-                                                <div className="border-t border-blue-200 pt-3 mt-3">
-                                                    <h5 className="font-medium text-blue-700 mb-2 text-sm">관련 링크</h5>
-                                                    <div className="space-y-2">
+                                                <div className="border-t border-gray-300 pt-4 mt-4">
+                                                    <h5 className="font-medium text-gray-900 mb-3 text-base">관련 링크</h5>
+                                                    <div className="space-y-3">
                                                         {(selectedBooth.boothExternalLinks || selectedBooth.externalLinks || [])
                                                             .filter(link => link && (link.url || link.link))
                                                             .map((link, index) => {
@@ -834,12 +868,12 @@ export default function MyTickets(): JSX.Element {
                                                                         href={fullUrl}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm transition-colors break-all"
+                                                                        className="flex items-center space-x-3 text-gray-700 hover:text-gray-900 text-sm transition-colors break-all p-3 rounded-lg hover:bg-white/50"
                                                                     >
                                                                         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                                         </svg>
-                                                                        <span>{linkText}</span>
+                                                                        <span className="font-medium">{linkText}</span>
                                                                     </a>
                                                                 );
                                                             })
@@ -850,33 +884,32 @@ export default function MyTickets(): JSX.Element {
                                     </div>
 
                                     {/* 실시간 웨이팅 현황 */}
-                                    <div className="bg-orange-50 p-4 rounded-lg">
-                                        <h4 className="font-semibold text-orange-700 mb-3">실시간 웨이팅 현황</h4>
-                                        <p className="text-orange-600 text-sm mb-4">체험별 현재 대기열을 확인하세요.</p>
+                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-2xl border border-gray-200">
+                                        <h4 className="font-semibold text-gray-900 mb-4 text-lg">실시간 웨이팅 현황</h4>
+                                        <p className="text-gray-600 text-sm mb-5">체험별 현재 대기열을 확인하세요.</p>
 
                                         <div className="space-y-3">
                                             {experiences && experiences.length > 0 ? (
                                                 experiences.map((exp, idx) => {
-                                                    const isSelected = selectedExperience?.experienceId === exp.experienceId; // 선택 여부 확인
+                                                    const isSelected = selectedExperience?.experienceId === exp.experienceId;
                                                     return (
                                                         <div
                                                             key={idx}
                                                             className={`
-                                                flex items-center justify-between p-3 rounded-lg shadow-sm cursor-pointer
-                                                ${isSelected ? 'border-2 border-blue-500 shadow-md' : 'border border-transparent'}
-                                                bg-white hover:bg-gray-50
+                                                flex items-center justify-between p-4 rounded-xl shadow-sm cursor-pointer transition-all duration-200
+                                                ${isSelected ? 'border-2 border-gray-800 shadow-lg bg-white' : 'border border-gray-200 bg-white hover:bg-gray-50'}
                                             `}
                                                             onClick={() => handleSelectExperience(exp)}
                                                         >
                                                             {/* 체험 이름 */}
                                                             <div className="flex flex-col">
-                                                                <span className="font-medium text-gray-800">{exp.title}</span>
+                                                                <span className="font-semibold text-gray-900">{exp.title}</span>
                                                                 <span className="text-sm text-gray-500">{exp.description || '설명 없음'}</span>
                                                             </div>
 
                                                             {/* 대기 인원 */}
                                                             <div className="flex items-center space-x-2">
-                                                                <span className="text-orange-600 font-semibold text-lg">
+                                                                <span className="text-gray-900 font-bold text-xl">
                                                                     {exp.waitingCount ?? 0}명
                                                                 </span>
                                                                 <span className="text-sm text-gray-500">대기</span>
@@ -885,7 +918,7 @@ export default function MyTickets(): JSX.Element {
                                                     );
                                                 })
                                             ) : (
-                                                <p className="text-gray-500 text-sm text-center">
+                                                <p className="text-gray-500 text-sm text-center py-4">
                                                     등록된 체험이 없습니다.
                                                 </p>
                                             )}
@@ -893,29 +926,32 @@ export default function MyTickets(): JSX.Element {
                                     </div>
 
                                     {/* 약관 동의 */}
-                                    <div className="flex items-start space-x-3">
+                                    <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-2xl border border-gray-200">
                                         <input
                                             type="checkbox"
                                             id="agreeTerms"
                                             checked={agreeToTerms}
                                             onChange={(e) => setAgreeToTerms(e.target.checked)}
-                                            className="mt-1 w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
+                                            className="mt-1 w-5 h-5 text-gray-800 bg-white border-gray-300 rounded focus:ring-gray-800 focus:ring-2"
                                         />
                                         <label htmlFor="agreeTerms" className="text-sm text-gray-700 leading-relaxed">
                                             반복적, 악의적으로 대기 취소를 하지 않겠습니다.
                                         </label>
                                     </div>
 
-                                    <button
-                                        onClick={() => { handleWaitingRegistration() }}
-                                        disabled={!agreeToTerms}
-                                        className={`w-full py-3 px-4 rounded-[10px] font-semibold text-white transition-all duration-200 ${agreeToTerms
-                                            ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-lg hover:shadow-xl'
-                                            : 'bg-gray-400 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        대기 등록
-                                    </button>
+                                    {/* 대기 등록 버튼 */}
+                                    <div className="mt-6">
+                                        <button
+                                            onClick={() => { handleWaitingRegistration() }}
+                                            disabled={!agreeToTerms || !selectedExperience}
+                                            className={`w-full py-4 px-6 rounded-2xl font-semibold text-white transition-all duration-200 ${agreeToTerms && selectedExperience
+                                                ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-black hover:from-black hover:via-gray-900 hover:to-gray-800 shadow-lg hover:shadow-xl transform hover:scale-105'
+                                                : 'bg-gray-400 cursor-not-allowed opacity-60'
+                                                }`}
+                                        >
+                                            대기 등록
+                                        </button>
+                                    </div>
                                 </>
                             )}
                         </div>
