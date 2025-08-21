@@ -324,7 +324,10 @@
       "reviews": "관람평",
       "boothExperience": "부스 체험",
       "experienceList": "체험 목록 조회",
-      "experienceReservation": "체험 예약 현황"
+      "experienceReservation": "체험 예약 현황",
+      "eBusinessCard": "전자 명함",
+      "myBusinessCard": "내 전자 명함",
+      "myBusinessWallet": "명함 지갑"
     },
     "account": {
       "refundAccountInfo": "환불 계좌 정보",
@@ -859,6 +862,11 @@
     "profile": {
       "title": "내 정보 관리",
       "myInfo": "내 정보 조회"
+    },
+    "businessCard": {
+      "title": "전자명함",
+      "myCard": "내 전자명함",
+      "wallet": "명함 지갑"
     }
   },
   "businessCardWallet": {
@@ -871,7 +879,27 @@
     "qrScan": "QR 스캔",
     "previous": "이전",
     "next": "다음",
-    "itemsCount": "개"
+    "itemsCount": "개",
+    "thisCard": "이 명함",
+    "cardDeleted": "명함이 삭제되었습니다",
+    "deleteError": "명함 삭제 중 오류가 발생했습니다",
+    "memoSaved": "메모가 저장되었습니다",
+    "memoSaveError": "메모 저장 중 오류가 발생했습니다",
+    "invalidQR": "유효하지 않은 QR 코드입니다",
+    "cardCollected": "명함이 수집되었습니다",
+    "collectError": "명함 수집 중 오류가 발생했습니다",
+    "cardAlreadyCollected": "이미 수집된 명함입니다",
+    "collectedAt": "수집일시",
+    "memo": "메모",
+    "position": "직책",
+    "department": "부서",
+    "memoPlaceholder": "메모를 입력하세요",
+    "saveMemo": "저장",
+    "cancelMemo": "취소",
+    "addMemo": "메모 추가",
+    "editMemo": "메모 수정",
+    "noMemo": "메모가 없습니다",
+    "collected": "수집함"
   },
   "businessCard": {
     "title": "전자명함",
@@ -907,6 +935,19 @@
     "phoneNumber": "전화번호",
     "directInput": "직접입력",
     "areaCode": "지역번호",
-    "phonePreview": "미리보기"
+    "phonePreview": "미리보기",
+    "position": "직책",
+    "positionPlaceholder": "직책을 입력하세요",
+    "company": "회사명",
+    "companyPlaceholder": "회사명을 입력하세요",
+    "department": "부서",
+    "departmentPlaceholder": "부서를 입력하세요",
+    "namePlaceholder": "이름을 입력하세요",
+    "emailPlaceholder": "example@email.com",
+    "websitePlaceholder": "https://company.com",
+    "website": "웹사이트",
+    "descriptionPlaceholder": "자기소개를 입력하세요",
+    "saveFirst": "먼저 명함을 저장해주세요",
+    "qrCodeTitle": "QR 코드"
   }
 }

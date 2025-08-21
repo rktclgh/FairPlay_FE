@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { hasBoothManagerPermission } from "../utils/permissions";
 import { getCachedRoleCode } from "../utils/role";
 
@@ -8,6 +9,7 @@ interface BoothAdminSideNavProps {
 }
 
 export const BoothAdminSideNav: React.FC<BoothAdminSideNavProps> = ({ className = "" }) => {
+    const { t } = useTranslation();
     const location = useLocation();
     const role = getCachedRoleCode();
 
@@ -122,7 +124,7 @@ export const BoothAdminSideNav: React.FC<BoothAdminSideNavProps> = ({ className 
                     {/* 전자명함 카테고리 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
-                            전자명함
+                            {t('admin.businessCard.title')}
                         </h3>
                         <div className="space-y-1">
                             <Link
@@ -130,14 +132,14 @@ export const BoothAdminSideNav: React.FC<BoothAdminSideNavProps> = ({ className 
                                 className={linkClass("/mypage/business-card")}
                                 style={linkStyle("/mypage/business-card")}
                             >
-                                내 전자명함
+                                {t('admin.businessCard.myCard')}
                             </Link>
                             <Link
                                 to="/mypage/business-card-wallet"
                                 className={linkClass("/mypage/business-card-wallet")}
                                 style={linkStyle("/mypage/business-card-wallet")}
                             >
-                                명함 지갑
+                                {t('admin.businessCard.wallet')}
                             </Link>
                         </div>
                     </div>

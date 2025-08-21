@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { hasEventManagerPermission } from "../utils/permissions";
 import { getCachedRoleCode } from "../utils/role";
 import authManager from "../utils/auth";
@@ -9,6 +10,7 @@ interface HostSideNavProps {
 }
 
 export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
+    const { t } = useTranslation();
     const location = useLocation();
     const userRole = getCachedRoleCode();
     const [managedEventId, setManagedEventId] = useState<number | null>(null);
@@ -466,7 +468,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
 
                     {/* 전자명함 카테고리 */}
                     <div className="mb-4 space-y-0">
-                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">전자명함</h3>
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">{t('admin.businessCard.title')}</h3>
                         <div className="space-y-1">
                             <Link
                                 to="/mypage/business-card"
@@ -485,7 +487,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     e.currentTarget.style.color = location.pathname === "/mypage/business-card" ? "black" : "#00000080";
                                 }}
                             >
-                                내 전자명함
+                                {t('admin.businessCard.myCard')}
                             </Link>
                             <Link
                                 to="/mypage/business-card-wallet"
@@ -504,7 +506,7 @@ export const HostSideNav: React.FC<HostSideNavProps> = ({ className = "" }) => {
                                     e.currentTarget.style.color = location.pathname === "/mypage/business-card-wallet" ? "black" : "#00000080";
                                 }}
                             >
-                                명함 지갑
+                                {t('admin.businessCard.wallet')}
                             </Link>
                         </div>
                     </div>

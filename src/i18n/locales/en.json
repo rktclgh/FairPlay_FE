@@ -324,7 +324,10 @@
       "reviews": "Reviews",
       "boothExperience": "Booth Experience",
       "experienceList": "Experience List",
-      "experienceReservation": "Experience Reservations"
+      "experienceReservation": "Experience Reservations",
+      "eBusinessCard": "e-Business Card",
+      "myBusinessCard": "My e-Business Card",
+      "myBusinessWallet": "Contact Wallet"
     },
     "account": {
       "refundAccountInfo": "Refund Account Information",
@@ -872,6 +875,11 @@
     "profile": {
       "title": "My Profile Management",
       "myInfo": "View My Information"
+    },
+    "businessCard": {
+      "title": "Business Card",
+      "myCard": "My Business Card",
+      "wallet": "Card Wallet"
     }
   },
   "businessCardWallet": {
@@ -884,7 +892,27 @@
     "qrScan": "QR Scan",
     "previous": "Previous",
     "next": "Next",
-    "itemsCount": "items"
+    "itemsCount": "items",
+    "thisCard": "this card",
+    "cardDeleted": "Business card has been deleted",
+    "deleteError": "An error occurred while deleting the business card",
+    "memoSaved": "Memo has been saved",
+    "memoSaveError": "An error occurred while saving the memo",
+    "invalidQR": "Invalid QR code",
+    "cardCollected": "Business card has been collected",
+    "collectError": "An error occurred while collecting the business card",
+    "cardAlreadyCollected": "This business card has already been collected",
+    "collectedAt": "Collected at",
+    "memo": "Memo",
+    "position": "Position",
+    "department": "Department",
+    "memoPlaceholder": "Enter memo",
+    "saveMemo": "Save",
+    "cancelMemo": "Cancel",
+    "addMemo": "Add Memo",
+    "editMemo": "Edit Memo",
+    "noMemo": "No memo",
+    "collected": "collected"
   },
   "businessCard": {
     "title": "Business Card",
@@ -920,6 +948,19 @@
     "phoneNumber": "Phone Number",
     "directInput": "Direct Input",
     "areaCode": "Area Code",
-    "phonePreview": "Preview"
+    "phonePreview": "Preview",
+    "position": "Position",
+    "positionPlaceholder": "Enter your position",
+    "company": "Company",
+    "companyPlaceholder": "Enter your company",
+    "department": "Department",
+    "departmentPlaceholder": "Enter your department",
+    "namePlaceholder": "Enter your name",
+    "emailPlaceholder": "example@email.com",
+    "websitePlaceholder": "https://company.com",
+    "website": "Website",
+    "descriptionPlaceholder": "Enter your description",
+    "saveFirst": "Please save the business card first",
+    "qrCodeTitle": "QR Code"
   }
 }
