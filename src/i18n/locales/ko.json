@@ -792,6 +792,7 @@
     "selectedRange": "선택된 범위",
     "startDateNotSelected": "선택되지 않음",
     "endDateNotSelected": "선택되지 않음",
+    "categories": "카테고리",
     "calendar": {
       "yearMonth": "{{year}}년 {{month}}",
       "monthNames": ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],

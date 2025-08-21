@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { HostSideNav } from '../../components/HostSideNav';
 import { useFileUpload } from '../../hooks/useFileUpload';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from "axios";
 import authManager from "../../utils/auth";
 
@@ -52,7 +52,6 @@ interface CreateApplicationItem {
 }
 
 interface CreateApplicationRequestDto {
-  eventId: number;
   bannerType: BannerSlotType;   // "HERO" | "SEARCH_TOP"
   title: string;
   imageUrl: string;
@@ -86,13 +85,14 @@ async function getSlots(params: { type: BannerSlotType; from: string; to: string
 }*/
 
 // [추가] 신청 생성 API
-async function createApplication(body: CreateApplicationRequestDto): Promise<number> {
-  const { data } = await api.post("/api/banner/applications", body);
+async function createApplication(eventId: number, body: Omit<CreateApplicationRequestDto, 'eventId'>): Promise<number> {
+  const { data } = await api.post(`/api/banner/applications/${eventId}`, body);
   return data as number; // application id
 }
 
 const AdvertisementApplication: React.FC = () => {
   const navigate = useNavigate();
+  const { eventId } = useParams<{ eventId: string }>();
   const [selectedTypes, setSelectedTypes] = useState({
     mainBanner: false,
     searchTop: false
@@ -113,12 +113,7 @@ const AdvertisementApplication: React.FC = () => {
     endDate: ''
   });
 
-  // [추가] 메인 배너 신청에 필요한 입력값 (백엔드 DTO 필수 필드)
-  const [heroMeta, setHeroMeta] = useState<{
-    eventId: string;
-    title: string;
-    linkUrl: string;
-  }>({ eventId: '', title: '', linkUrl: '' });
+  // 링크 URL은 행사 상세 페이지로 자동 설정
 
 
   // 슬롯 기반 상태(서버 연동)
@@ -250,11 +245,7 @@ const AdvertisementApplication: React.FC = () => {
     return { priority: available[0].priority ?? 1, price: available[0].price };
   };
 
-  const [mdPickMeta, setMdPickMeta] = useState<{
-  eventId: string;
-  title: string;
-  linkUrl: string;
-}>({ eventId: '', title: '', linkUrl: '' });
+  // MD PICK 링크 URL도 행사 상세 페이지로 자동 설정
 
   const getMdPickStatusText = (date: string) => {
     const slots = getDateSlots(date); // slotsByDate[date] ?? []
@@ -418,19 +409,14 @@ const AdvertisementApplication: React.FC = () => {
     return;
   }
 
-  // 이미지 URL(필수) 준비: 업로드한 md_pick 파일 사용
-  const mdPickFile = uploadedFiles.get?.('md_pick') ?? null; // useFileUpload가 Map 기반이라고 가정
-  if (!mdPickFile) {
-    alert("MD PICK 이미지를 업로드해주세요.");
-    return;
-  }
-  if (!mdPickMeta.eventId) {
-    alert("MD PICK: 이벤트 ID를 입력해주세요.");
+  // MD PICK은 이미지가 필요하지 않으므로 빈 문자열 사용
+  if (!eventId) {
+    alert("이벤트 ID가 필요합니다. URL을 확인해주세요.");
     return;
   }
 
-  const mdPickImageUrl =
-    `${import.meta.env.VITE_BACKEND_BASE_URL ?? window.location.origin}${mdPickFile.url}`;
+  const mdPickImageUrl = ""; // MD PICK은 이미지 없음
+  const eventDetailUrl = `/events/${eventId}`; // 행사 상세 페이지 URL
 
   // ❗ DTO는 date 필드명 사용 (slotDate 아님)
   const items = dates
@@ -445,12 +431,11 @@ const AdvertisementApplication: React.FC = () => {
     return;
   }
 
-  const appId = await createApplication({
-    eventId: Number(mdPickMeta.eventId),
+  const appId = await createApplication(Number(eventId), {
     bannerType: "SEARCH_TOP",
-    title: mdPickMeta.title || "MD PICK 광고",
-    imageUrl: mdPickImageUrl,                  // DTO상 필수 + URL 형식
-    linkUrl: mdPickMeta.linkUrl || undefined,  // 빈 문자열 보내지 말 것
+    title: "MD PICK 광고", // 행사 정보에서 전달받은 제목 사용
+    imageUrl: mdPickImageUrl,                  // 빈 문자열
+    linkUrl: eventDetailUrl,  // 행사 상세 페이지 URL
     items,
     // lockMinutes: 2880,
   });
@@ -466,25 +451,25 @@ const AdvertisementApplication: React.FC = () => {
           alert("메인 배너 이미지를 업로드해주세요.");
           return;
         }
-        if (!heroMeta.eventId || !heroMeta.title) {
-          alert("이벤트 ID와 제목을 입력해주세요.");
+        if (!eventId) {
+          alert("이벤트 ID가 필요합니다. URL을 확인해주세요.");
           return;
         }
 
         const imageUrl =
           `${import.meta.env.VITE_BACKEND_BASE_URL ?? window.location.origin}${uploaded.url}`;
+        const heroEventDetailUrl = `/events/${eventId}`; // 행사 상세 페이지 URL
 
         const items = mainBannerForm.map(({ date, rank }) => ({
           date,
           priority: Number(rank),
         }));
 
-        const appId = await createApplication({
-          eventId: Number(heroMeta.eventId),
+        const appId = await createApplication(Number(eventId), {
           bannerType: "HERO",
-          title: heroMeta.title,
+          title: "메인 배너 광고", // 행사 정보에서 전달받은 제목 사용
           imageUrl,
-          linkUrl: heroMeta.linkUrl || undefined,
+          linkUrl: heroEventDetailUrl, // 행사 상세 페이지 URL
           items,
           // lockMinutes: 2880,
         });
@@ -584,41 +569,13 @@ const AdvertisementApplication: React.FC = () => {
                     <p className="font-medium">권장 크기: 1920 x 400px</p>
                     <p className="text-xs text-gray-500 mt-1">웹/모바일 반응형 대응</p>
                   </div>
-
-                  {/* [추가] 메인 배너 신청 메타 정보 입력 */}
-                  <div className="space-y-2 pt-2">
-                    <label className="block text-sm text-gray-700">이벤트 ID</label>
-                    <input
-                      type="number"
-                      value={heroMeta.eventId}
-                      onChange={(e) => setHeroMeta(v => ({ ...v, eventId: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="예: 123"
-                    />
-                    <label className="block text-sm text-gray-700 mt-3">배너 제목</label>
-                    <input
-                      type="text"
-                      value={heroMeta.title}
-                      onChange={(e) => setHeroMeta(v => ({ ...v, title: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="노출될 제목"
-                    />
-                    <label className="block text-sm text-gray-700 mt-3">링크 URL (선택)</label>
-                    <input
-                      type="url"
-                      value={heroMeta.linkUrl}
-                      onChange={(e) => setHeroMeta(v => ({ ...v, linkUrl: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="https://..."
-                    />
-                  </div>
                 </div>
               </div>
 
 
 
               {/* 이미지 업로드 폼 */}
-              <div className="space-y-4">
+              <div className="space-y-4 mt-10">
                 <h4 className="font-semibold text-gray-800">광고 이미지 업로드</h4>
                 <div
                   className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative h-64 flex items-center justify-center"
@@ -1084,98 +1041,14 @@ const isPastDate = day.dateString < getToday();
                     />
                   </div>
                 </div>
-<div className="space-y-2 pt-2">
-  <label className="block text-sm text-gray-700">이벤트 ID</label>
-  <input
-    type="number"
-    value={mdPickMeta.eventId}
-    onChange={(e) => setMdPickMeta(v => ({ ...v, eventId: e.target.value }))}
-    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-    placeholder="예: 456"
-  />
-</div>
 
-<div className="space-y-4 mt-4">
-  <h4 className="font-semibold text-gray-800">MD PICK 이미지 업로드</h4>
-  <div
-    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative h-64 flex items-center justify-center"
-    onDragOver={(e) => {
-      e.preventDefault();
-      e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-    }}
-    onDragLeave={(e) => {
-      e.preventDefault();
-      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-    }}
-    onDrop={(e) => {
-      e.preventDefault();
-      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-      const files = e.dataTransfer.files;
-      if (files && files[0] && files[0].type.startsWith('image/')) {
-        handleImageUpload(files[0], 'md_pick');
-      }
-    }}
-  >
-    {(() => {
-      const file = uploadedFiles.get?.('md_pick') ?? null;
-      return file ? (
-        <div className="space-y-2">
-          <img
-            src={file.url}
-            alt="MD PICK 이미지 미리보기"
-            className="mx-auto max-h-48 max-w-full object-contain rounded"
-          />
-          <p className="text-xs text-green-600">✓ {file.name}</p>
-          <div className="text-sm text-gray-600 space-x-2">
-            <label htmlFor="mdPickImage" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-              <span>이미지 변경</span>
-              <input
-                id="mdPickImage"
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleImageUpload(f, 'md_pick');
-                }}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => removeFile('md_pick')}
-              className="text-red-600 hover:text-red-500"
-            >
-              삭제
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <div className="text-sm text-gray-600">
-            <label htmlFor="mdPickImage" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-              <span>이미지 업로드</span>
-              <input
-                id="mdPickImage"
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleImageUpload(f, 'md_pick');
-                }}
-              />
-            </label>
-            <p className="pl-1">또는 드래그 앤 드롭</p>
-          </div>
-          <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 5MB</p>
-        </div>
-      );
-    })()}
-  </div>
-</div>
+                {/* MD PICK 설정 */}
+                <div className="space-y-4 mt-4">
+                  <h4 className="font-semibold text-gray-800">MD PICK 설정</h4>
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">링크 URL:</span> 행사 상세 페이지로 자동 연결
+                  </div>
+                </div>
 
                 {/* MD PICK 상태 확인 */}
                 {searchTopForm.startDate && searchTopForm.endDate && (
