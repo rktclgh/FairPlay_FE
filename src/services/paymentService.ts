@@ -14,8 +14,10 @@ declare global {
                     merchant_uid: string;
                     name: string;
                     amount: number;
-                    buyer_email: string;
+                    buyer_email?: string;
                     buyer_name: string;
+                    m_redirect_url?: string;
+                    popup?: boolean;
                 },
                 cb: (rsp: IamportResponse) => void
             ) => void;
@@ -33,6 +35,7 @@ export interface PaymentRequest {
     buyer_email?: string; // 구매자 이메일
     buyer_name: string; // 구매자 이름
     m_redirect_url?: string; // 모바일 결제 완료 후 리다이렉트 URL
+    popup?: boolean; // 팝업 창 사용 여부 (false: 리다이렉트 방식)
 }
 
 // 결제 완료 요청 인터페이스
@@ -256,7 +259,8 @@ class PaymentService {
                 name: `${title}`,
                 amount: amount,
                 buyer_name: userName,
-                m_redirect_url: `${window.location.origin}/ticket-reservation/${eventId}?success=true`
+                m_redirect_url: `${window.location.origin}/ticket-reservation/${eventId}?success=true`,
+                popup: false
             };
 
             // 4. 아임포트 결제 요청

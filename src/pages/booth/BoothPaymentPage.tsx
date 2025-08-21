@@ -78,7 +78,8 @@ const BoothPaymentPage: React.FC = () => {
         amount: paymentInfo.price,
         buyer_email: paymentInfo.contactEmail,
         buyer_name: paymentInfo.managerName,
-        m_redirect_url: `${window.location.origin}/booth/payment?applicationId=${paymentInfo.applicationId}&success=true`
+        m_redirect_url: `${window.location.origin}/booth/payment?applicationId=${paymentInfo.applicationId}&success=true`,
+        popup: false
       };
 
       // 3. 아임포트 결제 요청
