@@ -21,7 +21,7 @@ import { useWaitingSocket } from "../../utils/useWaitingSocket";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
-import { createReservation, getAvailableExperiences} from "../../services/boothExperienceService";
+import { createReservation, getAvailableExperiences } from "../../services/boothExperienceService";
 import { getBooths, /* getUserRecentlyEventWaitingCount, */ getBoothDetails } from "../../api/boothApi";
 import type { BoothExperienceReservationRequest, BoothExperienceFilters, BoothExperience, BoothExperienceReservation } from "../../services/types/boothExperienceType";
 import type { BoothSummary } from '../../types/booth';
@@ -41,7 +41,7 @@ export default function MyTickets(): JSX.Element {
     });
     const [successMessage, setSuccessMessage] = useState("");
 
-     //======= 예약 내역 ======= //
+    //======= 예약 내역 ======= //
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
 
     //======= 참석자 폼 링크 ======= //
@@ -63,7 +63,7 @@ export default function MyTickets(): JSX.Element {
 
     //======= 부스 정보 ======= //    
     const [isBoothDetailModalOpen, setIsBoothDetailModalOpen] = useState(false); // 부스 상세정보 모달 상태
-    const [experiences, setExperiences] = useState<BoothExperience[]| null>(null); // 부스 요약 목록
+    const [experiences, setExperiences] = useState<BoothExperience[] | null>(null); // 부스 요약 목록
     const [booths, setBooths] = useState<BoothSummary[] | null>(null); // 부스 목록
     const [selectedBooth, setSelectedBooth] = useState<any | null>(null); // 부스 상세정보
     const [selectedExperience, setSelectedExperience] = useState<BoothExperience | null>(null);
@@ -124,12 +124,15 @@ export default function MyTickets(): JSX.Element {
                     })
                 );
 
-                setReservations(reservationsWithCategories);
+                const sortedReservations = [...reservationsWithCategories].sort((a, b) =>
+                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+                setReservations(sortedReservations);
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 // QR 티켓 사용 가능 여부: 관람일자 1일 전부터 행사 날까지 버튼 활성화
-                const canUseList = reservationsWithCategories.map((reservation: ReservationResponseDto) => {
+                const canUseList = sortedReservations.map((reservation: ReservationResponseDto) => {
                     if (!reservation.scheduleDate || !reservation.startTime) return false;
                     const eventDate = new Date(reservation.scheduleDate); // 행사일
                     eventDate.setHours(0, 0, 0, 0);
@@ -231,10 +234,10 @@ export default function MyTickets(): JSX.Element {
             const boothsData = await getBooths(eventId); // 부스 요약 목록
             console.log('getBooths 응답:', boothsData);
             // const res = await getUserRecentlyEventWaitingCount(eventId); // 웨이팅 API 주석처리
-            
+
             // 현재 이벤트 정보를 찾아서 selectedEventForPamphlet에 설정
             const currentEvent = reservations.find(r => r.eventId === eventId);
-            
+
             setSavedEventId(eventId);
             setSelectedEventForPamphlet(currentEvent || null);
             // setWaitingCount(res.waitingCount); // 더미 데이터로 대체
@@ -262,7 +265,7 @@ export default function MyTickets(): JSX.Element {
 
     const handleBoothDetailOpen = async (boothId: number) => {
         if (!savedEventId) return;
-        
+
         try {
             console.log('부스 상세정보 로드 시작 - eventId:', savedEventId, 'boothId:', boothId);
             // 부스 상세정보 API 호출 - eventId와 boothId 모두 필요
@@ -279,7 +282,7 @@ export default function MyTickets(): JSX.Element {
             };
 
             const boothExperiences = await getAvailableExperiences(filters);
-            
+
             setSelectedBooth(boothDetails);
             setExperiences(boothExperiences);
             // setWaitingCount(boothDetails.waitingCount || 0); // 웨이팅 정보 주석처리 - 더미 데이터 사용
@@ -329,7 +332,7 @@ export default function MyTickets(): JSX.Element {
             setSavedExperience(res);
             // 실제 대기 등록 로직은 여기에 구현
             alert("대기 등록이 완료되었습니다.");
-            handleBoothDetailClose();   
+            handleBoothDetailClose();
         } catch (error) {
             alert(error.response.data);
         }
@@ -408,7 +411,7 @@ export default function MyTickets(): JSX.Element {
     // HTML 태그를 제거하는 유틸리티 함수 (줄바꿈 유지)
     const stripHtmlTags = (html: string) => {
         if (!html) return '';
-        
+
         // HTML 태그를 줄바꿈으로 변환하면서 제거
         const cleanText = html
             .replace(/<br\s*\/?>/gi, '\n')     // <br>, <br/> → 줄바꿈
@@ -424,7 +427,7 @@ export default function MyTickets(): JSX.Element {
             .replace(/&quot;/g, '"')           // &quot; → "
             .replace(/\n\s*\n/g, '\n')         // 연속된 빈 줄 → 단일 줄바꿈
             .trim();
-            
+
         return cleanText;
     };
 
@@ -811,82 +814,82 @@ export default function MyTickets(): JSX.Element {
                                                 <p className="text-blue-600 text-sm">{selectedBooth.contactNumber || '연락처 미등록'}</p>
                                             </div>
                                         </div>
-                                        
+
                                         {/* 외부 링크 */}
                                         {((selectedBooth.boothExternalLinks && selectedBooth.boothExternalLinks.length > 0) ||
-                                          (selectedBooth.externalLinks && selectedBooth.externalLinks.length > 0)) && (
-                                            <div className="border-t border-blue-200 pt-3 mt-3">
-                                                <h5 className="font-medium text-blue-700 mb-2 text-sm">관련 링크</h5>
-                                                <div className="space-y-2">
-                                                    {(selectedBooth.boothExternalLinks || selectedBooth.externalLinks || [])
-                                                        .filter(link => link && (link.url || link.link))
-                                                        .map((link, index) => {
-                                                            const linkUrl = link.url || link.link;
-                                                            const linkText = link.displayText || link.text || linkUrl;
-                                                            const fullUrl = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
-                                                            
-                                                            return (
-                                                                <a
-                                                                    key={index}
-                                                                    href={fullUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm transition-colors break-all"
-                                                                >
-                                                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                                    </svg>
-                                                                    <span>{linkText}</span>
-                                                                </a>
-                                                            );
-                                                        })
-                                                    }
+                                            (selectedBooth.externalLinks && selectedBooth.externalLinks.length > 0)) && (
+                                                <div className="border-t border-blue-200 pt-3 mt-3">
+                                                    <h5 className="font-medium text-blue-700 mb-2 text-sm">관련 링크</h5>
+                                                    <div className="space-y-2">
+                                                        {(selectedBooth.boothExternalLinks || selectedBooth.externalLinks || [])
+                                                            .filter(link => link && (link.url || link.link))
+                                                            .map((link, index) => {
+                                                                const linkUrl = link.url || link.link;
+                                                                const linkText = link.displayText || link.text || linkUrl;
+                                                                const fullUrl = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
+
+                                                                return (
+                                                                    <a
+                                                                        key={index}
+                                                                        href={fullUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm transition-colors break-all"
+                                                                    >
+                                                                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                        </svg>
+                                                                        <span>{linkText}</span>
+                                                                    </a>
+                                                                );
+                                                            })
+                                                        }
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
                                     </div>
 
                                     {/* 실시간 웨이팅 현황 */}
                                     <div className="bg-orange-50 p-4 rounded-lg">
-                                    <h4 className="font-semibold text-orange-700 mb-3">실시간 웨이팅 현황</h4>
-                                    <p className="text-orange-600 text-sm mb-4">체험별 현재 대기열을 확인하세요.</p>
+                                        <h4 className="font-semibold text-orange-700 mb-3">실시간 웨이팅 현황</h4>
+                                        <p className="text-orange-600 text-sm mb-4">체험별 현재 대기열을 확인하세요.</p>
 
-                                    <div className="space-y-3">
-                                    {experiences && experiences.length > 0 ? (
-                                        experiences.map((exp, idx) => {
-                                        const isSelected = selectedExperience?.experienceId === exp.experienceId; // 선택 여부 확인
-                                        return (
-                                            <div
-                                            key={idx}
-                                            className={`
+                                        <div className="space-y-3">
+                                            {experiences && experiences.length > 0 ? (
+                                                experiences.map((exp, idx) => {
+                                                    const isSelected = selectedExperience?.experienceId === exp.experienceId; // 선택 여부 확인
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`
                                                 flex items-center justify-between p-3 rounded-lg shadow-sm cursor-pointer
                                                 ${isSelected ? 'border-2 border-blue-500 shadow-md' : 'border border-transparent'}
                                                 bg-white hover:bg-gray-50
                                             `}
-                                            onClick={() => handleSelectExperience(exp)}
-                                            >
-                                            {/* 체험 이름 */}
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-gray-800">{exp.title}</span>
-                                                <span className="text-sm text-gray-500">{exp.description || '설명 없음'}</span>
-                                            </div>
+                                                            onClick={() => handleSelectExperience(exp)}
+                                                        >
+                                                            {/* 체험 이름 */}
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium text-gray-800">{exp.title}</span>
+                                                                <span className="text-sm text-gray-500">{exp.description || '설명 없음'}</span>
+                                                            </div>
 
-                                            {/* 대기 인원 */}
-                                            <div className="flex items-center space-x-2">
-                                                <span className="text-orange-600 font-semibold text-lg">
-                                                {exp.waitingCount ?? 0}명
-                                                </span>
-                                                <span className="text-sm text-gray-500">대기</span>
-                                            </div>
-                                            </div>
-                                        );
-                                        })
-                                    ) : (
-                                        <p className="text-gray-500 text-sm text-center">
-                                        등록된 체험이 없습니다.
-                                        </p>
-                                    )}
-                                    </div>
+                                                            {/* 대기 인원 */}
+                                                            <div className="flex items-center space-x-2">
+                                                                <span className="text-orange-600 font-semibold text-lg">
+                                                                    {exp.waitingCount ?? 0}명
+                                                                </span>
+                                                                <span className="text-sm text-gray-500">대기</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <p className="text-gray-500 text-sm text-center">
+                                                    등록된 체험이 없습니다.
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* 약관 동의 */}
@@ -904,7 +907,7 @@ export default function MyTickets(): JSX.Element {
                                     </div>
 
                                     <button
-                                        onClick={() => {handleWaitingRegistration()}}
+                                        onClick={() => { handleWaitingRegistration() }}
                                         disabled={!agreeToTerms}
                                         className={`w-full py-3 px-4 rounded-[10px] font-semibold text-white transition-all duration-200 ${agreeToTerms
                                             ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-lg hover:shadow-xl'
