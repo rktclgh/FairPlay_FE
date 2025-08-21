@@ -17,7 +17,7 @@ interface TopNavProps {
 }
 
 export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
-	const { isDark, toggleDark } = useTheme();
+	const { isDark } = useTheme();
 	const { t } = useTranslation();
 	const [activeMenu, setActiveMenu] = useState<string>('HOME');
 	const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -294,13 +294,6 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 								})();
 							}} />
 							<LanguageToggle />
-							<button
-								className="theme-btn"
-								onClick={toggleDark}
-								title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}
-							>
-								{isDark ? '🌙' : '☀️'}
-							</button>
 						</div>
 					</div>
 				</div>

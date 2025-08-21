@@ -1196,7 +1196,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
           </div>
 
           {/* 행사 카드들 */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-12">
             {displayEvents.map((event, index) => (
               <div key={`ev-${event?.id ?? 'na'}-${index}`} className="relative">
                 <Link to={`/eventdetail/${event.id}`}>
@@ -1247,11 +1247,6 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
                       <div className="font-bold">{event.location}</div>
                       <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                     </div>
-                    <p className="font-bold text-base md:text-lg text-[#ff6b35] font-['Roboto']">{event.minPrice == null
-                      ? t('main.noPriceInfo')
-                      : event.minPrice === 0
-                        ? t('main.free')
-                        : `${event.minPrice.toLocaleString()}${t('main.won')}`}</p>
                   </div>
                 </Link>
               </div>
