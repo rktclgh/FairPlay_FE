@@ -44,7 +44,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                 className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/refund"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                     : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                }`}
+                                    }`}
                                 style={{
                                     textDecoration: 'none',
                                     color: location.pathname === "/mypage/refund" ? "black" : "#00000080"
@@ -172,7 +172,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                 className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/business-card"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                     : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                }`}
+                                    }`}
                                 style={{
                                     textDecoration: 'none',
                                     color: location.pathname === "/mypage/business-card" ? "black" : "#00000080"
@@ -191,7 +191,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                 className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/business-card-wallet"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                     : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                }`}
+                                    }`}
                                 style={{
                                     textDecoration: 'none',
                                     color: location.pathname === "/mypage/business-card-wallet" ? "black" : "#00000080"
@@ -217,7 +217,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                 className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/booth-experiences"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                     : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                }`}
+                                    }`}
                                 style={{
                                     textDecoration: 'none',
                                     color: location.pathname === "/mypage/booth-experiences" ? "black" : "#00000080"
@@ -236,7 +236,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                 className={`block cursor-pointer text-[15px] tracking-[0] whitespace-nowrap no-underline ${location.pathname === "/mypage/booth-experiences-reservation"
                                     ? "[font-family:'Roboto-Bold',Helvetica] font-bold text-black"
                                     : "[font-family:'Roboto-Medium',Helvetica] font-medium text-[#00000080]"
-                                }`}
+                                    }`}
                                 style={{
                                     textDecoration: 'none',
                                     color: location.pathname === "/mypage/booth-experiences-reservation" ? "black" : "#00000080"

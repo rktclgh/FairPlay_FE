@@ -42,18 +42,18 @@ export default function BusinessCard(): JSX.Element {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [qrModalOpen, setQrModalOpen] = useState(false);
     const [qrUrl, setQrUrl] = useState('');
-    
+
     // 카카오맵 관련 상태
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchResults, setSearchResults] = useState<KakaoPlace[]>([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
-    
+
     // 전화번호 관련 상태
     const [phonePrefix, setPhonePrefix] = useState('010');
     const [phoneMiddle, setPhoneMiddle] = useState('');
     const [phoneLast, setPhoneLast] = useState('');
     const [customPrefix, setCustomPrefix] = useState('');
-    
+
     // 파일 업로드 훅
     const {
         uploadedFiles,
@@ -93,12 +93,12 @@ export default function BusinessCard(): JSX.Element {
                     twitter: card.twitter || '',
                     profileImageUrl: card.profileImageUrl || ''
                 });
-                
+
                 // 전화번호 파싱
                 if (card.phoneNumber) {
                     parsePhoneNumber(card.phoneNumber);
                 }
-                
+
                 // 카카오맵 검색어 설정
                 if (card.placeName) {
                     setSearchKeyword(card.placeName);
@@ -127,7 +127,7 @@ export default function BusinessCard(): JSX.Element {
         const clean = path.startsWith("/") ? path.slice(1) : path;
         return `${base}/${clean}`;
     };
-    
+
     // 프로필 이미지 업로드 핸들러
     const handleProfileImageUpload = async (file: File) => {
         if (!file) return;
@@ -147,7 +147,7 @@ export default function BusinessCard(): JSX.Element {
             toast.error(t('businessCard.profileImageUploadError'));
         }
     };
-    
+
     // 카카오맵 장소 검색
     const searchPlaces = () => {
         if (!searchKeyword.trim()) {
@@ -178,7 +178,7 @@ export default function BusinessCard(): JSX.Element {
             });
         });
     };
-    
+
     // 장소 선택
     const selectPlace = (place: KakaoPlace) => {
         const preferredAddress = place.road_address_name || place.address_name;
@@ -195,16 +195,16 @@ export default function BusinessCard(): JSX.Element {
         setSearchKeyword(place.place_name);
         setShowSearchResults(false);
     };
-    
+
     // 전화번호 파싱 기능
     const parsePhoneNumber = (phoneNumber: string) => {
         const cleaned = phoneNumber.replace(/[^0-9]/g, '');
 
         const areaCodes2 = ['02']; // 2자리 지역번호
         const areaCodes3 = [
-            '031','032','033','041','042','043','044',
-            '051','052','053','054','055',
-            '061','062','063','064'
+            '031', '032', '033', '041', '042', '043', '044',
+            '051', '052', '053', '054', '055',
+            '061', '062', '063', '064'
         ]; // 3자리 지역번호
 
         if (areaCodes2.some(code => cleaned.startsWith(code))) {
@@ -244,34 +244,34 @@ export default function BusinessCard(): JSX.Element {
             }
         }
     };
-    
+
     // 전화번호 업데이트
     const updatePhoneNumber = () => {
         let fullNumber = '';
-        
+
         if (phonePrefix === '직접입력') {
             fullNumber = `${customPrefix}-${phoneMiddle}-${phoneLast}`;
         } else {
             fullNumber = `${phonePrefix}-${phoneMiddle}-${phoneLast}`;
         }
-        
+
         // 빈 값이나 불완전한 번호 처리
         if (!phoneMiddle || !phoneLast) {
             fullNumber = '';
         }
-        
+
         setFormData(prev => ({
             ...prev,
             phoneNumber: fullNumber,
             hasChanges: true
         }));
     };
-    
+
     // 전화번호 부분이 변경될 때마다 업데이트
     React.useEffect(() => {
         updatePhoneNumber();
     }, [phonePrefix, phoneMiddle, phoneLast, customPrefix]);
-    
+
     // 전화번호 입력 핸들러
     const handlePhonePrefixChange = (value: string) => {
         setPhonePrefix(value);
@@ -279,21 +279,21 @@ export default function BusinessCard(): JSX.Element {
             setCustomPrefix('');
         }
     };
-    
+
     const handlePhoneMiddleChange = (value: string) => {
         const cleaned = value.replace(/[^0-9]/g, '');
         if (cleaned.length <= 4) {
             setPhoneMiddle(cleaned);
         }
     };
-    
+
     const handlePhoneLastChange = (value: string) => {
         const cleaned = value.replace(/[^0-9]/g, '');
         if (cleaned.length <= 4) {
             setPhoneLast(cleaned);
         }
     };
-    
+
     const handleCustomPrefixChange = (value: string) => {
         const cleaned = value.replace(/[^0-9]/g, '');
         if (cleaned.length <= 4) {
@@ -336,19 +336,19 @@ export default function BusinessCard(): JSX.Element {
     const handleSave = async () => {
         try {
             setSaving(true);
-            
+
             // 업로드된 프로필 이미지가 있으면 URL 설정
             const uploadedProfileImage = getFileByUsage('profile_image');
-            
+
             // 전화번호에서 대쉬 제거
             const cleanPhoneNumber = formData.phoneNumber ? formData.phoneNumber.replace(/[^0-9]/g, '') : '';
-            
+
             const saveData = {
                 ...formData,
                 phoneNumber: cleanPhoneNumber, // 대쉬 제거된 전화번호
                 profileImageUrl: uploadedProfileImage ? toCdnUrl(uploadedProfileImage.key) : formData.profileImageUrl
             };
-            
+
             await businessCardService.saveBusinessCard(saveData);
             toast.success(t('businessCard.saved'));
             setFormData(prev => ({ ...prev, hasChanges: false }));
@@ -416,9 +416,8 @@ export default function BusinessCard(): JSX.Element {
                 )}
 
                 {/* 모바일 사이드바 */}
-                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${
-                    isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                }`}>
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
                     <div className="p-4">
                         <button
                             onClick={() => setIsMobileSidebarOpen(false)}
@@ -456,11 +455,10 @@ export default function BusinessCard(): JSX.Element {
                         <button
                             onClick={handleGenerateQR}
                             disabled={!formData.name && !formData.company}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center gap-2 ${
-                                !formData.name && !formData.company
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg hover:shadow-xl'
-                            }`}
+                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center gap-2 ${!formData.name && !formData.company
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg hover:shadow-xl'
+                                }`}
                             title="QR 코드 생성 및 공유"
                         >
                             <QrCode className="w-4 h-4" />
@@ -469,11 +467,10 @@ export default function BusinessCard(): JSX.Element {
                         <button
                             onClick={handleSave}
                             disabled={saving || !formData.hasChanges}
-                            className={`px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
-                                saving || !formData.hasChanges
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
-                            }`}
+                            className={`px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${saving || !formData.hasChanges
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
+                                }`}
                         >
                             {saving ? t('businessCard.saving') : t('businessCard.save')}
                         </button>
@@ -562,7 +559,7 @@ export default function BusinessCard(): JSX.Element {
                                                     type="button"
                                                     onClick={searchPlaces}
                                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                                                    style={{ background:"transparent" }}
+                                                    style={{ background: "transparent" }}
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -633,8 +630,8 @@ export default function BusinessCard(): JSX.Element {
                                     <div className="relative">
                                         <img
                                             src={
-                                                getFileByUsage('profile_image') 
-                                                    ? toCdnUrl(getFileByUsage('profile_image')!.key) 
+                                                getFileByUsage('profile_image')
+                                                    ? toCdnUrl(getFileByUsage('profile_image')!.key)
                                                     : formData.profileImageUrl || '/images/blank_profile.jpg'
                                             }
                                             alt={t('businessCard.profileImage')}
@@ -709,7 +706,7 @@ export default function BusinessCard(): JSX.Element {
                                             ))}
                                             <option value="직접입력">{t('businessCard.directInput')}</option>
                                         </select>
-                                        
+
                                         {/* 커스텀 지역번호 입력 */}
                                         {phonePrefix === '직접입력' && (
                                             <input
@@ -721,9 +718,9 @@ export default function BusinessCard(): JSX.Element {
                                                 maxLength={4}
                                             />
                                         )}
-                                        
+
                                         <span className="text-gray-500 select-none">-</span>
-                                        
+
                                         {/* 중간 번호 */}
                                         <input
                                             type="tel"
@@ -733,9 +730,9 @@ export default function BusinessCard(): JSX.Element {
                                             className="w-16 sm:w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             maxLength={4}
                                         />
-                                        
+
                                         <span className="text-gray-500 select-none">-</span>
-                                        
+
                                         {/* 마지막 번호 */}
                                         <input
                                             type="tel"
@@ -747,7 +744,7 @@ export default function BusinessCard(): JSX.Element {
                                         />
                                     </div>
                                 </div>
-                                
+
                                 {/* 이메일과 웹사이트 - 2열 그리드 */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -852,7 +849,7 @@ export default function BusinessCard(): JSX.Element {
                         </div>
                     </div>
                 </div>
-                
+
                 {/* 추가 공간 */}
                 <div className="h-20"></div>
 
