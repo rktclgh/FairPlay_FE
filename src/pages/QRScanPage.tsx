@@ -3,6 +3,7 @@ import jsQR from "jsqr";
 import { TopNav } from '../components/TopNav';
 import { HostSideNav } from '../components/HostSideNav';
 import { HiCamera, HiSearch } from 'react-icons/hi';
+import { useScrollToTop } from '../hooks/useScrollToTop';
 import {
     checkInManual,
     checkInQr,
@@ -15,6 +16,7 @@ import type {
 } from "../services/types/qrTicketType"
 
 const QRScanPage: React.FC = () => {
+    useScrollToTop();
     const [checkType, setCheckType] = useState("checkIn");
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [manualCode, setManualCode] = useState('');
@@ -107,7 +109,7 @@ const QRScanPage: React.FC = () => {
         const manualCheckRequestDto: ManualCheckRequestDto = {
             manualCode: input
         }
-        
+
         const res = checkType.match('checkIn') ? await checkInManual(manualCheckRequestDto)
             : await checkOutManual(manualCheckRequestDto);
 
@@ -117,7 +119,7 @@ const QRScanPage: React.FC = () => {
 
     const handleQRScan = async () => {
         if (!videoRef.current) return;
-        
+
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
         if (!context) return;
@@ -140,7 +142,7 @@ const QRScanPage: React.FC = () => {
 
             const res = checkType.match('checkIn') ? await checkInQr(qrCheckRequestDto)
                 : await checkOutQr(qrCheckRequestDto);
-            
+
             setScanResult(res.message);
         } else {
             alert("QR 코드를 인식하지 못했습니다.");
@@ -188,7 +190,7 @@ const QRScanPage: React.FC = () => {
                     </div>
 
                 </div>
-                
+
 
                 {/* 사이드바 */}
                 <HostSideNav className="!absolute !left-0 !top-[117px]" />
@@ -229,7 +231,7 @@ const QRScanPage: React.FC = () => {
                                     </div>
                                 )}
                             </div>
-                                                        <div className="font-bold text-center text-sm text-gray-600 mb-4">
+                            <div className="font-bold text-center text-sm text-gray-600 mb-4">
                                 QR 코드가 가까이 있으면 인식이 어려울 수 있습니다. <br />
                                 카메라에서 20~30cm 떨어져서 QR 코드를 보여주세요.
                             </div>

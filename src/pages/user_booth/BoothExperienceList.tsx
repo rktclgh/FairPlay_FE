@@ -14,8 +14,10 @@ import { TopNav } from "../../components/TopNav";
 import BoothExperienceReservationModal from '../../components/booth/BoothExperienceReservationModal';
 import reservationService from '../../services/reservationService';
 import { useTranslation } from 'react-i18next';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 const BoothExperienceList: React.FC = () => {
+  useScrollToTop();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [experiences, setExperiences] = useState<BoothExperience[]>([]);
@@ -516,8 +518,8 @@ const BoothExperienceList: React.FC = () => {
                           <div className="w-24 bg-gray-200 rounded-full h-2">
                             <div
                               className={`h-2 rounded-full transition-all duration-300 ${experience.congestionRate >= 90 ? 'bg-red-500' :
-                                  experience.congestionRate >= 70 ? 'bg-orange-500' :
-                                    experience.congestionRate >= 50 ? 'bg-yellow-500' : 'bg-green-500'
+                                experience.congestionRate >= 70 ? 'bg-orange-500' :
+                                  experience.congestionRate >= 50 ? 'bg-yellow-500' : 'bg-green-500'
                                 }`}
                               style={{ width: `${Math.min(experience.congestionRate, 100)}%` }}
                             ></div>

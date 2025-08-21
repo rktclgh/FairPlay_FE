@@ -11,8 +11,10 @@ import { toast } from 'react-toastify';
 import { AttendeeSideNav } from "../user_mypage/AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
 import authManager from '../../utils/auth';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 const MyBoothExperienceReservations: React.FC = () => {
+  useScrollToTop();
   const { t } = useTranslation();
   const [reservations, setReservations] = useState<BoothExperienceReservation[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<BoothExperienceReservation[]>([]);
