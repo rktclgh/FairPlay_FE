@@ -15,6 +15,8 @@ import Reservation from "./pages/user_mypage/Reservation";
 import MyTickets from "./pages/user_mypage/MyTickets";
 import ParticipantForm from "./pages/user_mypage/ParticipantForm";
 import ParticipantList from "./pages/user_mypage/ParticipantList";
+import BusinessCard from "./pages/user_mypage/BusinessCard";
+import BusinessCardWallet from "./pages/user_mypage/BusinessCardWallet";
 import EventOverview from "./pages/user_event/EventOverview";
 import EventDetail from "./pages/user_event/EventDetail";
 import { TicketReservation } from "./pages/user_event/TicketReservation";
@@ -185,6 +187,8 @@ function AppContent() {
                         <Route path="/mypage/my-review" element={<MyPageMyReview />} />
                         <Route path="/mypage/withdrawal" element={<Withdrawal />} />
                         <Route path="/mypage/refund" element={<RefundList />} />
+                        <Route path="/mypage/business-card" element={<BusinessCard />} />
+                        <Route path="/mypage/business-card-wallet" element={<BusinessCardWallet />} />
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/signup" element={<SignUpPage />} />
                         <Route path="/find-password" element={<FindPassword />} />

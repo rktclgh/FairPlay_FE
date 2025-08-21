@@ -118,6 +118,29 @@ export const BoothAdminSideNav: React.FC<BoothAdminSideNavProps> = ({ className 
                             </Link>
                         </div>
                     </div>
+
+                    {/* 전자명함 카테고리 */}
+                    <div className="mb-4 space-y-0">
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
+                            전자명함
+                        </h3>
+                        <div className="space-y-1">
+                            <Link
+                                to="/mypage/business-card"
+                                className={linkClass("/mypage/business-card")}
+                                style={linkStyle("/mypage/business-card")}
+                            >
+                                내 전자명함
+                            </Link>
+                            <Link
+                                to="/mypage/business-card-wallet"
+                                className={linkClass("/mypage/business-card-wallet")}
+                                style={linkStyle("/mypage/business-card-wallet")}
+                            >
+                                명함 지갑
+                            </Link>
+                        </div>
+                    </div>
                 </nav>
             </div>
         </div>
