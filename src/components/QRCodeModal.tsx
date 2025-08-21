@@ -92,13 +92,13 @@ export function QRCodeModal({ isOpen, onClose, qrUrl, title = "전자명함 QR �
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center">
             {/* 배경 오버레이 */}
             <div
                 className="absolute inset-0 bg-black bg-opacity-50"
                 onClick={onClose}
             />
-            
+
             {/* 모달 컨테이너 */}
             <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
                 {/* 헤더 */}
@@ -122,7 +122,7 @@ export function QRCodeModal({ isOpen, onClose, qrUrl, title = "전자명함 QR �
                                     <div className="text-gray-500">QR 코드 생성 중...</div>
                                 </div>
                             ) : (
-                                <canvas 
+                                <canvas
                                     ref={canvasRef}
                                     className="block"
                                 />
@@ -151,11 +151,10 @@ export function QRCodeModal({ isOpen, onClose, qrUrl, title = "전자명함 QR �
                             />
                             <button
                                 onClick={handleCopyUrl}
-                                className={`px-3 py-2 rounded-md transition-colors ${
-                                    copied
+                                className={`px-3 py-2 rounded-md transition-colors ${copied
                                         ? 'bg-green-100 text-green-700'
                                         : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                                }`}
+                                    }`}
                             >
                                 {copied ? (
                                     <CheckCircle className="w-4 h-4" />

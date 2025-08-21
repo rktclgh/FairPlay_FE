@@ -131,8 +131,9 @@ export const MyPageMyReview = () => {
     };
 
     const handleEventClick = (event: EventDto, reservationId: number) => {
+        
 
-        if (savedReviews?.some(review => review.reservationId === reservationId)) {
+        if (writeReviewsState?.some(review => review.reservationId === reservationId && review.hasReview)) {
             alert("이미 리뷰 작성이 완료된 행사입니다.");
             return;
         }

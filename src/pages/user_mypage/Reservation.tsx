@@ -53,7 +53,10 @@ export default function Reservation(): JSX.Element {
                     })
                 );
 
-                setReservations(reservationsWithCategories);
+                const sortedReservations = [...reservationsWithCategories].sort((a, b) =>
+                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+                setReservations(sortedReservations);
             } catch (error) {
                 console.error('예약 목록 로드 실패:', error);
                 toast.error(t('mypage.reservation.loadReservationsError'));

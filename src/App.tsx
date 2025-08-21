@@ -53,6 +53,7 @@ import BoothParticipants from "./pages/host_booth/BoothParticipants";
 import BoothParticipantDetail from "./pages/host_booth/BoothParticipantDetail";
 import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
 import EventComparison from "./pages/admin_dashboard/EventComparison";
+import AdminActivityPage from "./pages/admin_dashboard/AdminActivityPage";
 import EventList from "./pages/admin_event/EventList";
 // Lazy-load some heavy admin pages
 const EventApproval = lazy(() => import("./pages/admin_event/EventApproval"));
@@ -221,6 +222,7 @@ function AppContent() {
                         <Route path="/qr-ticket/participant/error" element={<OnlyQrTicketErrorPage />} />
                         <Route path="/eventoverview" element={<EventOverview />} />
                         <Route path="/eventdetail/:eventId" element={<EventDetail />} />
+                        <Route path="/event/:eventId" element={<EventDetail />} />
                         <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
                         <Route path="/events/:eventId/participating-booths" element={<ParticipatingBooths />} />
                         <Route path="/events/:eventId/booths" element={<BoothList />} />
@@ -274,6 +276,7 @@ function AppContent() {
                         <Route path="/host/profile" element={<HostRouteGuard><HostProfile /></HostRouteGuard>} />
                         <Route path="/admin_dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
                         <Route path="/admin_dashboard/event-comparison" element={<AdminRouteGuard><EventComparison /></AdminRouteGuard>} />
+                        <Route path="/admin_dashboard/activity" element={<AdminRouteGuard><AdminActivityPage /></AdminRouteGuard>} />
 
                         {/* 행사 관리 */}
                         <Route path="/admin_dashboard/events" element={<AdminRouteGuard><EventList /></AdminRouteGuard>} />

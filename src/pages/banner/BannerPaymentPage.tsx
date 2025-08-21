@@ -79,7 +79,8 @@ const BannerPaymentPage: React.FC = () => {
         amount: paymentInfo.totalAmount,
         buyer_email: paymentInfo.applicantEmail,
         buyer_name: paymentInfo.applicantName,
-        m_redirect_url: `${window.location.origin}/banner/payment?applicationId=${paymentInfo.applicationId}&success=true`
+        m_redirect_url: `${window.location.origin}/banner/payment?applicationId=${paymentInfo.applicationId}&success=true`,
+        popup: false
       };
 
       // 3. 백엔드에 결제 요청 저장

@@ -82,6 +82,23 @@ body {
     animation: fadeInUp 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
 
+  /* 스크롤 페이드인 애니메이션 */
+  .animate-fade-in {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+
+  .animate-fade-in .group {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+
+  /* 문구와 카드에만 페이드인 적용 */
+  .animate-fade-in .opacity-0 {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+
   /* Common poster aspect ratio */
   .aspect-poster {
     aspect-ratio: 3 / 4;

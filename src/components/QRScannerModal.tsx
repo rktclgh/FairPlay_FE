@@ -14,7 +14,7 @@ export function QRScannerModal({ isOpen, onClose, onScanSuccess }: QRScannerModa
     const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState<string>('');
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-    
+
     const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
 
     useEffect(() => {
@@ -35,11 +35,11 @@ export function QRScannerModal({ isOpen, onClose, onScanSuccess }: QRScannerModa
             setIsScanning(true);
 
             // 카메라 권한 확인
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+            const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment' } // 후면 카메라 우선
             });
             setHasPermission(true);
-            
+
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
@@ -73,7 +73,7 @@ export function QRScannerModal({ isOpen, onClose, onScanSuccess }: QRScannerModa
 
     const stopScanning = () => {
         setIsScanning(false);
-        
+
         // 비디오 스트림 정지
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
@@ -96,13 +96,13 @@ export function QRScannerModal({ isOpen, onClose, onScanSuccess }: QRScannerModa
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center">
             {/* 배경 오버레이 */}
             <div
                 className="absolute inset-0 bg-black bg-opacity-75"
                 onClick={onClose}
             />
-            
+
             {/* 모달 컨테이너 */}
             <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
                 {/* 헤더 */}
@@ -143,7 +143,7 @@ export function QRScannerModal({ isOpen, onClose, onScanSuccess }: QRScannerModa
                             muted
                             className="w-full h-64 bg-gray-900 rounded-lg object-cover"
                         />
-                        
+
                         {/* 스캔 오버레이 */}
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-48 h-48 border-2 border-white rounded-lg">
