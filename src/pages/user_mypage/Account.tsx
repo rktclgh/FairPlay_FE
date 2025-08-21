@@ -119,7 +119,7 @@ export const MyPageAccount = () => {
                 )}
 
                 {/* 모바일 사이드바 */}
-                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}>
                     <div className="p-4">
                         <button

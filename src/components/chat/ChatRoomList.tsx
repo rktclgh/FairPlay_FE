@@ -45,9 +45,9 @@ export default function ChatRoomList({ onSelect }: Props) {
             const allRooms = response.data;
             console.log("백엔드에서 반환된 채팅방 수:", allRooms.length);
 
-            // AI 챗봇과 FairPlay 상담센터 채팅방을 리스트에서 제외
+            // AI 챗봇만 리스트에서 제외 (ADMIN 타입은 관리자가 볼 수 있어야 함)
             const filteredRooms = allRooms.filter((room: ChatRoomDto) => 
-                room.targetType !== 'AI' && room.targetType !== 'ADMIN'
+                room.targetType !== 'AI'
             );
             console.log("필터링 후 채팅방 수:", filteredRooms.length);
 
