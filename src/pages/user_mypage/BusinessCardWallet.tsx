@@ -15,6 +15,10 @@ export default function BusinessCardWallet(): JSX.Element {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingMemo, setEditingMemo] = useState<{ cardId: number; memo: string } | null>(null);
     const [qrScannerOpen, setQrScannerOpen] = useState(false);
+    
+    // 페이징 관련 상태
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(6); // 페이지당 항목 수
 
     useEffect(() => {
         loadCollectedCards();
@@ -111,6 +115,45 @@ export default function BusinessCardWallet(): JSX.Element {
             card.memo?.toLowerCase().includes(searchLower)
         );
     });
+    
+    // 페이징 계산
+    const totalPages = Math.ceil(filteredCards.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentCards = filteredCards.slice(startIndex, endIndex);
+    
+    // 검색어 변경 시 첫 페이지로 이동
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+    
+    // 페이지 변경 핸들러
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        // 페이지 변경 시 상단으로 스크롤
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    
+    // 페이지 번호 배열 생성 (최대 5개씩 표시)
+    const getPageNumbers = () => {
+        const pageNumbers = [];
+        const maxVisiblePages = 5;
+        
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.push(i);
+            }
+        } else {
+            const start = Math.max(1, currentPage - 2);
+            const end = Math.min(totalPages, start + maxVisiblePages - 1);
+            
+            for (let i = start; i <= end; i++) {
+                pageNumbers.push(i);
+            }
+        }
+        
+        return pageNumbers;
+    };
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('ko-KR', {
@@ -201,20 +244,29 @@ export default function BusinessCardWallet(): JSX.Element {
 
                 {/* 검색창 */}
                 <div className="md:absolute md:top-[190px] md:left-64 md:right-8 left-4 right-4 top-32 relative md:static">
-                    <div className="relative mb-6">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="이름, 회사, 직책, 메모로 검색..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="이름, 회사, 직책, 메모로 검색..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="flex items-center text-sm text-gray-600">
+                                <span>
+                                    {startIndex + 1}-{Math.min(endIndex, filteredCards.length)} / {filteredCards.length}개
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* 명함 목록 */}
-                <div className="md:absolute md:top-[260px] md:left-64 md:right-8 left-4 right-4 top-40 relative md:static">
+                <div className="md:absolute md:top-[260px] md:left-64 md:right-8 left-4 right-4 top-40 relative md:static mb-20">
                     {filteredCards.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-gray-500">
                             <User className="w-16 h-16 mb-4 text-gray-300" />
@@ -226,8 +278,9 @@ export default function BusinessCardWallet(): JSX.Element {
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {filteredCards.map((card) => (
+                        <>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                {currentCards.map((card) => (
                                 <div key={card.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
                                     {/* 명함 헤더 */}
                                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
@@ -429,7 +482,54 @@ export default function BusinessCardWallet(): JSX.Element {
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                            </div>
+                            
+                            {/* 페이징 */}
+                            {totalPages > 1 && (
+                                <div className="flex justify-center items-center space-x-2 mt-8">
+                                    {/* 이전 페이지 */}
+                                    <button
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            currentPage === 1
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                        }`}
+                                    >
+                                        이전
+                                    </button>
+                                    
+                                    {/* 페이지 번호들 */}
+                                    {getPageNumbers().map((pageNum) => (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => handlePageChange(pageNum)}
+                                            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                                currentPage === pageNum
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    ))}
+                                    
+                                    {/* 다음 페이지 */}
+                                    <button
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            currentPage === totalPages
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                        }`}
+                                    >
+                                        다음
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

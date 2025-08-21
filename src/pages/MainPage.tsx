@@ -27,6 +27,29 @@ import NewLoader from "../components/NewLoader";
 // imports 밑에 위치
 const ENABLE_NEW_PICKS = import.meta.env.VITE_ENABLE_NEW_PICKS === "true";
 
+// 카테고리 번역 함수
+const translateCategory = (category: string, t: any): string => {
+    const categoryMap: Record<string, string> = {
+        "박람회": "categories.박람회",
+        "공연": "categories.공연", 
+        "강연/세미나": "categories.강연/세미나",
+        "전시/행사": "categories.전시/행사",
+        "축제": "categories.축제"
+    };
+    
+    return categoryMap[category] ? t(categoryMap[category]) : category;
+};
+
+// 이벤트 제목 선택 함수 (번역 여부에 따라 한글/영문 제목 선택)
+const getEventTitle = (event: EventSummaryDto, i18n: any): string => {
+    // 현재 언어가 영어이고 영문 제목이 있는 경우 영문 제목 사용
+    if (i18n.language === 'en' && event.titleEng && event.titleEng.trim() !== '') {
+        return event.titleEng;
+    }
+    // 그 외의 경우 한글 제목 사용
+    return event.title;
+};
+
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
     id: number;
@@ -348,7 +371,7 @@ const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
 
 
     const { isDark } = useTheme();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     const [events, setEvents] = useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("전체");
@@ -1159,7 +1182,7 @@ const hotLoop = hotPicks.length >= 3;
 
                                         <img
                                             className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
-                                            alt={event.title}
+                                            alt={getEventTitle(event, i18n)}
                                             src={event.thumbnailUrl}
                                         />
                                         <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -1176,9 +1199,9 @@ const hotLoop = hotPicks.length >= 3;
                                     <div className="mt-4 text-left">
 
                                         <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2`}>
-                                            {event.mainCategory}
+                                            {translateCategory(event.mainCategory, t)}
                                         </span>
-                                        <h3 className={`font-bold text-lg md:text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{event.title}</h3>
+                                        <h3 className={`font-bold text-lg md:text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{getEventTitle(event, i18n)}</h3>
                                         <div className={`text-xs md:text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>

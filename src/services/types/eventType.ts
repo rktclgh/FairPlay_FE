@@ -28,6 +28,7 @@ export interface EventSummaryDto {
     eventCode: string;
     hidden: boolean;
     title: string;
+    titleEng?: string; // 영문 제목 추가
     minPrice: number;
     mainCategory: string;
     location: string;

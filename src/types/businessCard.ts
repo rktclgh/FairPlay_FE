@@ -8,11 +8,18 @@ export interface BusinessCardRequest {
     email?: string;
     website?: string;
     address?: string;
+    buildingName?: string;
+    placeName?: string;
+    latitude?: number;
+    longitude?: number;
+    placeUrl?: string;
+    detailAddress?: string;
     description?: string;
     linkedIn?: string;
     instagram?: string;
     facebook?: string;
     twitter?: string;
+    github?: string;
     profileImageUrl?: string;
 }
 
@@ -28,11 +35,18 @@ export interface BusinessCardResponse {
     email?: string;
     website?: string;
     address?: string;
+    buildingName?: string;
+    placeName?: string;
+    latitude?: number;
+    longitude?: number;
+    placeUrl?: string;
+    detailAddress?: string;
     description?: string;
     linkedIn?: string;
     instagram?: string;
     facebook?: string;
     twitter?: string;
+    github?: string;
     profileImageUrl?: string;
     createdAt: string;
     updatedAt: string;
@@ -68,6 +82,7 @@ export interface SocialMediaLinks {
     instagram?: string;
     facebook?: string;
     twitter?: string;
+    github?: string;
 }
 
 // 전자명함 폼 데이터 타입
