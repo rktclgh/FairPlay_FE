@@ -23,6 +23,7 @@ const BannerPaymentPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const applicationId = searchParams.get('applicationId');
+  const success = searchParams.get('success');
 
   useEffect(() => {
     if (!applicationId) {
@@ -31,8 +32,17 @@ const BannerPaymentPage: React.FC = () => {
       return;
     }
 
+    // URL에 success=true 파라미터가 있으면 결제 성공 처리
+    if (success === 'true') {
+      toast.success('결제가 성공적으로 완료되었습니다!');
+      // URL에서 success 파라미터 제거
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('success');
+      window.history.replaceState({}, '', newUrl);
+    }
+
     fetchPaymentInfo();
-  }, [applicationId]);
+  }, [applicationId, success]);
 
   const fetchPaymentInfo = async () => {
     try {
@@ -68,7 +78,8 @@ const BannerPaymentPage: React.FC = () => {
         name: `배너 광고 - ${paymentInfo.title}`,
         amount: paymentInfo.totalAmount,
         buyer_email: paymentInfo.applicantEmail,
-        buyer_name: paymentInfo.applicantName
+        buyer_name: paymentInfo.applicantName,
+        m_redirect_url: `${window.location.origin}/banner/payment?applicationId=${paymentInfo.applicationId}&success=true`
       };
 
       // 3. 백엔드에 결제 요청 저장
