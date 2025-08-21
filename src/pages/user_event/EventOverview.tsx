@@ -176,7 +176,7 @@ export default function EventOverview() {
         let rangeText = "";
 
         if (currentMonth === 12) {
-            angeText = t("eventOverview.calendar.yearMonthRangeDiffYear", {
+            rangeText = t("eventOverview.calendar.yearMonthRangeDiffYear", {
                 currentYear,
                 currentMonth: monthNames[currentMonth - 1],
                 nextYear,
