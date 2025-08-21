@@ -59,9 +59,6 @@ export const ExternalLink = ({ isOpen, onClose, title, externalLinks }: External
           {title}
         </p>
 
-        {/* 구분선 */}
-        <div className="absolute w-[200px] h-px top-[120px] left-1/2 transform -translate-x-1/2 bg-[#0000004c]" />
-
         {/* 안내 메시지 */}
         <p className="absolute top-[159px] left-0 right-0 text-center text-black text-xl leading-7 font-normal">
           해당 행사는 외부 예매처를 통해 예매하실 수 있습니다.
