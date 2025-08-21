@@ -39,7 +39,7 @@ export function useWaitingSocket(userId: number, onMessage: (msg: string) => voi
             console.log("🔌 웨이팅 웹소켓 연결 성공, 구독 시작");
 
             const subWaiting = stomp.subscribe(
-            `/queue/waiting/${userId}`,
+            `/topic/waiting/${userId}`,
             (message) => {
                 handleMessage(message.body);
             }
