@@ -221,6 +221,7 @@ function AppContent() {
                         <Route path="/qr-ticket/participant/error" element={<OnlyQrTicketErrorPage />} />
                         <Route path="/eventoverview" element={<EventOverview />} />
                         <Route path="/eventdetail/:eventId" element={<EventDetail />} />
+                        <Route path="/event/:eventId" element={<EventDetail />} />
                         <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
                         <Route path="/events/:eventId/participating-booths" element={<ParticipatingBooths />} />
                         <Route path="/events/:eventId/booths" element={<BoothList />} />

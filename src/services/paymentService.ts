@@ -252,6 +252,11 @@ class PaymentService {
             console.log('저장된 paymentId:', savedPayment.paymentId);
 
             // 3. 결제 요청 데이터 준비
+            const scheduleId = reservationData?.scheduleId;
+            const redirectUrl = scheduleId 
+                ? `${window.location.origin}/ticket-reservation/${eventId}?scheduleId=${scheduleId}&success=true`
+                : `${window.location.origin}/ticket-reservation/${eventId}?success=true`;
+                
             const paymentRequest: PaymentRequest = {
                 pg: 'uplus',
                 pay_method: 'card',
@@ -259,7 +264,7 @@ class PaymentService {
                 name: `${title}`,
                 amount: amount,
                 buyer_name: userName,
-                m_redirect_url: `${window.location.origin}/ticket-reservation/${eventId}?success=true`,
+                m_redirect_url: redirectUrl,
                 popup: false
             };
 
