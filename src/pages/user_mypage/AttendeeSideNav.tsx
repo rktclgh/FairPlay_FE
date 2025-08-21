@@ -203,7 +203,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/business-card-wallet" ? "black" : "#00000080";
                                 }}
                             >
-                                {t('mypage.navigation.eBusinessCard')}
+                                {t('mypage.navigation.myBusinessWallet')}
                             </Link>
                         </div>
                     </div>
