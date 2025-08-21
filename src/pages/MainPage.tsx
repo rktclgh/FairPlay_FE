@@ -32,25 +32,25 @@ const ENABLE_NEW_PICKS = import.meta.env.VITE_ENABLE_NEW_PICKS === "true";
 
 // 카테고리 번역 함수
 const translateCategory = (category: string, t: any): string => {
-    const categoryMap: Record<string, string> = {
-        "박람회": "categories.박람회",
-        "공연": "categories.공연", 
-        "강연/세미나": "categories.강연/세미나",
-        "전시/행사": "categories.전시/행사",
-        "축제": "categories.축제"
-    };
-    
-    return categoryMap[category] ? t(categoryMap[category]) : category;
+  const categoryMap: Record<string, string> = {
+    "박람회": "categories.박람회",
+    "공연": "categories.공연",
+    "강연/세미나": "categories.강연/세미나",
+    "전시/행사": "categories.전시/행사",
+    "축제": "categories.축제"
+  };
+
+  return categoryMap[category] ? t(categoryMap[category]) : category;
 };
 
 // 이벤트 제목 선택 함수 (번역 여부에 따라 한글/영문 제목 선택)
 const getEventTitle = (event: EventSummaryDto, i18n: any): string => {
-    // 현재 언어가 영어이고 영문 제목이 있는 경우 영문 제목 사용
-    if (i18n.language === 'en' && event.titleEng && event.titleEng.trim() !== '') {
-        return event.titleEng;
-    }
-    // 그 외의 경우 한글 제목 사용
-    return event.title;
+  // 현재 언어가 영어이고 영문 제목이 있는 경우 영문 제목 사용
+  if (i18n.language === 'en' && event.titleEng && event.titleEng.trim() !== '') {
+    return event.titleEng;
+  }
+  // 그 외의 경우 한글 제목 사용
+  return event.title;
 };
 
 // 유료광고 행사 인터페이스
@@ -374,8 +374,8 @@ export const Main: React.FC = () => {
   }, []);
 
 
-    const { isDark } = useTheme();
-    const { t, i18n } = useTranslation();
+  const { isDark } = useTheme();
+  const { t, i18n } = useTranslation();
 
   const [events, setEvents] = useState<EventSummaryDto[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("전체");
@@ -754,22 +754,22 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
 
         // 6) 나머지 섹션 그대로
         await loadHeroAdvertisements();
-        
+
         // HOT PICKS - 실제 이벤트 데이터 사용
         try {
           console.log("[HOT PICKS] 로딩 시작...");
-          
+
           // 1. 먼저 백엔드 핫픽 API 시도
           const hot = await eventAPI.getHotPicks({ size: 10 });
           console.log("[HOT PICKS] 백엔드 API 응답:", hot);
-          
+
           if (hot && hot.length > 0) {
             setHotPicks(hot);
             console.log("[HOT PICKS] 백엔드 데이터 사용, 개수:", hot.length);
           } else {
             // 2. 백엔드 데이터가 없으면 실제 이벤트에서 핫픽 생성
             console.log("[HOT PICKS] 실제 이벤트 데이터로 핫픽 생성");
-            
+
             // 현재 진행 중이거나 예정된 이벤트 중 상위 10개 선택
             const hotPickCandidates = baseEvents
               .filter(event => event.eventStatusCode === 'ONGOING' || event.eventStatusCode === 'UPCOMING')
@@ -782,7 +782,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
                 category: event.mainCategory,
                 image: event.thumbnailUrl || '/images/FPlogo.png'
               }));
-            
+
             setHotPicks(hotPickCandidates);
             console.log("[HOT PICKS] 실제 데이터로 핫픽 생성 완료, 개수:", hotPickCandidates.length);
           }
@@ -896,7 +896,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
           <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
 
-            <h2 className="text-lg font-bold mb-4">{t('main.personalInfo')}</h2>
+            <h2 className="text-lg font-bold mb-4 font-['Roboto']">{t('main.personalInfo')}</h2>
 
 
             {/* 달력 */}
@@ -1020,7 +1020,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
 
             <button
               onClick={handleSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+              className="bg-blue-500 text-white px-4 py-2 rounded w-full font-['Roboto']"
             >
               {t('common.save')}
             </button>
@@ -1028,7 +1028,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
             {/* 모달 닫기 버튼 */}
             <button
               onClick={() => setShowBirthdayModal(false)}
-              className="mt-2 text-sm text-gray-500 hover:underline"
+              className="mt-2 text-sm text-gray-500 hover:underline font-['Roboto']"
             >
               {t('common.close')}
             </button>
@@ -1041,7 +1041,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
         <div className="max-w-7xl mx-auto px-4 md:px-8 mt-4">
           <div className="rounded-[10px] border border-gray-200 bg-white/90 backdrop-blur px-4 py-3 shadow flex items-center gap-3">
             <img src="/images/new-badge.png" alt="NEW" className="w-5 h-5" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-            <div className="text-sm font-semibold text-gray-800">
+            <div className="text-sm font-semibold text-gray-800 font-['Roboto']">
               {newAdded.length > 0 && <span className="mr-3">NEW <span className="text-blue-600">{newAdded.length}</span>개 추가</span>}
               {newRemoved.length > 0 && <span className="mr-3">NEW <span className="text-rose-600">{newRemoved.length}</span>개 종료</span>}
               <span className="text-gray-500">최신 등록 기준으로 표시됩니다.</span>
@@ -1103,7 +1103,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
         <div className="py-8 md:py-16 theme-surface theme-transition">
           <div className="max-w-7xl mx-auto px-4 md:px-8">
             <div className="flex justify-between items-center mb-6 md:mb-8">
-              <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+              <h2 className={`text-2xl md:text-3xl font-bold font-['Roboto'] ${isDark ? 'text-white' : 'text-black'}`}>
                 {t('main.hotPicks')}
               </h2>
             </div>
@@ -1144,17 +1144,17 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
 
             {/* 중앙 캡션 */}
             <div className="mt-4 md:mt-6 text-center px-4">
-              <div key={activeHotPickIndex} className={`text-xl md:text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
+              <div key={activeHotPickIndex} className={`text-xl md:text-[28px] font-bold leading-tight truncate anim-fadeInUp font-['Roboto'] ${isDark ? 'text-white' : 'text-black'}`}>
                 {hotPicks[activeHotPickIndex]?.title}
               </div>
               <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
-                <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className={`text-xs md:text-sm flex items-center justify-center gap-2 font-['Roboto'] ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   <HiOutlineCalendar className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
                   <span className="truncate">
                     {(hotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
                   </span>
                 </div>
-                <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className={`text-xs md:text-sm flex items-center justify-center gap-2 font-['Roboto'] ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   <FaMapMarkerAlt className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
                   <span className="truncate">
                     {hotPicks[activeHotPickIndex]?.location}
@@ -1170,7 +1170,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
       <div className="py-8 md:py-16 theme-surface theme-transition">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex justify-between items-center mb-6 md:mb-8">
-            <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{t('main.events')}</h2>
+            <h2 className={`text-2xl md:text-3xl font-bold font-['Roboto'] ${isDark ? 'text-white' : 'text-black'}`}>{t('main.events')}</h2>
           </div>
 
           {/* 필터 버튼들 */}
@@ -1180,7 +1180,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
                 <button
                   key={category.key}
                   onClick={() => handleCategoryChange(category.key)}
-                  className={`shrink-0 inline-flex px-3 py-3 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
+                  className={`shrink-0 inline-flex px-3 py-3 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap font-['Roboto'] ${selectedCategory === category.key
                     ? (isDark
                       ? 'dm-light font-bold border-gray-300'
                       : 'bg-black text-white font-bold border-gray-800')
@@ -1195,79 +1195,79 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
             </div>
           </div>
 
-                    {/* 행사 카드들 */}
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {displayEvents.map((event, index) => (
-  <div key={`ev-${event?.id ?? 'na'}-${index}`} className="relative">
-                                <Link to={`/eventdetail/${event.id}`}>
-                                    <div className="relative group">
-{/* NEW 스티커 */}
-{isEventNew(event) && (
-  <div className={`absolute top-2 left-2 z-10 ${isEventMdPick(event) ? 'translate-y-[34px]' : ''}`}>
-    <div className="inline-flex items-center gap-1.5 bg-yellow-50/95 backdrop-blur px-2.5 py-1 rounded-full border border-yellow-200 shadow">
-      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-      <span className="text-[11px] font-extrabold text-yellow-700 tracking-tight">NEW</span>
-    </div>
-  </div>
-)}
+          {/* 행사 카드들 */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {displayEvents.map((event, index) => (
+              <div key={`ev-${event?.id ?? 'na'}-${index}`} className="relative">
+                <Link to={`/eventdetail/${event.id}`}>
+                  <div className="relative group">
+                    {/* NEW 스티커 */}
+                    {isEventNew(event) && (
+                      <div className={`absolute top-2 left-2 z-10 ${isEventMdPick(event) ? 'translate-y-[34px]' : ''}`}>
+                        <div className="inline-flex items-center gap-1.5 bg-yellow-50/95 backdrop-blur px-2.5 py-1 rounded-full border border-yellow-200 shadow">
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                          <span className="text-[11px] font-extrabold text-yellow-700 tracking-tight">NEW</span>
+                        </div>
+                      </div>
+                    )}
 
-                                        {/* MD PICK 스티커 */}
- {isEventMdPick(event) && (
-  <div className="absolute top-2 left-2 z-10">
-    <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
-      <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
-      <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
-    </div>
-  </div>
-)}
+                    {/* MD PICK 스티커 */}
+                    {isEventMdPick(event) && (
+                      <div className="absolute top-2 left-2 z-10">
+                        <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur px-2.5 py-1 rounded-full border border-gray-200 shadow">
+                          <img src="/images/fav.png" alt="MD PICK" className="w-4 h-4" />
+                          <span className="text-[11px] font-extrabold text-blue-600 tracking-tight">MD PICK</span>
+                        </div>
+                      </div>
+                    )}
 
-                                        <img
-                                            className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
-                                            alt={getEventTitle(event, i18n)}
-                                            src={event.thumbnailUrl}
-                                        />
-                                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                        <FaHeart
-                                            className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                toggleWish(event.id);
-                                            }}
-                                        />
+                    <img
+                      className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
+                      alt={getEventTitle(event, i18n)}
+                      src={event.thumbnailUrl}
+                    />
+                    <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    <FaHeart
+                      className={`absolute top-4 right-4 w-5 h-5 cursor-pointer z-10 ${likedEvents.has(event.id) ? 'text-red-500' : 'text-white'} drop-shadow-lg`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleWish(event.id);
+                      }}
+                    />
 
-                                    </div>
-                                    <div className="mt-4 text-left">
+                  </div>
+                  <div className="mt-4 text-left">
 
-                                        <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2`}>
-                                            {translateCategory(event.mainCategory, t)}
-                                        </span>
-                                        <h3 className={`font-bold text-lg md:text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{getEventTitle(event, i18n)}</h3>
-                                        <div className={`text-xs md:text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                                            <div className="font-bold">{event.location}</div>
-                                            <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
-                                        </div>
-                                        <p className="font-bold text-base md:text-lg text-[#ff6b35]">{event.minPrice == null
-                                            ? t('main.noPriceInfo')
-                                            : event.minPrice === 0
-                                                ? t('main.free')
-                                                : `${event.minPrice.toLocaleString()}${t('main.won')}`}</p>
-                                    </div>
-                                </Link>
-                            </div>
-                        ))}
+                    <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2 font-['Roboto']`}>
+                      {translateCategory(event.mainCategory, t)}
+                    </span>
+                    <h3 className={`font-bold text-lg md:text-xl mb-2 truncate font-['Roboto'] ${isDark ? 'text-white' : 'text-black'}`}>{getEventTitle(event, i18n)}</h3>
+                    <div className={`text-xs md:text-sm mb-2 font-['Roboto'] ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <div className="font-bold">{event.location}</div>
+                      <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
                     </div>
+                    <p className="font-bold text-base md:text-lg text-[#ff6b35] font-['Roboto']">{event.minPrice == null
+                      ? t('main.noPriceInfo')
+                      : event.minPrice === 0
+                        ? t('main.free')
+                        : `${event.minPrice.toLocaleString()}${t('main.won')}`}</p>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
 
-                    {/* 전체보기 버튼 */}
-                    <div className="text-center mt-8 md:mt-12">
-                        <Link to="/eventoverview">
-                            <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
-                                {t('mypage.favorites.viewAll')}
-                            </button>
-                        </Link>
-                    </div>
-                </div>
-            </div>
+          {/* 전체보기 버튼 */}
+          <div className="text-center mt-8 md:mt-12">
+            <Link to="/eventoverview">
+              <button className={`px-4 py-2 rounded-[10px] text-sm border font-semibold font-['Roboto'] ${isDark ? 'bg-black text-white border-gray-600 hover:bg-gray-800' : 'bg-white text-black border-gray-400 hover:bg-gray-50'}`}>
+                {t('mypage.favorites.viewAll')}
+              </button>
+            </Link>
+          </div>
+        </div>
+      </div>
 
     </div>
   );
