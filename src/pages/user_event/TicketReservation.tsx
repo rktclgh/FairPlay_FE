@@ -105,6 +105,55 @@ export const TicketReservation = () => {
     // 사용 가능한 티켓 옵션을 백엔드에서 가져온 데이터로 사용
     const ticketReservationOptions = availableTickets;
 
+    // PG사 중간 페이지 감지 및 리다이렉션
+    useEffect(() => {
+        const handlePGRedirect = () => {
+            const currentUrl = window.location.href;
+            const pgUrls = [
+                'service.iamport.kr',
+                'm_uplus_payments',
+                'authenticated',
+                'lgdacom',
+                'lguplus'
+            ];
+            
+            // PG사 URL 감지
+            if (pgUrls.some(pgUrl => currentUrl.includes(pgUrl))) {
+                console.log('PG사 중간 페이지 감지:', currentUrl);
+                
+                // URL에서 imp_uid, merchant_uid 추출 시도
+                const urlParams = new URLSearchParams(window.location.search);
+                const impUid = urlParams.get('imp_uid') || localStorage.getItem('pending_imp_uid');
+                const merchantUid = urlParams.get('merchant_uid') || localStorage.getItem('pending_merchant_uid');
+                const savedEventId = localStorage.getItem('pending_event_id') || eventId;
+                const savedScheduleId = localStorage.getItem('pending_schedule_id') || scheduleId;
+                
+                if (impUid && merchantUid && savedEventId && savedScheduleId) {
+                    // 결제 완료 처리 페이지로 리다이렉션
+                    const redirectUrl = `/ticketreservation/${savedEventId}/${savedScheduleId}?imp_success=true&imp_uid=${impUid}&merchant_uid=${merchantUid}`;
+                    console.log('PG사 중간 페이지에서 결제 완료 페이지로 리다이렉션:', redirectUrl);
+                    window.location.href = redirectUrl;
+                } else {
+                    console.log('결제 정보 부족으로 리다이렉션 불가:', { impUid, merchantUid, savedEventId, savedScheduleId });
+                }
+            }
+        };
+        
+        // 페이지 로드 시 체크
+        handlePGRedirect();
+        
+        // URL 변경 감지
+        const handleUrlChange = () => {
+            setTimeout(handlePGRedirect, 100);
+        };
+        
+        window.addEventListener('popstate', handleUrlChange);
+        
+        return () => {
+            window.removeEventListener('popstate', handleUrlChange);
+        };
+    }, [eventId, scheduleId]);
+
     useEffect(() => {
         // 모바일 결제 완료 후 리다이렉트 처리
         if (impSuccess === 'true' && impUid && merchantUid) {
@@ -414,6 +463,12 @@ export const TicketReservation = () => {
             const result = await response.json();
             console.log('결제 완료 처리 성공:', result);
             
+            // 결제 성공 시 localStorage 정리
+            localStorage.removeItem('pending_imp_uid');
+            localStorage.removeItem('pending_merchant_uid');
+            localStorage.removeItem('pending_event_id');
+            localStorage.removeItem('pending_schedule_id');
+            
             // 메시지 로테이션 중지
             clearInterval(messageInterval);
             setPaymentStep('티켓 발급 완료!');
@@ -520,6 +575,12 @@ export const TicketReservation = () => {
 
             setPaymentStep('결제 처리 중...');
             
+            // PG사 중간 페이지 감지를 위한 정보 저장
+            const tempMerchantUid = `TICKET_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+            localStorage.setItem('pending_merchant_uid', tempMerchantUid);
+            localStorage.setItem('pending_event_id', eventId);
+            localStorage.setItem('pending_schedule_id', scheduleId);
+            
             // 결제 처리 (결제 → 예약 생성 → target_id 업데이트)
             const result = await paymentService.processPayment(
                 eventData.titleKr,
@@ -543,6 +604,12 @@ export const TicketReservation = () => {
             await saveAttendeeAndShareTicket(shareTicketData);
 
             console.log('결제 및 예약 성공:', result);
+            
+            // 결제 성공 시 localStorage 정리
+            localStorage.removeItem('pending_imp_uid');
+            localStorage.removeItem('pending_merchant_uid');
+            localStorage.removeItem('pending_event_id');
+            localStorage.removeItem('pending_schedule_id');
             
             setPaymentStep('결제 완료!');
             setPaymentSuccess(true);
