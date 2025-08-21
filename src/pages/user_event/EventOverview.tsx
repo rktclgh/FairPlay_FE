@@ -34,12 +34,12 @@ const translateCategory = (category: string, t: any): string => {
     // 번역 키 매핑
     const categoryMap: Record<string, string> = {
         "박람회": "categories.박람회",
-        "공연": "categories.공연", 
+        "공연": "categories.공연",
         "강연/세미나": "categories.강연/세미나",
         "전시/행사": "categories.전시/행사",
         "축제": "categories.축제"
     };
-    
+
     return categoryMap[category] ? t(categoryMap[category]) : category;
 };
 
@@ -59,7 +59,7 @@ const translateSubCategory = (subCategory: string, t: any): string => {
         "IT/전자": "subCategories.IT/전자",
         "스포츠/레저": "subCategories.스포츠/레저",
         "기타(박람회)": "subCategories.기타(박람회)",
-        
+
         // 강연/세미나 관련
         "취업/진로": "subCategories.취업/진로",
         "창업/스타트업": "subCategories.창업/스타트업",
@@ -68,7 +68,7 @@ const translateSubCategory = (subCategory: string, t: any): string => {
         "인문/문화/예술": "subCategories.인문/문화/예술",
         "건강/의학": "subCategories.건강/의학",
         "기타(세미나)": "subCategories.기타(세미나)",
-        
+
         // 전시/행사 관련
         "미술/디자인": "subCategories.미술/디자인",
         "사진/영상": "subCategories.사진/영상",
@@ -80,14 +80,14 @@ const translateSubCategory = (subCategory: string, t: any): string => {
         "행사/축제": "subCategories.행사/축제",
         "브랜드 프로모션": "subCategories.브랜드 프로모션",
         "기타(전시/행사)": "subCategories.기타(전시/행사)",
-        
+
         // 공연 관련
         "콘서트": "subCategories.콘서트",
         "연극/뮤지컬": "subCategories.연극/뮤지컬",
         "클래식/무용": "subCategories.클래식/무용",
         "아동/가족(공연)": "subCategories.아동/가족(공연)",
         "기타(공연)": "subCategories.기타(공연)",
-        
+
         // 축제 관련
         "음악 축제": "subCategories.음악 축제",
         "영화 축제": "subCategories.영화 축제",
@@ -97,7 +97,7 @@ const translateSubCategory = (subCategory: string, t: any): string => {
         "지역 축제": "subCategories.지역 축제",
         "기타(축제)": "subCategories.기타(축제)"
     };
-    
+
     return subCategoryMap[subCategory] ? t(subCategoryMap[subCategory]) : subCategory;
 };
 
@@ -117,13 +117,13 @@ const getDisplayedSubCategory = (selectedSubCategory: string, t: any): string =>
     if (selectedSubCategory === "전체" || selectedSubCategory === "All Categories") {
         return t('eventOverview.allCategories');
     }
-    
+
     // "카테고리명 (전체)" 형식인 경우 처리
     if (selectedSubCategory.includes(" (전체)")) {
         const categoryName = selectedSubCategory.replace(" (전체)", "");
         return translateCategory(categoryName, t) + " (" + t('eventOverview.allCategories') + ")";
     }
-    
+
     // 서브카테고리인 경우 번역 함수 사용
     return translateSubCategory(selectedSubCategory, t);
 };
@@ -1148,7 +1148,7 @@ export default function EventOverview() {
                                 >
                                     <span
                                         className={`
-            relative text-base leading-[28px] font-['Roboto'] inline-block pb-1
+            relative text-base leading-[28px] font-roboto inline-block pb-1
             ${selectedCategory === category.id
                                                 ? (isDark ? 'font-bold text-white after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-white content-[""]' : 'font-bold text-black after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-full after:bg-black content-[""]')
                                                 : (isDark ? 'font-normal text-gray-300 hover:text-white' : 'font-normal text-gray-600 hover:text-black')}
@@ -1164,17 +1164,17 @@ export default function EventOverview() {
                     {/* View Toggle and Filters */}
                     <div className="flex justify-between items-center mt-4 md:mt-[30px] px-4 md:px-7">
                         {/* 리스트형/캘린더형/지도형 탭 - 모바일에서 숨김 */}
-                        <div className={`hidden md:flex rounded-full p-1 shadow-sm theme-transition ${isDark ? 'border border-gray-700 bg-transparent' : 'bg-white border border-gray-200'}`}>
+                        <div className={`hidden md:flex rounded-full p-1 shadow-sm theme-transition font-roboto ${isDark ? 'border border-gray-700 bg-transparent' : 'bg-white border border-gray-200'}`}>
                             <button
                                 onClick={() => setViewMode("list")}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "list"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 font-roboto ${viewMode === "list"
                                     ? (isDark ? 'dm-light' : 'bg-black text-white')
                                     : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <List className="w-4 h-4" />
-                                <span className="text-sm font-medium">{t('eventOverview.viewModes.list')}</span>
+                                <span className="text-sm font-medium font-roboto">{t('eventOverview.viewModes.list')}</span>
                             </button>
                             <button
                                 onClick={() => {
@@ -1186,26 +1186,27 @@ export default function EventOverview() {
                                     // setSelectedDateRange(`${calendarYear}년 ${calendarMonth}월`);
                                     setSelectedDateRange(
                                         t("eventOverview.calendar.yearMonth", { year: calendarYear, month: monthName })
-                                    );                                }}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "calendar"
+                                    );
+                                }}
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 font-roboto ${viewMode === "calendar"
                                     ? (isDark ? 'dm-light' : 'bg-black text-white')
                                     : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <Calendar className="w-4 h-4" />
-                                <span className="text-sm font-medium">{t('eventOverview.viewModes.calendar')}</span>
+                                <span className="text-sm font-medium font-['Roboto']">{t('eventOverview.viewModes.calendar')}</span>
                             </button>
                             <button
                                 onClick={() => setViewMode("map")}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 ${viewMode === "map"
+                                className={`flex items-center space-x-2 px-4 py-2 rounded-full theme-transition focus:outline-none hover:outline-none focus:ring-0 border-0 font-roboto ${viewMode === "map"
                                     ? (isDark ? 'dm-light' : 'bg-black text-white')
                                     : (isDark ? 'text-white hover:bg-white/10' : 'bg-white text-black hover:bg-gray-50')
                                     }`}
                                 style={{ outline: 'none', border: 'none' }}
                             >
                                 <MapIcon className="w-4 h-4" />
-                                <span className="text-sm font-medium">{t('eventOverview.viewModes.map')}</span>
+                                <span className="text-sm font-medium font-['Roboto']">{t('eventOverview.viewModes.map')}</span>
                             </button>
                         </div>
 
@@ -1213,11 +1214,11 @@ export default function EventOverview() {
                             {/* 달력 필터 - 모바일에서 숨김 */}
                             <div className="relative hidden md:block">
                                 <button
-                                    className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0"
+                                    className="flex items-center space-x-2 focus:outline-none bg-transparent border-none p-0 font-roboto"
                                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                                 >
                                     <HiOutlineCalendar className="w-6 h-6 text-gray-600" />
-                                    <span className="text-lg text-black">{selectedDateRange}</span>
+                                    <span className="text-lg text-black font-roboto">{selectedDateRange}</span>
                                     <FaChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
@@ -1472,7 +1473,7 @@ export default function EventOverview() {
                                                 }}
                                             >
                                                 {i18n.language === 'ko'
-                                                    ? "초기화" : "RESET" }
+                                                    ? "초기화" : "RESET"}
                                             </button>
                                         </div>
                                     </div>
@@ -1482,7 +1483,7 @@ export default function EventOverview() {
                             {/* 카테고리 필터 */}
                             <div className="relative">
                                 <button
-                                    className="flex items-center justify-between w-40 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                                    className="flex items-center justify-between w-40 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50 font-['Roboto']"
                                     style={{ pointerEvents: 'auto' }}
                                     onClick={(e) => {
                                         console.log('🔄 Category dropdown button clicked');
@@ -1491,7 +1492,7 @@ export default function EventOverview() {
                                         setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
                                     }}
                                 >
-                                    <span className="text-xs md:text-sm truncate">{getDisplayedSubCategory(selectedSubCategory, t)}</span>
+                                    <span className="text-xs md:text-sm truncate font-['Roboto']">{getDisplayedSubCategory(selectedSubCategory, t)}</span>
                                     <FaChevronDown className={`w-3 h-3 md:w-4 md:h-4 text-gray-600 transition-transform flex-shrink-0 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
@@ -1518,7 +1519,7 @@ export default function EventOverview() {
                                                 <div key={categoryKey}>
                                                     {/* 1차 카테고리 헤더 */}
                                                     <hr className="h-1 mt-2 bg-blue-300" />
-                                                    <button 
+                                                    <button
                                                         className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 bg-blue-50"
                                                         style={{ pointerEvents: 'auto' }}
                                                         onClick={(e) => {
@@ -1567,21 +1568,21 @@ export default function EventOverview() {
                                                 </button>,
                                                 // 서브카테고리들
                                                 ...subCategories[selectedCategory as keyof typeof subCategories]?.map((subCat) => (
-                                                <button
-                                                    key={subCat}
-                                                    className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedSubCategory === subCat ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
-                                                    style={{ pointerEvents: 'auto' }}
-                                                    onClick={(e) => {
-                                                        console.log('🔄 Specific SubCategory clicked:', subCat);
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setSelectedSubCategory(subCat);
-                                                        setIsCategoryDropdownOpen(false);
-                                                    }}
-                                                >
-                                                    {translateSubCategory(subCat, t)}
-                                                </button>
-                                            )) || []
+                                                    <button
+                                                        key={subCat}
+                                                        className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedSubCategory === subCat ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
+                                                        style={{ pointerEvents: 'auto' }}
+                                                        onClick={(e) => {
+                                                            console.log('🔄 Specific SubCategory clicked:', subCat);
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setSelectedSubCategory(subCat);
+                                                            setIsCategoryDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        {translateSubCategory(subCat, t)}
+                                                    </button>
+                                                )) || []
                                             ]
                                         )}
                                     </div>
@@ -1591,10 +1592,10 @@ export default function EventOverview() {
                             {/* 지역 필터 */}
                             <div className="relative">
                                 <button
-                                    className="flex items-center justify-between w-32 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                                    className="flex items-center justify-between w-32 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50 font-['Roboto']"
                                     onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
                                 >
-                                    <span className="text-xs md:text-sm truncate">{selectedRegion}</span>
+                                    <span className="text-xs md:text-sm truncate font-['Roboto']">{selectedRegion}</span>
                                     <FaChevronDown className={`w-3 h-3 md:w-4 md:h-4 text-gray-600 transition-transform flex-shrink-0 ${isRegionDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
@@ -1623,10 +1624,10 @@ export default function EventOverview() {
                             {/* 상태 필터 - 모바일에서 숨김 */}
                             <div className="relative hidden md:block">
                                 <button
-                                    className="flex items-center justify-between w-28 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50"
+                                    className="flex items-center justify-between w-28 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded bg-white hover:bg-gray-50 font-['Roboto']"
                                     onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                                 >
-                                    <span className="text-xs md:text-sm truncate">{selectedStatus}</span>
+                                    <span className="text-xs md:text-sm truncate font-['Roboto']">{selectedStatus}</span>
                                     <FaChevronDown className={`w-3 h-3 md:w-4 md:h-4 text-gray-600 transition-transform flex-shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
@@ -1669,7 +1670,7 @@ export default function EventOverview() {
 
                     {/* Event Grid */}
                     {viewMode === "list" && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-10 px-4 md:px-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mt-10 px-4 md:px-6">
                             {displayEvents.length > 0 ? (
                                 displayEvents.map((event) => (
                                     <div key={event.id} className="relative cursor-pointer" onClick={() => navigate(`/eventdetail/${event.id}`)}>
@@ -1701,11 +1702,11 @@ export default function EventOverview() {
 
                                         </div>
                                         <div className="mt-4 text-left">
-                                            <span className={`inline-block px-3 py-1 rounded text-xs mb-2 ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
+                                            <span className={`inline-block px-3 py-1 rounded text-xs mb-2 font-['Roboto'] ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
                                                 {translateCategory(event.mainCategory, t)}
                                             </span>
-                                            <h3 className="font-bold text-lg md:text-xl text-black mb-2 truncate">{getEventTitle(event, i18n)}</h3>
-                                            <div className="text-xs md:text-sm text-gray-600 mb-2">
+                                            <h3 className="font-bold text-lg md:text-xl text-black mb-2 truncate font-['Roboto']">{getEventTitle(event, i18n)}</h3>
+                                            <div className="text-xs md:text-sm text-gray-600 mb-2 font-['Roboto']">
                                                 <div className="font-bold">{event.location}</div>
                                                 <div>
                                                     {event.startDate === event.endDate
@@ -1714,13 +1715,7 @@ export default function EventOverview() {
                                                     }
                                                 </div>
                                             </div>
-                                            <p className="font-bold text-base md:text-lg text-[#ff6b35]">
-                                                {event.minPrice == null
-                                                    ? t('eventOverview.noPriceInfo')
-                                                    : event.minPrice === 0
-                                                        ? t('eventOverview.free')
-                                                        : `${event.minPrice.toLocaleString()}원 ~`}
-                                            </p>
+
                                         </div>
                                     </div>
                                 ))
