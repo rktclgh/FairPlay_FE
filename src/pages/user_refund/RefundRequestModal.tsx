@@ -86,13 +86,7 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
         }
     };
 
-    // 결제 유형에 따른 상품 정보 생성
-    const getProductInfo = (payment: PaymentData): string => {
-        const eventName = payment.eventName || '행사명 없음';
-        const productType = payment.targetTypeName || '기타';
 
-        return `${eventName} - ${productType}`;
-    };
 
     // 환불 가능 여부 판단
     const isRefundable = (payment: PaymentData): { canRefund: boolean; reason?: string } => {
@@ -249,282 +243,288 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
-            <div className="bg-white rounded-[10px] shadow-xl w-full max-w-4xl mx-4 max-h-[98vh] min-h-[400px] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-2 sm:p-4">
+            <div className="bg-white rounded-[10px] shadow-xl w-full max-w-[95vw] sm:max-w-4xl mx-auto max-h-[98vh] min-h-[400px] overflow-hidden">
                 {/* 헤더 */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">
+                <div className="flex items-center justify-between p-3 sm:p-6 border-b border-gray-200">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                         {step === 'select' ? '환불할 결제 선택' : '환불 요청'}
                     </h2>
                     <button
                         onClick={handleClose}
                         className="text-gray-400 hover:text-gray-600"
                     >
-                        <X className="w-6 h-6" />
+                        <X className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                 </div>
 
                 {/* 내용 */}
-                <div className="p-6 overflow-y-auto max-h-[calc(98vh-200px)]">
+                <div className="p-3 sm:p-6 overflow-y-auto max-h-[calc(98vh-200px)]">
                     {step === 'select' ? (
-                        /* 결제 내역 선택 화면 */
-                        <div>
-                            <div className="mb-4 flex items-center justify-between">
-                                <p className="text-sm text-gray-600">환불하려는 결제를 선택해주세요.</p>
-                                <button
-                                    onClick={loadPayments}
-                                    disabled={loading}
-                                    className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-[10px] disabled:opacity-50"
-                                >
-                                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                                    새로고침
-                                </button>
-                            </div>
-
-                            {loading ? (
-                                <div className="flex items-center justify-center h-64">
-                                    <div className="text-center">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                                        <p className="text-gray-600">결제 내역을 불러오는 중...</p>
-                                    </div>
+                        <>
+                            {/* 결제 내역 선택 화면 */}
+                            <div>
+                                <div className="mb-4 flex items-center justify-between">
+                                    <p className="text-sm text-gray-600">환불하려는 결제를 선택해주세요.</p>
+                                    <button
+                                        onClick={loadPayments}
+                                        disabled={loading}
+                                        className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-[10px] disabled:opacity-50"
+                                    >
+                                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                        새로고침
+                                    </button>
                                 </div>
-                            ) : payments.length === 0 ? (
-                                <div className="flex items-center justify-center h-64">
-                                    <div className="text-center text-gray-500">
-                                        <p>결제 내역이 없습니다.</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="border border-gray-200 rounded-[10px] overflow-hidden">
-                                    <table className="w-full">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    결제ID
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    행사명 / 결제품목
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    수량 / 결제일
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    결제금액
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    환불가능금액
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    상태
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                    액션
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {payments.map((payment) => {
-                                                const refundCheck = isRefundable(payment);
-                                                const refundableAmount = payment.amount - payment.refundedAmount;
 
-                                                return (
-                                                    <tr key={payment.paymentId} className={`hover:bg-gray-50 ${!refundCheck.canRefund ? 'opacity-50' : ''}`}>
-                                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                                            #{payment.paymentId}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                                            <div className="max-w-xs">
-                                                                <div className="font-medium text-gray-900">
-                                                                    {payment.eventName || '행사명 없음'}
-                                                                </div>
-                                                                <div className="text-sm text-gray-500">
-                                                                    {payment.targetTypeName || '기타'}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                                            <div>
-                                                                <div className="font-medium">{payment.quantity}개</div>
-                                                                <div className="text-sm text-gray-500">
-                                                                    {new Date(payment.paidAt).toLocaleDateString('ko-KR')}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                                            {payment.amount.toLocaleString()}원
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                                            {refundableAmount.toLocaleString()}원
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm">
-                                                            {refundCheck.canRefund ? (
-                                                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                                                    환불가능
-                                                                </span>
-                                                            ) : (
-                                                                <span
-                                                                    className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 cursor-help"
-                                                                    title={refundCheck.reason}
-                                                                >
-                                                                    환불불가
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <button
-                                                                onClick={() => selectPayment(payment)}
-                                                                disabled={!refundCheck.canRefund}
-                                                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                title={!refundCheck.canRefund ? refundCheck.reason : '환불 요청'}
-                                                            >
-                                                                선택
-                                                            </button>
-                                                        </td>
+                                {loading ? (
+                                    <div className="flex items-center justify-center h-64">
+                                        <div className="text-center">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                                            <p className="text-gray-600">결제 내역을 불러오는 중...</p>
+                                        </div>
+                                    </div>
+                                ) : payments.length === 0 ? (
+                                    <div className="flex items-center justify-center h-64">
+                                        <div className="text-center text-gray-500">
+                                            <p>결제 내역이 없습니다.</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="border border-gray-200 rounded-[10px] overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full min-w-[600px] sm:min-w-full">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                            결제ID
+                                                        </th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                            행사명 / 결제품목
+                                                        </th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                            수량 / 결제일
+                                                        </th>
+                                                        <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                            결제금액
+                                                        </th>
+                                                        <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                            환불가능금액
+                                                        </th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                            상태
+                                                        </th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                            액션
+                                                        </th>
                                                     </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {payments.map((payment) => {
+                                                        const refundCheck = isRefundable(payment);
+                                                        const refundableAmount = payment.amount - payment.refundedAmount;
+
+                                                        return (
+                                                            <tr key={payment.paymentId} className={`hover:bg-gray-50 ${!refundCheck.canRefund ? 'opacity-50' : ''}`}>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-sm text-gray-900">
+                                                                    #{payment.paymentId}
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-sm text-gray-900">
+                                                                    <div className="max-w-[120px] sm:max-w-xs">
+                                                                        <div className="font-medium text-gray-900 text-xs sm:text-sm">
+                                                                            {payment.eventName || '행사명 없음'}
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500">
+                                                                            {payment.targetTypeName || '기타'}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-sm text-gray-900">
+                                                                    <div>
+                                                                        <div className="font-medium text-xs sm:text-sm">{payment.quantity}개</div>
+                                                                        <div className="text-xs text-gray-500">
+                                                                            {new Date(payment.paidAt).toLocaleDateString('ko-KR')}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-sm text-gray-900">
+                                                                    {payment.amount.toLocaleString()}원
+                                                                </td>
+                                                                <td className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-sm text-gray-900">
+                                                                    {refundableAmount.toLocaleString()}원
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-sm">
+                                                                    {refundCheck.canRefund ? (
+                                                                        <span className="inline-flex px-1 sm:px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                                            환불가능
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span
+                                                                            className="inline-flex px-1 sm:px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 cursor-help"
+                                                                            title={refundCheck.reason}
+                                                                        >
+                                                                            환불불가
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3">
+                                                                    <button
+                                                                        onClick={() => selectPayment(payment)}
+                                                                        disabled={!refundCheck.canRefund}
+                                                                        className="bg-blue-600 text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        title={!refundCheck.canRefund ? refundCheck.reason : '환불 요청'}
+                                                                    >
+                                                                        선택
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
                     ) : (
-                        /* 환불 요청 양식 화면 */
-                        <div>
-                            {/* 선택된 결제 정보 */}
-                            {selectedPayment && (
-                                <div className="bg-gray-50 rounded-[10px] p-4 mb-6">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-3">선택된 결제 정보</h3>
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <span className="text-gray-500">결제ID:</span> #{selectedPayment.paymentId}
+                        <>
+                            {/* 환불 요청 양식 화면 */}
+                            <div>
+                                {/* 선택된 결제 정보 */}
+                                {selectedPayment && (
+                                    <div className="bg-gray-50 rounded-[10px] p-4 mb-6">
+                                        <h3 className="text-lg font-medium text-gray-900 mb-3">선택된 결제 정보</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
+                                            <div>
+                                                <span className="text-gray-500">결제ID:</span> #{selectedPayment.paymentId}
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">행사:</span> {selectedPayment.eventName || '-'}
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">결제 유형:</span> {selectedPayment.targetTypeName}
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">수량:</span> {selectedPayment.quantity}개
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">단가:</span> {selectedPayment.price.toLocaleString()}원
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">총 결제 금액:</span> {selectedPayment.amount.toLocaleString()}원
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">환불 가능 금액:</span> {(selectedPayment.amount - selectedPayment.refundedAmount).toLocaleString()}원
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="text-gray-500">행사:</span> {selectedPayment.eventName || '-'}
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">결제 유형:</span> {selectedPayment.targetTypeName}
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">수량:</span> {selectedPayment.quantity}개
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">단가:</span> {selectedPayment.price.toLocaleString()}원
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">총 결제 금액:</span> {selectedPayment.amount.toLocaleString()}원
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">환불 가능 금액:</span> {(selectedPayment.amount - selectedPayment.refundedAmount).toLocaleString()}원
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 환불 요청 폼 */}
-                            <div className="space-y-6">
-                                {/* 환불 유형 선택 */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                                        환불 유형
-                                    </label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="refundType"
-                                                value="FULL"
-                                                checked={refundForm.refundType === 'FULL'}
-                                                onChange={(e) => handleRefundTypeChange(e.target.value as 'FULL')}
-                                                className="mr-2"
-                                            />
-                                            전체 환불
-                                        </label>
-                                        <label className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="refundType"
-                                                value="PARTIAL"
-                                                checked={refundForm.refundType === 'PARTIAL'}
-                                                onChange={(e) => handleRefundTypeChange(e.target.value as 'PARTIAL')}
-                                                className="mr-2"
-                                            />
-                                            부분 환불
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* 부분 환불 시 수량 선택 */}
-                                {refundForm.refundType === 'PARTIAL' && selectedPayment && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            환불 수량
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max={getMaxRefundableQuantity(selectedPayment)}
-                                            value={refundForm.refundQuantity}
-                                            onChange={(e) => handleQuantityChange(parseInt(e.target.value))}
-                                            className="w-32 px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-500">
-                                            (최대 {getMaxRefundableQuantity(selectedPayment)}개)
-                                        </span>
                                     </div>
                                 )}
 
-                                {/* 환불 금액 */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        환불 금액
-                                    </label>
-                                    <div className="flex items-center">
-                                        <input
-                                            type="text"
-                                            value={refundForm.refundAmount.toLocaleString()}
-                                            readOnly
-                                            className="w-48 px-3 py-2 border border-gray-300 rounded-[10px] bg-gray-50"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-500">원</span>
+                                {/* 환불 요청 폼 */}
+                                <div className="space-y-6">
+                                    {/* 환불 유형 선택 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                                            환불 유형
+                                        </label>
+                                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="refundType"
+                                                    value="FULL"
+                                                    checked={refundForm.refundType === 'FULL'}
+                                                    onChange={(e) => handleRefundTypeChange(e.target.value as 'FULL')}
+                                                    className="mr-2"
+                                                />
+                                                전체 환불
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="refundType"
+                                                    value="PARTIAL"
+                                                    checked={refundForm.refundType === 'PARTIAL'}
+                                                    onChange={(e) => handleRefundTypeChange(e.target.value as 'PARTIAL')}
+                                                    className="mr-2"
+                                                />
+                                                부분 환불
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* 환불 사유 */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        환불 사유 <span className="text-red-500">*</span>
-                                    </label>
-                                    <textarea
-                                        value={refundForm.reason}
-                                        onChange={(e) => setRefundForm(prev => ({ ...prev, reason: e.target.value }))}
-                                        placeholder="환불 사유를 입력해주세요"
-                                        rows={4}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
+                                    {/* 부분 환불 시 수량 선택 */}
+                                    {refundForm.refundType === 'PARTIAL' && selectedPayment && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                환불 수량
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max={getMaxRefundableQuantity(selectedPayment)}
+                                                value={refundForm.refundQuantity}
+                                                onChange={(e) => handleQuantityChange(parseInt(e.target.value))}
+                                                className="w-32 px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            <span className="ml-2 text-sm text-gray-500">
+                                                (최대 {getMaxRefundableQuantity(selectedPayment)}개)
+                                            </span>
+                                        </div>
+                                    )}
 
-                                {/* 주의사항 */}
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-[10px] p-4">
-                                    <div className="flex items-start">
-                                        <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5" />
-                                        <div className="text-sm text-yellow-800">
-                                            <p className="font-medium mb-1">환불 요청 시 주의사항</p>
-                                            <ul className="list-disc list-inside space-y-1 text-xs">
-                                                <li>환불 요청 후 관리자 승인이 필요합니다.</li>
-                                                <li>승인된 환불은 3-5 영업일 내에 처리됩니다.</li>
-                                                <li>환불 수수료가 발생할 수 있습니다.</li>
-                                            </ul>
+                                    {/* 환불 금액 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            환불 금액
+                                        </label>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="text"
+                                                value={refundForm.refundAmount.toLocaleString()}
+                                                readOnly
+                                                className="w-48 px-3 py-2 border border-gray-300 rounded-[10px] bg-gray-50"
+                                            />
+                                            <span className="ml-2 text-sm text-gray-500">원</span>
+                                        </div>
+                                    </div>
+
+                                    {/* 환불 사유 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            환불 사유 <span className="text-red-500">*</span>
+                                        </label>
+                                        <textarea
+                                            value={refundForm.reason}
+                                            onChange={(e) => setRefundForm(prev => ({ ...prev, reason: e.target.value }))}
+                                            placeholder="환불 사유를 입력해주세요"
+                                            rows={4}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    {/* 주의사항 */}
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-[10px] p-4">
+                                        <div className="flex items-start">
+                                            <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5" />
+                                            <div className="text-sm text-yellow-800">
+                                                <p className="font-medium mb-1">환불 요청 시 주의사항</p>
+                                                <ul className="list-disc list-inside space-y-1 text-xs">
+                                                    <li>환불 요청 후 관리자 승인이 필요합니다.</li>
+                                                    <li>승인된 환불은 3-5 영업일 내에 처리됩니다.</li>
+                                                    <li>환불 수수료가 발생할 수 있습니다.</li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
 
                 {/* 푸터 */}
-                <div className="flex items-center justify-between p-6 border-t border-gray-200">
+                <div className="flex items-center justify-between p-3 sm:p-6 border-t border-gray-200">
                     <div>
                         {step === 'request' && (
                             <button

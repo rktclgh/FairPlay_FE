@@ -20,6 +20,7 @@ import type { WishlistResponseDto } from "../../services/types/wishlist";
 import { loadKakaoMap } from "../../lib/loadKakaoMap";
 import EventMapPin from "../../components/EventMapPin";
 import { useTheme } from "../../context/ThemeContext";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
@@ -137,6 +138,7 @@ const fetchCalendarGrouped = (year: number, month: number) =>
     });
 
 export default function EventOverview() {
+    useScrollToTop();
     const { isDark } = useTheme();
     const { t, i18n } = useTranslation();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
@@ -1602,17 +1604,17 @@ export default function EventOverview() {
                                         {Object.keys(t('eventOverview.regions', { returnObjects: true })).map((regionKey) => {
                                             const region = t(`eventOverview.regions.${regionKey}`);
                                             return (
-                                            <button
-                                                key={region}
-                                                className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedRegion === region ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
-                                                onClick={() => {
-                                                    setSelectedRegion(region);
-                                                    setIsRegionDropdownOpen(false);
-                                                }}
-                                            >
-                                                {region}
-                                            </button>
-                                        );
+                                                <button
+                                                    key={region}
+                                                    className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedRegion === region ? 'bg-gray-100 text-black' : 'text-gray-700'}`}
+                                                    onClick={() => {
+                                                        setSelectedRegion(region);
+                                                        setIsRegionDropdownOpen(false);
+                                                    }}
+                                                >
+                                                    {region}
+                                                </button>
+                                            );
                                         })}
                                     </div>
                                 )}

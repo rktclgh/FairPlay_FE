@@ -5,30 +5,32 @@ import { BoothType, BoothApplicationRequest, BoothExternalLink } from '../../typ
 import { useFileUpload } from '../../hooks/useFileUpload';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 const BoothApplication: React.FC = () => {
+    useScrollToTop();
     const { eventId } = useParams<{ eventId: string }>();
     const navigate = useNavigate();
-    
+
     // 파일 업로드 훅
     const { uploadFile } = useFileUpload();
-    
+
     // ReactQuill 참조
     const quillRef = useRef<ReactQuill>(null);
-    
+
     // 이미지 업로드 핸들러
     const handleImageUpload = async (file: File): Promise<string | null> => {
         const response = await uploadFile(file, `description_image_${Date.now()}`);
         return response ? response.url : null;
     };
-    
+
     // ReactQuill 이미지 핸들러
     const imageHandler = () => {
         const input = document.createElement('input');
         input.setAttribute('type', 'file');
         input.setAttribute('accept', 'image/*');
         input.click();
-        
+
         input.onchange = async () => {
             const file = input.files?.[0];
             if (file) {
@@ -45,7 +47,7 @@ const BoothApplication: React.FC = () => {
             }
         };
     };
-    
+
     const [formData, setFormData] = useState<BoothApplicationRequest>({
         boothTitle: '',
         boothDescription: '',
@@ -150,7 +152,7 @@ const BoothApplication: React.FC = () => {
                                 toolbar: [
                                     [{ 'header': [1, 2, 3, false] }],
                                     ['bold', 'italic', 'underline', 'strike'],
-                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                                     [{ 'color': [] }, { 'background': [] }],
                                     ['link', 'image'],
                                     ['clean']
@@ -163,7 +165,7 @@ const BoothApplication: React.FC = () => {
                                 'header', 'bold', 'italic', 'underline', 'strike',
                                 'list', 'bullet', 'color', 'background', 'link', 'image'
                             ]}
-                            style={{ 
+                            style={{
                                 minHeight: '250px'
                             }}
                         />
@@ -194,7 +196,7 @@ const BoothApplication: React.FC = () => {
                     <label>부스 배너 URL (선택사항)</label>
                     <input type="url" name="boothBannerUrl" value={formData.boothBannerUrl || ''} onChange={handleChange} style={{ width: '100%', padding: '0.5rem' }} />
                 </div>
-                
+
                 <div style={{ marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                         <label>외부 링크 (홈페이지, SNS 등)</label>
@@ -204,22 +206,22 @@ const BoothApplication: React.FC = () => {
                     </div>
                     {(formData.boothExternalLinks || []).map((link, index) => (
                         <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-                            <input 
-                                type="text" 
-                                placeholder="링크 이름 (예: 홈페이지, 인스타그램)" 
+                            <input
+                                type="text"
+                                placeholder="링크 이름 (예: 홈페이지, 인스타그램)"
                                 value={link.displayText}
                                 onChange={(e) => handleExternalLinkChange(index, 'displayText', e.target.value)}
                                 style={{ flex: '3', padding: '0.5rem' }}
                             />
-                            <input 
-                                type="url" 
-                                placeholder="https://..." 
+                            <input
+                                type="url"
+                                placeholder="https://..."
                                 value={link.url}
                                 onChange={(e) => handleExternalLinkChange(index, 'url', e.target.value)}
                                 style={{ flex: '5', padding: '0.5rem' }}
                             />
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => removeExternalLink(index)}
                                 style={{ padding: '0.5rem', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}
                             >
@@ -233,7 +235,7 @@ const BoothApplication: React.FC = () => {
                         </p>
                     )}
                 </div>
-                
+
                 <hr style={{ margin: '2rem 0' }} />
                 <h2>담당자 정보</h2>
                 <div style={{ marginBottom: '1rem' }}>
@@ -248,7 +250,7 @@ const BoothApplication: React.FC = () => {
                     <label>연락처</label>
                     <input type="tel" name="contactNumber" value={formData.contactNumber} onChange={handleChange} required style={{ width: '100%', padding: '0.5rem' }} />
                 </div>
-                
+
                 {error && <p style={{ color: 'red' }}>{error}</p>}
 
                 <button type="submit" disabled={submitting} style={{ width: '100%', padding: '1rem', fontSize: '1.2rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>

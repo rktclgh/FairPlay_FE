@@ -4,6 +4,7 @@ import { HostSideNav } from "../components/HostSideNav";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { dashboardAPI, EventDashboardStatsDto, SalesDashboardResponse, EventDetailInfo } from "../services/dashboard";
 import { toast } from "react-toastify";
+import { useScrollToTop } from "../hooks/useScrollToTop";
 
 // 통계 카드 컴포넌트
 const StatCard: React.FC<{ title: string; value: string; unit?: string }> = ({ title, value, unit }) => (
@@ -135,6 +136,7 @@ const BookingTrendChart: React.FC<{
 };
 
 export const HostDashboard = () => {
+    useScrollToTop();
     const [selectedEvent, setSelectedEvent] = useState<EventDetailInfo | null>(null);
     const [dashboardStats, setDashboardStats] = useState<EventDashboardStatsDto | null>(null);
     const [salesStats, setSalesStats] = useState<SalesDashboardResponse | null>(null);

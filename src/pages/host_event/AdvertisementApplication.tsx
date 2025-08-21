@@ -4,6 +4,7 @@ import { HostSideNav } from '../../components/HostSideNav';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
+import authManager from "../../utils/auth";
 
 // 유틸 
 const fmtKST = (iso: string) => {

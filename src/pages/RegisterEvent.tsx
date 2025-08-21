@@ -6,6 +6,7 @@ import type { EventApplyRequestDto } from "../services/types/eventType";
 import { toast } from "react-toastify";
 import { useFileUpload } from "../hooks/useFileUpload";
 import { businessAPI, BusinessVerificationRequest } from "../services/business";
+import { useScrollToTop } from "../hooks/useScrollToTop";
 
 declare global {
     interface Window {
@@ -24,6 +25,7 @@ interface KakaoPlace {
 }
 
 export const RegisterEvent = () => {
+    useScrollToTop();
     const [formData, setFormData] = useState({
         eventNameKr: "",
         eventNameEn: "",
