@@ -503,24 +503,24 @@ export default function MyTickets(): JSX.Element {
                                 return (
                                     <div
                                         key={reservation.reservationId}
-                                        className="w-full h-auto md:h-[240px] bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] relative"
+                                        className="w-full h-auto bg-white rounded-[10px] border border-solid border-[#0000001f] shadow-[0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_0px_0px_transparent,0px_2px_8px_#0000001a] relative"
                                     >
-                                        <div className="p-4 md:p-6 relative h-full flex flex-col md:flex-row md:items-center">
+                                        <div className="p-4 md:p-6 relative flex flex-col md:flex-row md:items-start">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-[40px] w-full mb-4 md:mb-0">
                                                 <div className="space-y-3 md:space-y-[15px] pt-2 md:pt-[20px] pb-2 md:pb-[20px]">
                                                     <div className="pt-1 md:pt-[10px]">
                                                         <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm leading-[21px] tracking-[0] whitespace-nowrap mb-2 md:mb-[8px]">
                                                             {t('mypage.tickets.eventName')}
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base md:text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2">
+                                                            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-base md:text-lg tracking-[0] leading-[27px] break-words min-w-0 flex-1">
                                                                 {reservation.eventName}
                                                             </div>
 
-                                                            {/* 카테고리 정보 - 행사 타이틀 오른쪽에 배치 */}
+                                                            {/* 카테고리 정보 - 행사 타이틀 아래에 배치 */}
                                                             {reservation.mainCategory && (
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`px-3 py-1 rounded text-xs ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                                                                <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                                                                    <span className={`px-3 py-1 rounded text-xs whitespace-nowrap ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
                                                                         reservation.mainCategory === "공연" ? "bg-red-100 text-red-800 border border-red-200" :
                                                                             reservation.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border border-green-200" :
                                                                                 reservation.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
@@ -530,7 +530,7 @@ export default function MyTickets(): JSX.Element {
                                                                         {reservation.mainCategory}
                                                                     </span>
                                                                     {reservation.subCategory && (
-                                                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
+                                                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200 whitespace-nowrap">
                                                                             {reservation.subCategory}
                                                                         </span>
                                                                     )}
@@ -595,7 +595,7 @@ export default function MyTickets(): JSX.Element {
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-col space-y-3 md:space-y-4 mt-4 md:mt-0 md:absolute md:top-6 md:right-6">
+                                            <div className="flex flex-col space-y-3 md:space-y-4 mt-4 md:mt-0 md:absolute md:top-[55px] md:right-6">
                                                 {/* QR 티켓 버튼 */}
                                                 <div className="w-full md:w-[140px] h-[48px] md:h-[50px] overflow-hidden rounded-xl relative z-10">
                                                     <button
