@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarPlus, FaUsers, FaChartLine, FaGift, FaHeadset, FaArrowRight, FaPlay } from 'react-icons/fa';
 import { TopNav } from '../components/TopNav';
 import { useTranslation } from 'react-i18next';
+import { useScrollToTop } from '../hooks/useScrollToTop';
 
 export const EventRegistrationIntro: React.FC = () => {
+    useScrollToTop();
     const { t } = useTranslation();
-    
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
             <TopNav />

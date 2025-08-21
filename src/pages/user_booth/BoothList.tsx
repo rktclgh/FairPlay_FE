@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getBooths } from '../../api/boothApi';
 import { BoothSummary } from '../../types/booth';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 const BoothList: React.FC = () => {
+    useScrollToTop();
     const { eventId } = useParams<{ eventId: string }>();
     const [booths, setBooths] = useState<BoothSummary[]>([]);
     const [loading, setLoading] = useState(true);

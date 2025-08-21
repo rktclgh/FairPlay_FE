@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Clock, Users, MapPin, Calendar, X, AlertCircle } from 'lucide-react';
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { useTranslation } from 'react-i18next';
 import {
   getMyReservations,
@@ -11,8 +12,10 @@ import { toast } from 'react-toastify';
 import { AttendeeSideNav } from "../user_mypage/AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
 import authManager from '../../utils/auth';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 const MyBoothExperienceReservations: React.FC = () => {
+  useScrollToTop();
   const { t } = useTranslation();
   const [reservations, setReservations] = useState<BoothExperienceReservation[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<BoothExperienceReservation[]>([]);
@@ -23,6 +26,7 @@ const MyBoothExperienceReservations: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // 디바운스된 검색어
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -130,37 +134,74 @@ const MyBoothExperienceReservations: React.FC = () => {
   return (
     <>
       <div className="bg-white flex flex-row justify-center w-full">
-        <div className="bg-white w-[1256px] min-h-screen relative">
+        <div className="bg-white w-full max-w-[1256px] min-h-screen relative">
           <TopNav />
 
-          {/* 페이지 제목 */}
-          <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-            {t('boothExperienceReservation.title')}
+          {/* 제목 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+          <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
+            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+              {t('boothExperienceReservation.title')}
+            </div>
           </div>
 
-          {/* 사이드바 */}
-          <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+          {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+          >
+            {isMobileSidebarOpen ? (
+              <HiOutlineX className="w-6 h-6 text-gray-600" />
+            ) : (
+              <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+            )}
+          </button>
 
-          {/* 메인 콘텐츠 */}
-          <div className="ml-64 mt-[195px] w-[949px] pb-28 md:pb-36">
+          {/* 모바일 사이드바 오버레이 */}
+          {isMobileSidebarOpen && (
+            <div
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+          )}
+
+          {/* 모바일 사이드바 */}
+          <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="p-4">
+              <button
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="absolute top-4 right-4 p-2"
+              >
+                <HiOutlineX className="w-6 h-6 text-gray-600" />
+              </button>
+              <AttendeeSideNav className="!relative !top-0 !left-0" />
+            </div>
+          </div>
+
+          {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+          <div className="hidden md:block">
+            <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+          </div>
+
+          {/* 콘텐츠 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+          <div className="md:absolute md:top-[195px] md:left-64 md:right-0 md:pr-8 left-0 right-4 top-32 relative">
             {/* 헤더 */}
-            <div className="mb-6">
-              <p className="text-gray-600">{t('boothExperienceReservation.description')}</p>
+            <div className="mb-4 md:mb-6">
+              <p className="text-gray-600 text-sm md:text-base">{t('boothExperienceReservation.description')}</p>
             </div>
 
             {/* 검색 및 필터 */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">{t('boothExperienceReservation.searchConditions')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">{t('boothExperienceReservation.searchConditions')}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {/* 검색 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperienceReservation.experienceOrBoothName')}</label>
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">{t('boothExperienceReservation.experienceOrBoothName')}</label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 md:w-5 h-4 md:h-5" />
                     <input
                       type="text"
-                      placeholder={t('boothExperienceReservation.experienceOrBoothNamePlaceholder')}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="검색"
+                      className="w-full pl-10 pr-4 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs md:text-sm"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -169,11 +210,11 @@ const MyBoothExperienceReservations: React.FC = () => {
 
                 {/* 예약 상태 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">예약 상태</label>
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">예약 상태</label>
                   <div className="relative">
-                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
+                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 md:w-5 h-4 md:h-5 pointer-events-none z-10" />
                     <select
-                      className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+                      className="w-full pl-10 pr-8 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer text-xs md:text-sm"
                       value={selectedStatus}
                       onChange={(e) => setSelectedStatus(e.target.value)}
                     >
@@ -186,63 +227,65 @@ const MyBoothExperienceReservations: React.FC = () => {
                       <option value="NO_SHOW">노쇼</option>
                     </select>
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 md:w-4 h-3 md:h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
                 </div>
 
-                {/* 시작 날짜 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">시작일</label>
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-
-                {/* 종료 날짜 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">종료일</label>
-                  <input
-                    type="date"
-                    min={startDate}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+                {/* 날짜 필터 - 시작일과 종료일을 같은 줄에 배치 */}
+                <div className="sm:col-span-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">시작일</label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs md:text-sm"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">종료일</label>
+                      <input
+                        type="date"
+                        min={startDate}
+                        className="w-full px-3 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs md:text-sm"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* 로딩 상태 */}
             {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="flex justify-center items-center py-8 md:py-12">
+                <div className="animate-spin rounded-full h-8 md:h-12 w-8 md:w-12 border-b-2 border-blue-600"></div>
               </div>
             ) : (
               <>
                 {/* 결과 개수 */}
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">
+                <div className="mb-3 md:mb-4">
+                  <p className="text-xs md:text-sm text-gray-600">
                     총 <span className="font-semibold text-blue-600">{filteredReservations.length}</span>개의 예약이 있습니다
                   </p>
                 </div>
 
                 {/* 예약 목록 */}
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {filteredReservations.map((reservation) => (
                     <div
                       key={reservation.reservationId}
-                      className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow"
+                      className="bg-white rounded-lg shadow-md p-4 md:p-6 border border-gray-200 hover:shadow-lg transition-shadow"
                     >
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex justify-between items-start mb-3 md:mb-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
+                          <div className="flex items-center gap-2 md:gap-3 mb-2">
+                            <h3 className="text-base md:text-lg font-semibold text-gray-900">
                               {reservation.experienceTitle}
                             </h3>
                             {getStatusBadge(reservation.statusCode, reservation.statusName)}
@@ -259,12 +302,12 @@ const MyBoothExperienceReservations: React.FC = () => {
 
                           <div className="flex items-center text-gray-600 mb-2">
                             <MapPin className="w-4 h-4 mr-1" />
-                            <span className="text-sm">{reservation.boothName}</span>
+                            <span className="text-xs md:text-sm">{reservation.boothName}</span>
                           </div>
 
                           <div className="flex items-center text-gray-600 mb-2">
                             <Calendar className="w-4 h-4 mr-1" />
-                            <span className="text-sm">
+                            <span className="text-xs md:text-sm">
                               예약일시: {formatDateTime(reservation.reservedAt)}
                             </span>
                           </div>
@@ -272,14 +315,14 @@ const MyBoothExperienceReservations: React.FC = () => {
                           {reservation.queuePosition > 0 && (
                             <div className="flex items-center text-orange-600 mb-2">
                               <Users className="w-4 h-4 mr-1" />
-                              <span className="text-sm font-medium">
+                              <span className="text-xs md:text-sm font-medium">
                                 대기순번: {reservation.queuePosition}번
                               </span>
                             </div>
                           )}
 
                           {reservation.notes && (
-                            <div className="text-sm text-gray-600 mt-2">
+                            <div className="text-xs md:text-sm text-gray-600 mt-2">
                               <span className="font-medium">메모:</span> {reservation.notes}
                             </div>
                           )}
@@ -292,7 +335,7 @@ const MyBoothExperienceReservations: React.FC = () => {
                                 setSelectedReservationId(reservation.reservationId);
                                 setShowCancelModal(true);
                               }}
-                              className="px-4 py-2 text-sm text-red-600 border border-red-600 rounded-md hover:bg-red-50 transition-colors"
+                              className="px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-red-600 border border-red-600 rounded-md hover:bg-red-50 transition-colors"
                             >
                               예약 취소
                             </button>
@@ -305,10 +348,10 @@ const MyBoothExperienceReservations: React.FC = () => {
 
                 {/* 결과 없음 */}
                 {filteredReservations.length === 0 && (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8 md:py-12">
                     <div className="text-gray-500 mb-4">
-                      <Search className="w-12 h-12 mx-auto mb-2" />
-                      <p>조건에 맞는 예약을 찾을 수 없습니다</p>
+                      <Search className="w-8 md:w-12 h-8 md:h-12 mx-auto mb-2" />
+                      <p className="text-sm md:text-base">조건에 맞는 예약을 찾을 수 없습니다</p>
                     </div>
                     <button
                       onClick={() => {
@@ -317,7 +360,7 @@ const MyBoothExperienceReservations: React.FC = () => {
                         setStartDate('');
                         setEndDate('');
                       }}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-blue-600 hover:text-blue-800 font-medium text-sm md:text-base"
                     >
                       필터 초기화
                     </button>

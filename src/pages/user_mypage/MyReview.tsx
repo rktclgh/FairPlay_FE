@@ -3,6 +3,7 @@ import { AttendeeSideNav } from "./AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
 import { Star } from "lucide-react";
 import { toast } from "react-toastify";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
 import type {
     ReviewSaveRequestDto,
     PossibleReviewResponseDto,
@@ -22,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 export const MyPageMyReview = () => {
+    useScrollToTop();
     const { t } = useTranslation();
     /** 초기 세팅 데이터 */
     const [savedReviews, setSavedReviews] = useState<ReviewResponseDto[] | null>(null); // 작성한 리뷰

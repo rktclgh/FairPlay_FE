@@ -27,6 +27,7 @@ type WishlistResponseDto = { eventId: number };
 import authManager from "../../utils/auth";
 import { toast } from 'react-toastify';
 import NewLoader from "../../components/NewLoader";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
 
 // 회차 정보 인터페이스
 interface EventSchedule {
@@ -47,6 +48,7 @@ const authHeaders = () => {
 const isAuthed = () => !!localStorage.getItem("accessToken");
 
 const EventDetail = (): JSX.Element => {
+    const { setAutoScrolling } = useScrollToTop();
     const { eventId } = useParams();
     const navigate = useNavigate();
     const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
@@ -90,12 +92,7 @@ const EventDetail = (): JSX.Element => {
 
     const id = Number(eventId); // 컴포넌트 내부에서 계산
 
-    // 페이지 로드 시 스크롤을 맨 위로 이동
-    React.useEffect(() => {
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-    }, []); // 컴포넌트 마운트 시 한 번만 실행
+
 
     // 초기 위시 상태 로드
     React.useEffect(() => {
@@ -511,6 +508,9 @@ const EventDetail = (): JSX.Element => {
         setSelectedScheduleId(null); // 기존 회차 선택 초기화
         filterSchedulesForDate(date);
 
+        // 자동 스크롤 시작
+        setAutoScrolling(true);
+
         // 전체행사현황에서 해당 날짜로 자동 스크롤
         setTimeout(() => {
             const selectedDateElement = document.querySelector(`[data-date="${date}"]`);
@@ -524,6 +524,8 @@ const EventDetail = (): JSX.Element => {
                     });
                 }
             }
+            // 자동 스크롤 완료 후 상태 해제
+            setTimeout(() => setAutoScrolling(false), 500);
         }, 100);
     };
 
@@ -533,6 +535,9 @@ const EventDetail = (): JSX.Element => {
 
         // 선택된 날짜가 있으면 해당 날짜로 자동 스크롤
         if (selectedDate) {
+            // 자동 스크롤 시작
+            setAutoScrolling(true);
+
             setTimeout(() => {
                 const selectedDateElement = document.querySelector(`[data-date="${selectedDate}"]`);
                 if (selectedDateElement) {
@@ -545,6 +550,8 @@ const EventDetail = (): JSX.Element => {
                         });
                     }
                 }
+                // 자동 스크롤 완료 후 상태 해제
+                setTimeout(() => setAutoScrolling(false), 500);
             }, 100);
         }
     };

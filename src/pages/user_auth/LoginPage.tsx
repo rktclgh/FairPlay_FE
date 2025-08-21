@@ -8,8 +8,10 @@ import { toast } from "react-toastify";
 import { hasHostPermission, hasEventManagerPermission, hasAdminPermission, hasBoothManagerPermission } from "../../utils/permissions";
 import { setCachedRoleCode } from "../../utils/role";
 import { useTranslation } from "react-i18next";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
 
 export const LoginPage = () => {
+    useScrollToTop();
     const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
     const [password, setPassword] = useState("");
@@ -88,7 +90,7 @@ export const LoginPage = () => {
         const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
         // 운영 환경에서는 현재 도메인 사용, 개발 환경에서는 env 값 사용
         const currentOrigin = window.location.origin;
-        const KAKAO_REDIRECT_URI = currentOrigin.includes('localhost') 
+        const KAKAO_REDIRECT_URI = currentOrigin.includes('localhost')
             ? `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`
             : `${currentOrigin}/auth/kakao/callback`;
 
