@@ -4,321 +4,179 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
-import api from "../../api/axios";
 import { toast } from "react-toastify";
+import { adminStatisticsService } from "../../services/adminStatistics.service";
+import type { TotalSalesStatistics, DailySalesDto } from "../../services/adminStatistics.service";
 
 // ===== [DUMMY-START] SettlementManagement 테스트 더미 (실서버 전환 시 이 블록 삭제 가능) =====
-const USE_DUMMY_SETTLEMENT = true; // 더미 사용시 true, 실서버 사용 시 false
 
 interface SettlementItem {
-    id: number;
-    eventId: number;
-    eventTitle: string;
-    period: { startDate: string; endDate: string };
-    grossSales: number; // 총 매출
-    feeAmount: number;  // 수수료 금액
-    netAmount: number;  // 정산 금액(=총매출-수수료)
-    status: "대기" | "완료" | "보류";
-    createdAt: string;
+    eventName: string;
+    startDate: string;
+    endDate: string;
+    totalAmount: number; // 총 매출
+    totalFee: number;    // 수수료 금액
+    totalRevenue: number; // 정산 금액(순수익)
+    paymentCount: number; // 결제 건수
+    averageSales: number; // 총 매출
 }
 
-interface SettlementListResponse {
-    content: SettlementItem[];
-    totalElements: number;
-    totalPages: number;
-    summary?: { totalGross: number; totalNet: number; totalFee: number };
-}
-
-const DUMMY_SETTLEMENTS: SettlementItem[] = Array.from({ length: 50 }).map((_, i) => {
-    const base = dayjs("2025-07-01").add(i, "day");
-    const gross = 1000000 + i * 13750;
-    const fee = Math.round(gross * 0.08);
-    const net = gross - fee;
-    const statuses: Array<SettlementItem["status"]> = ["대기", "완료", "보류"];
-
-    // 현실적인 행사명 더미 데이터
-    const eventNames = [
-        "2025 서울 봄 페스티벌",
-        "부산 해운대 음악제",
-        "대구 국제 영화제",
-        "인천 월미도 불꽃축제",
-        "광주 비엔날레",
-        "대전 사이언스 페어",
-        "울산 태화강 봄축제",
-        "세종 도시재생 페스티벌",
-        "경기 수원 화성 문화제",
-        "강원 강릉 단오제",
-        "충북 청주 공예비엔날레",
-        "충남 아산 온양온천 축제",
-        "전북 전주 한옥마을 축제",
-        "전남 여수 엑스포 축제",
-        "경북 경주 불국사 문화제",
-        "경남 진주 남강유등축제",
-        "제주 한라문화제",
-        "부산국제영화제",
-        "서울 국제 도서전",
-        "부산 국제 영화제",
-        "대구 국제 뮤지컬 페스티벌",
-        "인천 국제 공연예술제",
-        "광주 국제 음악제",
-        "대전 국제 과학기술 엑스포",
-        "울산 국제 해양축제",
-        "세종 국제 교육박람회",
-        "경기 수원 국제 영화제",
-        "강원 평창 동계올림픽 기념축제",
-        "충북 청주 국제 공예전",
-        "충남 아산 국제 온천축제",
-        "전북 전주 국제 영화제",
-        "전남 여수 국제 엑스포",
-        "경북 경주 국제 문화제",
-        "경남 진주 국제 유등축제",
-        "제주 국제 해양축제",
-        "서울 국제 패션위크",
-        "부산 국제 요트쇼",
-        "대구 국제 와인페스티벌",
-        "인천 국제 항공우주전시회",
-        "광주 국제 디자인비엔날레",
-        "대전 국제 로봇엑스포",
-        "울산 국제 에너지엑스포",
-        "세종 국제 스마트시티엑스포",
-        "경기 수원 국제 정원박람회",
-        "강원 강릉 국제 커피축제",
-        "충북 청주 국제 와인페스티벌",
-        "충남 아산 국제 온천문화제",
-        "전북 전주 국제 한복문화제",
-        "전남 여수 국제 해양문화제",
-        "경북 경주 국제 불교문화제",
-        "경남 진주 국제 유등문화제",
-        "제주 국제 해양문화제"
-    ];
-
-    return {
-        id: 202507000 + i,
-        eventId: 1000 + i,
-        eventTitle: eventNames[i % eventNames.length],
-        period: { startDate: base.format("YYYY-MM-DD"), endDate: base.add(2, "day").format("YYYY-MM-DD") },
-        grossSales: gross,
-        feeAmount: fee,
-        netAmount: net,
-        status: statuses[i % statuses.length],
-        createdAt: base.toISOString(),
-    };
-});
 // ===== [DUMMY-END] SettlementManagement 테스트 더미 =====
 
 const formatCurrency = (value: number) => new Intl.NumberFormat("ko-KR").format(value) + "원";
 
-const statusChipClass = (status: SettlementItem["status"]) => {
-    switch (status) {
-        case "대기":
-            return "bg-yellow-100 text-yellow-800";
-        case "완료":
-            return "bg-green-100 text-green-800";
-        case "보류":
-            return "bg-red-100 text-red-800";
-        default:
-            return "bg-gray-100 text-gray-800";
-    }
-};
-
-// 일/월별 추이 섹션 (간단 바차트 렌더링)
+// 일별 매출 추이 섹션 (실제 API 데이터 사용)
 const SalesTrendSection: React.FC<{
-    useDummy: boolean;
-    onSummaryChange: (summary: { totalGross: number; totalNet: number; totalFee: number; totalCount: number }) => void;
-}> = ({ useDummy, onSummaryChange }) => {
-    const [granularity, setGranularity] = useState<"daily" | "monthly">("daily");
+    dailySalesData: DailySalesDto[];
+    dailySalesLoading: boolean;
+}> = ({ dailySalesData, dailySalesLoading }) => {
 
-    // 하드코딩된 데이터로 변경
-    React.useEffect(() => {
-        if (!useDummy) return;
-
-        let data: Array<{ label: string; value: number }>;
-
-        if (granularity === "daily") {
-            // 하드코딩된 일별 데이터 (최근 30일)
-            data = [
-                { label: "01/01", value: 450000 },
-                { label: "01/02", value: 520000 },
-                { label: "01/03", value: 380000 },
-                { label: "01/04", value: 610000 },
-                { label: "01/05", value: 680000 },
-                { label: "01/06", value: 890000 },
-                { label: "01/07", value: 420000 },
-                { label: "01/08", value: 550000 },
-                { label: "01/09", value: 720000 },
-                { label: "01/10", value: 810000 },
-                { label: "01/11", value: 760000 },
-                { label: "01/12", value: 920000 },
-                { label: "01/13", value: 480000 },
-                { label: "01/14", value: 650000 },
-                { label: "01/15", value: 780000 },
-                { label: "01/16", value: 850000 },
-                { label: "01/17", value: 690000 },
-                { label: "01/18", value: 940000 },
-                { label: "01/19", value: 510000 },
-                { label: "01/20", value: 670000 },
-                { label: "01/21", value: 830000 },
-                { label: "01/22", value: 760000 },
-                { label: "01/23", value: 890000 },
-                { label: "01/24", value: 540000 },
-                { label: "01/25", value: 720000 },
-                { label: "01/26", value: 810000 },
-                { label: "01/27", value: 680000 },
-                { label: "01/28", value: 950000 },
-                { label: "01/29", value: 620000 },
-                { label: "01/30", value: 780000 }
-            ];
-        } else {
-            // 하드코딩된 월별 데이터 (2024-12부터 2025-08까지)
-            data = [
-                { label: "2024-12", value: 8500000 },
-                { label: "2025-01", value: 9200000 },
-                { label: "2025-02", value: 7800000 },
-                { label: "2025-03", value: 9500000 },
-                { label: "2025-04", value: 8800000 },
-                { label: "2025-05", value: 10200000 },
-                { label: "2025-06", value: 11500000 },
-                { label: "2025-07", value: 12800000 },
-                { label: "2025-08", value: 13500000 }
-            ];
-        }
-
-        const totalGross = data.reduce((sum, d) => sum + d.value, 0);
-        const totalFee = Math.round(totalGross * 0.08);
-        const totalNet = totalGross - totalFee;
-        const totalCount = granularity === "daily" ? 30 : 9; // 일별은 30일, 월별은 9개월
-
-        onSummaryChange({
-            totalGross,
-            totalFee,
-            totalNet,
-            totalCount
-        });
-    }, [granularity, onSummaryChange, useDummy]);
-
-    if (!useDummy) {
+    if (dailySalesLoading) {
         return (
             <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">일별 / 월별 매출 추이</h3>
-                    <div className="flex gap-2">
-                        <button onClick={() => setGranularity("daily")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "daily" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>일별</button>
-                        <button onClick={() => setGranularity("monthly")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "monthly" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>월별</button>
-                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">일별 매출 추이</h3>
                 </div>
-                <div className="text-sm text-gray-500">서버 연동 대기</div>
+                <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600">매출 추이 데이터를 불러오는 중...</span>
+                </div>
             </div>
         );
     }
 
-    // 하드코딩된 데이터 렌더링
-    let data: Array<{ label: string; value: number }>;
-
-    if (granularity === "daily") {
-        data = [
-            { label: "01/01", value: 450000 },
-            { label: "01/02", value: 520000 },
-            { label: "01/03", value: 380000 },
-            { label: "01/04", value: 610000 },
-            { label: "01/05", value: 680000 },
-            { label: "01/06", value: 890000 },
-            { label: "01/07", value: 420000 },
-            { label: "01/08", value: 550000 },
-            { label: "01/09", value: 720000 },
-            { label: "01/10", value: 810000 },
-            { label: "01/11", value: 760000 },
-            { label: "01/12", value: 920000 },
-            { label: "01/13", value: 480000 },
-            { label: "01/14", value: 650000 },
-            { label: "01/15", value: 780000 },
-            { label: "01/16", value: 850000 },
-            { label: "01/17", value: 690000 },
-            { label: "01/18", value: 940000 },
-            { label: "01/19", value: 510000 },
-            { label: "01/20", value: 670000 },
-            { label: "01/21", value: 830000 },
-            { label: "01/22", value: 760000 },
-            { label: "01/23", value: 890000 },
-            { label: "01/24", value: 540000 },
-            { label: "01/25", value: 720000 },
-            { label: "01/26", value: 810000 },
-            { label: "01/27", value: 680000 },
-            { label: "01/28", value: 950000 },
-            { label: "01/29", value: 620000 },
-            { label: "01/30", value: 780000 }
-        ];
-    } else {
-        data = [
-            { label: "2024-12", value: 8500000 },
-            { label: "2025-01", value: 9200000 },
-            { label: "2025-02", value: 7800000 },
-            { label: "2025-03", value: 9500000 },
-            { label: "2025-04", value: 8800000 },
-            { label: "2025-05", value: 10200000 },
-            { label: "2025-06", value: 11500000 },
-            { label: "2025-07", value: 12800000 },
-            { label: "2025-08", value: 13500000 }
-        ];
+    if (!dailySalesData || dailySalesData.length === 0) {
+        return (
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">일별 매출 추이</h3>
+                </div>
+                <div className="text-center py-8 text-gray-500">
+                    이번 달 매출 데이터가 없습니다.
+                </div>
+            </div>
+        );
     }
 
-    const maxVal = Math.max(1, ...data.map(d => d.value));
+    const maxVal = Math.max(...dailySalesData.map(d => d.totalAmount));
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">일별 / 월별 매출 추이</h3>
-                <div className="flex gap-2">
-                    <button onClick={() => setGranularity("daily")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "daily" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>일별</button>
-                    <button onClick={() => setGranularity("monthly")} className={`px-3 py-1.5 text-xs border rounded-md ${granularity === "monthly" ? "text-white bg-blue-600 border-blue-600" : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"}`}>월별</button>
+                <h3 className="text-lg font-semibold text-gray-900">일별 매출 추이</h3>
+                <div className="text-sm text-gray-500">
+                    {dayjs().format('YYYY년 MM월')} ({dailySalesData.length}일)
                 </div>
             </div>
-            <div className="space-y-2">
-                {data.map((d, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                        <div className="w-16 text-[11px] text-gray-500 text-right">{d.label}</div>
-                        <div className="flex-1 h-4 bg-gray-100 rounded">
-                            <div className="h-4 rounded" style={{ width: `${(d.value / maxVal) * 100}%`, background: "linear-gradient(90deg,#2563eb,#16a34a)" }} />
+            
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+                {dailySalesData.map((d, i) => (
+                    <div key={i} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span className="font-medium">{dayjs(d.date).format("MM/DD (ddd)")}</span>
+                            <div className="text-right">
+                                <span className="text-gray-900 font-semibold">
+                                    {new Intl.NumberFormat("ko-KR").format(d.totalAmount)}원
+                                </span>
+                                <span className="text-xs text-gray-500 ml-2">
+                                    ({d.totalCount}건)
+                                </span>
+                            </div>
                         </div>
-                        <div className="w-28 text-right text-xs text-gray-700">{new Intl.NumberFormat("ko-KR").format(d.value)}원</div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div 
+                                className="h-3 rounded-full transition-all duration-500 ease-out" 
+                                style={{ 
+                                    width: `${maxVal > 0 ? (d.totalAmount / maxVal) * 100 : 0}%`, 
+                                    background: "linear-gradient(90deg,#2563eb,#16a34a)" 
+                                }} 
+                            />
+                        </div>
                     </div>
                 ))}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                    <div>
+                        <div className="text-xs text-gray-500">총 매출</div>
+                        <div className="font-semibold text-gray-900">
+                            {new Intl.NumberFormat("ko-KR").format(dailySalesData.reduce((sum, d) => sum + d.totalAmount, 0))}원
+                        </div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-gray-500">총 거래</div>
+                        <div className="font-semibold text-gray-900">
+                            {dailySalesData.reduce((sum, d) => sum + d.totalCount, 0)}건
+                        </div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-gray-500">일일 총매출</div>
+                        <div className="font-semibold text-gray-900">
+                            {new Intl.NumberFormat("ko-KR").format(
+                                Math.round(dailySalesData.reduce((sum, d) => sum + d.totalAmount, 0) / dailySalesData.length)
+                            )}원
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 };
 
-// 수익 출처별 매출 비교 섹션 (간단 바차트 렌더링)
-const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; endDate: string; }> = ({ useDummy, startDate, endDate }) => {
-    if (!useDummy) {
+// 수익 출처별 매출 비교 섹션 (getEventCompare API 데이터만 사용)
+interface RevenueSourcesSectionProps {
+    eventCompareData: DailySalesDto[];
+    compareLoading: boolean;
+}
+
+const RevenueSourcesSection: React.FC<RevenueSourcesSectionProps> = ({ 
+    eventCompareData, 
+    compareLoading 
+}) => {
+    if (compareLoading) {
         return (
             <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">수익 출처별 매출 비교</h3>
-                <div className="text-sm text-gray-500">서버 연동 대기</div>
+                <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-gray-500">데이터를 불러오는 중...</span>
+                </div>
             </div>
         );
     }
 
-    const from = startDate ? dayjs(startDate) : dayjs(DUMMY_SETTLEMENTS[0]?.period.startDate);
-    const to = endDate ? dayjs(endDate) : dayjs(DUMMY_SETTLEMENTS[DUMMY_SETTLEMENTS.length - 1]?.period.endDate);
-    if (!from.isValid() || !to.isValid() || from.isAfter(to)) return null;
-
-    const inRange = DUMMY_SETTLEMENTS.filter(s => dayjs(s.period.endDate).isSameOrAfter(from, "day") && dayjs(s.period.startDate).isSameOrBefore(to, "day"));
-
-    // 더미 가중치: 예매 60%, 부스 30%, 광고 5%, 기타 5% (총매출 기준)
+    // getEventCompare API 데이터만 사용
     const totals = { "예매": 0, "부스": 0, "광고": 0, "기타": 0 } as Record<string, number>;
-    inRange.forEach(s => {
-        totals["예매"] += Math.round(s.grossSales * 0.6);
-        totals["부스"] += Math.round(s.grossSales * 0.3);
-        totals["광고"] += Math.round(s.grossSales * 0.05);
-        totals["기타"] += Math.round(s.grossSales * 0.05);
+    
+    eventCompareData.forEach(item => {
+        totals["예매"] += item.reservationAmount || 0;
+        totals["부스"] += item.boothAmount || 0;
+        totals["광고"] += item.adAmount || 0;
+        totals["기타"] += item.etcAmount || 0;
     });
 
     const data = Object.entries(totals).map(([label, value]) => ({ label, value }));
     const maxVal = Math.max(1, ...data.map(d => d.value));
     const totalRevenue = data.reduce((sum, d) => sum + d.value, 0);
 
+    // 데이터가 없는 경우
+    if (totalRevenue === 0) {
+        return (
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">수익 출처별 매출 비교</h3>
+                <div className="text-center py-8 text-gray-500">
+                    수익 출처별 데이터가 없습니다.
+                </div>
+            </div>
+        );
+    }
+
     // 색상 팔레트
     const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
+
+    // 데이터를 내림차순으로 정렬
+    const sortedData = data.sort((a, b) => b.value - a.value);
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -326,10 +184,10 @@ const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; en
 
             {/* 상단 요약 카드 */}
             <div className="grid grid-cols-4 gap-4 mb-6">
-                {data.map((d, i) => (
+                {sortedData.map((d, i) => (
                     <div key={i} className="bg-gray-50 rounded-lg p-4 text-center">
                         <div className="text-2xl font-bold" style={{ color: colors[i] }}>
-                            {((d.value / totalRevenue) * 100).toFixed(1)}%
+                            {totalRevenue > 0 ? ((d.value / totalRevenue) * 100).toFixed(1) : '0.0'}%
                         </div>
                         <div className="text-sm text-gray-600 mt-1">{d.label}</div>
                         <div className="text-lg font-semibold text-gray-900 mt-2">
@@ -345,7 +203,7 @@ const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; en
                 <div>
                     <h4 className="text-md font-medium text-gray-700 mb-4">매출 금액 비교</h4>
                     <div className="space-y-4">
-                        {data.map((d, i) => (
+                        {sortedData.map((d, i) => (
                             <div key={i} className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="font-medium">{d.label}</span>
@@ -355,7 +213,7 @@ const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; en
                                     <div
                                         className="h-3 rounded-full transition-all duration-500 ease-out"
                                         style={{
-                                            width: `${(d.value / maxVal) * 100}%`,
+                                            width: `${maxVal > 0 ? (d.value / maxVal) * 100 : 0}%`,
                                             backgroundColor: colors[i]
                                         }}
                                     />
@@ -371,8 +229,8 @@ const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; en
                     <div className="relative w-32 h-32 mx-auto">
                         {/* 원형 차트 시각화 */}
                         <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
-                            {data.map((d, i) => {
-                                const percentage = (d.value / totalRevenue) * 100;
+                            {sortedData.map((d, i) => {
+                                const percentage = totalRevenue > 0 ? (d.value / totalRevenue) * 100 : 0;
                                 const radius = 40;
                                 const circumference = 2 * Math.PI * radius;
                                 const strokeDasharray = circumference;
@@ -380,7 +238,7 @@ const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; en
 
                                 let offset = 0;
                                 for (let j = 0; j < i; j++) {
-                                    offset += (data[j].value / totalRevenue) * 100;
+                                    offset += totalRevenue > 0 ? (sortedData[j].value / totalRevenue) * 100 : 0;
                                 }
                                 const startAngle = (offset / 100) * 360;
 
@@ -422,21 +280,29 @@ const RevenueSourcesSection: React.FC<{ useDummy: boolean; startDate: string; en
                     <div className="space-y-2">
                         <div className="flex justify-between">
                             <span className="text-gray-600">가장 높은 비중:</span>
-                            <span className="font-medium">{data[0].label} ({(data[0].value / totalRevenue * 100).toFixed(1)}%)</span>
+                            <span className="font-medium">
+                                {sortedData[0]?.label || '-'} ({totalRevenue > 0 ? (sortedData[0]?.value / totalRevenue * 100).toFixed(1) : '0.0'}%)
+                            </span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-600">가장 낮은 비중:</span>
-                            <span className="font-medium">{data[data.length - 1].label} ({(data[data.length - 1].value / totalRevenue * 100).toFixed(1)}%)</span>
+                            <span className="font-medium">
+                                {sortedData[sortedData.length - 1]?.label || '-'} ({totalRevenue > 0 ? (sortedData[sortedData.length - 1]?.value / totalRevenue * 100).toFixed(1) : '0.0'}%)
+                            </span>
                         </div>
                     </div>
                     <div className="space-y-2">
                         <div className="flex justify-between">
-                            <span className="text-gray-600">평균 매출:</span>
-                            <span className="font-medium">{new Intl.NumberFormat("ko-KR").format(Math.round(totalRevenue / data.length))}원</span>
+                            <span className="text-gray-600">총 매출:</span>
+                            <span className="font-medium">
+                                {new Intl.NumberFormat("ko-KR").format(sortedData.length > 0 ? Math.round(totalRevenue / sortedData.length) : 0)}원
+                            </span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-600">표준편차:</span>
-                            <span className="font-medium">±{new Intl.NumberFormat("ko-KR").format(Math.round(totalRevenue * 0.15))}원</span>
+                            <span className="text-gray-600">총 거래 건수:</span>
+                            <span className="font-medium">
+                                {new Intl.NumberFormat("ko-KR").format(eventCompareData.reduce((sum, item) => sum + (item.totalCount || 0), 0))}건
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -450,7 +316,6 @@ export const SettlementManagement: React.FC = () => {
     dayjs.extend(isSameOrBefore);
     // 필터
     const [searchName, setSearchName] = useState<string>("");
-    const [selectedStatus, setSelectedStatus] = useState<string>("전체");
     const [startDate, setStartDate] = useState<string>("");
     const [endDate, setEndDate] = useState<string>("");
 
@@ -461,61 +326,146 @@ export const SettlementManagement: React.FC = () => {
     const [totalElements, setTotalElements] = useState<number>(0);
     const [totalPages, setTotalPages] = useState<number>(0);
     const [summary, setSummary] = useState<{ totalGross: number; totalNet: number; totalFee: number; totalCount: number } | null>(null);
+    
+    // 매출 통계 상태
+    const [salesStats, setSalesStats] = useState<TotalSalesStatistics | null>(null);
+    const [statsLoading, setStatsLoading] = useState<boolean>(true);
+    const [dailySalesData, setDailySalesData] = useState<DailySalesDto[]>([]);
+    const [dailySalesLoading, setDailySalesLoading] = useState<boolean>(false);
+    const [eventCompareData, setEventCompareData] = useState<DailySalesDto[]>([]);
+    const [compareLoading, setCompareLoading] = useState<boolean>(false);
+
+    // 매출 통계 로드 함수
+    const loadSalesStatistics = useCallback(async () => {
+        try {
+            setStatsLoading(true);
+            const stats = await adminStatisticsService.getTotalSalesStatistics();
+            setSalesStats(stats);
+        } catch (error) {
+            console.error('매출 통계 로드 실패:', error);
+            toast.error('매출 통계를 불러오는데 실패했습니다.');
+        } finally {
+            setStatsLoading(false);
+        }
+    }, []);
+
+    // 수수료 계산 함수 (8%)
+    const calculateCommission = useCallback((revenue: number) => {
+        return Math.round(revenue * 0.08);
+    }, []);
+
+    // 정산 금액 계산 함수  
+    const calculateSettlement = useCallback((revenue: number) => {
+        return revenue - calculateCommission(revenue);
+    }, [calculateCommission]);
+
+    // 일별 매출 데이터 로드 함수 (이번 달 첫날부터 오늘까지)
+    const loadDailySalesData = useCallback(async () => {
+        try {
+            setDailySalesLoading(true);
+            
+            // 이번 달 첫날
+            const startOfMonth = dayjs().startOf('month').format('YYYY-MM-DD');
+            // 오늘
+            const today = dayjs().format('YYYY-MM-DD');
+            
+            const data = await adminStatisticsService.getDailySales(startOfMonth, today);
+            setDailySalesData(data);
+        } catch (error) {
+            console.error('일별 매출 데이터 로드 실패:', error);
+            toast.error('일별 매출 데이터를 불러오는데 실패했습니다.');
+        } finally {
+            setDailySalesLoading(false);
+        }
+    }, []);
+
+    // 이벤트 비교 데이터 로드 함수
+    const loadEventCompareData = useCallback(async () => {
+        try {
+            setCompareLoading(true);
+            const data = await adminStatisticsService.getEventCompare();
+            // API가 단일 객체를 반환하는 경우 배열로 변환
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+                setEventCompareData([data]);
+            } else if (Array.isArray(data)) {
+                setEventCompareData(data);
+            } else {
+                setEventCompareData([]);
+            }
+        } catch (error) {
+            console.error('이벤트 비교 데이터 로드 실패:', error);
+            toast.error('이벤트 비교 데이터를 불러오는데 실패했습니다.');
+            setEventCompareData([]);
+        } finally {
+            setCompareLoading(false);
+        }
+    }, []);
 
     const fetchSettlements = useCallback(async () => {
         try {
             setLoading(true);
-            if (USE_DUMMY_SETTLEMENT) {
-                // 간단 필터/페이지네이션
-                let list = DUMMY_SETTLEMENTS;
-                if (searchName) {
-                    list = list.filter((x) => x.eventTitle.toLowerCase().includes(searchName.toLowerCase()));
-                }
-                if (selectedStatus !== "전체") {
-                    list = list.filter((x) => x.status === selectedStatus);
-                }
-                if (startDate) {
-                    list = list.filter((x) => dayjs(x.period.startDate).isSameOrAfter(dayjs(startDate), "day"));
-                }
-                if (endDate) {
-                    list = list.filter((x) => dayjs(x.period.endDate).isSameOrBefore(dayjs(endDate), "day"));
-                }
-
-                const pageSize = 10;
-                const from = (currentPage - 1) * pageSize;
-                const pageData = list.slice(from, from + pageSize);
-                const sum = {
-                    totalGross: list.reduce((a, b) => a + b.grossSales, 0),
-                    totalNet: list.reduce((a, b) => a + b.netAmount, 0),
-                    totalFee: list.reduce((a, b) => a + b.feeAmount, 0),
-                    totalCount: list.length,
+            
+            // getAllSales API 사용
+            const response = await adminStatisticsService.getAllSales();
+            const settlements = response.content.flat(); // AllSalesDto[] 배열을 평탄화
+            
+            // SettlementItem 형식으로 변환
+            const formattedSettlements: SettlementItem[] = settlements.map(item => {
+                // 임시로 결제 건수를 1로 설정 (실제로는 API에서 제공되어야 함)
+                const paymentCount = 1; 
+                const averageSales = item.totalAmount / paymentCount;
+                
+                return {
+                    eventName: item.eventName,
+                    startDate: item.startDate,
+                    endDate: item.endDate,
+                    totalAmount: item.totalAmount,
+                    totalFee: item.totalFee,
+                    totalRevenue: item.totalRevenue,
+                    paymentCount: paymentCount,
+                    averageSales: averageSales
                 };
+            });
 
-                setSettlements(pageData);
-                setTotalElements(list.length);
-                setTotalPages(Math.max(1, Math.ceil(list.length / pageSize)));
-                setSummary(sum);
-                return;
+            // 검색 및 필터링 적용
+            let filteredList = formattedSettlements;
+            
+            if (searchName) {
+                filteredList = filteredList.filter((x) => 
+                    x.eventName.toLowerCase().includes(searchName.toLowerCase())
+                );
+            }
+            
+            if (startDate) {
+                filteredList = filteredList.filter((x) => 
+                    dayjs(x.startDate).isSameOrAfter(dayjs(startDate), "day")
+                );
+            }
+            
+            if (endDate) {
+                filteredList = filteredList.filter((x) => 
+                    dayjs(x.endDate).isSameOrBefore(dayjs(endDate), "day")
+                );
             }
 
-            const params: Record<string, string | number> = {
-                page: currentPage - 1,
-                size: 10,
+            // 페이지네이션 적용
+            const pageSize = 10;
+            const from = (currentPage - 1) * pageSize;
+            const pageData = filteredList.slice(from, from + pageSize);
+            
+            // 요약 정보 계산
+            const sum = {
+                totalGross: filteredList.reduce((a, b) => a + b.totalAmount, 0),
+                totalNet: filteredList.reduce((a, b) => a + b.totalRevenue, 0),
+                totalFee: filteredList.reduce((a, b) => a + b.totalFee, 0),
+                totalCount: filteredList.length,
             };
-            if (searchName) params.keyword = searchName;
-            if (selectedStatus !== "전체") params.status = selectedStatus;
-            if (startDate) params.fromDate = startDate;
-            if (endDate) params.toDate = endDate;
 
-            const res = await api.get<SettlementListResponse>("/api/admin/settlements", { params });
-            const data = res.data as SettlementListResponse;
-            setSettlements(data.content || []);
-            setTotalElements(data.totalElements || 0);
-            setTotalPages(data.totalPages || 1);
-            setSummary(data.summary ? {
-                ...data.summary,
-                totalCount: data.totalElements || 0
-            } : null);
+            setSettlements(pageData);
+            setTotalElements(filteredList.length);
+            setTotalPages(Math.max(1, Math.ceil(filteredList.length / pageSize)));
+            setSummary(sum);
+            
         } catch (err) {
             console.error("정산 목록 조회 실패:", err);
             toast.error("정산 목록을 불러오지 못했습니다.");
@@ -526,7 +476,7 @@ export const SettlementManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, endDate, searchName, selectedStatus, startDate]);
+    }, [currentPage, endDate, searchName, startDate]);
 
     useEffect(() => {
         fetchSettlements();
@@ -534,11 +484,25 @@ export const SettlementManagement: React.FC = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchName, selectedStatus, startDate, endDate]);
+    }, [searchName, startDate, endDate]);
+
+    // 매출 통계 로드
+    useEffect(() => {
+        loadSalesStatistics();
+    }, [loadSalesStatistics]);
+
+    // 일별 매출 데이터 로드
+    useEffect(() => {
+        loadDailySalesData();
+    }, [loadDailySalesData]);
+
+    // 이벤트 비교 데이터 로드
+    useEffect(() => {
+        loadEventCompareData();
+    }, [loadEventCompareData]);
 
     const handleReset = () => {
         setSearchName("");
-        setSelectedStatus("전체");
         setStartDate("");
         setEndDate("");
         setCurrentPage(1);
@@ -546,32 +510,54 @@ export const SettlementManagement: React.FC = () => {
 
     const handleExport = async () => {
         try {
-            if (USE_DUMMY_SETTLEMENT) {
-                toast.info("더미 모드에서는 다운로드가 비활성화되어 있습니다.");
-                return;
+            let exportStartDate: string;
+            let exportEndDate: string;
+
+            // 날짜 조건 처리
+            if (!startDate && !endDate) {
+                // 시작일과 종료일이 모두 없으면 전체 데이터
+                // 충분히 과거 날짜부터 오늘까지
+                exportStartDate = "2020-01-01";
+                exportEndDate = dayjs().format("YYYY-MM-DD");
+            } else if (startDate && !endDate) {
+                // 시작일만 있으면 시작일부터 오늘까지
+                exportStartDate = startDate;
+                exportEndDate = dayjs().format("YYYY-MM-DD");
+            } else if (!startDate && endDate) {
+                // 종료일만 있으면 충분히 과거 날짜부터 종료날짜까지
+                exportStartDate = "2020-01-01";
+                exportEndDate = endDate;
+            } else {
+                // 시작일과 종료일이 모두 있으면 그대로 사용
+                exportStartDate = startDate;
+                exportEndDate = endDate;
             }
-            const params: Record<string, string> = {};
-            if (searchName) params.keyword = searchName;
-            if (selectedStatus !== "전체") params.status = selectedStatus;
-            if (startDate) params.fromDate = startDate;
-            if (endDate) params.toDate = endDate;
-            const res = await api.get("/api/admin/settlements/export", { params, responseType: "blob" });
-            const blob = new Blob([res.data], { type: "text/csv;charset=utf-8;" });
+
+            // Excel 파일 다운로드
+            const blob = await adminStatisticsService.exportSettlements(
+                exportStartDate,
+                exportEndDate,
+                searchName || undefined,
+                undefined, // settlementStatus - 현재 사용하지 않음
+                undefined  // disputeStatus - 현재 사용하지 않음
+            );
+
+            // 파일 다운로드 처리
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `settlements_${dayjs().format("YYYYMMDD_HHmm")}.csv`;
+            link.download = `settlements_${dayjs().format("YYYYMMDD_HHmm")}.xlsx`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+
+            toast.success("정산 데이터가 성공적으로 내보내졌습니다.");
         } catch (err) {
             console.error("정산 내보내기 실패:", err);
             toast.error("정산 내보내기에 실패했습니다.");
         }
     };
-
-    const statuses = ["전체", "대기", "완료", "보류"];
 
     const tableBody = useMemo(() => {
         if (loading) {
@@ -587,24 +573,18 @@ export const SettlementManagement: React.FC = () => {
         }
         return settlements.map((s, idx) => (
             <div
-                key={s.id}
-                className={`grid grid-cols-7 gap-3 py-5 px-6 text-sm items-center ${idx !== settlements.length - 1 ? "border-b border-gray-200" : ""}`}
-                style={{ gridTemplateColumns: "1fr 2fr 1.6fr 1.2fr 1.2fr 1.2fr 0.9fr" }}
+                key={`settlement-${currentPage}-${idx}`}
+                className={`grid grid-cols-5 gap-3 py-5 px-6 text-sm items-center ${idx !== settlements.length - 1 ? "border-b border-gray-200" : ""}`}
+                style={{ gridTemplateColumns: "1fr 2fr 1.2fr 1.2fr 1.2fr" }}
             >
-                <div className="text-left text-gray-700">{s.id}</div>
-                <div className="text-left font-bold text-black truncate">{s.eventTitle}</div>
-                <div className="text-center text-gray-700">{dayjs(s.period.startDate).format("YYYY.MM.DD")} ~ {dayjs(s.period.endDate).format("YYYY.MM.DD")}</div>
-                <div className="text-right text-gray-700">{formatCurrency(s.grossSales)}</div>
-                <div className="text-right text-gray-700">{formatCurrency(s.feeAmount)}</div>
-                <div className="text-right text-black font-semibold">{formatCurrency(s.netAmount)}</div>
-                <div className="text-center">
-                    <span className={`inline-block px-3 py-1 rounded text-xs font-medium ${statusChipClass(s.status)}`}>
-                        {s.status}
-                    </span>
-                </div>
+                <div className="text-left font-bold text-black truncate">{s.eventName}</div>
+                <div className="text-center text-gray-700">{dayjs(s.startDate).format("YYYY.MM.DD")} ~ {dayjs(s.endDate).format("YYYY.MM.DD")}</div>
+                <div className="text-right text-gray-700">{formatCurrency(s.totalAmount)}</div>
+                <div className="text-right text-gray-700">{formatCurrency(s.totalFee)}</div>
+                <div className="text-right text-black font-semibold">{formatCurrency(s.totalRevenue)}</div>
             </div>
         ));
-    }, [loading, settlements]);
+    }, [loading, settlements, currentPage]);
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -621,6 +601,44 @@ export const SettlementManagement: React.FC = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20 space-y-6">
+                    
+                    {/* 매출 통계 요약 */}
+                    {statsLoading ? (
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="flex items-center justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span className="ml-3 text-gray-600">매출 통계를 불러오는 중...</span>
+                            </div>
+                        </div>
+                    ) : salesStats ? (
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">전체 매출 통계</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-blue-50 rounded-lg p-4">
+                                    <div className="text-sm font-medium text-blue-600 mb-1">총 매출액</div>
+                                    <div className="text-2xl font-bold text-blue-900">₩{salesStats.totalRevenue.toLocaleString()}</div>
+                                    <div className="text-xs text-blue-600 mt-1">총 {salesStats.totalPayments}건의 결제</div>
+                                </div>
+                                <div className="bg-green-50 rounded-lg p-4">
+                                    <div className="text-sm font-medium text-green-600 mb-1">플랫폼 수수료 (8%)</div>
+                                    <div className="text-2xl font-bold text-green-900">₩{calculateCommission(salesStats.totalRevenue).toLocaleString()}</div>
+                                    
+                                </div>
+                                <div className="bg-purple-50 rounded-lg p-4">
+                                    <div className="text-sm font-medium text-purple-600 mb-1">정산 금액</div>
+                                    <div className="text-2xl font-bold text-purple-900">₩{calculateSettlement(salesStats.totalRevenue).toLocaleString()}</div>
+                                    <div className="text-xs text-purple-600 mt-1">주최자에게 지급될 금액</div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="text-center py-8 text-gray-500">
+                                매출 통계를 불러올 수 없습니다.
+                            </div>
+                        </div>
+                    )}
+
                     {/* 카드 1: 검색/필터 */}
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex items-center justify-between mb-4">
@@ -652,20 +670,6 @@ export const SettlementManagement: React.FC = () => {
                                     onChange={(e) => setSearchName(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                 />
-                            </div>
-
-                            {/* 상태 */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-2">상태</label>
-                                <select
-                                    value={selectedStatus}
-                                    onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                                >
-                                    {statuses.map((s) => (
-                                        <option key={s} value={s}>{s}</option>
-                                    ))}
-                                </select>
                             </div>
 
                             {/* 시작일 */}
@@ -707,50 +711,31 @@ export const SettlementManagement: React.FC = () => {
                         </div>
                     </div>
 
-                    {summary && (
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <div className="grid grid-cols-4 gap-6">
-                                <div>
-                                    <div className="text-xs text-gray-500">총 매출</div>
-                                    <div className="text-xl font-bold text-black">{formatCurrency(summary.totalGross)}</div>
-                                </div>
-                                <div>
-                                    <div className="text-xs text-gray-500">수수료</div>
-                                    <div className="text-xl font-bold text-black">{formatCurrency(summary.totalFee)}</div>
-                                </div>
-                                <div>
-                                    <div className="text-xs text-gray-500">정산 금액</div>
-                                    <div className="text-xl font-bold text-black">{formatCurrency(summary.totalNet)}</div>
-                                </div>
-                                <div>
-                                    <div className="text-xs text-gray-500">정산 건수</div>
-                                    <div className="text-xl font-bold text-black">{totalElements}</div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* 카드 2: 일별 / 월별 매출 추이 */}
-                    <SalesTrendSection useDummy={USE_DUMMY_SETTLEMENT} onSummaryChange={(summary) => setSummary(summary)} />
+                    <SalesTrendSection 
+                        dailySalesData={dailySalesData}
+                        dailySalesLoading={dailySalesLoading}
+                    />
 
                     {/* 카드 2.5: 수익 출처별 매출 비교 */}
-                    <RevenueSourcesSection useDummy={USE_DUMMY_SETTLEMENT} startDate={startDate} endDate={endDate} />
+                    <RevenueSourcesSection 
+                        eventCompareData={eventCompareData}
+                        compareLoading={compareLoading}
+                    />
 
                     {/* 카드 3: 매출 상세 내역 리스트 (기존 테이블 유지) */}
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* 테이블 헤더 */}
                         <div className="bg-gray-50 border-b border-gray-200 py-4 px-6">
                             <div
-                                className="grid grid-cols-7 gap-3 text-sm font-bold text-gray-700"
-                                style={{ gridTemplateColumns: "1fr 2fr 1.6fr 1.2fr 1.2fr 1.2fr 0.9fr" }}
+                                className="grid grid-cols-5 gap-3 text-sm font-bold text-gray-700"
+                                style={{ gridTemplateColumns: "1fr 2fr 1.2fr 1.2fr 1.2fr" }}
                             >
-                                <div className="text-left">정산 ID</div>
                                 <div className="text-left">행사명</div>
                                 <div className="text-center">기간</div>
                                 <div className="text-right">총 매출</div>
                                 <div className="text-right">수수료</div>
-                                <div className="text-right">정산 금액</div>
-                                <div className="text-center">상태</div>
+                                <div className="text-right">실제 매출</div>
                             </div>
                         </div>
 
@@ -760,8 +745,8 @@ export const SettlementManagement: React.FC = () => {
                                 <div className="flex items-center justify-end gap-6 text-xs text-gray-600">
                                     <div>총 매출: <span className="font-semibold text-black">{formatCurrency(summary.totalGross)}</span></div>
                                     <div>수수료: <span className="font-semibold text-black">{formatCurrency(summary.totalFee)}</span></div>
-                                    <div>정산 금액: <span className="font-semibold text-black">{formatCurrency(summary.totalNet)}</span></div>
-                                    <div>건수: <span className="font-semibold text-black">{summary.totalCount}</span></div>
+                                    <div>실제 매출: <span className="font-semibold text-black">{formatCurrency(summary.totalNet)}</span></div>
+
                                 </div>
                             </div>
                         )}

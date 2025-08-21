@@ -1,161 +1,106 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
+import { adminStatisticsService, type EventCompareDto, type PageableResponse } from "../../services/adminStatistics.service";
 import "./EventComparison.css";
+
+interface EventData {
+    id: number;
+    name: string;
+    userCount: number;
+    totalReservations: number;
+    totalRevenue: number;
+    cancellationRate: number;
+    eventPeriod: string;
+    status: string;
+    statusColor: string;
+    statusTextColor: string;
+}
 
 export const EventComparison: React.FC = () => {
     // 상태 관리
     const [selectedStatus, setSelectedStatus] = useState<string>("전체");
     const [sortField, setSortField] = useState<string>("totalRevenue");
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+    const [eventData, setEventData] = useState<EventData[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    
+    // 페이징 상태
+    const [currentPage, setCurrentPage] = useState<number>(0);
+    const [totalPages, setTotalPages] = useState<number>(0);
+    const [totalElements, setTotalElements] = useState<number>(0);
+    const [pageSize] = useState<number>(5);
 
-    // 더미 데이터 정의
-    const eventData = [
-        {
-            id: 1,
-            name: "AI 혁신 포럼",
-            userCount: 1250,
-            totalReservations: 1180,
-            totalRevenue: 71560000,
-            cancellationRate: 5.6,
-            eventPeriod: "2025.01.15 ~ 01.17",
-            status: "진행중",
-            statusColor: "bg-green-100",
-            statusTextColor: "text-green-800"
-        },
-        {
-            id: 2,
-            name: "2025 테크 컨퍼런스",
-            userCount: 890,
-            totalReservations: 820,
-            totalRevenue: 45600000,
-            cancellationRate: 7.9,
-            eventPeriod: "2025.02.20 ~ 02.22",
-            status: "예정",
-            statusColor: "bg-blue-100",
-            statusTextColor: "text-blue-800"
-        },
-        {
-            id: 3,
-            name: "블록체인 컨퍼런스",
-            userCount: 650,
-            totalReservations: 580,
-            totalRevenue: 36150000,
-            cancellationRate: 10.8,
-            eventPeriod: "2024.12.10 ~ 12.12",
-            status: "종료됨",
-            statusColor: "bg-gray-100",
-            statusTextColor: "text-gray-800"
-        },
-        {
-            id: 4,
-            name: "디지털 마케팅 서밋",
-            userCount: 980,
-            totalReservations: 920,
-            totalRevenue: 52800000,
-            cancellationRate: 6.1,
-            eventPeriod: "2025.03.15 ~ 03.17",
-            status: "예정",
-            statusColor: "bg-blue-100",
-            statusTextColor: "text-blue-800"
-        },
-        {
-            id: 5,
-            name: "스타트업 투자 페어",
-            userCount: 750,
-            totalReservations: 680,
-            totalRevenue: 38900000,
-            cancellationRate: 9.3,
-            eventPeriod: "2024.11.20 ~ 11.22",
-            status: "종료됨",
-            statusColor: "bg-gray-100",
-            statusTextColor: "text-gray-800"
-        },
-        {
-            id: 6,
-            name: "클라우드 기술 컨퍼런스",
-            userCount: 1100,
-            totalReservations: 1050,
-            totalRevenue: 62300000,
-            cancellationRate: 4.5,
-            eventPeriod: "2025.01.25 ~ 01.27",
-            status: "진행중",
-            statusColor: "bg-green-100",
-            statusTextColor: "text-green-800"
-        },
-        {
-            id: 7,
-            name: "모바일 앱 개발 워크샵",
-            userCount: 420,
-            totalReservations: 380,
-            totalRevenue: 21500000,
-            cancellationRate: 9.5,
-            eventPeriod: "2024.10.15 ~ 10.17",
-            status: "종료됨",
-            statusColor: "bg-gray-100",
-            statusTextColor: "text-gray-800"
-        },
-        {
-            id: 8,
-            name: "데이터 사이언스 심포지엄",
-            userCount: 680,
-            totalReservations: 620,
-            totalRevenue: 34200000,
-            cancellationRate: 8.8,
-            eventPeriod: "2025.02.10 ~ 02.12",
-            status: "예정",
-            statusColor: "bg-blue-100",
-            statusTextColor: "text-blue-800"
-        },
-        {
-            id: 9,
-            name: "UX/UI 디자인 컨퍼런스",
-            userCount: 520,
-            totalReservations: 480,
-            totalRevenue: 28900000,
-            cancellationRate: 7.7,
-            eventPeriod: "2024.09.25 ~ 09.27",
-            status: "종료됨",
-            statusColor: "bg-gray-100",
-            statusTextColor: "text-gray-800"
-        },
-        {
-            id: 10,
-            name: "게임 개발자 컨퍼런스",
-            userCount: 850,
-            totalReservations: 790,
-            totalRevenue: 45600000,
-            cancellationRate: 7.1,
-            eventPeriod: "2025.03.05 ~ 03.07",
-            status: "예정",
-            statusColor: "bg-blue-100",
-            statusTextColor: "text-blue-800"
-        },
-        {
-            id: 11,
-            name: "보안 기술 컨퍼런스",
-            userCount: 720,
-            totalReservations: 680,
-            totalRevenue: 39800000,
-            cancellationRate: 5.6,
-            eventPeriod: "2025.01.30 ~ 02.01",
-            status: "진행중",
-            statusColor: "bg-green-100",
-            statusTextColor: "text-green-800"
-        },
-        {
-            id: 12,
-            name: "IoT 혁신 엑스포",
-            userCount: 580,
-            totalReservations: 540,
-            totalRevenue: 31200000,
-            cancellationRate: 6.9,
-            eventPeriod: "2024.08.15 ~ 08.17",
-            status: "종료됨",
-            statusColor: "bg-gray-100",
-            statusTextColor: "text-gray-800"
+    // 백엔드 데이터를 프론트엔드 형식으로 변환
+    const transformEventData = (apiData: EventCompareDto[]): EventData[] => {
+        return apiData.map((event, index) => {
+            // status 숫자를 텍스트로 변환 (예: 1=예정, 2=진행중, 3=종료됨)
+            let statusText = "알 수 없음";
+            let statusColor = "bg-gray-100";
+            let statusTextColor = "text-gray-800";
+
+            switch (event.status) {
+                case 1:
+                    statusText = "예정";
+                    statusColor = "bg-blue-100";
+                    statusTextColor = "text-blue-800";
+                    break;
+                case 2:
+                    statusText = "진행중";
+                    statusColor = "bg-green-100";
+                    statusTextColor = "text-green-800";
+                    break;
+                case 3:
+                    statusText = "종료됨";
+                    statusColor = "bg-gray-100";
+                    statusTextColor = "text-gray-800";
+                    break;
+            }
+
+            return {
+                id: index + 1,
+                name: event.eventName,
+                userCount: event.userCount,
+                totalReservations: event.reservationCount,
+                totalRevenue: event.totalRevenue,
+                cancellationRate: Math.round(event.cancelRate * 100 * 100) / 100, // 소수점 2자리로 변환
+                eventPeriod: `${event.startDate} ~ ${event.endDate}`,
+                status: statusText,
+                statusColor,
+                statusTextColor
+            };
+        });
+    };
+
+    // 데이터 로드
+    const loadEventData = useCallback(async (page: number = 0) => {
+        try {
+            setLoading(true);
+            const response = await adminStatisticsService.getEventComparison(page, pageSize);
+            console.log('백엔드에서 받은 데이터:', response);
+            
+            // 페이징 정보 업데이트 (response는 PageableResponse 객체)
+            setTotalPages(response.totalPages);
+            setTotalElements(response.totalElements);
+            
+            // 데이터 변환 (response.content가 EventCompareDto 배열)
+            const transformedData = transformEventData(response.content);
+            setEventData(transformedData);
+        } catch (err) {
+            console.error('이벤트 비교 데이터 로드 실패:', err);
+            // 실패시 빈 배열로 설정
+            setEventData([]);
+            setTotalPages(0);
+            setTotalElements(0);
+        } finally {
+            setLoading(false);
         }
-    ];
+    }, [pageSize]);
+
+    useEffect(() => {
+        loadEventData(currentPage);
+    }, [currentPage, loadEventData]);
+
 
     // 정렬 함수
     const handleSort = (field: string) => {
@@ -167,7 +112,7 @@ export const EventComparison: React.FC = () => {
         }
     };
 
-    // 정렬된 데이터 생성
+    // 정렬된 데이터 반환
     const getSortedData = () => {
         const filteredData = eventData.filter(event => {
             if (selectedStatus === "전체") return true;
@@ -175,46 +120,60 @@ export const EventComparison: React.FC = () => {
         });
 
         return filteredData.sort((a, b) => {
-            let aValue: string | number;
-            let bValue: string | number;
+            const aValue = a[sortField as keyof EventData];
+            const bValue = b[sortField as keyof EventData];
 
-            switch (sortField) {
-                case "name":
-                    aValue = a.name;
-                    bValue = b.name;
-                    break;
-                case "userCount":
-                    aValue = a.userCount;
-                    bValue = b.userCount;
-                    break;
-                case "totalReservations":
-                    aValue = a.totalReservations;
-                    bValue = b.totalReservations;
-                    break;
-                case "totalRevenue":
-                    aValue = a.totalRevenue;
-                    bValue = b.totalRevenue;
-                    break;
-                case "cancellationRate":
-                    aValue = a.cancellationRate;
-                    bValue = b.cancellationRate;
-                    break;
-                case "eventPeriod":
-                    aValue = a.eventPeriod;
-                    bValue = b.eventPeriod;
-                    break;
-                default:
-                    aValue = a.name;
-                    bValue = b.name;
+            if (typeof aValue === 'number' && typeof bValue === 'number') {
+                return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
             }
 
-            if (sortDirection === "asc") {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
+            const aStr = String(aValue).toLowerCase();
+            const bStr = String(bValue).toLowerCase();
+            return sortDirection === "asc" 
+                ? aStr.localeCompare(bStr) 
+                : bStr.localeCompare(aStr);
         });
     };
+
+    // 페이지 변경 핸들러
+    const handlePageChange = (page: number) => {
+        if (page >= 0 && page < totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    // 페이지 번호 배열 생성
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisiblePages = 5;
+        let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
+        const endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+        
+        // 시작 페이지 조정
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(0, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
+    };
+    if (loading) {
+        return (
+            <div className="bg-white flex flex-row justify-center w-full">
+                <div className="bg-white w-[1256px] min-h-screen relative">
+                    <TopNav />
+                    <div className="flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <span className="ml-4 text-gray-600">데이터를 불러오는 중...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -408,25 +367,37 @@ export const EventComparison: React.FC = () => {
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex items-center justify-between">
                             <div className="text-sm text-gray-700">
-                                총 <span className="font-bold text-black">{
-                                    eventData.filter(event => {
-                                        if (selectedStatus === "전체") return true;
-                                        return event.status === selectedStatus;
-                                    }).length
-                                }</span>개의 행사
+                                총 <span className="font-bold text-black">{totalElements}</span>개의 행사
+                                {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalElements)} 표시
                             </div>
                             <div className="flex items-center space-x-2">
-                                <button className="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button 
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 0}
+                                    className="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     이전
                                 </button>
                                 <div className="flex space-x-1">
-                                    <button className="px-3 py-2 text-sm text-white bg-blue-600 border border-blue-600 rounded-md">1</button>
-                                    <button className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">2</button>
-                                    <button className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">3</button>
-                                    <button className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">4</button>
-                                    <button className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">5</button>
+                                    {getPageNumbers().map(pageNum => (
+                                        <button 
+                                            key={pageNum}
+                                            onClick={() => handlePageChange(pageNum)}
+                                            className={`px-3 py-2 text-sm rounded-md ${
+                                                currentPage === pageNum 
+                                                    ? 'text-white bg-blue-600 border border-blue-600' 
+                                                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {pageNum + 1}
+                                        </button>
+                                    ))}
                                 </div>
-                                <button className="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                <button 
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage >= totalPages - 1}
+                                    className="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     다음
                                 </button>
                             </div>
@@ -480,16 +451,22 @@ export const EventComparison: React.FC = () => {
                         <div className="mt-6 pt-6 border-t border-gray-200">
                             <div className="grid grid-cols-3 gap-4 text-center">
                                 <div>
-                                    <div className="text-2xl font-bold text-gray-900">6,638</div>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                        {eventData.reduce((total, event) => total + event.userCount, 0).toLocaleString()}
+                                    </div>
                                     <div className="text-sm text-gray-600">총 등록 사용자</div>
                                 </div>
                                 <div>
-                                    <div className="text-2xl font-bold text-gray-900">5,094</div>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                        {eventData.reduce((total, event) => total + event.totalReservations, 0).toLocaleString()}
+                                    </div>
                                     <div className="text-sm text-gray-600">총 예약 수</div>
                                 </div>
                                 <div>
-                                    <div className="text-2xl font-bold text-gray-900">₩215,350,000</div>
-                                    <div className="text-sm text-gray-600">총 매출</div>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                        ₩{eventData.reduce((total, event) => total + event.totalRevenue, 0).toLocaleString()}
+                                    </div>
+                                    <div className="text-sm text-gray-600">총 매출액</div>
                                 </div>
                             </div>
                         </div>
