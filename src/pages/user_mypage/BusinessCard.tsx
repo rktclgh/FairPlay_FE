@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { AttendeeSideNav } from './AttendeeSideNav';
+import { AdminSideNav } from '../../components/AdminSideNav';
+import { HostSideNav } from '../../components/HostSideNav';
+import { BoothAdminSideNav } from '../../components/BoothAdminSideNav';
+import { getCachedRoleCode } from '../../utils/role';
+import { hasAdminPermission, hasEventManagerPermission, hasBoothManagerPermission } from '../../utils/permissions';
 import { QRCodeModal } from '../../components/QRCodeModal';
 import { toast } from 'react-toastify';
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
@@ -9,6 +14,7 @@ import businessCardService from '../../services/businessCardService';
 import type { BusinessCardFormData, BusinessCardResponse } from '../../types/businessCard';
 import { loadKakaoMap } from '../../lib/loadKakaoMap';
 import { useFileUpload } from '../../hooks/useFileUpload';
+import { useTranslation } from 'react-i18next';
 
 // 카카오맵 전역 인터페이스 선언
 declare global {
@@ -28,6 +34,8 @@ interface KakaoPlace {
 }
 
 export default function BusinessCard(): JSX.Element {
+    const { t } = useTranslation();
+    const userRole = getCachedRoleCode();
     const [formData, setFormData] = useState<BusinessCardFormData>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -98,7 +106,7 @@ export default function BusinessCard(): JSX.Element {
             }
         } catch (error) {
             console.error('전자명함 로드 실패:', error);
-            toast.error('전자명함을 불러오는 중 오류가 발생했습니다.');
+            toast.error(t('common.error'));
         } finally {
             setLoading(false);
         }
@@ -136,20 +144,20 @@ export default function BusinessCard(): JSX.Element {
             }
         } catch (error) {
             console.error('프로필 이미지 업로드 실패:', error);
-            toast.error('프로필 이미지 업로드에 실패했습니다.');
+            toast.error(t('businessCard.profileImageUploadError'));
         }
     };
     
     // 카카오맵 장소 검색
     const searchPlaces = () => {
         if (!searchKeyword.trim()) {
-            toast.error('장소명을 입력해주세요!');
+            toast.error(t('businessCard.searchError'));
             return;
         }
 
         loadKakaoMap(() => {
             if (!window.kakao?.maps?.services) {
-                toast.error('카카오맵 서비스를 불러올 수 없습니다.');
+                toast.error(t('businessCard.kakaoMapError'));
                 return;
             }
 
@@ -159,11 +167,11 @@ export default function BusinessCard(): JSX.Element {
                     setSearchResults(data);
                     setShowSearchResults(true);
                 } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
-                    toast.error('검색 결과가 없습니다.');
+                    toast.error(t('businessCard.noSearchResults'));
                     setSearchResults([]);
                     setShowSearchResults(false);
                 } else {
-                    toast.error('검색 중 오류가 발생했습니다.');
+                    toast.error(t('businessCard.searchFailed'));
                     setSearchResults([]);
                     setShowSearchResults(false);
                 }
@@ -342,11 +350,11 @@ export default function BusinessCard(): JSX.Element {
             };
             
             await businessCardService.saveBusinessCard(saveData);
-            toast.success('전자명함이 저장되었습니다.');
+            toast.success(t('businessCard.saved'));
             setFormData(prev => ({ ...prev, hasChanges: false }));
         } catch (error: any) {
             console.error('전자명함 저장 실패:', error);
-            const message = error.response?.data?.message || '전자명함 저장 중 오류가 발생했습니다.';
+            const message = error.response?.data?.message || t('businessCard.saveError');
             toast.error(message);
         } finally {
             setSaving(false);
@@ -357,7 +365,7 @@ export default function BusinessCard(): JSX.Element {
         try {
             // 먼저 명함이 저장되어 있는지 확인
             if (formData.hasChanges) {
-                toast.error('먼저 전자명함을 저장해주세요.');
+                toast.error(t('businessCard.saveFirst'));
                 return;
             }
 
@@ -377,7 +385,7 @@ export default function BusinessCard(): JSX.Element {
                 <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
                     <TopNav />
                     <div className="flex items-center justify-center h-64">
-                        <div className="text-lg">로딩 중...</div>
+                        <div className="text-lg">{t('common.loading')}</div>
                     </div>
                 </div>
             </div>
@@ -418,13 +426,19 @@ export default function BusinessCard(): JSX.Element {
                         >
                             <HiOutlineX className="w-6 h-6 text-gray-600" />
                         </button>
-                        <AttendeeSideNav className="!relative !top-0 !left-0" />
+                        {userRole && hasAdminPermission(userRole) && <AdminSideNav className="!relative !top-0 !left-0" />}
+                        {userRole && hasEventManagerPermission(userRole) && <HostSideNav className="!relative !top-0 !left-0" />}
+                        {userRole && hasBoothManagerPermission(userRole) && <BoothAdminSideNav className="!relative !top-0 !left-0" />}
+                        {(!userRole || (!hasAdminPermission(userRole || '') && !hasEventManagerPermission(userRole || '') && !hasBoothManagerPermission(userRole || ''))) && <AttendeeSideNav className="!relative !top-0 !left-0" />}
                     </div>
                 </div>
 
                 {/* 데스크톱 사이드바 */}
                 <div className="hidden md:block">
-                    <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                    {userRole && hasAdminPermission(userRole) && <AdminSideNav className="!absolute !left-0 !top-[117px]" />}
+                    {userRole && hasEventManagerPermission(userRole) && <HostSideNav className="!absolute !left-0 !top-[117px]" />}
+                    {userRole && hasBoothManagerPermission(userRole) && <BoothAdminSideNav className="!absolute !left-0 !top-[117px]" />}
+                    {(!userRole || (!hasAdminPermission(userRole || '') && !hasEventManagerPermission(userRole || '') && !hasBoothManagerPermission(userRole || ''))) && <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />}
                 </div>
 
                 <TopNav />
@@ -432,7 +446,7 @@ export default function BusinessCard(): JSX.Element {
                 {/* 제목 */}
                 <div className="md:absolute md:top-[137px] md:left-64 left-4 right-4 top-24 relative">
                     <div className="font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap flex items-center justify-between">
-                        전자명함
+                        {t('businessCard.title')}
                     </div>
                 </div>
 
@@ -450,7 +464,7 @@ export default function BusinessCard(): JSX.Element {
                             title="QR 코드 생성 및 공유"
                         >
                             <QrCode className="w-4 h-4" />
-                            QR 생성
+                            {t('businessCard.generateQR')}
                         </button>
                         <button
                             onClick={handleSave}
@@ -461,7 +475,7 @@ export default function BusinessCard(): JSX.Element {
                                     : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
                             }`}
                         >
-                            {saving ? '저장 중...' : '저장'}
+                            {saving ? t('businessCard.saving') : t('businessCard.save')}
                         </button>
                     </div>
                     <div className="space-y-6 max-w-4xl">
@@ -471,55 +485,55 @@ export default function BusinessCard(): JSX.Element {
 
                             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <User className="w-5 h-5 mr-2 text-blue-600" />
-                                기본 정보
+                                {t('businessCard.basicInfo')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        이름
+                                        {t('common.name')}
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.name || ''}
                                         onChange={(e) => handleInputChange('name', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="이름을 입력하세요"
+                                        placeholder={t('businessCard.namePlaceholder')}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        직책
+                                        {t('businessCard.position')}
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.position || ''}
                                         onChange={(e) => handleInputChange('position', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="직책을 입력하세요"
+                                        placeholder={t('businessCard.positionPlaceholder')}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        회사명
+                                        {t('businessCard.company')}
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.company || ''}
                                         onChange={(e) => handleInputChange('company', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="회사명을 입력하세요"
+                                        placeholder={t('businessCard.companyPlaceholder')}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        부서
+                                        {t('businessCard.department')}
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.department || ''}
                                         onChange={(e) => handleInputChange('department', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="부서를 입력하세요"
+                                        placeholder={t('businessCard.departmentPlaceholder')}
                                     />
                                 </div>
                             </div>
@@ -529,7 +543,7 @@ export default function BusinessCard(): JSX.Element {
                         <div className="bg-white rounded-lg border border-gray-200 p-6">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <Camera className="w-5 h-5 mr-2 text-blue-600" />
-                                프로필 이미지
+                                {t('businessCard.profileImage')}
                             </h3>
                             <div className="flex items-center space-x-6">
                                 <div className="relative">
@@ -540,7 +554,7 @@ export default function BusinessCard(): JSX.Element {
                                                     ? toCdnUrl(getFileByUsage('profile_image')!.key) 
                                                     : formData.profileImageUrl || '/images/blank_profile.jpg'
                                             }
-                                            alt="프로필 이미지"
+                                            alt={t('businessCard.profileImage')}
                                             className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
                                         />
                                         {(formData.profileImageUrl || getFileByUsage('profile_image')) && (
@@ -559,11 +573,11 @@ export default function BusinessCard(): JSX.Element {
                                 </div>
                                 <div className="flex-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        프로필 이미지 업로드
+                                        {t('businessCard.uploadImage')}
                                     </label>
                                     <div className="flex items-center space-x-4">
                                         <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-semibold">
-                                            이미지 선택
+                                            {t('businessCard.selectImage')}
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -576,11 +590,11 @@ export default function BusinessCard(): JSX.Element {
                                             />
                                         </label>
                                         {isUploading && (
-                                            <span className="text-sm text-gray-500">업로드 중...</span>
+                                            <span className="text-sm text-gray-500">{t('businessCard.uploading')}</span>
                                         )}
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        JPG, PNG 형식, 최대 10MB
+                                        {t('businessCard.imageFormat')}
                                     </p>
                                 </div>
                             </div>
@@ -590,13 +604,13 @@ export default function BusinessCard(): JSX.Element {
                         <div className="bg-white rounded-lg border border-gray-200 p-6">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <Phone className="w-5 h-5 mr-2 text-green-600" />
-                                연락처 정보
+                                {t('businessCard.contactInfo')}
                             </h3>
                             <div className="space-y-6">
                                 {/* 전화번호 - 전체 너비 */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        전화번호
+                                        {t('businessCard.phoneNumber')}
                                     </label>
                                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                         {/* 지역번호 드롭다운 */}
@@ -610,7 +624,7 @@ export default function BusinessCard(): JSX.Element {
                                                     {p.label}
                                                 </option>
                                             ))}
-                                            <option value="직접입력">직접입력</option>
+                                            <option value="직접입력">{t('businessCard.directInput')}</option>
                                         </select>
                                         
                                         {/* 커스텀 지역번호 입력 */}
@@ -619,7 +633,7 @@ export default function BusinessCard(): JSX.Element {
                                                 type="tel"
                                                 value={customPrefix}
                                                 onChange={(e) => handleCustomPrefixChange(e.target.value)}
-                                                placeholder="지역번호"
+                                                placeholder={t('businessCard.areaCode')}
                                                 className="w-16 sm:w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 maxLength={4}
                                             />
@@ -655,26 +669,26 @@ export default function BusinessCard(): JSX.Element {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            이메일
+                                            {t('common.email')}
                                         </label>
                                         <input
                                             type="email"
                                             value={formData.email || ''}
                                             onChange={(e) => handleInputChange('email', e.target.value)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="example@company.com"
+                                            placeholder={t('businessCard.emailPlaceholder')}
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            웹사이트
+                                            {t('businessCard.website')}
                                         </label>
                                         <input
                                             type="url"
                                             value={formData.website || ''}
                                             onChange={(e) => handleInputChange('website', e.target.value)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="https://www.company.com"
+                                            placeholder={t('businessCard.websitePlaceholder')}
                                         />
                                     </div>
                                 </div>
@@ -682,7 +696,7 @@ export default function BusinessCard(): JSX.Element {
                                 {/* 주소 - 전체 너비 */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        주소
+                                        {t('businessCard.address')}
                                     </label>
                                     <div className="space-y-4">
                                         {/* 장소 검색 */}
@@ -692,7 +706,7 @@ export default function BusinessCard(): JSX.Element {
                                                     type="text"
                                                     value={searchKeyword}
                                                     onChange={(e) => setSearchKeyword(e.target.value)}
-                                                    placeholder="장소명을 입력하세요"
+                                                    placeholder={t('businessCard.searchPlaceholder')}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-full pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                     onKeyPress={(e) => {
                                                         if (e.key === 'Enter') {
@@ -745,7 +759,7 @@ export default function BusinessCard(): JSX.Element {
                                                 type="text"
                                                 value={formData.address || ''}
                                                 readOnly
-                                                placeholder="기본 주소 (도로명 주소)"
+                                                placeholder={t('businessCard.addressPlaceholder')}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         </div>
@@ -756,7 +770,7 @@ export default function BusinessCard(): JSX.Element {
                                                 type="text"
                                                 value={formData.detailAddress || ''}
                                                 onChange={(e) => handleInputChange('detailAddress', e.target.value)}
-                                                placeholder="상세 주소 (건물명, 층수, 호수 등)"
+                                                placeholder={t('businessCard.detailAddressPlaceholder')}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         </div>
@@ -769,7 +783,7 @@ export default function BusinessCard(): JSX.Element {
                         <div className="bg-white rounded-lg border border-gray-200 p-6">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <Globe className="w-5 h-5 mr-2 text-purple-600" />
-                                소셜 미디어
+                                {t('businessCard.socialMedia')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -781,7 +795,7 @@ export default function BusinessCard(): JSX.Element {
                                         value={formData.linkedIn || ''}
                                         onChange={(e) => handleInputChange('linkedIn', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="https://linkedin.com/in/username"
+                                        placeholder={t('businessCard.linkedInPlaceholder')}
                                     />
                                 </div>
                                 <div>
@@ -793,7 +807,7 @@ export default function BusinessCard(): JSX.Element {
                                         value={formData.instagram || ''}
                                         onChange={(e) => handleInputChange('instagram', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="https://instagram.com/username"
+                                        placeholder={t('businessCard.instagramPlaceholder')}
                                     />
                                 </div>
                                 <div>
@@ -805,7 +819,7 @@ export default function BusinessCard(): JSX.Element {
                                         value={formData.facebook || ''}
                                         onChange={(e) => handleInputChange('facebook', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="https://facebook.com/username"
+                                        placeholder={t('businessCard.facebookPlaceholder')}
                                     />
                                 </div>
                                 <div>
@@ -817,7 +831,7 @@ export default function BusinessCard(): JSX.Element {
                                         value={formData.twitter || ''}
                                         onChange={(e) => handleInputChange('twitter', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="https://twitter.com/username"
+                                        placeholder={t('businessCard.twitterPlaceholder')}
                                     />
                                 </div>
                             </div>
@@ -827,14 +841,14 @@ export default function BusinessCard(): JSX.Element {
                         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-16">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-orange-600" />
-                                자기소개
+                                {t('businessCard.description')}
                             </h3>
                             <textarea
                                 value={formData.description || ''}
                                 onChange={(e) => handleInputChange('description', e.target.value)}
                                 rows={4}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                placeholder="간단한 자기소개를 입력하세요..."
+                                placeholder={t('businessCard.descriptionPlaceholder')}
                             />
                         </div>
                     </div>
@@ -848,7 +862,7 @@ export default function BusinessCard(): JSX.Element {
                     isOpen={qrModalOpen}
                     onClose={() => setQrModalOpen(false)}
                     qrUrl={qrUrl}
-                    title="전자명함 QR 코드"
+                    title={t('businessCard.qrCodeTitle')}
                 />
             </div>
         </div>

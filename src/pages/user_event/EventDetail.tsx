@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { TopNav } from "../../components/TopNav";
-import { MapPin } from "lucide-react";
-import { FaHeart } from "react-icons/fa";
-import { requireAuth } from "../../utils/authGuard";
-import { VenueInfo } from "./VenueInfo";
-import { CancelPolicy } from "./CancelPolicy";
-import { Reviews } from "./Reviews";
-import { Expectations } from "./Expectations";
-import { ParticipatingBooths } from "./ParticipatingBooths";
+import React, {useState, useEffect} from "react";
+import {useParams, useNavigate, useLocation} from "react-router-dom";
+import {TopNav} from "../../components/TopNav";
+import {MapPin} from "lucide-react";
+import {FaHeart} from "react-icons/fa";
+import {requireAuth} from "../../utils/authGuard";
+import {VenueInfo} from "./VenueInfo";
+import {CancelPolicy} from "./CancelPolicy";
+import {Reviews} from "./Reviews";
+import {Expectations} from "./Expectations";
+import {ParticipatingBooths} from "./ParticipatingBooths";
 import ExternalLink from "./ExternalLink";
-import { eventAPI } from "../../services/event";
-import type { EventDetailResponseDto } from "../../services/types/eventType";
-import { getEventStatusText, getEventStatusStyle } from "../../utils/eventStatus";
+import {eventAPI} from "../../services/event";
+import type {EventDetailResponseDto} from "../../services/types/eventType";
+import {getEventStatusText, getEventStatusStyle} from "../../utils/eventStatus";
 import api from "../../api/axios";
-import { openChatRoomGlobal } from "../../components/chat/ChatFloatingModal";
+import {openChatRoomGlobal} from "../../components/chat/ChatFloatingModal";
 import type {
     PageableRequest,
     ReviewForEventResponseDto
@@ -22,12 +22,14 @@ import type {
 import {
     getReviewsByEvent
 } from "../../services/review";
+
 type WishlistResponseDto = { eventId: number };
 
 import authManager from "../../utils/auth";
-import { toast } from 'react-toastify';
+import {toast} from 'react-toastify';
 import NewLoader from "../../components/NewLoader";
-import { useScrollToTop } from "../../hooks/useScrollToTop";
+import {useScrollToTop} from "../../hooks/useScrollToTop";
+import HeartBox from "../../components/Heart";
 
 // 회차 정보 인터페이스
 interface EventSchedule {
@@ -42,14 +44,14 @@ interface EventSchedule {
 
 const authHeaders = () => {
     const t = localStorage.getItem("accessToken");
-    return t ? { Authorization: `Bearer ${t}` } : {};
+    return t ? {Authorization: `Bearer ${t}`} : {};
 };
 
 const isAuthed = () => !!localStorage.getItem("accessToken");
 
 const EventDetail = (): JSX.Element => {
-    const { setAutoScrolling } = useScrollToTop();
-    const { eventId } = useParams();
+    const {setAutoScrolling} = useScrollToTop();
+    const {eventId} = useParams();
     const navigate = useNavigate();
     const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
@@ -93,14 +95,13 @@ const EventDetail = (): JSX.Element => {
     const id = Number(eventId); // 컴포넌트 내부에서 계산
 
 
-
     // 초기 위시 상태 로드
     React.useEffect(() => {
         if (!isAuthed()) return;
 
         (async () => {
             try {
-                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
+                const {data} = await api.get<WishlistResponseDto[]>("/api/wishlist", {
                     headers: authHeaders(),
                 });
                 const s = new Set<number>();
@@ -118,7 +119,7 @@ const EventDetail = (): JSX.Element => {
 
         if (!isAuthed()) {
             alert("로그인 후 이용할 수 있습니다.");
-            navigate("/login", { state: { from: location.pathname } }); // 필요하면 search도 붙이려면 `${location.pathname}${location.search}`
+            navigate("/login", {state: {from: location.pathname}}); // 필요하면 search도 붙이려면 `${location.pathname}${location.search}`
             return;
         }
         setPending(true);
@@ -129,10 +130,10 @@ const EventDetail = (): JSX.Element => {
 
         try {
             if (was) {
-                await api.delete(`/api/wishlist/${id}`, { headers: authHeaders() });
+                await api.delete(`/api/wishlist/${id}`, {headers: authHeaders()});
             } else {
                 await api.post(`/api/wishlist`, null, {
-                    params: { eventId: id },
+                    params: {eventId: id},
                     headers: authHeaders(),
                 });
             }
@@ -353,8 +354,8 @@ const EventDetail = (): JSX.Element => {
     const generateMockSchedules = (date: string) => {
         const schedules = [];
         const times = [
-            { start: '14:00', end: '16:00' },
-            { start: '19:00', end: '21:00' }
+            {start: '14:00', end: '16:00'},
+            {start: '19:00', end: '21:00'}
         ];
 
         times.forEach((time, index) => {
@@ -379,8 +380,8 @@ const EventDetail = (): JSX.Element => {
 
         eventDates.forEach(date => {
             const times = [
-                { start: '14:00', end: '16:00' },
-                { start: '19:00', end: '21:00' }
+                {start: '14:00', end: '16:00'},
+                {start: '19:00', end: '21:00'}
             ];
 
             // 날짜에 따라 회차 수와 예매 가능 여부 결정
@@ -410,7 +411,7 @@ const EventDetail = (): JSX.Element => {
     const loadTicketPrices = async () => {
 
         try {
-            console.log('이벤트 티켓 정보 조회 시도...', { eventId });
+            console.log('이벤트 티켓 정보 조회 시도...', {eventId});
 
             const response = await api.get(`/api/events/${eventId}/tickets`);
             const ticketList = response.data;
@@ -598,7 +599,7 @@ const EventDetail = (): JSX.Element => {
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
-                <NewLoader />
+                <NewLoader/>
             </div>
         );
     }
@@ -613,7 +614,7 @@ const EventDetail = (): JSX.Element => {
 
     return (
         <div className="min-h-screen bg-white pb-8 md:pb-0">
-            <TopNav />
+            <TopNav/>
 
             {/* Event Content */}
             <section className="pt-6 md:pt-10 px-4 md:px-0">
@@ -628,32 +629,22 @@ const EventDetail = (): JSX.Element => {
                     </div>
 
                     <div className="flex-1">
-                        <div className="text-left">
+                        {eventData.eventStatusCode && (
+                            <span
+                                className={`px-3 py-2 rounded-full text-sm font-medium text-nowrap whitespace-nowrap font-semibold ${getEventStatusStyle(eventData.eventStatusCode)}`}>
+                                        {getEventStatusText(eventData.eventStatusCode)}
+                                    </span>
+                        )}
+                        <div className="text-left mt-5">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                                 <h1 className="text-2xl md:text-[32px] font-semibold leading-tight">
                                     {eventData.titleKr}
                                 </h1>
-                                {eventData.eventStatusCode && (
-                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEventStatusStyle(eventData.eventStatusCode)}`}>
-                                        {getEventStatusText(eventData.eventStatusCode)}
-                                    </span>
-                                )}
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        toggleLike();
-                                    }}
-                                    disabled={pending}
-                                    aria-pressed={isLiked}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none
-              ${isLiked ? "bg-[#EF6156] text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}
-              ${pending ? "opacity-70 cursor-wait" : ""}`}
-                                    style={{ outline: "none", border: "none" }}
-                                >
-                                    <FaHeart className={`w-4 h-4 ${isLiked ? "text-white" : "text-gray-600"}`} />
-                                    <span className="font-bold text-sm">{isLiked ? "관심" : "관심"}</span>
-                                </button>
+                                    <HeartBox
+                                        isLiked={isLiked}
+                                        pending={pending}
+                                        onClick={toggleLike}/>
+                                    {/*<span className="font-bold text-sm">{isLiked ? "관심" : "관심"}</span>*/}
 
                             </div>
                             <p className="text-    [#00000099] text-xl mt-1">
@@ -661,33 +652,36 @@ const EventDetail = (): JSX.Element => {
                             </p>
                             {/* 카테고리 정보 */}
                             <div className="flex items-center gap-2 mt-2">
-                                <span className={`px-3 py-1 text-sm font-medium rounded border ${eventData.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border-blue-200" :
-                                    eventData.mainCategory === "공연" ? "bg-red-100 text-red-800 border-red-200" :
-                                        eventData.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border-green-200" :
-                                            eventData.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                                eventData.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border-gray-300" :
-                                                    "bg-gray-100 text-gray-700 border-gray-200"
+                                <span
+                                    className={`px-3 py-1 text-sm font-medium rounded border ${eventData.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                        eventData.mainCategory === "공연" ? "bg-red-100 text-red-800 border-red-200" :
+                                            eventData.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border-green-200" :
+                                                eventData.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                                    eventData.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border-gray-300" :
+                                                        "bg-gray-100 text-gray-700 border-gray-200"
                                     }`}>
                                     {eventData.mainCategory}
                                 </span>
                                 {eventData.subCategory && (
-                                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded border border-gray-200">
+                                    <span
+                                        className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded border border-gray-200">
                                         {eventData.subCategory}
                                     </span>
                                 )}
                             </div>
                         </div>
 
-                        <hr className="h-[3px] my-6 bg-black" />
+                        <hr className="h-[3px] my-6 bg-black"/>
 
                         <div className="space-y-4">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-32">
                                 <div className="flex items-center gap-4">
-                                    <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">장소</span>
+                                    <span
+                                        className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">장소</span>
                                     <span className="text-base inline-block break-words">
                                         {eventData.placeName}
                                     </span>
-                                    <MapPin className="w-3 h-3 ml-1 flex-shrink-0" />
+                                    <MapPin className="w-3 h-3 ml-1 flex-shrink-0"/>
                                 </div>
                                 {/*<div className="flex items-center">*/}
                                 {/*    <span className="text-base text-[#00000099] font-semibold w-20">관람등급</span>*/}
@@ -699,19 +693,22 @@ const EventDetail = (): JSX.Element => {
 
                             <div className="flex items-center gap-4">
                                 <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">일정</span>
-                                <span className="text-base break-words">{eventData.startDate} ~ {eventData.endDate}</span>
+                                <span
+                                    className="text-base break-words">{eventData.startDate} ~ {eventData.endDate}</span>
                             </div>
 
-                            <hr className="my-2 bg-gray-300" />
+                            <hr className="my-2 bg-gray-300"/>
 
                             <div className="flex items-start gap-4">
                                 <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">소개</span>
-                                <div className="flex-1 text-base break-words" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
+                                <div className="flex-1 text-base break-words"
+                                     dangerouslySetInnerHTML={{__html: eventData.bio}}/>
                             </div>
 
                             <div className="flex flex-col lg:flex-row items-start gap-4">
                                 <div className="flex items-start gap-4 flex-1">
-                                    <span className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">가격</span>
+                                    <span
+                                        className="text-base text-[#00000099] font-semibold w-20 flex-shrink-0">가격</span>
                                     <div className="flex-1">
                                         {ticketPrices.length > 0 ? (
                                             <div className="space-y-2">
@@ -792,8 +789,9 @@ const EventDetail = (): JSX.Element => {
                                 {/* 요일 헤더 */}
                                 <div className="grid grid-cols-7 gap-1 mb-1">
                                     {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
-                                        <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
-                                            }`}>
+                                        <div key={day}
+                                             className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                                             }`}>
                                             {day}
                                         </div>
                                     ))}
@@ -824,21 +822,23 @@ const EventDetail = (): JSX.Element => {
                                                                 : isEventDate && !isBookable
                                                                     ? 'bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer'
                                                                     : 'text-gray-400 cursor-not-allowed'
-                                                    }`}
+                                                }`}
                                             >
                                                 {day.date}
                                                 {isEventDate && isCurrentMonth && (
-                                                    <div className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${isPastDate
-                                                        ? 'bg-gray-400'
-                                                        : isBookable
-                                                            ? 'bg-green-600'
-                                                            : 'bg-pink-600'
+                                                    <div
+                                                        className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${isPastDate
+                                                            ? 'bg-gray-400'
+                                                            : isBookable
+                                                                ? 'bg-green-600'
+                                                                : 'bg-pink-600'
                                                         }`}></div>
                                                 )}
                                                 {isPastDate && isEventDate && isCurrentMonth && (
                                                     <div className="absolute inset-0 flex items-center justify-center">
                                                         <div className="w-4 h-0.5 bg-gray-400 rotate-45 absolute"></div>
-                                                        <div className="w-4 h-0.5 bg-gray-400 -rotate-45 absolute"></div>
+                                                        <div
+                                                            className="w-4 h-0.5 bg-gray-400 -rotate-45 absolute"></div>
                                                     </div>
                                                 )}
                                             </button>
@@ -861,7 +861,7 @@ const EventDetail = (): JSX.Element => {
                                                 className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${selectedScheduleId === schedule.scheduleId
                                                     ? 'border-blue-500 bg-blue-50'
                                                     : 'border-gray-200 hover:bg-gray-50'
-                                                    }`}
+                                                }`}
                                                 onClick={() => setSelectedScheduleId(schedule.scheduleId)}
                                             >
                                                 <div className="flex flex-col">
@@ -871,11 +871,13 @@ const EventDetail = (): JSX.Element => {
                                                 </div>
                                                 <div>
                                                     {schedule.hasActiveTickets ? (
-                                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                        <span
+                                                            className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                                                             예매가능
                                                         </span>
                                                     ) : (
-                                                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                                        <span
+                                                            className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
                                                             매진
                                                         </span>
                                                     )}
@@ -883,7 +885,8 @@ const EventDetail = (): JSX.Element => {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center text-gray-500 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                                        <div
+                                            className="text-center text-gray-500 py-8 border-2 border-dashed border-gray-200 rounded-lg">
                                             {selectedDate ? (
                                                 <div>
                                                     <p className="text-sm mb-1">회차가 없습니다</p>
@@ -910,11 +913,13 @@ const EventDetail = (): JSX.Element => {
                                         <h5 className="text-sm font-medium text-gray-900 mb-2">상태 표시</h5>
                                         <div className="flex flex-wrap gap-4 text-xs">
                                             <div className="flex items-center gap-1">
-                                                <div className="w-3 h-3 bg-green-100 rounded border border-green-300"></div>
+                                                <div
+                                                    className="w-3 h-3 bg-green-100 rounded border border-green-300"></div>
                                                 <span>예매 가능</span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <div className="w-3 h-3 bg-pink-100 rounded border border-pink-300"></div>
+                                                <div
+                                                    className="w-3 h-3 bg-pink-100 rounded border border-pink-300"></div>
                                                 <span>예매 불가능</span>
                                             </div>
                                             <div className="flex items-center gap-1">
@@ -955,7 +960,7 @@ const EventDetail = (): JSX.Element => {
                                                             : isSelected
                                                                 ? 'cursor-pointer bg-blue-50 border-2 border-blue-500 rounded'
                                                                 : 'cursor-pointer hover:bg-gray-50 border-b'
-                                                            } ${!isPastDate && !isSelected ? 'last:border-b-0' : ''}`}
+                                                        } ${!isPastDate && !isSelected ? 'last:border-b-0' : ''}`}
                                                         onClick={() => !isPastDate ? handleDateSelect(date) : null}
                                                     >
                                                         <div className="flex items-center gap-3">
@@ -966,17 +971,20 @@ const EventDetail = (): JSX.Element => {
                                                                     : isBookable
                                                                         ? 'bg-green-100 border border-green-300'
                                                                         : 'bg-pink-100 border border-pink-300'
-                                                                }`}></div>
+                                                            }`}></div>
                                                             <div className="flex-1">
                                                                 <div className="flex items-center">
-                                                                    <span className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
+                                                                    <span
+                                                                        className={`text-sm font-medium ${isPastDate ? 'text-gray-400' : ''}`}>
                                                                         {date}
                                                                     </span>
-                                                                    <span className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                    <span
+                                                                        className={`text-xs ml-2 ${isPastDate ? 'text-gray-400' : 'text-gray-500'}`}>
                                                                         ({dayName})
                                                                     </span>
                                                                     {isPastDate && (
-                                                                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
+                                                                        <span
+                                                                            className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded ml-2">
                                                                             지난 날짜
                                                                         </span>
                                                                     )}
@@ -987,15 +995,18 @@ const EventDetail = (): JSX.Element => {
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             {isPastDate ? (
-                                                                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
+                                                                <span
+                                                                    className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
                                                                     예매 불가
                                                                 </span>
                                                             ) : isBookable ? (
-                                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                                                <span
+                                                                    className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
                                                                     예매가능
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">
+                                                                <span
+                                                                    className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">
                                                                     예매불가
                                                                 </span>
                                                             )}
@@ -1011,7 +1022,8 @@ const EventDetail = (): JSX.Element => {
                                     <div className="bg-gray-50 rounded-lg p-3">
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                                             <div>
-                                                <div className="text-lg font-bold text-gray-900">{eventDates.length}</div>
+                                                <div
+                                                    className="text-lg font-bold text-gray-900">{eventDates.length}</div>
                                                 <div className="text-xs text-gray-600">총 행사일</div>
                                             </div>
                                             <div>
@@ -1055,7 +1067,7 @@ const EventDetail = (): JSX.Element => {
                         className={`w-full max-w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${eventData.mainCategory === "공연" || selectedScheduleId
                             ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
+                        }`}
                     >
                         예매하기
                     </button>
@@ -1064,15 +1076,18 @@ const EventDetail = (): JSX.Element => {
                 {/* Event Details Tabs */}
                 <div className="mb-12">
                     <nav className="h-[40px] border-b border-neutral-200 relative overflow-x-auto scrollbar-hide"
-                        style={{ borderBottom: '1px solid #e5e5e5', marginBottom: '-1px' }}>
+                         style={{borderBottom: '1px solid #e5e5e5', marginBottom: '-1px'}}>
                         <ul className="flex items-center h-full pl-0 min-w-max">
                             {[
-                                { id: "detail", name: "상세정보" },
-                                { id: "location", name: "장소정보" },
-                                { id: "booking", name: "예매/취소안내" },
-                                { id: "review", name: "관람평" },
-                                { id: "expectation", name: "기대평" },
-                                ...(eventData.mainCategory !== "공연" && eventData.mainCategory !== "강연/세미나" ? [{ id: "booths", name: "참가부스" }] : [])
+                                {id: "detail", name: "상세정보"},
+                                {id: "location", name: "장소정보"},
+                                {id: "booking", name: "예매/취소안내"},
+                                {id: "review", name: "관람평"},
+                                {id: "expectation", name: "기대평"},
+                                ...(eventData.mainCategory !== "공연" && eventData.mainCategory !== "강연/세미나" ? [{
+                                    id: "booths",
+                                    name: "참가부스"
+                                }] : [])
                             ].map((tab) => (
                                 <li
                                     key={tab.id}
@@ -1098,11 +1113,11 @@ const EventDetail = (): JSX.Element => {
                                 <h3 className="text-lg font-semibold text-[#212121] mb-4">
                                     {eventData.mainCategory === "공연" ? "공연 소개" : "행사 소개"}
                                 </h3>
-                                <div className="text-base mb-4" dangerouslySetInnerHTML={{ __html: eventData.bio }} />
+                                <div className="text-base mb-4" dangerouslySetInnerHTML={{__html: eventData.bio}}/>
 
                                 {eventData.content && (
                                     <div className="text-base mb-6"
-                                        dangerouslySetInnerHTML={{ __html: eventData.content }} />
+                                         dangerouslySetInnerHTML={{__html: eventData.content}}/>
                                 )}
 
                                 {/*<div className="bg-[#e7eaff] rounded-lg mt-8 p-4">*/}
@@ -1135,7 +1150,7 @@ const EventDetail = (): JSX.Element => {
                             <>
                                 {eventData.policy && (
                                     <div className="text-base mb-6"
-                                        dangerouslySetInnerHTML={{ __html: eventData.policy }} />
+                                         dangerouslySetInnerHTML={{__html: eventData.policy}}/>
                                 )}
                             </>
                         )}
@@ -1149,18 +1164,17 @@ const EventDetail = (): JSX.Element => {
                         )}
 
                         {activeTab === "expectation" && (
-                            <Expectations />
+                            <Expectations/>
                         )}
 
                         {activeTab === "booths" && (
                             <div data-tab-content="booths">
-                                <ParticipatingBooths eventId={eventId} />
+                                <ParticipatingBooths eventId={eventId}/>
                             </div>
                         )}
                     </div>
                 </div>
             </section>
-
 
 
             {/* External Booking Modal */}
