@@ -456,92 +456,100 @@ const BoothInfoManagement: React.FC = () => {
                                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                                             배너 이미지 (정방형)
                                                         </label>
-                                                        <div
-                                                            className="border-2 border-dashed border-gray-300 rounded-[10px] p-6 text-center hover:border-gray-400 transition-colors relative"
-                                                            onDragOver={(e) => {
-                                                                e.preventDefault();
-                                                                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-                                                            }}
-                                                            onDragLeave={(e) => {
-                                                                e.preventDefault();
-                                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                                                            }}
-                                                            onDrop={(e) => {
-                                                                e.preventDefault();
-                                                                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                                                                const files = e.dataTransfer.files;
-                                                                if (files && files[0] && files[0].type.startsWith('image/')) {
-                                                                    handleBannerFileUpload(files[0]);
-                                                                }
-                                                            }}
-                                                        >
-                                                            {getFileByUsage('banner') ? (
-                                                                <div className="space-y-2">
-                                                                    <img
-                                                                        src={getFileByUsage('banner')?.url}
-                                                                        alt="배너 미리보기"
-                                                                        className="mx-auto max-h-48 max-w-full object-contain rounded"
-                                                                    />
-                                                                    <p className="text-xs text-green-600">✓ {getFileByUsage('banner')?.name}</p>
-                                                                    <div className="text-sm text-gray-600 space-x-2">
-                                                                        <label htmlFor="banner-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                                            <span>이미지 변경</span>
-                                                                            <input
-                                                                                id="banner-upload"
-                                                                                name="bannerImage"
-                                                                                type="file"
-                                                                                accept="image/*"
-                                                                                className="sr-only"
-                                                                                onChange={(e) => {
-                                                                                    const file = e.target.files?.[0];
-                                                                                    if (file) {
-                                                                                        handleBannerFileUpload(file);
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        </label>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleBannerFileRemove()}
-                                                                            className="text-red-600 hover:text-red-500"
-                                                                        >
-                                                                            삭제
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="space-y-2">
-                                                                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                                    </svg>
-                                                                    <div className="text-sm text-gray-600">
-                                                                        <label htmlFor="banner-upload-empty" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                                                            <span>이미지 업로드</span>
-                                                                            <input
-                                                                                id="banner-upload-empty"
-                                                                                name="bannerImage"
-                                                                                type="file"
-                                                                                accept="image/*"
-                                                                                className="sr-only"
-                                                                                onChange={(e) => {
-                                                                                    const file = e.target.files?.[0];
-                                                                                    if (file) {
-                                                                                        handleBannerFileUpload(file);
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        </label>
-                                                                        <p className="pl-1">또는 드래그 앤 드롭</p>
-                                                                    </div>
-                                                                    <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 10MB</p>
-                                                                    {isUploading && (
-                                                                        <div className="text-sm text-blue-600">
-                                                                            업로드 중...
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                                                            <div className="mb-10 relative flex flex-col">
+                                                                <img src={ booth?.boothBannerUrl } alt="booth banner" width={500}/>
+                                                                <p className="block text-sm font-medium text-gray-700 mb-2">기존 이미지</p>
+                                                            </div>
+                                                            <div
+                                                                className="border-2 border-dashed border-gray-300 rounded-[10px] text-center hover:border-gray-400 transition-colors relative flex items-center justify-center"
+                                                                style={{ height: "410px", padding: "1rem" }}
+                                                                onDragOver={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                                                                }}
+                                                                onDragLeave={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                                                                }}
+                                                                onDrop={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                                                                    const files = e.dataTransfer.files;
+                                                                    if (files && files[0] && files[0].type.startsWith('image/')) {
+                                                                        handleBannerFileUpload(files[0]);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {getFileByUsage('banner') ? (
+                                                                    <div className="space-y-2">
+                                                                        <img
+                                                                            src={getFileByUsage('banner')?.url}
+                                                                            alt="배너 미리보기"
+                                                                            className="mx-auto max-h-48 max-w-full object-contain rounded"
+                                                                        />
+                                                                        <p className="text-xs text-green-600">✓ {getFileByUsage('banner')?.name}</p>
+                                                                        <div className="text-sm text-gray-600 space-x-2">
+                                                                            <label htmlFor="banner-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                                                <span>이미지 변경</span>
+                                                                                <input
+                                                                                    id="banner-upload"
+                                                                                    name="bannerImage"
+                                                                                    type="file"
+                                                                                    accept="image/*"
+                                                                                    className="sr-only"
+                                                                                    onChange={(e) => {
+                                                                                        const file = e.target.files?.[0];
+                                                                                        if (file) {
+                                                                                            handleBannerFileUpload(file);
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                            </label>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleBannerFileRemove()}
+                                                                                className="text-red-600 hover:text-red-500"
+                                                                            >
+                                                                                삭제
+                                                                            </button>
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="space-y-2">
+                                                                        <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                                        </svg>
+                                                                        <div className="text-sm text-gray-600">
+                                                                            <label htmlFor="banner-upload-empty" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                                                                <span>이미지 업로드</span>
+                                                                                <input
+                                                                                    id="banner-upload-empty"
+                                                                                    name="bannerImage"
+                                                                                    type="file"
+                                                                                    accept="image/*"
+                                                                                    className="sr-only"
+                                                                                    onChange={(e) => {
+                                                                                        const file = e.target.files?.[0];
+                                                                                        if (file) {
+                                                                                            handleBannerFileUpload(file);
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                            </label>
+                                                                            <p className="pl-1">또는 드래그 앤 드롭</p>
+                                                                        </div>
+                                                                        <p className="text-xs text-gray-500">이미지 파일 (PNG, JPG, GIF) 최대 10MB</p>
+                                                                        {isUploading && (
+                                                                            <div className="text-sm text-blue-600">
+                                                                                업로드 중...
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
+
                                                     </div>
 
                                                     {/* 운영 기간 */}
@@ -682,7 +690,7 @@ const BoothInfoManagement: React.FC = () => {
                                                             <img 
                                                                 src={booth.boothBannerUrl} 
                                                                 alt="부스 배너" 
-                                                                className="w-64 h-40 object-cover border border-gray-300 rounded-lg"
+                                                                className="w-64 h-64 object-cover border border-gray-300 rounded-lg"
                                                             />
                                                         </div>
                                                     )}
