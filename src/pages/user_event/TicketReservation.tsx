@@ -6,7 +6,6 @@ import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
 import { eventApi } from "../../services/api";
 import authManager from "../../utils/auth";
 import paymentService from "../../services/paymentService";
-import ticketReservationService from "../../services/ticketReservationService";
 import { saveAttendeeAndShareTicket } from "../../services/attendee";
 import type { ShareTicketSaveRequestDto } from "../../services/types/attendeeType";
 import NewLoader from "../../components/NewLoader";
@@ -105,7 +104,7 @@ export const TicketReservation = () => {
     // 사용 가능한 티켓 옵션을 백엔드에서 가져온 데이터로 사용
     const ticketReservationOptions = availableTickets;
 
-    // PG사 중간 페이지 감지 및 리다이렉션
+    // PG사 중간 페이지 감지 및 리다이렉션 (전역 감지)
     useEffect(() => {
         const handlePGRedirect = () => {
             const currentUrl = window.location.href;
@@ -114,19 +113,44 @@ export const TicketReservation = () => {
                 'm_uplus_payments',
                 'authenticated',
                 'lgdacom',
-                'lguplus'
+                'lguplus',
+                'inicis',
+                'kcp',
+                'toss'
             ];
             
             // PG사 URL 감지
-            if (pgUrls.some(pgUrl => currentUrl.includes(pgUrl))) {
+            const isPGPage = pgUrls.some(pgUrl => currentUrl.includes(pgUrl));
+            
+            if (isPGPage) {
                 console.log('PG사 중간 페이지 감지:', currentUrl);
                 
-                // URL에서 imp_uid, merchant_uid 추출 시도
+                // 모든 방법으로 결제 정보 추출 시도
                 const urlParams = new URLSearchParams(window.location.search);
-                const impUid = urlParams.get('imp_uid') || localStorage.getItem('pending_imp_uid');
-                const merchantUid = urlParams.get('merchant_uid') || localStorage.getItem('pending_merchant_uid');
+                const impUid = urlParams.get('imp_uid') || 
+                             urlParams.get('IMP_UID') ||
+                             localStorage.getItem('pending_imp_uid');
+                             
+                const merchantUid = urlParams.get('merchant_uid') || 
+                                  urlParams.get('LGD_OID') ||
+                                  localStorage.getItem('pending_merchant_uid');
+                                  
                 const savedEventId = localStorage.getItem('pending_event_id') || eventId;
                 const savedScheduleId = localStorage.getItem('pending_schedule_id') || scheduleId;
+                
+                console.log('추출된 결제 정보:', { 
+                    impUid, merchantUid, savedEventId, savedScheduleId,
+                    currentUrl, urlParams: Object.fromEntries(urlParams) 
+                });
+                
+                // 일정 시간 후 강제 리다이렉션 (결제 정보가 없어도)
+                const forceRedirect = () => {
+                    if (savedEventId && savedScheduleId) {
+                        const redirectUrl = `/ticketreservation/${savedEventId}/${savedScheduleId}?imp_success=pending&force_redirect=true`;
+                        console.log('강제 리다이렉션:', redirectUrl);
+                        window.location.href = redirectUrl;
+                    }
+                };
                 
                 if (impUid && merchantUid && savedEventId && savedScheduleId) {
                     // 결제 완료 처리 페이지로 리다이렉션
@@ -134,13 +158,18 @@ export const TicketReservation = () => {
                     console.log('PG사 중간 페이지에서 결제 완료 페이지로 리다이렉션:', redirectUrl);
                     window.location.href = redirectUrl;
                 } else {
-                    console.log('결제 정보 부족으로 리다이렉션 불가:', { impUid, merchantUid, savedEventId, savedScheduleId });
+                    // 3초 후 강제 리다이렉션
+                    console.log('결제 정보 부족, 3초 후 강제 리다이렉션');
+                    setTimeout(forceRedirect, 3000);
                 }
             }
         };
         
-        // 페이지 로드 시 체크
+        // 즉시 체크
         handlePGRedirect();
+        
+        // 주기적 체크 (1초마다)
+        const intervalId = setInterval(handlePGRedirect, 1000);
         
         // URL 변경 감지
         const handleUrlChange = () => {
@@ -150,6 +179,7 @@ export const TicketReservation = () => {
         window.addEventListener('popstate', handleUrlChange);
         
         return () => {
+            clearInterval(intervalId);
             window.removeEventListener('popstate', handleUrlChange);
         };
     }, [eventId, scheduleId]);
@@ -160,6 +190,22 @@ export const TicketReservation = () => {
             console.log('모바일 결제 완료 감지:', { impUid, merchantUid });
             // 상태는 이미 useState 초기값에서 설정됨
             handleMobilePaymentSuccess(impUid, merchantUid);
+        } else if (impSuccess === 'pending' || searchParams.get('force_redirect') === 'true') {
+            // 강제 리다이렉션된 경우 결제 상태 확인
+            console.log('강제 리다이렉션 감지, 결제 상태 확인 중...');
+            setIsProcessing(true);
+            setPaymentStep('결제 상태 확인 중...');
+            
+            // 저장된 정보로 결제 상태 확인 시도
+            const savedMerchantUid = localStorage.getItem('pending_merchant_uid');
+            if (savedMerchantUid) {
+                // TODO: 결제 상태 확인 API 호출
+                toast.info('결제 상태를 확인 중입니다...');
+                setTimeout(() => {
+                    setIsProcessing(false);
+                    setPaymentStep('');
+                }, 5000);
+            }
         } else if (impSuccess === 'false') {
             // 결제 취소 또는 실패 시 URL 파라미터만 정리
             console.log('모바일 결제 취소/실패 감지');
@@ -443,8 +489,8 @@ export const TicketReservation = () => {
         try {
             console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
             
-            // 1. 결제 완료 처리 API 호출
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/payments/complete`, {
+            // 1. 결제 완료 처리 API 호출  
+            const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/payments/complete`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -456,18 +502,41 @@ export const TicketReservation = () => {
                 })
             });
             
-            if (!response.ok) {
-                throw new Error(`결제 완료 처리 실패: ${response.status}`);
+            if (!completeResponse.ok) {
+                throw new Error(`결제 완료 처리 실패: ${completeResponse.status}`);
             }
             
-            const result = await response.json();
-            console.log('결제 완료 처리 성공:', result);
+            const completeResult = await completeResponse.json();
+            console.log('결제 완료 처리 성공:', completeResult);
+            
+            // 2. 저장된 폼 데이터로 예약 생성 (PC와 동일한 로직)
+            const savedFormData = JSON.parse(localStorage.getItem('ticketReservationForm') || '{}');
+            const savedSelectedTicket = JSON.parse(localStorage.getItem('selectedTicket') || '{}');
+            
+            if (savedFormData && savedSelectedTicket) {
+                console.log('저장된 예약 정보로 예약 생성:', { savedFormData, savedSelectedTicket });
+                
+                const reservationData = {
+                    scheduleId: scheduleId,
+                    ticketId: savedSelectedTicket.ticketId,
+                    quantity: savedFormData.quantity,
+                    totalAmount: savedSelectedTicket.price * savedFormData.quantity,
+                    buyer_name: savedFormData.buyer_name,
+                    buyer_phone: savedFormData.buyer_phone,
+                    buyer_email: savedFormData.buyer_email,
+                    paymentMethod: savedFormData.paymentMethod || 'card'
+                };
+                
+                // 예약은 결제 완료 시 자동으로 생성됨 (PaymentService에서 처리)
+                console.log('모바일 결제 완료:', completeResult);
+            }
             
             // 결제 성공 시 localStorage 정리
             localStorage.removeItem('pending_imp_uid');
             localStorage.removeItem('pending_merchant_uid');
             localStorage.removeItem('pending_event_id');
             localStorage.removeItem('pending_schedule_id');
+            localStorage.removeItem('current_merchant_uid');
             
             // 메시지 로테이션 중지
             clearInterval(messageInterval);
@@ -523,7 +592,16 @@ export const TicketReservation = () => {
 
         // 1. 중복 클릭 방지 - 이미 처리 중인 경우
         if (isProcessing) {
+            console.log('중복 결제 시도 차단 - 이미 처리 중');
             toast.warning('결제가 진행 중입니다. 잠시만 기다려주세요.');
+            return;
+        }
+        
+        // 1-1. merchantUid 중복 방지 체크
+        const existingMerchantUid = localStorage.getItem('current_merchant_uid');
+        if (existingMerchantUid) {
+            console.log('기존 결제 진행 중 감지:', existingMerchantUid);
+            toast.warning('이미 진행 중인 결제가 있습니다.');
             return;
         }
 
@@ -580,6 +658,8 @@ export const TicketReservation = () => {
             localStorage.setItem('pending_merchant_uid', tempMerchantUid);
             localStorage.setItem('pending_event_id', eventId);
             localStorage.setItem('pending_schedule_id', scheduleId);
+            // 현재 결제 중복 방지
+            localStorage.setItem('current_merchant_uid', tempMerchantUid);
             
             // 결제 처리 (결제 → 예약 생성 → target_id 업데이트)
             const result = await paymentService.processPayment(
@@ -610,6 +690,7 @@ export const TicketReservation = () => {
             localStorage.removeItem('pending_merchant_uid');
             localStorage.removeItem('pending_event_id');
             localStorage.removeItem('pending_schedule_id');
+            localStorage.removeItem('current_merchant_uid');
             
             setPaymentStep('결제 완료!');
             setPaymentSuccess(true);
@@ -643,6 +724,8 @@ export const TicketReservation = () => {
                 setPaymentSuccess(false);
             }, 3000);
         } finally {
+            // 결제 완료/실패 시 localStorage 정리
+            localStorage.removeItem('current_merchant_uid');
             // 4. 결제 처리 완료 - 상태 초기화
             setIsProcessing(false);
         }

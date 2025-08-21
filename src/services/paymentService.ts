@@ -283,22 +283,16 @@ class PaymentService {
                 applyNum: paymentResponse.apply_num
             });
 
-            // 6. paymentTargetType 타입에 따라 예약,부스,광고 데이터 저장 (상태값 : 결제 완료)
-            const targetId = await this.processTargetData(
-                paymentTargetType,
-                eventId,
-                {
-                    imp_uid: paymentResponse.imp_uid!,
-                    merchant_uid: paymentResponse.merchant_uid,
-                    paid_amount: paymentResponse.paid_amount!,
-                    apply_num: paymentResponse.apply_num
-                },
-                reservationData,
-                savedPayment.paymentId
-            );
+            console.log('결제 완료 결과:', completionResult);
 
-            // 7. 결제 테이블에 target_id 업데이트
-            await this.updatePaymentTargetId(paymentResponse.merchant_uid, targetId);
+            // completionResult에서 targetId를 가져옵니다 (백엔드에서 예약 생성 후 반환)
+            const targetId = completionResult.targetId;
+            
+            if (!targetId) {
+                throw new Error('결제 완료 후 예약 ID를 가져올 수 없습니다.');
+            }
+
+            console.log('백엔드에서 반환된 targetId:', targetId);
 
             return {
                 success: true,
@@ -344,22 +338,16 @@ class PaymentService {
             
             console.log('무료 티켓 paymentId:', freeTicketResult.paymentId);
 
-            // 2. 예약 데이터 처리 (무료 티켓도 예약 생성 필요)
-            const targetId = await this.processTargetData(
-                paymentTargetType,
-                eventId,
-                {
-                    imp_uid: freeTicketResult.impUid,
-                    merchant_uid: freeTicketResult.merchantUid,
-                    paid_amount: 0,
-                    apply_num: 'FREE_TICKET'
-                },
-                reservationData,
-                freeTicketResult.paymentId
-            );
+            console.log('무료 티켓 처리 결과:', freeTicketResult);
 
-            // 3. 결제 테이블에 target_id 업데이트
-            await this.updatePaymentTargetId(freeTicketResult.merchantUid, targetId);
+            // freeTicketResult에서 targetId를 가져옵니다 (백엔드에서 예약 생성 후 반환)
+            const targetId = freeTicketResult.targetId;
+            
+            if (!targetId) {
+                throw new Error('무료 티켓 처리 후 예약 ID를 가져올 수 없습니다.');
+            }
+
+            console.log('무료 티켓 백엔드에서 반환된 targetId:', targetId);
 
             return {
                 success: true,
@@ -491,84 +479,6 @@ class PaymentService {
         }
     }
 
-    /**
-     * 결제 테이블에 target_id 업데이트
-     */
-    async updatePaymentTargetId(merchantUid: string, targetId: number): Promise<void> {
-        try {
-            const response = await authManager.authenticatedFetch(`/api/payments/${merchantUid}/target-id`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ targetId })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`결제 테이블 target_id 업데이트 실패: ${response.status} - ${errorData}`);
-            }
-        } catch (error) {
-            console.error('결제 테이블 target_id 업데이트 중 오류:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * paymentTargetType에 따라 예약/부스/광고 데이터 저장
-     */
-    async processTargetData(
-        paymentTargetType: string, 
-        eventId: number, 
-        paymentData: any, 
-        reservationData?: any, 
-        paymentId?: number
-    ): Promise<number> {
-        try {
-            switch (paymentTargetType) {
-                case 'RESERVATION':
-                    if (!reservationData) {
-                        throw new Error('예약 데이터가 없습니다.');
-                    }
-                    const reservationResult = await ticketReservationService.processTicketReservation(
-                        eventId,
-                        {
-                            eventId: eventId,
-                            scheduleId: reservationData.scheduleId,
-                            ticketId: reservationData.ticketId,
-                            quantity: reservationData.quantity,
-                            price: reservationData.totalAmount,
-                            customerName: reservationData.buyer_name,
-                            customerPhone: reservationData.buyer_phone,
-                            customerEmail: reservationData.buyer_email,
-                            paymentMethod: reservationData.paymentMethod,
-                            paymentData: {
-                                imp_uid: paymentData.imp_uid,
-                                merchant_uid: paymentData.merchant_uid,
-                                paid_amount: paymentData.paid_amount,
-                                apply_num: paymentData.apply_num
-                            }
-                        },
-                        paymentId
-                    );
-                    return reservationResult.reservationId;
-
-                case 'BOOTH':
-                    // TODO: 부스 신청 서비스 호출
-                    throw new Error('부스 신청 기능이 아직 구현되지 않았습니다.');
-
-                case 'ADVERTISEMENT':
-                    // TODO: 광고 신청 서비스 호출
-                    throw new Error('광고 신청 기능이 아직 구현되지 않았습니다.');
-
-                default:
-                    throw new Error(`지원되지 않는 결제 대상 타입: ${paymentTargetType}`);
-            }
-        } catch (error) {
-            console.error(`${paymentTargetType} 데이터 저장 중 오류:`, error);
-            throw error;
-        }
-    }
 
     /**
      * 스크립트 정리
