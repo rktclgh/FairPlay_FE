@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect ,useMemo} from "react";
 import { TopNav } from "../../components/TopNav";
 import { HostSideNav } from "../../components/HostSideNav";
 import { 
@@ -16,63 +16,142 @@ import {
     ComposedChart,
     Cell
 } from 'recharts';
+import type {HourlyDetailDataDto,
+    HourlyStatsSummaryDto,
+    PeakHourDto,
+    PeakHoursSummaryDto,
+    PatternAnalysisDto,
+    HourlyAnalysisResponseDto,
+    HourlyChartData,
+    DayOfWeekSummaryDto,
+    MonthlyTimePeriodDto
+} from "../../services/types/hourlyStatsType";
+import { HourlyStatisticsService } from "../../services/hourlyStatisticsService";
+import { toast } from "react-toastify";
+import dayjs from 'dayjs';
+import { dashboardAPI } from "../../services/dashboard";
+import type { EventDetailResponseDto } from "../../services/types/eventType";
 
 // 시간대별 분석 페이지
 export const TimeAnalysis: React.FC = () => {
-    // 시간대별 예매 현황 데이터
-    const hourlyData = [
-        { hour: '00:00', bookings: 45, revenue: 1800000 },
-        { hour: '01:00', bookings: 32, revenue: 1280000 },
-        { hour: '02:00', bookings: 28, revenue: 1120000 },
-        { hour: '03:00', bookings: 25, revenue: 1000000 },
-        { hour: '04:00', bookings: 22, revenue: 880000 },
-        { hour: '05:00', bookings: 35, revenue: 1400000 },
-        { hour: '06:00', bookings: 58, revenue: 2320000 },
-        { hour: '07:00', bookings: 89, revenue: 3560000 },
-        { hour: '08:00', bookings: 156, revenue: 6240000 },
-        { hour: '09:00', bookings: 234, revenue: 9360000 },
-        { hour: '10:00', bookings: 312, revenue: 12480000 },
-        { hour: '11:00', bookings: 389, revenue: 15560000 },
-        { hour: '12:00', bookings: 456, revenue: 18240000 },
-        { hour: '13:00', bookings: 523, revenue: 20920000 },
-        { hour: '14:00', bookings: 567, revenue: 22680000 },
-        { hour: '15:00', bookings: 589, revenue: 23560000 },
-        { hour: '16:00', bookings: 534, revenue: 21360000 },
-        { hour: '17:00', bookings: 478, revenue: 19120000 },
-        { hour: '18:00', bookings: 423, revenue: 16920000 },
-        { hour: '19:00', bookings: 389, revenue: 15560000 },
-        { hour: '20:00', bookings: 345, revenue: 13800000 },
-        { hour: '21:00', bookings: 298, revenue: 11920000 },
-        { hour: '22:00', bookings: 234, revenue: 9360000 },
-        { hour: '23:00', bookings: 167, revenue: 6680000 }
-    ];
 
-    // 요일별 분석 데이터
-    const weeklyData = [
-        { day: '월요일', bookings: 234, revenue: 9360000, avgTicket: 40000 },
-        { day: '화요일', bookings: 289, revenue: 11560000, avgTicket: 40000 },
-        { day: '수요일', bookings: 312, revenue: 12480000, avgTicket: 40000 },
-        { day: '목요일', bookings: 345, revenue: 13800000, avgTicket: 40000 },
-        { day: '금요일', bookings: 456, revenue: 18240000, avgTicket: 40000 },
-        { day: '토요일', bookings: 567, revenue: 22680000, avgTicket: 40000 },
-        { day: '일요일', bookings: 523, revenue: 20920000, avgTicket: 40000 }
-    ];
+    const [weeklyData, setWeeklyData] = useState<DayOfWeekSummaryDto[]>([]);
+    const [hourlyStats, setHourlyStats] = useState<HourlyAnalysisResponseDto | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+    const [monthlyData, setMonthlyData] = useState<MonthlyTimePeriodDto[]>([]);
 
-    // 월별 시간대 패턴 데이터
-    const monthlyPatternData = [
-        { month: '1월', morning: 28, afternoon: 45, evening: 27 },
-        { month: '2월', morning: 31, afternoon: 48, evening: 21 },
-        { month: '3월', morning: 35, afternoon: 52, evening: 13 },
-        { month: '4월', morning: 38, afternoon: 55, evening: 7 },
-        { month: '5월', morning: 42, afternoon: 58, evening: 0 },
-        { month: '6월', morning: 45, afternoon: 55, evening: 0 },
-        { month: '7월', morning: 48, afternoon: 52, evening: 0 },
-        { month: '8월', morning: 52, afternoon: 48, evening: 0 },
-        { month: '9월', morning: 48, afternoon: 52, evening: 0 },
-        { month: '10월', morning: 45, afternoon: 55, evening: 0 },
-        { month: '11월', morning: 42, afternoon: 58, evening: 0 },
-        { month: '12월', morning: 38, afternoon: 55, evening: 7 }
-    ];
+
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+     useEffect(() => {
+                const loadDashboardData = async () => {
+                    try {
+                        setLoading(true);
+
+                        console.log('사용자 이벤트 목록 조회 시작...');
+
+                        // 사용자 담당 이벤트와 상세 정보 조회
+                        const myEvent = await dashboardAPI.getMyEventWithDetails();
+                        console.log('조회된 담당 이벤트:', myEvent);
+
+                        if (myEvent) {
+
+                            console.log('담당 이벤트 설정 완료:', myEvent);
+
+                            // 선택된 이벤트의 통계 데이터 로드
+                            console.log('통계 데이터 로드 시작...', {
+                                eventId: myEvent.eventId,
+                                startDate,
+                                endDate
+                            });
+
+
+                             try {
+                                const weekData = await HourlyStatisticsService.getDayOfWeekStatsSummary(myEvent.eventId,startDate,endDate);
+                                setWeeklyData(weekData);
+                                console.log("요일별 데이터 : ", weekData);
+                            } catch (err) {
+                                setHasError(err instanceof Error ? err.message : '요일 별 데이터 로드 중 오류가 발생했습니다.');
+                               }
+
+
+                              try {
+                                 const monthData = await HourlyStatisticsService.getLast12MonthsTimePeriodSummary(myEvent.eventId);
+                                 console.log("✅ getLast12MonthsTimePeriodSummary 결과:", monthData);
+                                 setMonthlyData(monthData);
+                                 console.log("월별 데이터:", monthData);
+                               } catch (err) {
+                                 console.error("❌ 월별 데이터 불러오기 실패:", err);
+                               }
+
+                            try {
+                                 const hourlyData = await HourlyStatisticsService.getHourlyStatistics(myEvent.eventId, startDate, endDate);
+                                 console.log('시간대별 통계 데이터:', hourlyData);
+                                 setHourlyStats(hourlyData);
+                            } catch (salesError: any) {
+                                 console.error('시간대별 조회 실패:', salesError);
+                                 toast.error('시간대별를 불러올 수 없습니다.');
+                                                        }
+
+                        } else {
+                            console.log('등록된 이벤트가 없습니다.');
+                            toast.info('등록된 이벤트가 없습니다.');
+                        }
+                    } catch (error: any) {
+                        console.error('대시보드 데이터 로드 실패:', error);
+                        console.error('오류 상세:', error.response?.data || error.message);
+                        setHasError(true); // Set error state
+
+                        // 401 오류인 경우 로그인 페이지로 리다이렉트
+                        if (error.response?.status === 401) {
+                            toast.error('로그인이 필요합니다.');
+                            // window.location.href = '/login'; // 필요시 주석 해제
+                        } else {
+                            toast.error(`대시보드 데이터를 불러오는데 실패했습니다: ${error.response?.data?.message || error.message}`);
+                        }
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                loadDashboardData();
+            }, []);
+
+    const transformHourlyData = (hourlyStats: HourlyAnalysisResponseDto | null): HourlyChartData[] => {
+      if (!hourlyStats || !hourlyStats.hourlyDetails) {
+        return [];
+      }
+
+      return hourlyStats.hourlyDetails.map(detail => ({
+        hour: formatHour(detail.hour),
+        bookings: detail.reservations,
+        revenue: detail.revenue || 0 // null인 경우 0으로 처리
+      }));
+    };
+
+    // 시간 포맷팅 함수 (0 -> "00:00", 13 -> "13:00")
+    const formatHour = (hour: number): string => {
+      return `${hour.toString().padStart(2, '0')}:00`;
+    };
+
+     // 변환된 데이터
+       const hourlyData = useMemo(() => {
+         return transformHourlyData(hourlyStats);
+       }, [hourlyStats]);
+
+   console.log('홀리 데이터.',hourlyData);
+
+
+
+
+    const {
+      totalReservations = 0,
+      totalRevenue = 0,
+      averageHourlyReservations = 0,
+      mostActiveHour = 0
+    } = hourlyStats?.summary || {};
 
     // 통계 카드 컴포넌트
     const StatCard: React.FC<{ title: string; value: string; unit?: string; trend?: string; isPositive?: boolean; color?: string }> = ({ 
@@ -109,7 +188,7 @@ export const TimeAnalysis: React.FC = () => {
 
                 {/* 페이지 제목 */}
                 <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    시간대별 분석
+                    시간대별 평균 분석
                 </div>
 
                 {/* 사이드바 */}
@@ -119,10 +198,10 @@ export const TimeAnalysis: React.FC = () => {
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20">
                     {/* 통계 카드 섹션 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <StatCard title="피크 시간대" value="15:00" unit="" color="text-red-600" />
-                        <StatCard title="평균 예매율" value="84.8" unit="%" trend="+2.1%" isPositive={true} color="text-blue-600" />
-                        <StatCard title="최고 일매출" value={formatCurrency(23560000)} unit="원" trend="+5.2%" isPositive={true} color="text-green-600" />
-                        <StatCard title="평균 티켓가" value="40,000" unit="원" trend="+1.8%" isPositive={true} color="text-purple-600" />
+                        <StatCard title="총 예매 건수 " value={totalReservations} unit="건" color="text-red-600" />
+                        <StatCard title="총 매출액" value={formatCurrency(totalRevenue)} unit="원" trend="" isPositive={true} color="text-green-600" />
+                        <StatCard title="평균 시간당 예매 " value={averageHourlyReservations.toFixed(2)} unit="건" trend="" isPositive={true} color="text-blue-600" />
+                        <StatCard title="가장 활발한 시간대 " value={mostActiveHour} unit="시" trend="" isPositive={true} color="text-purple-600" />
                     </div>
 
                     {/* 첫 번째 행: 시간대별 예매 현황 */}
@@ -238,7 +317,7 @@ export const TimeAnalysis: React.FC = () => {
                             <h2 className="text-lg font-semibold text-gray-900 mb-6">월별 시간대 패턴</h2>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={monthlyPatternData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                    <AreaChart data={monthlyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                         <XAxis 
                                             dataKey="month" 
@@ -312,13 +391,25 @@ export const TimeAnalysis: React.FC = () => {
 
                     {/* 세 번째 행: 시간대별 인사이트 */}
                     <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">시간대별 상세 분석</h2>
+                        <h2 className="text-lg font-semibold text-gray-900 mb-6">시간대별 상세 분석 🎯 : {hourlyStats?.patternAnalysis?.insights}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            {/* 새벽 시간대 */}
+                             <div className="bg-green-50 rounded-lg p-4">
+                                <h3 className="font-semibold text-blue-900 mb-3"> {hourlyStats?.patternAnalysis?.nightPattern || '🌃 새벽 시간대 (12:00-18:00)'}</h3>
+                                <div className="space-y-2 text-sm text-blue-800">
+
+                                     <p><span className="font-medium">특징:</span> 점심시간 후, 업무 마무리</p>
+                                     <p><span className="font-medium">전략:</span> 할인 혜택, 푸시 알림</p>
+                                </div>
+                             </div>
+
+
                             {/* 오전 시간대 */}
                             <div className="bg-blue-50 rounded-lg p-4">
-                                <h3 className="font-semibold text-blue-900 mb-3">🌅 오전 시간대 (06:00-12:00)</h3>
-                                <div className="space-y-2 text-sm text-blue-800">
-                                    <p><span className="font-medium">피크 시간:</span> 11:00 (389건)</p>
+                                <h3 className="font-semibold text-green-900 mb-3">{hourlyStats?.patternAnalysis?.morningPattern ||'🌅 오전 시간대 (06:00-12:00)'}</h3>
+                                <div className="space-y-2 text-sm text-green-800">
+
                                     <p><span className="font-medium">특징:</span> 출근 시간대와 연관</p>
                                     <p><span className="font-medium">전략:</span> 모바일 최적화, 빠른 예매 프로세스</p>
                                 </div>
@@ -326,9 +417,9 @@ export const TimeAnalysis: React.FC = () => {
 
                             {/* 오후 시간대 */}
                             <div className="bg-green-50 rounded-lg p-4">
-                                <h3 className="font-semibold text-green-900 mb-3">☀️ 오후 시간대 (12:00-18:00)</h3>
-                                <div className="space-y-2 text-sm text-green-800">
-                                    <p><span className="font-medium">피크 시간:</span> 15:00 (589건)</p>
+                                <h3 className="font-semibold text-red-900 mb-3">{hourlyStats?.patternAnalysis?.afternoonPattern || '☀️ 오후 시간대 (12:00-18:00)'}</h3>
+                                <div className="space-y-2 text-sm text-red-800">
+
                                     <p><span className="font-medium">특징:</span> 점심시간 후, 업무 마무리</p>
                                     <p><span className="font-medium">전략:</span> 할인 혜택, 푸시 알림</p>
                                 </div>
@@ -336,9 +427,9 @@ export const TimeAnalysis: React.FC = () => {
 
                             {/* 저녁 시간대 */}
                             <div className="bg-orange-50 rounded-lg p-4">
-                                <h3 className="font-semibold text-orange-900 mb-3">🌙 저녁 시간대 (18:00-24:00)</h3>
+                                <h3 className="font-semibold text-orange-900 mb-3">{hourlyStats?.patternAnalysis?.eveningPattern || '🌙 저녁 시간대 (18:00-24:00)'}</h3>
                                 <div className="space-y-2 text-sm text-orange-800">
-                                    <p><span className="font-medium">피크 시간:</span> 19:00 (389건)</p>
+
                                     <p><span className="font-medium">특징:</span> 퇴근 후, 여가 시간</p>
                                     <p><span className="font-medium">전략:</span> 소셜미디어 마케팅, 추천 시스템</p>
                                 </div>
@@ -346,7 +437,7 @@ export const TimeAnalysis: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 분석 인사이트 */}
+                    {/* 분석 인사이트
                     <div className="bg-purple-50 rounded-lg p-6">
                         <h3 className="text-lg font-semibold text-purple-900 mb-4">⏰ 시간대별 분석 인사이트</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-purple-800">
@@ -367,7 +458,7 @@ export const TimeAnalysis: React.FC = () => {
                                 </ul>
                             </div>
                         </div>
-                    </div>
+                    </div>*/}
                 </div>
             </div>
         </div>
