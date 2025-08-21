@@ -19,7 +19,7 @@ import {
     deleteReview
 } from "../../services/review";
 import { useTranslation } from "react-i18next";
-
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 export const MyPageMyReview = () => {
     const { t } = useTranslation();
@@ -50,6 +50,7 @@ export const MyPageMyReview = () => {
     const [writeTotalPages, setWriteTotalPages] = useState(1);
     const [myPage, setMyPage] = useState(0);
     const [myTotalPages, setMyTotalPages] = useState(1);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     useEffect(() => {
         if (activeTab === 'write') {
@@ -64,12 +65,12 @@ export const MyPageMyReview = () => {
 
     useEffect(() => {
         if (activeTab === 'my') {
-                const fetchUserReviews = async () => {
-                    const res = await getReviewsByMember(myPage); // currentPage를 0으로 변경
-                    setSavedReviews(res?.content ?? null);
-                    setMyTotalPages(res?.totalPages);
-                }
-                fetchUserReviews();
+            const fetchUserReviews = async () => {
+                const res = await getReviewsByMember(myPage); // currentPage를 0으로 변경
+                setSavedReviews(res?.content ?? null);
+                setMyTotalPages(res?.totalPages);
+            }
+            fetchUserReviews();
         }
     }, [activeTab, myPage]);
 
@@ -334,73 +335,102 @@ export const MyPageMyReview = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
-                <div className="absolute w-[947px] h-[107px] top-[137px] left-64">
-                    <div className="absolute top-0 left-0 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl leading-[54px] tracking-[0] whitespace-nowrap">
+            <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
+                {/* 제목과 탭 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
+                    <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl leading-[54px] tracking-[0] whitespace-nowrap mb-4">
                         관람평
                     </div>
 
-                    <div className="absolute w-[947px] h-[55px] top-[52px] left-0">
-                        <div className="w-[947px] top-[13px] border-b border-[#0000001a] absolute h-[42px] left-0 [border-bottom-style:solid]" />
+                    {/* 탭 네비게이션 */}
+                    <div className="w-full md:w-[947px] border-b border-[#0000001a] pb-2">
+                        <div className="flex flex-row gap-4 md:gap-0">
+                            <div
+                                onClick={() => setActiveTab('write')}
+                                className={`flex-1 md:flex-none md:w-[200px] h-[54px] flex justify-center items-center text-base cursor-pointer hover:text-gray-700 z-10 focus:outline-none border-b-2 transition-colors ${activeTab === 'write'
+                                    ? "[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black border-black"
+                                    : "[font-family:'Roboto-Regular',Helvetica] font-normal text-black border-transparent"
+                                    }`}
+                            >
+                                관람평 쓰기
+                            </div>
 
-                        <div
-                            onClick={() => setActiveTab('write')}
-                            className={`absolute top-0 left-[137px] w-[200px] h-[54px] flex justify-center items-center text-base cursor-pointer hover:text-gray-700 z-10 focus:outline-none ${activeTab === 'write'
-                                ? "[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black"
-                                : "[font-family:'Roboto-Regular',Helvetica] font-normal text-black"
-                                }`}
-                        >
-                            관람평 쓰기
+                            <div
+                                onClick={() => setActiveTab('my')}
+                                className={`flex-1 md:flex-none md:w-[200px] h-[54px] flex justify-center items-center text-base cursor-pointer hover:text-gray-700 z-10 focus:outline-none border-b-2 transition-colors ${activeTab === 'my'
+                                    ? "[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black border-black"
+                                    : "[font-family:'Roboto-Regular',Helvetica] font-normal text-black border-transparent"
+                                    }`}
+                            >
+                                내 관람평
+                            </div>
                         </div>
-
-                        <div
-                            className={`w-[474px] top-3 absolute h-[42px] left-0 border-b ${activeTab === 'write' ? 'border-b-2 border-black' : 'border-[#0000001a]'
-                                } z-0`}
-                        />
-
-                        <div
-                            onClick={() => setActiveTab('my')}
-                            className={`absolute top-0 left-[611px] w-[200px] h-[54px] flex justify-center items-center text-base cursor-pointer hover:text-gray-700 z-10 focus:outline-none ${activeTab === 'my'
-                                ? "[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black"
-                                : "[font-family:'Roboto-Regular',Helvetica] font-normal text-black"
-                                }`}
-                        >
-                            내 관람평
-                        </div>
-
-                        <div
-                            className={`w-[474px] top-3 absolute h-[42px] left-[474px] border-b ${activeTab === 'my' ? 'border-b-2 border-black' : 'border-[#0000001a]'
-                                } z-0`}
-                        />
                     </div>
+                </div>
+
+                {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+                <button
+                    onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                    className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+                >
+                    {isMobileSidebarOpen ? (
+                        <HiOutlineX className="w-6 h-6 text-gray-600" />
+                    ) : (
+                        <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+                    )}
+                </button>
+
+                {/* 모바일 사이드바 오버레이 */}
+                {isMobileSidebarOpen && (
+                    <div
+                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                    />
+                )}
+
+                {/* 모바일 사이드바 */}
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
+                    <div className="p-4">
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className="absolute top-4 right-4 p-2"
+                        >
+                            <HiOutlineX className="w-6 h-6 text-gray-600" />
+                        </button>
+                        <AttendeeSideNav className="!relative !top-0 !left-0" />
+                    </div>
+                </div>
+
+                {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+                <div className="hidden md:block">
+                    <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
                 </div>
 
                 <TopNav />
 
-                <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
-
                 {/* Write Review Content */}
                 {activeTab === 'write' && (
-                    <div className="absolute top-[263px] left-64 right-0 pb-20">
+                    <div className="md:absolute md:top-[263px] md:left-64 md:right-0 left-0 right-4 top-48 relative pb-20">
                         {!selectedEvent ? (
                             // 행사 리스트 표시
                             <div className="flex flex-col gap-8">
                                 {writeReviewsState?.map((item) => (
                                     <div
                                         key={item.reservationId}
-                                        className="flex gap-6 cursor-pointer p-4 rounded-lg"
+                                        className="flex flex-col md:flex-row gap-4 md:gap-6 cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
                                         onClick={() => handleEventClick(item.event, item.reservationId)}
                                     >
                                         <img
                                             src={item.event.thumbnail}
                                             alt="preview"
-                                            className="w-[158px] h-[190px] object-cover"
+                                            className="w-full md:w-[158px] h-48 md:h-[190px] object-cover rounded-lg"
                                         />
                                         <div className="flex flex-col gap-2 relative">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-col md:flex-row md:items-center gap-2">
                                                 <p className="text-lg font-semibold">{item.event.title}</p>
                                                 {/* 상태 배지 */}
-                                                <div className={`px-2 py-1 rounded-full text-xs font-medium ${item.hasReview
+                                                <div className={`px-2 py-1 rounded-full text-xs font-medium w-fit ${item.hasReview
                                                     ? 'bg-green-100 text-green-700 border border-green-200'
                                                     : 'bg-gray-100 text-gray-600 border border-gray-200'
                                                     }`}>
@@ -421,23 +451,25 @@ export const MyPageMyReview = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="flex gap-4">
-                                                <div className="text-sm text-black font-semibold w-12">일시</div>
-                                                <div className="text-sm text-[#000000b2]">{item.event.eventScheduleInfo.startDate}</div>
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <div className="text-sm text-black font-semibold w-12">장소</div>
-                                                <div className="text-sm text-[#000000b2]">{item.event.buildingName !== null ? item.event.buildingName : item.event.address}</div>
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <div className="text-sm text-black font-semibold w-12">관람일</div>
-                                                <div className="text-sm text-[#000000b2]">
-                                                    {item.event.viewingScheduleInfo.date} ({item.event.viewingScheduleInfo.dayOfWeek}) {item.event.viewingScheduleInfo.startTime}
+                                            <div className="grid grid-cols-1 gap-2 md:gap-4 text-sm">
+                                                <div className="flex gap-2 md:gap-4">
+                                                    <div className="text-black font-semibold w-12 md:w-12">일시</div>
+                                                    <div className="text-[#000000b2]">{item.event.eventScheduleInfo.startDate}</div>
                                                 </div>
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <div className="text-sm text-black font-semibold w-12">티켓</div>
-                                                <div className="text-sm text-[#000000b2]">{item.ticketContent}</div>
+                                                <div className="flex gap-2 md:gap-4">
+                                                    <div className="text-black font-semibold w-12 md:w-12">관람일</div>
+                                                    <div className="text-[#000000b2]">
+                                                        {item.event.viewingScheduleInfo.date} ({item.event.viewingScheduleInfo.dayOfWeek}) {item.event.viewingScheduleInfo.startTime}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 md:gap-4">
+                                                    <div className="text-black font-semibold w-12 md:w-12">장소</div>
+                                                    <div className="text-[#000000b2]">{item.event.buildingName !== null ? item.event.buildingName : item.event.address}</div>
+                                                </div>
+                                                <div className="flex gap-2 md:gap-4">
+                                                    <div className="text-black font-semibold w-12 md:w-12">티켓</div>
+                                                    <div className="text-[#000000b2]">{item.ticketContent}</div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -445,43 +477,43 @@ export const MyPageMyReview = () => {
                                 {/* 페이지네이션 */}
                                 {writeTotalPages >= 0 && (
                                     <div className="flex justify-center mt-8">
-                                    <div className="flex items-center gap-2">
-                                        {/* 이전 페이지 버튼 */}
-                                        <button
-                                        onClick={() =>  setWritePage(writePage -1)}
-                                        disabled={writePage === 0}
-                                        className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === 1
-                                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                            : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                                            }`}
-                                        >
-                                        &lt;
-                                        </button>
-                                        {/* 페이지 번호 버튼 */}
-                                        {Array.from({ length: writeTotalPages }, (_, page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() =>  setWritePage(page)} // 0-based
-                                            className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === page
-                                            ? "bg-black text-white border-black"
-                                            : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                                            }`}
-                                        >
-                                            {page + 1}
-                                        </button>
-                                        ))}
-                                        {/* 다음 페이지 버튼 */}
-                                        <button
-                                        onClick={() =>  setWritePage(writePage + 1 )}
-                                        disabled={writePage === writeTotalPages - 1}
-                                        className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === writeTotalPages
-                                            ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                            : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                                            }`}
-                                        >
-                                        &gt;
-                                        </button>
-                                    </div>
+                                        <div className="flex items-center gap-2">
+                                            {/* 이전 페이지 버튼 */}
+                                            <button
+                                                onClick={() => setWritePage(writePage - 1)}
+                                                disabled={writePage === 0}
+                                                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === 1
+                                                    ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                                    : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                    }`}
+                                            >
+                                                &lt;
+                                            </button>
+                                            {/* 페이지 번호 버튼 */}
+                                            {Array.from({ length: writeTotalPages }, (_, page) => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => setWritePage(page)} // 0-based
+                                                    className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === page
+                                                        ? "bg-black text-white border-black"
+                                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                        }`}
+                                                >
+                                                    {page + 1}
+                                                </button>
+                                            ))}
+                                            {/* 다음 페이지 버튼 */}
+                                            <button
+                                                onClick={() => setWritePage(writePage + 1)}
+                                                disabled={writePage === writeTotalPages - 1}
+                                                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === writeTotalPages
+                                                    ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                                    : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                    }`}
+                                            >
+                                                &gt;
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -652,7 +684,7 @@ export const MyPageMyReview = () => {
                 {activeTab === 'my' && (
                     <>
                         {/* Select All Section */}
-                        <div className="absolute w-[947px] h-[51px] top-[263px] left-64 bg-neutral-100 rounded-lg flex items-center justify-between px-3.5">
+                        <div className="md:absolute md:w-[947px] md:top-[263px] md:left-64 left-0 right-4 top-48 relative bg-neutral-100 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:px-3.5 gap-4 md:gap-0">
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -680,9 +712,9 @@ export const MyPageMyReview = () => {
                         </div>
 
                         {/* Review Cards */}
-                        <div className="absolute top-[334px] left-64 space-y-4 pb-20">
+                        <div className="md:absolute md:top-[334px] md:left-64 left-0 right-4 top-64 relative space-y-4 pb-20">
                             {savedReviews?.map((data) => (
-                                <div key={data.review.reviewId} className="w-[947px] rounded-lg border border-[#0000001f] bg-white p-5 relative">
+                                <div key={data.review.reviewId} className="w-full md:w-[947px] rounded-lg border border-[#0000001f] bg-white p-5 relative">
                                     {/* Checkbox */}
                                     <input
                                         type="checkbox"
@@ -709,12 +741,12 @@ export const MyPageMyReview = () => {
 
                                     {/* Content */}
                                     <div className="ml-[31px]">
-                                        <div className="flex items-center gap-2 mb-1">
+                                        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
                                             <h3 className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black text-base leading-6">
                                                 {data.event.title}
                                             </h3>
                                             {/* 공개/비공개 배지 */}
-                                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${data.review.visible
+                                            <div className={`px-2 py-1 rounded-full text-xs font-medium w-fit ${data.review.visible
                                                 ? 'bg-blue-100 text-blue-700 border border-blue-200'
                                                 : 'bg-gray-100 text-gray-600 border border-gray-200'
                                                 }`}>
@@ -737,7 +769,7 @@ export const MyPageMyReview = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex gap-4 mb-4">
+                                        <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-4">
                                             <span className="[font-family:'Roboto-Regular',Helvetica] text-[#000000b2] text-sm leading-[21px]">
                                                 {data.event.viewingScheduleInfo.date} ({data.event.viewingScheduleInfo.dayOfWeek}) {data.event.viewingScheduleInfo.startTime}
                                             </span>
@@ -749,18 +781,15 @@ export const MyPageMyReview = () => {
                                         {/* Star Rating */}
                                         <div className="flex items-center gap-1 mb-4">
                                             {renderStars(data.review.star)}
-                                            {/* <span className="ml-2 [font-family:'Roboto-Regular',Helvetica] text-[#00000099] text-sm">
-                                                {data.review.createdAt}
-                                            </span> */}
                                         </div>
 
                                         {/* Review Content */}
-                                        <p className="[font-family:'Roboto-Regular',Helvetica] text-black text-sm leading-[21px] mb-4 max-w-[888px]">
+                                        <p className="[font-family:'Roboto-Regular',Helvetica] text-black text-sm leading-[21px] mb-4 max-w-full md:max-w-[888px]">
                                             {data.review.comment}
                                         </p>
 
                                         {/* Like Count and Date */}
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-0">
                                             <div className="flex items-center gap-2">
                                                 <svg className="w-4 h-4 fill-red-500 text-red-500" viewBox="0 0 24 24">
                                                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -779,43 +808,43 @@ export const MyPageMyReview = () => {
                             {/* 페이지네이션 */}
                             {myTotalPages >= 0 && (
                                 <div className="flex justify-center mt-8">
-                                <div className="flex items-center gap-2">
-                                    {/* 이전 페이지 버튼 */}
-                                    <button
-                                    onClick={() =>  setMyPage(myPage -1)}
-                                    disabled={myPage === 0}
-                                    className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === 1
-                                        ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                                        }`}
-                                    >
-                                    &lt;
-                                    </button>
-                                    {/* 페이지 번호 버튼 */}
-                                    {Array.from({ length: myTotalPages }, (_, page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() =>  setMyPage(page)} // 0-based
-                                        className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === page
-                                        ? "bg-black text-white border-black"
-                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                                        }`}
-                                    >
-                                        {page + 1}
-                                    </button>
-                                    ))}
-                                    {/* 다음 페이지 버튼 */}
-                                    <button
-                                    onClick={() =>  setMyPage(myPage + 1 )}
-                                    disabled={myPage === myTotalPages - 1}
-                                    className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === myTotalPages
-                                        ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
-                                        }`}
-                                    >
-                                    &gt;
-                                    </button>
-                                </div>
+                                    <div className="flex items-center gap-2">
+                                        {/* 이전 페이지 버튼 */}
+                                        <button
+                                            onClick={() => setMyPage(myPage - 1)}
+                                            disabled={myPage === 0}
+                                            className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === 1
+                                                ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                                : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                }`}
+                                        >
+                                            &lt;
+                                        </button>
+                                        {/* 페이지 번호 버튼 */}
+                                        {Array.from({ length: myTotalPages }, (_, page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setMyPage(page)} // 0-based
+                                                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === page
+                                                    ? "bg-black text-white border-black"
+                                                    : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                    }`}
+                                            >
+                                                {page + 1}
+                                            </button>
+                                        ))}
+                                        {/* 다음 페이지 버튼 */}
+                                        <button
+                                            onClick={() => setMyPage(myPage + 1)}
+                                            disabled={myPage === myTotalPages - 1}
+                                            className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${myPage === myTotalPages
+                                                ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                                                : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                }`}
+                                        >
+                                            &gt;
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>

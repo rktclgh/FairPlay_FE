@@ -15,6 +15,8 @@ import Reservation from "./pages/user_mypage/Reservation";
 import MyTickets from "./pages/user_mypage/MyTickets";
 import ParticipantForm from "./pages/user_mypage/ParticipantForm";
 import ParticipantList from "./pages/user_mypage/ParticipantList";
+import BusinessCard from "./pages/user_mypage/BusinessCard";
+import BusinessCardWallet from "./pages/user_mypage/BusinessCardWallet";
 import EventOverview from "./pages/user_event/EventOverview";
 import EventDetail from "./pages/user_event/EventDetail";
 import { TicketReservation } from "./pages/user_event/TicketReservation";
@@ -101,6 +103,7 @@ import TermsOfUse from "./pages/footer/TermsOfUse";
 import Policy from "./pages/footer/Policy";
 import BoothPaymentPage from "./pages/booth/BoothPaymentPage";
 import BoothCancelPage from "./pages/booth/BoothCancelPage";
+import BannerPaymentPage from "./pages/banner/BannerPaymentPage";
 import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 import BoothInfoManagement from "./pages/booth_admin/BoothInfoManagement";
 import BoothEdit from "./pages/booth_admin/BoothEdit";
@@ -185,6 +188,8 @@ function AppContent() {
                         <Route path="/mypage/my-review" element={<MyPageMyReview />} />
                         <Route path="/mypage/withdrawal" element={<Withdrawal />} />
                         <Route path="/mypage/refund" element={<RefundList />} />
+                        <Route path="/mypage/business-card" element={<BusinessCard />} />
+                        <Route path="/mypage/business-card-wallet" element={<BusinessCardWallet />} />
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/signup" element={<SignUpPage />} />
                         <Route path="/find-password" element={<FindPassword />} />
@@ -290,6 +295,9 @@ function AppContent() {
                         {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
                         <Route path="/booth/payment" element={<BoothPaymentPage />} />
                         <Route path="/booth/cancel" element={<BoothCancelPage />} />
+                        
+                        {/* 배너 관련 공개 페이지 (이메일에서 접근) */}
+                        <Route path="/banner/payment" element={<BannerPaymentPage />} />
 
                         {/* 부스 체험 (행사관리자) 라우트 제거됨 */}
                         <Route path="/events/:eventId/booth-experiences" element={<BoothExperienceList />} />

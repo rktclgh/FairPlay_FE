@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 export const MyPageAccount = () => {
     const [selectedBank, setSelectedBank] = useState("");
     const [accountNumber, setAccountNumber] = useState("");
     const [accountHolder, setAccountHolder] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const banks = [
@@ -31,8 +33,23 @@ export const MyPageAccount = () => {
         "경남은행"
     ];
 
+    // 페이지 로드 시 localStorage에서 데이터 불러오기
+    useEffect(() => {
+        const savedBank = localStorage.getItem('refundAccount_bank');
+        const savedAccountNumber = localStorage.getItem('refundAccount_accountNumber');
+        const savedAccountHolder = localStorage.getItem('refundAccount_accountHolder');
+
+        if (savedBank) setSelectedBank(savedBank);
+        if (savedAccountNumber) setAccountNumber(savedAccountNumber);
+        if (savedAccountHolder) setAccountHolder(savedAccountHolder);
+    }, []);
+
     const handleSave = () => {
-        // 저장 로직 구현
+        // localStorage에 데이터 저장
+        localStorage.setItem('refundAccount_bank', selectedBank);
+        localStorage.setItem('refundAccount_accountNumber', accountNumber);
+        localStorage.setItem('refundAccount_accountHolder', accountHolder);
+
         console.log("계좌 정보 저장:", {
             bank: selectedBank,
             accountNumber,
@@ -73,19 +90,60 @@ export const MyPageAccount = () => {
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
-            <div className="bg-white w-[1256px] min-h-screen relative">
-                <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-                    환불 계좌 정보
+            <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
+                {/* 제목 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
+                    <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+                        환불 계좌 정보
+                    </div>
                 </div>
 
-                <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+                <button
+                    onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                    className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+                >
+                    {isMobileSidebarOpen ? (
+                        <HiOutlineX className="w-6 h-6 text-gray-600" />
+                    ) : (
+                        <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+                    )}
+                </button>
+
+                {/* 모바일 사이드바 오버레이 */}
+                {isMobileSidebarOpen && (
+                    <div
+                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                    />
+                )}
+
+                {/* 모바일 사이드바 */}
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
+                    <div className="p-4">
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className="absolute top-4 right-4 p-2"
+                        >
+                            <HiOutlineX className="w-6 h-6 text-gray-600" />
+                        </button>
+                        <AttendeeSideNav className="!relative !top-0 !left-0" />
+                    </div>
+                </div>
+
+                {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+                <div className="hidden md:block">
+                    <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+                </div>
+
                 <TopNav />
 
-                {/* Main form */}
-                <div className="absolute w-[509px] h-[250px] top-[239px] left-64">
+                {/* Main form - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+                <div className="md:absolute md:top-[239px] md:left-64 md:w-[509px] left-0 right-4 top-32 relative w-full md:static">
                     {/* Bank selection */}
-                    <div className="mb-2.5">
-                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                    <div className="mb-6">
+                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-2">
                             은행명
                         </label>
                         <div className="relative" ref={dropdownRef}>
@@ -120,8 +178,8 @@ export const MyPageAccount = () => {
                     </div>
 
                     {/* Account number */}
-                    <div className="mb-2.5">
-                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                    <div className="mb-6">
+                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-2">
                             계좌번호
                         </label>
                         <input
@@ -134,8 +192,8 @@ export const MyPageAccount = () => {
                     </div>
 
                     {/* Account holder */}
-                    <div>
-                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                    <div className="mb-8">
+                        <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-2">
                             예금주
                         </label>
                         <input
@@ -146,23 +204,21 @@ export const MyPageAccount = () => {
                             className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${accountHolder ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                         />
                     </div>
+
+                    {/* Save button */}
+                    <div className="flex justify-center">
+                        <button
+                            onClick={handleSave}
+                            disabled={!selectedBank || !accountNumber || !accountHolder}
+                            className={`px-6 py-3 rounded-[10px] transition-colors text-sm font-medium ${selectedBank && accountNumber && accountHolder
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-gray-400 text-white cursor-not-allowed'
+                                }`}
+                        >
+                            저장하기
+                        </button>
+                    </div>
                 </div>
-
-                {/* Save button */}
-                <div className="absolute top-[580px] left-64 w-[509px] flex justify-center">
-                    <button
-                        onClick={handleSave}
-                        disabled={!selectedBank || !accountNumber || !accountHolder}
-                        className={`px-6 py-2 rounded-[10px] transition-colors text-sm ${selectedBank && accountNumber && accountHolder
-                            ? 'bg-blue-500 text-white hover:bg-blue-600'
-                            : 'bg-gray-400 text-white cursor-not-allowed'
-                            }`}
-                    >
-                        저장하기
-                    </button>
-                </div>
-
-
             </div>
         </div>
     );
