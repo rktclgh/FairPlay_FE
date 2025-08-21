@@ -30,8 +30,9 @@ export interface PaymentRequest {
     merchant_uid: string; // 가맹점 주문번호
     name: string; // 주문명
     amount: number; // 결제금액
-    buyer_email: string; // 구매자 이메일
+    buyer_email?: string; // 구매자 이메일
     buyer_name: string; // 구매자 이름
+    m_redirect_url?: string; // 모바일 결제 완료 후 리다이렉트 URL
 }
 
 // 결제 완료 요청 인터페이스
@@ -254,7 +255,8 @@ class PaymentService {
                 merchant_uid: merchantUid,
                 name: `${title}`,
                 amount: amount,
-                buyer_name: userName
+                buyer_name: userName,
+                m_redirect_url: `${window.location.origin}/ticket-reservation/${eventId}?success=true`
             };
 
             // 4. 아임포트 결제 요청

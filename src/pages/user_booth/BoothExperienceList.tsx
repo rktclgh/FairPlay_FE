@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Clock, Users, MapPin, Calendar } from 'lucide-react';
+import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import {
   getAvailableExperiences,
   getCongestionColor,
@@ -14,8 +15,10 @@ import { TopNav } from "../../components/TopNav";
 import BoothExperienceReservationModal from '../../components/booth/BoothExperienceReservationModal';
 import reservationService from '../../services/reservationService';
 import { useTranslation } from 'react-i18next';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 const BoothExperienceList: React.FC = () => {
+  useScrollToTop();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [experiences, setExperiences] = useState<BoothExperience[]>([]);
@@ -32,6 +35,7 @@ const BoothExperienceList: React.FC = () => {
   const [userRegisteredEvents, setUserRegisteredEvents] = useState<{ id: number, name: string }[]>([]);
   const [userEventsLoaded, setUserEventsLoaded] = useState(false);
   const [showOnlyRegisteredEvents, setShowOnlyRegisteredEvents] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // 디바운스된 검색어
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -211,40 +215,78 @@ const BoothExperienceList: React.FC = () => {
         }
       `}</style>
       <div className="bg-white flex flex-row justify-center w-full">
-        <div className="bg-white w-[1256px] min-h-screen relative">
+        <div className="bg-white w-full max-w-[1256px] min-h-screen relative">
           <TopNav />
 
-          {/* 페이지 제목 */}
-          <div className="top-[137px] left-64 [font-family:'Roboto-Bold',Helvetica] font-bold text-black text-2xl absolute tracking-[0] leading-[54px] whitespace-nowrap">
-            {t('boothExperience.list')}
+          {/* 제목 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+          <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
+            <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl tracking-[0] leading-[54px] whitespace-nowrap">
+              {t('boothExperience.list')}
+            </div>
           </div>
 
-          {/* 사이드바 */}
-          <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+          {/* 모바일 햄버거 버튼 - 상단바 좌측 아래에 위치 */}
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="md:hidden fixed top-20 left-4 z-50 p-3 bg-transparent"
+          >
+            {isMobileSidebarOpen ? (
+              <HiOutlineX className="w-6 h-6 text-gray-600" />
+            ) : (
+              <HiOutlineMenu className="w-6 h-6 text-gray-600" />
+            )}
+          </button>
 
-          {/* 메인 콘텐츠 */}
-          <div className="ml-64 mt-[195px] w-[949px] pb-28 md:pb-36">
+          {/* 모바일 사이드바 오버레이 */}
+          {isMobileSidebarOpen && (
+            <div
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            />
+          )}
+
+          {/* 모바일 사이드바 */}
+          <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="p-4">
+              <button
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="absolute top-4 right-4 p-2"
+              >
+                <HiOutlineX className="w-6 h-6 text-gray-600" />
+              </button>
+              <AttendeeSideNav className="!relative !top-0 !left-0" />
+            </div>
+          </div>
+
+          {/* 데스크톱 사이드바 - 웹화면에서 절대적으로 고정 */}
+          <div className="hidden md:block">
+            <AttendeeSideNav className="!absolute !left-0 !top-[117px]" />
+          </div>
+
+          {/* 콘텐츠 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
+          <div className="md:absolute md:top-[195px] md:left-64 md:right-0 md:pr-8 left-0 right-4 top-32 relative">
             {/* 헤더 */}
-            <div className="mb-6">
-              <p className="text-gray-600">{t('boothExperience.description')}</p>
+            <div className="mb-4 md:mb-6">
+              <p className="text-gray-600 text-sm md:text-base">다양한 부스에서 제공하는 흥미로운 체험을 예약하세요</p>
             </div>
 
             {/* 검색 및 필터 */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">{t('payment.searchConditions')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+            <div className="bg-white rounded-lg shadow-md p-3 md:p-6 mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">{t('payment.searchConditions')}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 md:gap-4 mb-3 md:mb-4">
+                {/* 모바일에서 간격을 위해 각 요소에 margin-bottom 추가 */}
                 {/* 행사 선택 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('event.title')}</label>
+                <div className="mb-1 sm:mb-0">
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-1">{t('event.title')}</label>
                   <div className="relative">
                     <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                     <select
-                      className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+                      className="w-full pl-10 pr-8 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
                       value={selectedEventId}
                       onChange={(e) => setSelectedEventId(e.target.value)}
                     >
                       <option value="ALL">
-                        {t('event.allCategories')}
+                        전체
                       </option>
                       {availableEvents.map(event => (
                         <option key={event.id} value={event.id?.toString() || ''}>
@@ -261,111 +303,109 @@ const BoothExperienceList: React.FC = () => {
                 </div>
 
                 {/* 검색 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.experienceName')}</label>
+                <div className="mb-1 sm:mb-0">
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">{t('boothExperience.experienceName')}</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={t('boothExperience.experienceNamePlaceholder')}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="검색"
+                      className="w-full pl-10 pr-4 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                 </div>
 
-                {/* 시작 날짜 필터 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.startDate')}</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
-                    <input
-                      id="start-date-input"
-                      type="date"
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer select-none [&::-webkit-datetime-edit]:select-none [&::-webkit-datetime-edit-fields-wrapper]:select-none [&::-webkit-datetime-edit-text]:select-none [&::-webkit-datetime-edit-month-field]:select-none [&::-webkit-datetime-edit-day-field]:select-none [&::-webkit-datetime-edit-year-field]:select-none"
-                      style={{
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        MozUserSelect: 'none',
-                        msUserSelect: 'none'
-                      }}
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const input = e.target as HTMLInputElement;
-                        // 텍스트 선택 해제
-                        if (document.getSelection) {
-                          document.getSelection()?.removeAllRanges();
-                        }
-                        if (input.showPicker) {
-                          try {
-                            input.showPicker();
-                          } catch (error) {
-                            console.log('showPicker failed, falling back to focus');
-                            input.focus();
-                          }
-                        }
-                      }}
-                      onMouseDown={(e) => {
-                        // 마우스 다운 시 텍스트 선택 방지
-                        e.preventDefault();
-                      }}
-                    />
+                {/* 날짜 필터 - 시작일과 종료일을 같은 줄에 배치 */}
+                <div className="sm:col-span-2 mb-1 sm:mb-0">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">시작일</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none z-10" />
+                        <input
+                          id="start-date-input"
+                          type="date"
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full pl-8 pr-2 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer select-none text-xs md:text-sm [&::-webkit-datetime-edit]:select-none [&::-webkit-datetime-edit-fields-wrapper]:select-none [&::-webkit-datetime-edit-text]:select-none [&::-webkit-datetime-edit-month-field]:select-none [&::-webkit-datetime-edit-day-field]:select-none [&::-webkit-datetime-edit-year-field]:select-none"
+                          style={{
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            MozUserSelect: 'none',
+                            msUserSelect: 'none'
+                          }}
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const input = e.target as HTMLInputElement;
+                            if (document.getSelection) {
+                              document.getSelection()?.removeAllRanges();
+                            }
+                            if (input.showPicker) {
+                              try {
+                                input.showPicker();
+                              } catch (error) {
+                                console.log('showPicker failed, falling back to focus');
+                                input.focus();
+                              }
+                            }
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">종료일</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none z-10" />
+                        <input
+                          id="end-date-input"
+                          type="date"
+                          min={startDate || new Date().toISOString().split('T')[0]}
+                          className="w-full pl-8 pr-2 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer select-none text-xs md:text-sm [&::-webkit-datetime-edit]:select-none [&::-webkit-datetime-edit-fields-wrapper]:select-none [&::-webkit-datetime-edit-text]:select-none [&::-webkit-datetime-edit-month-field]:select-none [&::-webkit-datetime-edit-day-field]:select-none [&::-webkit-datetime-edit-year-field]:select-none"
+                          style={{
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            MozUserSelect: 'none',
+                            msUserSelect: 'none'
+                          }}
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const input = e.target as HTMLInputElement;
+                            if (document.getSelection) {
+                              document.getSelection()?.removeAllRanges();
+                            }
+                            if (input.showPicker) {
+                              try {
+                                input.showPicker();
+                              } catch (error) {
+                                console.log('showPicker failed, falling back to focus');
+                                input.focus();
+                              }
+                            }
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* 종료 날짜 필터 */}
+                {/* 정렬 - 모바일에서는 작게, 웹에서는 원래 크기 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.endDate')}</label>
+                  <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">{t('boothExperience.sort')}</label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
-                    <input
-                      id="end-date-input"
-                      type="date"
-                      min={startDate || new Date().toISOString().split('T')[0]}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer select-none [&::-webkit-datetime-edit]:select-none [&::-webkit-datetime-edit-fields-wrapper]:select-none [&::-webkit-datetime-edit-text]:select-none [&::-webkit-datetime-edit-month-field]:select-none [&::-webkit-datetime-edit-day-field]:select-none [&::-webkit-datetime-edit-year-field]:select-none"
-                      style={{
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        MozUserSelect: 'none',
-                        msUserSelect: 'none'
-                      }}
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const input = e.target as HTMLInputElement;
-                        // 텍스트 선택 해제
-                        if (document.getSelection) {
-                          document.getSelection()?.removeAllRanges();
-                        }
-                        if (input.showPicker) {
-                          try {
-                            input.showPicker();
-                          } catch (error) {
-                            console.log('showPicker failed, falling back to focus');
-                            input.focus();
-                          }
-                        }
-                      }}
-                      onMouseDown={(e) => {
-                        // 마우스 다운 시 텍스트 선택 방지
-                        e.preventDefault();
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* 정렬 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('boothExperience.sort')}</label>
-                  <div className="relative">
-                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
+                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 md:w-5 h-4 md:h-5 pointer-events-none z-10" />
                     <select
-                      className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+                      className="w-full pl-8 md:pl-10 pr-6 md:pr-8 py-1.5 md:py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer text-xs md:text-sm"
                       style={{
                         backgroundImage: 'none',
                         boxShadow: 'none'
@@ -378,41 +418,40 @@ const BoothExperienceList: React.FC = () => {
                       <option value="createdAt" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>{t('boothExperience.sortByCreated')}</option>
                     </select>
                     {/* 커스텀 화살표 */}
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className="w-3 md:w-4 h-3 md:h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
                 </div>
 
-                {/* 예약 가능한 것만 보기 */}
-                <div className="flex items-end">
+                {/* 체크박스 옵션들 - 모바일에서는 세로배치, 웹에서는 가로배치 */}
+                <div className="flex flex-col md:flex-row gap-2 md:gap-6 md:col-span-3">
+                  {/* 예약 가능한 것만 보기 */}
                   <div className="flex items-center">
                     <input
                       type="checkbox"
                       id="availableOnly"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded appearance-none bg-white border-2 relative checked:bg-blue-600 checked:border-blue-600 checked:before:content-['✓'] checked:before:absolute checked:before:inset-0 checked:before:flex checked:before:items-center checked:before:justify-center checked:before:text-white checked:before:text-xs checked:before:font-bold"
+                      className="h-3 md:h-4 w-3 md:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded appearance-none bg-white border-2 relative checked:bg-blue-600 checked:border-blue-600 checked:before:content-['✓'] checked:before:absolute checked:before:inset-0 checked:before:flex checked:before:items-center checked:before:justify-center checked:before:text-white checked:before:text-xs checked:before:font-bold"
                       checked={showAvailableOnly}
                       onChange={(e) => setShowAvailableOnly(e.target.checked)}
                     />
-                    <label htmlFor="availableOnly" className="ml-2 text-sm text-gray-700">
+                    <label htmlFor="availableOnly" className="ml-2 text-xs md:text-sm text-gray-700">
                       {t('boothExperience.availableOnly')}
                     </label>
                   </div>
-                </div>
 
-                {/* 참가 신청한 행사만 보기 */}
-                <div className="flex items-end">
+                  {/* 참가 신청한 행사만 보기 */}
                   <div className="flex items-center">
                     <input
                       type="checkbox"
                       id="registeredEventsOnly"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded appearance-none bg-white border-2 relative checked:bg-blue-600 checked:border-blue-600 checked:before:content-['✓'] checked:before:absolute checked:before:inset-0 checked:before:flex checked:before:items-center checked:before:justify-center checked:before:text-white checked:before:text-xs checked:before:font-bold"
+                      className="h-3 md:h-4 w-3 md:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded appearance-none bg-white border-2 relative checked:bg-blue-600 checked:border-blue-600 checked:before:content-['✓'] checked:before:absolute checked:before:inset-0 checked:before:flex checked:before:items-center checked:before:justify-center checked:before:text-white checked:before:text-xs checked:before:font-bold"
                       checked={showOnlyRegisteredEvents}
                       onChange={(e) => setShowOnlyRegisteredEvents(e.target.checked)}
                     />
-                    <label htmlFor="registeredEventsOnly" className="ml-2 text-sm text-gray-700">
+                    <label htmlFor="registeredEventsOnly" className="ml-2 text-xs md:text-sm text-gray-700">
                       {t('boothExperience.registeredEventsOnly')}
                     </label>
                   </div>
@@ -422,20 +461,20 @@ const BoothExperienceList: React.FC = () => {
 
             {/* 로딩 상태 */}
             {loading ? (
-              <div className="flex justify-center items-center py-12">
+              <div className="flex justify-center items-center py-8 md:py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               </div>
             ) : (
               <>
                 {/* 결과 개수 */}
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">
+                <div className="mb-3 md:mb-4">
+                  <p className="text-xs md:text-sm text-gray-600">
                     총 <span className="font-semibold text-blue-600">{filteredExperiences.length}</span>{t('boothExperience.totalExperiences')}
                   </p>
                 </div>
 
                 {/* 체험 목록 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {filteredExperiences.map((experience) => (
                     <div
                       key={experience.experienceId}
@@ -443,14 +482,18 @@ const BoothExperienceList: React.FC = () => {
                       onClick={() => handleExperienceClick(experience.experienceId)}
                     >
                       {/* 카드 헤더 */}
-                      <div className="p-6">
-                        <div className="flex justify-between items-start mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                            {experience.title}
-                          </h3>
-                          <span className={`text-sm font-medium ${getCongestionColor(experience.congestionRate)}`}>
+                      <div className="p-4 md:p-6 relative">
+                        {/* 혼잡도 스티커 - 우측 상단 모서리에 딱 붙임 */}
+                        <div className="absolute top-0 right-0">
+                          <span className={`inline-block px-3 py-1 text-xs font-medium rounded-tr-lg rounded-bl-lg shadow-sm ${getCongestionColor(experience.congestionRate)}`}>
                             {getCongestionText(experience.congestionRate)}
                           </span>
+                        </div>
+
+                        <div className="mb-3">
+                          <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                            {experience.title}
+                          </h3>
                         </div>
 
                         {/* 행사명 */}
@@ -469,7 +512,7 @@ const BoothExperienceList: React.FC = () => {
                         </div>
 
                         {/* 체험 정보 */}
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-1 md:space-y-2 mb-3 md:mb-4">
                           <div className="flex items-center text-gray-600">
                             <Calendar className="w-4 h-4 mr-2" />
                             <span className="text-sm">
@@ -497,12 +540,12 @@ const BoothExperienceList: React.FC = () => {
                         </div>
 
                         {/* 설명 */}
-                        <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+                        <p className="text-gray-600 text-sm line-clamp-2 mb-3 md:mb-4">
                           {experience.description}
                         </p>
 
                         {/* 예약 상태 */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                           <div className="flex items-center">
                             <div className={`w-3 h-3 rounded-full mr-2 ${experience.isReservationAvailable ? 'bg-green-500' : 'bg-red-500'
                               }`}></div>
@@ -513,11 +556,11 @@ const BoothExperienceList: React.FC = () => {
                           </div>
 
                           {/* 혼잡도 바 */}
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="w-full sm:w-24 bg-gray-200 rounded-full h-2">
                             <div
                               className={`h-2 rounded-full transition-all duration-300 ${experience.congestionRate >= 90 ? 'bg-red-500' :
-                                  experience.congestionRate >= 70 ? 'bg-orange-500' :
-                                    experience.congestionRate >= 50 ? 'bg-yellow-500' : 'bg-green-500'
+                                experience.congestionRate >= 70 ? 'bg-orange-500' :
+                                  experience.congestionRate >= 50 ? 'bg-yellow-500' : 'bg-green-500'
                                 }`}
                               style={{ width: `${Math.min(experience.congestionRate, 100)}%` }}
                             ></div>
@@ -530,7 +573,7 @@ const BoothExperienceList: React.FC = () => {
 
                 {/* 결과 없음 */}
                 {filteredExperiences.length === 0 && (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8 md:py-12">
                     <div className="text-gray-500 mb-4">
                       <Search className="w-12 h-12 mx-auto mb-2" />
                       {userRegisteredEvents.length === 0 ? (

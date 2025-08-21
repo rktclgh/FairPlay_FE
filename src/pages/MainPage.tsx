@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import dayjs from 'dayjs';
 import api from "../api/axios";
 import {
-    FaHeart,
-    FaMapMarkerAlt
+  FaHeart,
+  FaMapMarkerAlt
 } from "react-icons/fa";
 import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
@@ -17,28 +17,52 @@ import "swiper/css/effect-fade";
 import "swiper/css/navigation";
 import { eventAPI } from "../services/event"
 import type {
-    EventSummaryDto
+  EventSummaryDto
 } from "../services/types/eventType";
 import { useTranslation } from 'react-i18next';
 import "swiper/css/effect-coverflow";
 import type { HotPick } from "../services/event";
 import NewLoader from "../components/NewLoader";
+import { useScrollToTop } from "../hooks/useScrollToTop";
 
 // imports 밑에 위치
 const ENABLE_NEW_PICKS = import.meta.env.VITE_ENABLE_NEW_PICKS === "true";
 
+// 카테고리 번역 함수
+const translateCategory = (category: string, t: any): string => {
+    const categoryMap: Record<string, string> = {
+        "박람회": "categories.박람회",
+        "공연": "categories.공연", 
+        "강연/세미나": "categories.강연/세미나",
+        "전시/행사": "categories.전시/행사",
+        "축제": "categories.축제"
+    };
+    
+    return categoryMap[category] ? t(categoryMap[category]) : category;
+};
+
+// 이벤트 제목 선택 함수 (번역 여부에 따라 한글/영문 제목 선택)
+const getEventTitle = (event: EventSummaryDto, i18n: any): string => {
+    // 현재 언어가 영어이고 영문 제목이 있는 경우 영문 제목 사용
+    if (i18n.language === 'en' && event.titleEng && event.titleEng.trim() !== '') {
+        return event.titleEng;
+    }
+    // 그 외의 경우 한글 제목 사용
+    return event.title;
+};
+
 // 유료광고 행사 인터페이스
 interface PaidAdvertisement {
-    id: number;
-    eventId?: number | null;  
-    title: string;
-    imageUrl: string;
-    thumbnailUrl: string;
-    linkUrl: string;
-    startDate: string;
-    endDate: string;
-    isActive: boolean;
-    priority: number; // 노출 순서
+  id: number;
+  eventId?: number | null;
+  title: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  linkUrl: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  priority: number; // 노출 순서
 }
 
 // 제목 정규화 유틸 그대로 사용
@@ -48,7 +72,7 @@ const norm = (s: string) => (s || "").toLowerCase().replace(/[\s\-_/·・‧ㆍ]
 const extractEventId = (url?: string | null): number | null => {
   if (!url) return null; // ← 이거 꼭 필요!
 
-    try {
+  try {
     // 절대/상대 URL 모두 OK
     const u = new URL(url, window.location.origin);
     // /eventdetail/123, /event/123 (뒤에 슬래시 있어도 OK)
@@ -86,7 +110,7 @@ const gotoAdDetail = (
 ) => {
   // 0) (선택) 백엔드가 배너에 eventId를 내려줄 수 있다면 최우선 사용
   // if ((ad as any).eventId) return navigate(`/eventdetail/${(ad as any).eventId}`);
-if (ad.eventId) {
+  if (ad.eventId) {
     navigate(`/eventdetail/${ad.eventId}`);
     return;
   }
@@ -155,8 +179,8 @@ const getCreated = (o: NewPickDto) =>
   (o.createdAt ?? o.created_at ?? "") as string;
 
 //const getEventId = (o: NewPickDto) =>
-  //Number.isFinite(o.id) ? o.id :
- // Number.isFinite(o.eventId as number) ? (o.eventId as number) : NaN;
+//Number.isFinite(o.id) ? o.id :
+// Number.isFinite(o.eventId as number) ? (o.eventId as number) : NaN;
 
 const fetchNewPicks = async (size = 20): Promise<NewPickDto[]> => {
   try {
@@ -171,10 +195,10 @@ const fetchNewPicks = async (size = 20): Promise<NewPickDto[]> => {
 
     return list.map(item => {
       const created = getCreated(item) || "";
-  const eid =
-    Number.isFinite(item.id) ? item.id
-    : Number.isFinite((item as any).eventId) ? (item as any).eventId
-    : NaN;
+      const eid =
+        Number.isFinite(item.id) ? item.id
+          : Number.isFinite((item as any).eventId) ? (item as any).eventId
+            : NaN;
       return {
         ...item,
         id: Number.isFinite(eid) ? eid : NaN,
@@ -203,933 +227,933 @@ const fetchSearchTopToday = async (): Promise<SearchTopDto[]> => {
 
 
 export const Main: React.FC = () => {
-// NEW 뱃지용 상태
-const [newEventIds, setNewEventIds] = useState<Set<number>>(new Set());
-const [newAdded, setNewAdded] = useState<number[]>([]);
-const [newRemoved, setNewRemoved] = useState<number[]>([]);
-const [showNewDeltaBanner, setShowNewDeltaBanner] = useState(false);
+  useScrollToTop();
+  // NEW 뱃지용 상태
+  const [newEventIds, setNewEventIds] = useState<Set<number>>(new Set());
+  const [newAdded, setNewAdded] = useState<number[]>([]);
+  const [newRemoved, setNewRemoved] = useState<number[]>([]);
+  const [showNewDeltaBanner, setShowNewDeltaBanner] = useState(false);
 
-// 오늘 키 (일자별 스냅샷 저장)
-const newTodayKey = `newpick:${dayjs().format("YYYY-MM-DD")}`;
+  // 오늘 키 (일자별 스냅샷 저장)
+  const newTodayKey = `newpick:${dayjs().format("YYYY-MM-DD")}`;
 
-const readNewSnapshot = (): Set<number> => {
-  try {
-    const raw = localStorage.getItem(newTodayKey);
-    const arr = raw ? JSON.parse(raw) : [];
-    return new Set<number>(
-      (Array.isArray(arr) ? arr : []).map((v: unknown) => Number(v)).filter(Number.isFinite)
-    );
-  } catch {
-    return new Set<number>();
-  }
-};
-
-const writeNewSnapshot = (ids: Set<number>) => {
-  localStorage.setItem(newTodayKey, JSON.stringify(Array.from(ids)));
-};
-
-// NEW 여부 체크
-const isEventNew = (e: EventSummaryDto) => newEventIds.has(e.id);
-
-const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
-
-    const [showBirthdayModal, setShowBirthdayModal] = useState(false);
-    const [gender, setGender] = useState<string>("")
-    const today = new Date();
-
-    const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
-    const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
-    const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
-
-    const getTodayDateString = () => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-    const isDateInFuture = (date: string) => {
-        const todayString = getTodayDateString();
-        return date >= todayString;
-    };
-    const handleDateSelect = (date: string) => {
-        setSelectedDate(date);
-    };
-
-    const generateCalendarDays = () => {
-        const year = currentCalendarYear;
-        const month = currentCalendarMonth;
-
-        // 해당 월의 첫째 날과 마지막 날
-        const firstDay = new Date(year, month - 1, 1);
-        const lastDay = new Date(year, month, 0);
-
-        // 첫째 날의 요일 (0: 일요일, 6: 토요일)
-        const firstDayOfWeek = firstDay.getDay();
-
-        // 마지막 날의 날짜
-        const lastDate = lastDay.getDate();
-
-        // 이전 달의 마지막 날들
-        const prevMonth = new Date(year, month - 2, 0);
-        const prevLastDate = prevMonth.getDate();
-
-        const days = [];
-
-        // 이전 달의 날짜들 (회색으로 표시)
-        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-            const date = prevLastDate - i;
-            const dateString = `${year}-${String(month - 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-            days.push({
-                date,
-                dateString,
-                isCurrentMonth: false
-            });
-        }
-
-        // 현재 달의 날짜들
-        for (let date = 1; date <= lastDate; date++) {
-            const dateString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-            days.push({
-                date,
-                dateString,
-                isCurrentMonth: true
-            });
-        }
-
-        // 다음 달의 날짜들 (달력을 6주로 맞추기 위해)
-        const remainingDays = 42 - days.length; // 6주 * 7일 = 42일
-        for (let date = 1; date <= remainingDays; date++) {
-            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-            days.push({
-                date,
-                dateString,
-                isCurrentMonth: false
-            });
-        }
-
-        return days;
-    };
-
-    const handleSubmit = async () => {
-        if (!selectedDate) {
-            alert(t('main.selectBirthday'));
-            return;
-        }
-        const formatted = selectedDate;
-        try {
-            await api.post("/api/users/mypage/edit", { birthday: formatted, gender });
-            alert(t('main.birthdaySaveSuccess'));
-            setShowBirthdayModal(false); // 모달 닫기
-        } catch (error) {
-            console.error(error);
-            alert(t('main.birthdaySaveFailed'));
-        }
-    };
-
-    // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
-    useEffect(() => {
-        if (!isAuthenticated()) {
-            return;
-        }
-
-        const checkBirthday = async () => {
-            try {
-                const res = await api.get("/api/users/mypage");
-                if (!res.data.birthday) {
-                    setShowBirthdayModal(true);
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        };
-        checkBirthday();
-    }, []);
-
-
-    const { isDark } = useTheme();
-    const { t } = useTranslation();
-
-    const [events, setEvents] = useState<EventSummaryDto[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>("전체");
-    const [loading, setLoading] = useState(true);
-
-
-    const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
-    const navigate = useNavigate();
-
-    // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
-
-    const authHeaders = () => {
-        const token = localStorage.getItem("accessToken");
-        return token ? { Authorization: `Bearer ${token}` } : {};
-    };
-
-    const toggleWish = async (eventId: number) => {
-        // 인증 확인
-        if (!requireAuth(navigate, t('wishlist.requireAuth'))) {
-            return;
-        }
-
-        const wasLiked = likedEvents.has(eventId);
-
-        // 낙관적 업데이트
-        setLikedEvents(prev => {
-            const next = new Set(prev);
-            if (wasLiked) {
-                next.delete(eventId);
-            } else {
-                next.add(eventId);
-            }
-            return next;
-        });
-
-        try {
-            if (wasLiked) {
-                // 찜 취소
-                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
-            } else {
-                // 찜 등록 (@RequestParam Long eventId)
-                await api.post(`/api/wishlist`, null, {
-                    params: { eventId },            // ★ body 말고 params!
-                    headers: authHeaders(),
-                });
-            }
-        } catch (e) {
-            console.error(t('wishlist.toggleFailed'), e);
-            // 실패 시 롤백
-            setLikedEvents(prev => {
-                const next = new Set(prev);
-                if (wasLiked) {
-                    next.add(eventId);
-                } else {
-                    next.delete(eventId);
-                }
-                return next;
-            });
-            // 필요하면 안내
-            // alert("로그인이 필요하거나 권한이 부족합니다.");
-        }
-    };
-
-    const mapMainCategoryToId = (name: string): number | undefined => {
-        // 번역된 카테고리와 한국어 카테고리 모두 지원
-        switch (name) {
-            case t('categories.exhibition'):
-            case "박람회":
-                return 1;
-            case t('categories.lecture'):
-            case "강연/세미나":
-                return 2;
-            case t('categories.event'):
-            case "전시/행사":
-                return 3;
-            case t('categories.performance'):
-            case "공연":
-                return 4;
-            case t('categories.festival'):
-            case "축제":
-                return 5;
-            default:
-                return undefined;
-        }
-    };
-
-    const fetchEvents = async () => {
-        try {
-            const params: {
-                mainCategoryId?: number;
-                subCategoryId?: number;
-                regionName?: string;
-                fromDate?: string;
-                toDate?: string;
-                includeHidden: boolean;
-                page?: number;
-                size?: number;
-            } = {
-                page: 0,
-                size: 20,
-            };
-
-            params.includeHidden = false;
-
-            if (selectedCategory !== t('categories.all') && selectedCategory !== "전체") {
-                params.mainCategoryId = mapMainCategoryToId(selectedCategory);
-            }
-
-            const response = await eventAPI.getEventList(params);
-            setEvents(response.events ?? []);
-        } catch (error) {
-            console.error(t('wishlist.loadFailed'), error);
-            // 오류 발생 시 빈 배열로 설정하여 UI가 깨지지 않도록 함
-            setEvents([]);
-        }
-    };
-
-    useEffect(() => {
-        fetchEvents();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedCategory]);
-
-    const handleCategoryChange = (category: string) => {
-        setSelectedCategory(category);
-    };
-
-    // 번역된 카테고리 배열 생성
-    const getTranslatedCategories = () => [
-        { key: "전체", label: t('categories.all') },
-        { key: "박람회", label: t('categories.exhibition') },
-        { key: "공연", label: t('categories.performance') },
-        { key: "강연/세미나", label: t('categories.lecture') },
-        { key: "전시/행사", label: t('categories.event') },
-        { key: "축제", label: t('categories.festival') }
-    ];
-
-
-    // 유료광고 행사 상태
-    const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
-
-   
-const fetchHeroBanners = async (): Promise<BannerResp[]> => {
-  const tries = [
-    { url: "/api/banners/hero/active" },
-    { url: "/api/banners", params: { type: "HERO", status: "ACTIVE" } },
-  ] as const;
-
-  for (const { url, params } of tries) {
+  const readNewSnapshot = (): Set<number> => {
     try {
-      const { data } = await api.get<BannerResp[] | BannerResp>(url, { params });
-      const list = Array.isArray(data) ? data : data ? [data] : [];
-      if (list.length) return list;
-    } catch (err: any) {
-      console.warn("[HERO] request fail:", url, err?.response?.status, err?.response?.data);
+      const raw = localStorage.getItem(newTodayKey);
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set<number>(
+        (Array.isArray(arr) ? arr : []).map((v: unknown) => Number(v)).filter(Number.isFinite)
+      );
+    } catch {
+      return new Set<number>();
     }
-  }
-  return [];
-};
+  };
 
-const parseYMD = (s?: string | null) => {
-  if (!s) return null;
-  return dayjs(s.slice(0, 10).replace(/[./]/g, "-"));
-};
-const isTodayInRange = (start?: string | null, end?: string | null) => {
-  const today = dayjs().startOf("day");
-  const s = parseYMD(start);
-  const e = parseYMD(end)?.endOf("day");
-  return (!s || !s.isAfter(today)) && (!e || !e.isBefore(today));
-};
+  const writeNewSnapshot = (ids: Set<number>) => {
+    localStorage.setItem(newTodayKey, JSON.stringify(Array.from(ids)));
+  };
 
-const asUpper = (v?: string | null) => (v ?? "").toString().trim().toUpperCase();
+  // NEW 여부 체크
+  const isEventNew = (e: EventSummaryDto) => newEventIds.has(e.id);
 
-const loadHeroAdvertisements = async () => {
-  try {
-    const raw = await fetchHeroBanners();
-    console.log("[HERO] raw count:", raw.length, raw);
+  const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
 
-    const filtered = raw.filter(r => {
-      const type   = asUpper((r as any).bannerTypeCode ?? (r as any).bannerType);
-      const status = asUpper((r as any).statusCode ?? (r as any).status);
-      const okType   = ["HERO", "MAIN", "HERO_MAIN"].includes(type || "HERO");
-      const okStatus = ["ACTIVE", "APPROVED", "PUBLISHED"].includes(status || "ACTIVE");
-      return okType && okStatus && isTodayInRange(r.startDate, r.endDate);
-    });
+  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+  const [gender, setGender] = useState<string>("")
+  const today = new Date();
 
-    console.log("[HERO] filtered count:", filtered.length, filtered);
+  const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
 
-    if (!filtered.length) {
-      // 폴백: HotPick
-      const hot = await eventAPI.getHotPicks({ size: 6 });
-      setPaidAdvertisements((hot || []).map((h, i) => ({
-        id: h.id, eventId: h.id,  title: h.title, imageUrl: h.image, thumbnailUrl: h.image,
-        linkUrl: `/eventdetail/${h.id}`, startDate: "", endDate: "",
-        isActive: true, priority: i + 1,
-      })));
+  const getTodayDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const isDateInFuture = (date: string) => {
+    const todayString = getTodayDateString();
+    return date >= todayString;
+  };
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date);
+  };
+
+  const generateCalendarDays = () => {
+    const year = currentCalendarYear;
+    const month = currentCalendarMonth;
+
+    // 해당 월의 첫째 날과 마지막 날
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+
+    // 첫째 날의 요일 (0: 일요일, 6: 토요일)
+    const firstDayOfWeek = firstDay.getDay();
+
+    // 마지막 날의 날짜
+    const lastDate = lastDay.getDate();
+
+    // 이전 달의 마지막 날들
+    const prevMonth = new Date(year, month - 2, 0);
+    const prevLastDate = prevMonth.getDate();
+
+    const days = [];
+
+    // 이전 달의 날짜들 (회색으로 표시)
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      const date = prevLastDate - i;
+      const dateString = `${year}-${String(month - 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+      days.push({
+        date,
+        dateString,
+        isCurrentMonth: false
+      });
+    }
+
+    // 현재 달의 날짜들
+    for (let date = 1; date <= lastDate; date++) {
+      const dateString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+      days.push({
+        date,
+        dateString,
+        isCurrentMonth: true
+      });
+    }
+
+    // 다음 달의 날짜들 (달력을 6주로 맞추기 위해)
+    const remainingDays = 42 - days.length; // 6주 * 7일 = 42일
+    for (let date = 1; date <= remainingDays; date++) {
+      const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+      days.push({
+        date,
+        dateString,
+        isCurrentMonth: false
+      });
+    }
+
+    return days;
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedDate) {
+      alert(t('main.selectBirthday'));
+      return;
+    }
+    const formatted = selectedDate;
+    try {
+      await api.post("/api/users/mypage/edit", { birthday: formatted, gender });
+      alert(t('main.birthdaySaveSuccess'));
+      setShowBirthdayModal(false); // 모달 닫기
+    } catch (error) {
+      console.error(error);
+      alert(t('main.birthdaySaveFailed'));
+    }
+  };
+
+  // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
+  useEffect(() => {
+    if (!isAuthenticated()) {
       return;
     }
 
-    const get = (o:any, ...keys:string[]) => {
-  for (const k of keys) if (o && o[k] != null) return o[k];
-  return undefined;
-};
-    setPaidAdvertisements(
-      filtered
-        .map(r => {
-      const eid = get(r, "eventId", "event_id") ?? null;
-      const img = get(r, "imageUrl", "image_url") ?? "/images/FPlogo.png";
-      const rawLink = get(r, "linkUrl", "link_url") ?? "";
-      return {
-        id:           get(r, "id"),
-        eventId:      eid,
-        title:        get(r, "title") ?? "",
-        imageUrl:     img,
-        thumbnailUrl: img,
-        // ★ eventId가 있으면 상세로 바로 가는 내부 링크를 만들어 둠
-        linkUrl:      rawLink || (eid ? `/eventdetail/${eid}` : ""),
-        startDate:    get(r, "startDate", "start_date") ?? "",
-        endDate:      get(r, "endDate", "end_date") ?? "",
-        isActive:     true,
-        priority:     get(r, "priority") ?? 999,
-      } as PaidAdvertisement;
-    })
-    .sort((a, b) => a.priority - b.priority)
-);
-  } catch (e) {
-    console.error("HERO 배너 로드 실패:", e);
-    setPaidAdvertisements([]);
-  }
-};
+    const checkBirthday = async () => {
+      try {
+        const res = await api.get("/api/users/mypage");
+        if (!res.data.birthday) {
+          setShowBirthdayModal(true);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    checkBirthday();
+  }, []);
+
+
+    const { isDark } = useTheme();
+    const { t, i18n } = useTranslation();
+
+  const [events, setEvents] = useState<EventSummaryDto[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
+  const [loading, setLoading] = useState(true);
+
+  const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
+  const navigate = useNavigate();
+
+  // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+  const authHeaders = () => {
+    const token = localStorage.getItem("accessToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const toggleWish = async (eventId: number) => {
+    // 인증 확인
+    if (!requireAuth(navigate, t('wishlist.requireAuth'))) {
+      return;
+    }
+
+    const wasLiked = likedEvents.has(eventId);
+
+    // 낙관적 업데이트
+    setLikedEvents(prev => {
+      const next = new Set(prev);
+      if (wasLiked) {
+        next.delete(eventId);
+      } else {
+        next.add(eventId);
+      }
+      return next;
+    });
+
+    try {
+      if (wasLiked) {
+        // 찜 취소
+        await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+      } else {
+        // 찜 등록 (@RequestParam Long eventId)
+        await api.post(`/api/wishlist`, null, {
+          params: { eventId },            // ★ body 말고 params!
+          headers: authHeaders(),
+        });
+      }
+    } catch (e) {
+      console.error(t('wishlist.toggleFailed'), e);
+      // 실패 시 롤백
+      setLikedEvents(prev => {
+        const next = new Set(prev);
+        if (wasLiked) {
+          next.add(eventId);
+        } else {
+          next.delete(eventId);
+        }
+        return next;
+      });
+      // 필요하면 안내
+      // alert("로그인이 필요하거나 권한이 부족합니다.");
+    }
+  };
+
+  const mapMainCategoryToId = (name: string): number | undefined => {
+    // 번역된 카테고리와 한국어 카테고리 모두 지원
+    switch (name) {
+      case t('categories.exhibition'):
+      case "박람회":
+        return 1;
+      case t('categories.lecture'):
+      case "강연/세미나":
+        return 2;
+      case t('categories.event'):
+      case "전시/행사":
+        return 3;
+      case t('categories.performance'):
+      case "공연":
+        return 4;
+      case t('categories.festival'):
+      case "축제":
+        return 5;
+      default:
+        return undefined;
+    }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const params: {
+        mainCategoryId?: number;
+        subCategoryId?: number;
+        regionName?: string;
+        fromDate?: string;
+        toDate?: string;
+        includeHidden: boolean;
+        page?: number;
+        size?: number;
+      } = {
+        page: 0,
+        size: 20,
+      };
+
+      params.includeHidden = false;
+
+      if (selectedCategory !== t('categories.all') && selectedCategory !== "전체") {
+        params.mainCategoryId = mapMainCategoryToId(selectedCategory);
+      }
+
+      const response = await eventAPI.getEventList(params);
+      setEvents(response.events ?? []);
+    } catch (error) {
+      console.error(t('wishlist.loadFailed'), error);
+      // 오류 발생 시 빈 배열로 설정하여 UI가 깨지지 않도록 함
+      setEvents([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  // 번역된 카테고리 배열 생성
+  const getTranslatedCategories = () => [
+    { key: "전체", label: t('categories.all') },
+    { key: "박람회", label: t('categories.exhibition') },
+    { key: "공연", label: t('categories.performance') },
+    { key: "강연/세미나", label: t('categories.lecture') },
+    { key: "전시/행사", label: t('categories.event') },
+    { key: "축제", label: t('categories.festival') }
+  ];
+
+
+  // 유료광고 행사 상태
+  const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
+
+
+  const fetchHeroBanners = async (): Promise<BannerResp[]> => {
+    const tries = [
+      { url: "/api/banners/hero/active" },
+      { url: "/api/banners", params: { type: "HERO", status: "ACTIVE" } },
+    ] as const;
+
+    for (const { url, params } of tries) {
+      try {
+        const { data } = await api.get<BannerResp[] | BannerResp>(url, { params });
+        const list = Array.isArray(data) ? data : data ? [data] : [];
+        if (list.length) return list;
+      } catch (err: any) {
+        console.warn("[HERO] request fail:", url, err?.response?.status, err?.response?.data);
+      }
+    }
+    return [];
+  };
+
+  const parseYMD = (s?: string | null) => {
+    if (!s) return null;
+    return dayjs(s.slice(0, 10).replace(/[./]/g, "-"));
+  };
+  const isTodayInRange = (start?: string | null, end?: string | null) => {
+    const today = dayjs().startOf("day");
+    const s = parseYMD(start);
+    const e = parseYMD(end)?.endOf("day");
+    return (!s || !s.isAfter(today)) && (!e || !e.isBefore(today));
+  };
+
+  const asUpper = (v?: string | null) => (v ?? "").toString().trim().toUpperCase();
+
+  const loadHeroAdvertisements = async () => {
+    try {
+      const raw = await fetchHeroBanners();
+      console.log("[HERO] raw count:", raw.length, raw);
+
+      const filtered = raw.filter(r => {
+        const type = asUpper((r as any).bannerTypeCode ?? (r as any).bannerType);
+        const status = asUpper((r as any).statusCode ?? (r as any).status);
+        const okType = ["HERO", "MAIN", "HERO_MAIN"].includes(type || "HERO");
+        const okStatus = ["ACTIVE", "APPROVED", "PUBLISHED"].includes(status || "ACTIVE");
+        return okType && okStatus && isTodayInRange(r.startDate, r.endDate);
+      });
+
+      console.log("[HERO] filtered count:", filtered.length, filtered);
+
+      if (!filtered.length) {
+        // 폴백: HotPick
+        const hot = await eventAPI.getHotPicks({ size: 6 });
+        setPaidAdvertisements((hot || []).map((h, i) => ({
+          id: h.id, eventId: h.id, title: h.title, imageUrl: h.image, thumbnailUrl: h.image,
+          linkUrl: `/eventdetail/${h.id}`, startDate: "", endDate: "",
+          isActive: true, priority: i + 1,
+        })));
+        return;
+      }
+
+      const get = (o: any, ...keys: string[]) => {
+        for (const k of keys) if (o && o[k] != null) return o[k];
+        return undefined;
+      };
+      setPaidAdvertisements(
+        filtered
+          .map(r => {
+            const eid = get(r, "eventId", "event_id") ?? null;
+            const img = get(r, "imageUrl", "image_url") ?? "/images/FPlogo.png";
+            const rawLink = get(r, "linkUrl", "link_url") ?? "";
+            return {
+              id: get(r, "id"),
+              eventId: eid,
+              title: get(r, "title") ?? "",
+              imageUrl: img,
+              thumbnailUrl: img,
+              // ★ eventId가 있으면 상세로 바로 가는 내부 링크를 만들어 둠
+              linkUrl: rawLink || (eid ? `/eventdetail/${eid}` : ""),
+              startDate: get(r, "startDate", "start_date") ?? "",
+              endDate: get(r, "endDate", "end_date") ?? "",
+              isActive: true,
+              priority: get(r, "priority") ?? 999,
+            } as PaidAdvertisement;
+          })
+          .sort((a, b) => a.priority - b.priority)
+      );
+    } catch (e) {
+      console.error("HERO 배너 로드 실패:", e);
+      setPaidAdvertisements([]);
+    }
+  };
 
 
 
 
-    useEffect(() => {
-        (async () => {
-            // 로그인한 사용자만 위시리스트 로드
-            if (!isAuthenticated()) {
-                return;
-            }
+  useEffect(() => {
+    (async () => {
+      // 로그인한 사용자만 위시리스트 로드
+      if (!isAuthenticated()) {
+        return;
+      }
 
-            try {
-                const res = await api.get("/api/wishlist", { headers: authHeaders() });
-                const s = new Set<number>();
-                type WishlistItem = { eventId: number };
-                (res.data as WishlistItem[] | undefined)?.forEach((w) => s.add(w.eventId));
-                setLikedEvents(s);
-            } catch (e: unknown) {
-                console.error("위시리스트 로드 실패:", e);
-            }
-        })();
-    }, []);
+      try {
+        const res = await api.get("/api/wishlist", { headers: authHeaders() });
+        const s = new Set<number>();
+        type WishlistItem = { eventId: number };
+        (res.data as WishlistItem[] | undefined)?.forEach((w) => s.add(w.eventId));
+        setLikedEvents(s);
+      } catch (e: unknown) {
+        console.error("위시리스트 로드 실패:", e);
+      }
+    })();
+  }, []);
 
 
-    // 데이터 로드
-   /* useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoading(true);
- const eventsData = await eventAPI.getEventList({ size: 60, includeHidden: false });
+  // 데이터 로드
+  /* useEffect(() => {
+       const loadData = async () => {
+           try {
+               setLoading(true);
+const eventsData = await eventAPI.getEventList({ size: 60, includeHidden: false });
 setEvents(eventsData?.events ?? []);
 
 
-                // 유료광고 데이터 로드
-                //await loadPaidAdvertisements();
+               // 유료광고 데이터 로드
+               //await loadPaidAdvertisements();
 await loadHeroAdvertisements();
 const searchTop = await fetchSearchTopToday(); // ★ 추가
 setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.isFinite)));
 
-                // HOT PICKS 백엔드 연동
-                try {
-                    const hot = await eventAPI.getHotPicks({ size: 10 });
-                    setHotPicks(hot); // 매핑 없이 바로
-                } catch (e) {
-                    console.error("HOT PICKS 로드 실패:", e);
-                }
-            } catch (error) {
-                console.error("데이터 로드 실패:", error);
-                setEvents([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadData();
-    }, []);
+               // HOT PICKS 백엔드 연동
+               try {
+                   const hot = await eventAPI.getHotPicks({ size: 10 });
+                   setHotPicks(hot); // 매핑 없이 바로
+               } catch (e) {
+                   console.error("HOT PICKS 로드 실패:", e);
+               }
+           } catch (error) {
+               console.error("데이터 로드 실패:", error);
+               setEvents([]);
+           } finally {
+               setLoading(false);
+           }
+       };
+       loadData();
+   }, []);
 */
 
 
   useEffect(() => {
-  const loadData = async () => {
-    try {
-      setLoading(true);
+    const loadData = async () => {
+      try {
+        setLoading(true);
 
-      // 1) 오늘 검색 상단 불러오기
-      const searchTop = await fetchSearchTopToday();
-      const mdIds = new Set<number>();
+        // 1) 오늘 검색 상단 불러오기
+        const searchTop = await fetchSearchTopToday();
+        const mdIds = new Set<number>();
 
-      for (const s of searchTop) {
-        const n = Number(s.eventId);
-        if (Number.isFinite(n) && n > 0) mdIds.add(n);
+        for (const s of searchTop) {
+          const n = Number(s.eventId);
+          if (Number.isFinite(n) && n > 0) mdIds.add(n);
 
-        const fromUrl = extractEventId(s.linkUrl || "");
-        if (fromUrl) mdIds.add(fromUrl);
-      }
+          const fromUrl = extractEventId(s.linkUrl || "");
+          if (fromUrl) mdIds.add(fromUrl);
+        }
 
-      // NEW 픽 불러오기 ★ 별도 try/catch 로 분리
- if (ENABLE_NEW_PICKS) {
-  try {
-    const newPicks = await fetchNewPicks(20);
-    const currNewSet = new Set<number>(
-   newPicks.map(p => p.id).filter(n => Number.isFinite(n) && n > 0)
- );
-    const prevNewSet = readNewSnapshot();
-    const added: number[] = [];
-    const removed: number[] = [];
-
-    currNewSet.forEach(id => { if (!prevNewSet.has(id)) added.push(id); });
-    prevNewSet.forEach(id => { if (!currNewSet.has(id)) removed.push(id); });
-
-    setNewEventIds(currNewSet);
-    setNewAdded(added);
-    setNewRemoved(removed);
-    writeNewSnapshot(currNewSet);
-
-    if (added.length || removed.length) {
-      setShowNewDeltaBanner(true);
-      setTimeout(() => setShowNewDeltaBanner(false), 3500);
-    }
-  } catch (err: any) {
-    if (err?.response?.status === 403) {
-      console.warn("[NEW-PICKS] 403: 인증/권한 이슈. NEW 배지는 숨김 처리.");
-    } else {
-      console.warn("[NEW-PICKS] 로드 실패:", err);
-    }
-    setNewEventIds(new Set());
-    setNewAdded([]);
-    setNewRemoved([]);
-    setShowNewDeltaBanner(false);
-  }
-}
-      // 2) 기본 리스트
-      const eventsData = await eventAPI.getEventList({ size: 30, includeHidden: false });
-      let baseEvents = eventsData?.events ?? [];
-
-      // 제목으로도 보강
-      for (const s of searchTop) {
-        const m = findEventByTitle(s.title, baseEvents);
-        if (m?.id) mdIds.add(m.id);
-      }
-
-      // ★ 최종 업데이트
-      setMdPickEventIds(new Set(mdIds));
-
-      // 3) 메인 리스트에 없는 MD PICK id 구하기
-      const missingIds = [...mdIds].filter(id => !baseEvents.some(e => e.id === id));
-
-      // 4) 누락된 것 개별 조회해서 합치기
-      if (missingIds.length) {
-        const extras: EventSummaryDto[] = [];
-        for (const id of missingIds) {
+        // NEW 픽 불러오기 ★ 별도 try/catch 로 분리
+        if (ENABLE_NEW_PICKS) {
           try {
-            const d = await eventAPI.getEventDetail(id);
-            extras.push({
-              id: d.id,
-              title: d.title,
-              thumbnailUrl: d.thumbnailUrl,
-              startDate: d.startDate,
-              endDate: d.endDate,
-              location: d.location,
-              mainCategory: d.mainCategory,
-              minPrice: d.minPrice,
-            } as EventSummaryDto);
-          } catch (e) {
-            console.warn("MD PICK 개별 조회 실패:", id, e);
+            const newPicks = await fetchNewPicks(20);
+            const currNewSet = new Set<number>(
+              newPicks.map(p => p.id).filter(n => Number.isFinite(n) && n > 0)
+            );
+            const prevNewSet = readNewSnapshot();
+            const added: number[] = [];
+            const removed: number[] = [];
+
+            currNewSet.forEach(id => { if (!prevNewSet.has(id)) added.push(id); });
+            prevNewSet.forEach(id => { if (!currNewSet.has(id)) removed.push(id); });
+
+            setNewEventIds(currNewSet);
+            setNewAdded(added);
+            setNewRemoved(removed);
+            writeNewSnapshot(currNewSet);
+
+            if (added.length || removed.length) {
+              setShowNewDeltaBanner(true);
+              setTimeout(() => setShowNewDeltaBanner(false), 3500);
+            }
+          } catch (err: any) {
+            if (err?.response?.status === 403) {
+              console.warn("[NEW-PICKS] 403: 인증/권한 이슈. NEW 배지는 숨김 처리.");
+            } else {
+              console.warn("[NEW-PICKS] 로드 실패:", err);
+            }
+            setNewEventIds(new Set());
+            setNewAdded([]);
+            setNewRemoved([]);
+            setShowNewDeltaBanner(false);
           }
         }
-        const merged = [...extras, ...baseEvents].filter(
-          (e, i, arr) => arr.findIndex(x => x.id === e.id) === i
-        );
-        setEvents(merged);
-      } else {
-        setEvents(baseEvents);
+        // 2) 기본 리스트
+        const eventsData = await eventAPI.getEventList({ size: 30, includeHidden: false });
+        let baseEvents = eventsData?.events ?? [];
+
+        // 제목으로도 보강
+        for (const s of searchTop) {
+          const m = findEventByTitle(s.title, baseEvents);
+          if (m?.id) mdIds.add(m.id);
+        }
+
+        // ★ 최종 업데이트
+        setMdPickEventIds(new Set(mdIds));
+
+        // 3) 메인 리스트에 없는 MD PICK id 구하기
+        const missingIds = [...mdIds].filter(id => !baseEvents.some(e => e.id === id));
+
+        // 4) 누락된 것 개별 조회해서 합치기
+        if (missingIds.length) {
+          const extras: EventSummaryDto[] = [];
+          for (const id of missingIds) {
+            try {
+              const d = await eventAPI.getEventDetail(id);
+              extras.push({
+                id: d.id,
+                title: d.title,
+                thumbnailUrl: d.thumbnailUrl,
+                startDate: d.startDate,
+                endDate: d.endDate,
+                location: d.location,
+                mainCategory: d.mainCategory,
+                minPrice: d.minPrice,
+              } as EventSummaryDto);
+            } catch (e) {
+              console.warn("MD PICK 개별 조회 실패:", id, e);
+            }
+          }
+          const merged = [...extras, ...baseEvents].filter(
+            (e, i, arr) => arr.findIndex(x => x.id === e.id) === i
+          );
+          setEvents(merged);
+        } else {
+          setEvents(baseEvents);
+        }
+
+        // 6) 나머지 섹션 그대로
+        await loadHeroAdvertisements();
+        try {
+          const hot = await eventAPI.getHotPicks({ size: 10 });
+          setHotPicks(hot);
+        } catch { }
+      } catch (error) {
+        console.error("데이터 로드 실패:", error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
       }
-
-      // 6) 나머지 섹션 그대로
-      await loadHeroAdvertisements();
-      try {
-        const hot = await eventAPI.getHotPicks({ size: 10 });
-        setHotPicks(hot);
-      } catch {}
-    } catch (error) {
-      console.error("데이터 로드 실패:", error);
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-  loadData();
-}, []);
+    };
+    loadData();
+  }, []);
 
 
-    // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
+  // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
   const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
   const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
-   
-useEffect(() => {
-  const keys = paidAdvertisements.map((ad, i) => `hero-${ad.id ?? 'na'}-${i}`);
-  const dup = keys.filter((k, i) => keys.indexOf(k) !== i);
-  if (dup.length) console.warn('[HERO DUP KEYS]', dup, keys);
-}, [paidAdvertisements]);
 
-useEffect(() => {
-  const keys = hotPicks.map((it, i) => `hot-${it.id ?? 'na'}-${i}`);
-  const dup = keys.filter((k, i) => keys.indexOf(k) !== i);
-  if (dup.length) console.warn('[HOT DUP KEYS]', dup, keys);
-}, [hotPicks]);
+  useEffect(() => {
+    const keys = paidAdvertisements.map((ad, i) => `hero-${ad.id ?? 'na'}-${i}`);
+    const dup = keys.filter((k, i) => keys.indexOf(k) !== i);
+    if (dup.length) console.warn('[HERO DUP KEYS]', dup, keys);
+  }, [paidAdvertisements]);
+
+  useEffect(() => {
+    const keys = hotPicks.map((it, i) => `hot-${it.id ?? 'na'}-${i}`);
+    const dup = keys.filter((k, i) => keys.indexOf(k) !== i);
+    if (dup.length) console.warn('[HOT DUP KEYS]', dup, keys);
+  }, [hotPicks]);
 
   const todayKey = dayjs().format("YYYY-MM-DD");
 
-function getMdPickIdsForToday(): Set<number> {
-  try {
-    if (typeof window === "undefined") return new Set<number>();
-    const raw = localStorage.getItem(`mdpick:${todayKey}`);
-    const arr = raw ? JSON.parse(raw) : null;
-    if (!Array.isArray(arr)) return new Set<number>();
-    return new Set<number>(
-      arr
-        .slice(0, 2)
-        .map((v: unknown) => Number(v))
-        .filter((n) => Number.isFinite(n))
-    );
-  } catch {
-    return new Set<number>();
-  }
-}
-
-function getMdPickTitlesForToday(): Set<string> {
-  try {
-    if (typeof window === "undefined") return new Set<string>();
-    const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
-    const arr = raw ? JSON.parse(raw) : null;
-    if (!Array.isArray(arr)) return new Set<string>();
-    return new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)));
-  } catch {
-    return new Set<string>();
-  }
-}
-    const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
-
-    const mdPickIds = getMdPickIdsForToday();
-    const mdPickTitles = getMdPickTitlesForToday();
-    const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
-
-
-    const isEventMdPick = (e: EventSummaryDto) => mdPickEventIds.has(e.id);
-const hasMdPickInCurrentList = events.some(e => mdPickEventIds.has(e.id));
-
-    const displayEvents = hasMdPickInCurrentList
-        ? [...events].sort((a, b) => {
-            const aPick = isEventMdPick(a) ? 1 : 0;
-            const bPick = isEventMdPick(b) ? 1 : 0;
-            return bPick - aPick;
-        })
-        : events;
-
-    if (loading) {
-        return (
-            <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
-                <NewLoader />
-            </div>
-        );
+  function getMdPickIdsForToday(): Set<number> {
+    try {
+      if (typeof window === "undefined") return new Set<number>();
+      const raw = localStorage.getItem(`mdpick:${todayKey}`);
+      const arr = raw ? JSON.parse(raw) : null;
+      if (!Array.isArray(arr)) return new Set<number>();
+      return new Set<number>(
+        arr
+          .slice(0, 2)
+          .map((v: unknown) => Number(v))
+          .filter((n) => Number.isFinite(n))
+      );
+    } catch {
+      return new Set<number>();
     }
-    const heroLoop = paidAdvertisements.length >= 2;
-const hasHero  = paidAdvertisements.length > 0;
-const hasHot  = hotPicks.length > 0;
-const hotLoop = hotPicks.length >= 3;
+  }
+
+  function getMdPickTitlesForToday(): Set<string> {
+    try {
+      if (typeof window === "undefined") return new Set<string>();
+      const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
+      const arr = raw ? JSON.parse(raw) : null;
+      if (!Array.isArray(arr)) return new Set<string>();
+      return new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)));
+    } catch {
+      return new Set<string>();
+    }
+  }
+  const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
+
+  const mdPickIds = getMdPickIdsForToday();
+  const mdPickTitles = getMdPickTitlesForToday();
+  const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
+
+
+  const isEventMdPick = (e: EventSummaryDto) => mdPickEventIds.has(e.id);
+  const hasMdPickInCurrentList = events.some(e => mdPickEventIds.has(e.id));
+
+  const displayEvents = hasMdPickInCurrentList
+    ? [...events].sort((a, b) => {
+      const aPick = isEventMdPick(a) ? 1 : 0;
+      const bPick = isEventMdPick(b) ? 1 : 0;
+      return bPick - aPick;
+    })
+    : events;
+
+  if (loading) {
     return (
-        <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
-            <TopNav />
-
-            {isAuthenticated() && showBirthdayModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
-                    <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
-
-                        <h2 className="text-lg font-bold mb-4">{t('main.personalInfo')}</h2>
-
-
-                        {/* 달력 */}
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                                {/* 년도 선택 드롭다운 */}
-                                <select
-                                    value={currentCalendarYear}
-                                    onChange={(e) => setCurrentCalendarYear(Number(e.target.value))}
-                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    {Array.from({ length: 100 }, (_, i) => today.getFullYear() - 80 + i).map(year => (
-                                        <option key={year} value={year}>
-                                            {year}{t('main.year')}
-                                        </option>
-                                    ))}
-                                </select>
-                                {/* 월 선택 드롭다운 */}
-                                <select
-                                    value={currentCalendarMonth}
-                                    onChange={(e) => setCurrentCalendarMonth(Number(e.target.value))}
-                                    className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                                        <option key={month} value={month}>
-                                            {month}{t('main.month')}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex gap-1">
-                                <button
-                                    onClick={() => {
-                                        if (currentCalendarMonth === 1) {
-                                            setCurrentCalendarMonth(12);
-                                            setCurrentCalendarYear(currentCalendarYear - 1);
-                                        } else {
-                                            setCurrentCalendarMonth(currentCalendarMonth - 1);
-                                        }
-                                    }}
-                                    className="p-1 hover:bg-gray-200 rounded text-xs"
-                                    title={t('main.previousMonth')}
-                                >
-                                    ◀
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (currentCalendarMonth === 12) {
-                                            setCurrentCalendarMonth(1);
-                                            setCurrentCalendarYear(currentCalendarYear + 1);
-                                        } else {
-                                            setCurrentCalendarMonth(currentCalendarMonth + 1);
-                                        }
-                                    }}
-                                    className="p-1 hover:bg-gray-200 rounded text-xs"
-                                    title={t('main.nextMonth')}
-                                >
-                                    ▶
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* 요일 헤더 */}
-                        <div className="grid grid-cols-7 gap-1 mb-1">
-                            {[t('main.sun'), t('main.mon'), t('main.tue'), t('main.wed'), t('main.thu'), t('main.fri'), t('main.sat')].map((day, index) => (
-                                <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
-                                    }`}>
-                                    {day}
-                                </div>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-7 gap-1 mb-4">
-                            {generateCalendarDays().map((day) => {
-                                const isSelected = selectedDate === day.dateString;
-                                const isPast = !isDateInFuture(day.dateString);
-                                const isPastDate = !isDateInFuture(day.dateString);
-
-                                return (
-                                    <button
-                                        key={`${day.dateString}-${day.isCurrentMonth ? 'cur' : 'adj'}`}
-                                        onClick={() => (isPastDate) ? handleDateSelect(day.dateString) : null}
-                                        className={`p-1.5 text-xs rounded transition-colors relative h-8 ${isPast
-                                            ? isSelected
-                                                ? 'bg-blue-600 text-white'       // 선택된 날짜 스타일
-                                                : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer' // 과거 날짜 스타일
-                                            : 'text-gray-400 cursor-not-allowed' // 비활성 날짜
-                                            }`}
-                                    >
-                                        {day.date}
-
-                                        {isSelected && (
-                                            <div className="absolute inset-0 bg-blue-600 rounded opacity-50"></div>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* 성별 선택 */}
-                        <label className="block mb-2">{t('main.gender')}</label>
-                        <div className="flex gap-4 mb-4">
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="gender"
-                                    value="MALE"
-                                    checked={gender === "MALE"}
-                                    onChange={(e) => setGender(e.target.value)}
-                                /> {t('main.male')}
-                            </label>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="gender"
-                                    value="FEMALE"
-                                    checked={gender === "FEMALE"}
-                                    onChange={(e) => setGender(e.target.value)}
-                                /> {t('main.female')}
-                            </label>
-                        </div>
-
-                        <button
-                            onClick={handleSubmit}
-                            className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-                        >
-                            {t('common.save')}
-                        </button>
-
-                        {/* 모달 닫기 버튼 */}
-                        <button
-                            onClick={() => setShowBirthdayModal(false)}
-                            className="mt-2 text-sm text-gray-500 hover:underline"
-                        >
-                            {t('common.close')}
-                        </button>
-                    </div>
-                </div>
-            )}
-
-{/* NEW 변화 토스트 */}
-{showNewDeltaBanner && (newAdded.length || newRemoved.length) ? (
-  <div className="max-w-7xl mx-auto px-4 md:px-8 mt-4">
-    <div className="rounded-[10px] border border-gray-200 bg-white/90 backdrop-blur px-4 py-3 shadow flex items-center gap-3">
-      <img src="/images/new-badge.png" alt="NEW" className="w-5 h-5" onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.display='none'; }} />
-      <div className="text-sm font-semibold text-gray-800">
-        {newAdded.length > 0 && <span className="mr-3">NEW <span className="text-blue-600">{newAdded.length}</span>개 추가</span>}
-        {newRemoved.length > 0 && <span className="mr-3">NEW <span className="text-rose-600">{newRemoved.length}</span>개 종료</span>}
-        <span className="text-gray-500">최신 등록 기준으로 표시됩니다.</span>
+      <div className={`min-h-screen ${isDark ? '' : 'bg-white'} flex items-center justify-center theme-transition`}>
+        <NewLoader />
       </div>
-    </div>
-  </div>
-) : null}
+    );
+  }
+  const heroLoop = paidAdvertisements.length >= 2;
+  const hasHero = paidAdvertisements.length > 0;
+  const hasHot = hotPicks.length > 0;
+  const hotLoop = hotPicks.length >= 3;
+  return (
+    <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
+      <TopNav />
 
-            {/* 히어로 섹션 */}
-{hasHero && (
-  <div className={`relative w-full aspect-square sm:h-[400px] md:h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
-    <Swiper
-      modules={[Autoplay, EffectFade]}
-    effect="fade"
-    autoplay={heroLoop ? { delay: 4000 } : false}
-    loop={heroLoop}
-      className="w-full h-full"
-      onSwiper={(swiper) => { (window as any).heroSwiper = swiper; }}
-    >
+      {isAuthenticated() && showBirthdayModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+          <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
 
-    {paidAdvertisements.map((ad, index) => (
-  <SwiperSlide key={`hero-${ad.id ?? 'na'}-${index}`}>
-          <div className="w-full h-full cursor-pointer" onClick={() => gotoAdDetail(ad, events, navigate)}>
-            <img
-              src={ad.imageUrl || '/images/FPlogo.png'}
-              alt={ad.title}
-              className="w-full h-full object-cover"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
-            />
-          </div>
-        </SwiperSlide>
-      ))}
-    </Swiper>
+            <h2 className="text-lg font-bold mb-4">{t('main.personalInfo')}</h2>
 
-    {/* 썸네일 바: 2장 이상일 때만 */}
-    {heroLoop && (
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
-        {paidAdvertisements.map((ad, index) => (
-  <div key={`hero-thumb-${ad.id ?? 'na'}-${index}`}
-            className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-            onMouseEnter={() => {
-              if (heroLoop && (window as any).heroSwiper) {
-                (window as any).heroSwiper.slideToLoop(index);
-              }
-            }}
-          >
-            <img className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                 src={ad.thumbnailUrl || ad.imageUrl || '/images/FPlogo.png'}
-                 alt={`Paid Ad ${ad.id}`} />
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-)}
 
-            {/* 핫픽스 섹션 (3D 커버플로우) - 데이터 있을 때만 */}
-{hasHot && (
-  <div className="py-8 md:py-16 theme-surface theme-transition">
-    <div className="max-w-7xl mx-auto px-4 md:px-8">
-      <div className="flex justify-between items-center mb-6 md:mb-8">
-        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
-          {t('main.hotPicks')}
-        </h2>
-      </div>
-
-      <Swiper
-        modules={[Navigation, Autoplay, EffectCoverflow]}
-        navigation
-        effect="coverflow"
-        coverflowEffect={{ rotate: 0, stretch: -30, depth: 220, modifier: 1, slideShadows: false }}
-        slidesPerView="auto"
-        centeredSlides
-        loop={hotLoop}
-        autoplay={hotLoop ? { delay: 3500, disableOnInteraction: false } : false}
-        spaceBetween={0}
-        watchSlidesProgress
-        speed={900}
-        className="w-full hotpick-swiper"
-        onSwiper={(swiper) => setActiveHotPickIndex(hotLoop ? swiper.realIndex % hotPicks.length : swiper.activeIndex)}
-        onSlideChange={(swiper) => setActiveHotPickIndex(hotLoop ? swiper.realIndex % hotPicks.length : swiper.activeIndex)}
-      >
-       {hotPicks.map((item, index) => (
-  <SwiperSlide key={`hot-${item.id ?? 'na'}-${index}`} className="hotpick-slide">
-            <div
-              className="group relative w-full rounded-[10px] overflow-hidden cursor-pointer"
-              onClick={() => navigate(`/eventdetail/${item.id}`)}
-            >
-              <img
-                src={item.image}
-                alt={`Hot Pick ${index + 1}`}
-                className="w-full aspect-poster-4-5 object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            {/* 달력 */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {/* 년도 선택 드롭다운 */}
+                <select
+                  value={currentCalendarYear}
+                  onChange={(e) => setCurrentCalendarYear(Number(e.target.value))}
+                  className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Array.from({ length: 100 }, (_, i) => today.getFullYear() - 80 + i).map(year => (
+                    <option key={year} value={year}>
+                      {year}{t('main.year')}
+                    </option>
+                  ))}
+                </select>
+                {/* 월 선택 드롭다운 */}
+                <select
+                  value={currentCalendarMonth}
+                  onChange={(e) => setCurrentCalendarMonth(Number(e.target.value))}
+                  className="text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>
+                      {month}{t('main.month')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    if (currentCalendarMonth === 1) {
+                      setCurrentCalendarMonth(12);
+                      setCurrentCalendarYear(currentCalendarYear - 1);
+                    } else {
+                      setCurrentCalendarMonth(currentCalendarMonth - 1);
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-200 rounded text-xs"
+                  title={t('main.previousMonth')}
+                >
+                  ◀
+                </button>
+                <button
+                  onClick={() => {
+                    if (currentCalendarMonth === 12) {
+                      setCurrentCalendarMonth(1);
+                      setCurrentCalendarYear(currentCalendarYear + 1);
+                    } else {
+                      setCurrentCalendarMonth(currentCalendarMonth + 1);
+                    }
+                  }}
+                  className="p-1 hover:bg-gray-200 rounded text-xs"
+                  title={t('main.nextMonth')}
+                >
+                  ▶
+                </button>
+              </div>
             </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
 
-      {/* 중앙 캡션 */}
-      <div className="mt-4 md:mt-6 text-center px-4">
-        <div key={activeHotPickIndex} className={`text-xl md:text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
-          {hotPicks[activeHotPickIndex]?.title}
-        </div>
-        <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
-          <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            <HiOutlineCalendar className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-            <span className="truncate">
-              {(hotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
-            </span>
+            {/* 요일 헤더 */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {[t('main.sun'), t('main.mon'), t('main.tue'), t('main.wed'), t('main.thu'), t('main.fri'), t('main.sat')].map((day, index) => (
+                <div key={day} className={`p-1 text-xs font-medium text-center ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'
+                  }`}>
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1 mb-4">
+              {generateCalendarDays().map((day) => {
+                const isSelected = selectedDate === day.dateString;
+                const isPast = !isDateInFuture(day.dateString);
+                const isPastDate = !isDateInFuture(day.dateString);
+
+                return (
+                  <button
+                    key={`${day.dateString}-${day.isCurrentMonth ? 'cur' : 'adj'}`}
+                    onClick={() => (isPastDate) ? handleDateSelect(day.dateString) : null}
+                    className={`p-1.5 text-xs rounded transition-colors relative h-8 ${isPast
+                      ? isSelected
+                        ? 'bg-blue-600 text-white'       // 선택된 날짜 스타일
+                        : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer' // 과거 날짜 스타일
+                      : 'text-gray-400 cursor-not-allowed' // 비활성 날짜
+                      }`}
+                  >
+                    {day.date}
+
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-blue-600 rounded opacity-50"></div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 성별 선택 */}
+            <label className="block mb-2">{t('main.gender')}</label>
+            <div className="flex gap-4 mb-4">
+              <label>
+                <input
+                  type="radio"
+                  name="gender"
+                  value="MALE"
+                  checked={gender === "MALE"}
+                  onChange={(e) => setGender(e.target.value)}
+                /> {t('main.male')}
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="gender"
+                  value="FEMALE"
+                  checked={gender === "FEMALE"}
+                  onChange={(e) => setGender(e.target.value)}
+                /> {t('main.female')}
+              </label>
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+            >
+              {t('common.save')}
+            </button>
+
+            {/* 모달 닫기 버튼 */}
+            <button
+              onClick={() => setShowBirthdayModal(false)}
+              className="mt-2 text-sm text-gray-500 hover:underline"
+            >
+              {t('common.close')}
+            </button>
           </div>
-          <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            <FaMapMarkerAlt className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-            <span className="truncate">
-              {hotPicks[activeHotPickIndex]?.location}
-            </span>
+        </div>
+      )}
+
+      {/* NEW 변화 토스트 */}
+      {showNewDeltaBanner && (newAdded.length || newRemoved.length) ? (
+        <div className="max-w-7xl mx-auto px-4 md:px-8 mt-4">
+          <div className="rounded-[10px] border border-gray-200 bg-white/90 backdrop-blur px-4 py-3 shadow flex items-center gap-3">
+            <img src="/images/new-badge.png" alt="NEW" className="w-5 h-5" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            <div className="text-sm font-semibold text-gray-800">
+              {newAdded.length > 0 && <span className="mr-3">NEW <span className="text-blue-600">{newAdded.length}</span>개 추가</span>}
+              {newRemoved.length > 0 && <span className="mr-3">NEW <span className="text-rose-600">{newRemoved.length}</span>개 종료</span>}
+              <span className="text-gray-500">최신 등록 기준으로 표시됩니다.</span>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      ) : null}
 
-            {/* 행사 섹션 */}
-            <div className="py-8 md:py-16 theme-surface theme-transition">
-                <div className="max-w-7xl mx-auto px-4 md:px-8">
-                    <div className="flex justify-between items-center mb-6 md:mb-8">
-                        <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{t('main.events')}</h2>
-                    </div>
+      {/* 히어로 섹션 */}
+      {hasHero && (
+        <div className={`relative w-full aspect-square sm:h-[400px] md:h-[600px] ${isDark ? '' : 'bg-gray-100'} theme-transition`}>
+          <Swiper
+            modules={[Autoplay, EffectFade]}
+            effect="fade"
+            autoplay={heroLoop ? { delay: 4000 } : false}
+            loop={heroLoop}
+            className="w-full h-full"
+            onSwiper={(swiper) => { (window as any).heroSwiper = swiper; }}
+          >
 
-                    {/* 필터 버튼들 */}
-                    <div className="mb-6 md:mb-8">
-                        <div className="flex md:flex-wrap overflow-x-auto md:overflow-visible whitespace-nowrap no-scrollbar gap-2 md:gap-4 -mx-4 px-4">
-                            {getTranslatedCategories().map((category) => (
-                                <button
-                                    key={category.key}  
-                                    onClick={() => handleCategoryChange(category.key)}
-                                    className={`shrink-0 inline-flex px-3 py-3 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
-                                        ? (isDark
-                                            ? 'dm-light font-bold border-gray-300'
-                                            : 'bg-black text-white font-bold border-gray-800')
-                                        : (isDark
-                                            ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
-                                            : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
-                                        }`}
-                                >
-                                    {category.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+            {paidAdvertisements.map((ad, index) => (
+              <SwiperSlide key={`hero-${ad.id ?? 'na'}-${index}`}>
+                <div className="w-full h-full cursor-pointer" onClick={() => gotoAdDetail(ad, events, navigate)}>
+                  <img
+                    src={ad.imageUrl || '/images/FPlogo.png'}
+                    alt={ad.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
+                  />
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+
+          {/* 썸네일 바: 2장 이상일 때만 */}
+          {heroLoop && (
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
+              {paidAdvertisements.map((ad, index) => (
+                <div key={`hero-thumb-${ad.id ?? 'na'}-${index}`}
+                  className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                  onMouseEnter={() => {
+                    if (heroLoop && (window as any).heroSwiper) {
+                      (window as any).heroSwiper.slideToLoop(index);
+                    }
+                  }}
+                >
+                  <img className="w-full h-full object-cover rounded-[10px] shadow-lg"
+                    src={ad.thumbnailUrl || ad.imageUrl || '/images/FPlogo.png'}
+                    alt={`Paid Ad ${ad.id}`} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 핫픽스 섹션 (3D 커버플로우) - 데이터 있을 때만 */}
+      {hasHot && (
+        <div className="py-8 md:py-16 theme-surface theme-transition">
+          <div className="max-w-7xl mx-auto px-4 md:px-8">
+            <div className="flex justify-between items-center mb-6 md:mb-8">
+              <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+                {t('main.hotPicks')}
+              </h2>
+            </div>
+
+            <Swiper
+              modules={[Navigation, Autoplay, EffectCoverflow]}
+              navigation
+              effect="coverflow"
+              coverflowEffect={{ rotate: 0, stretch: -30, depth: 220, modifier: 1, slideShadows: false }}
+              slidesPerView="auto"
+              centeredSlides
+              loop={hotLoop}
+              autoplay={hotLoop ? { delay: 3500, disableOnInteraction: false } : false}
+              spaceBetween={0}
+              watchSlidesProgress
+              speed={900}
+              className="w-full hotpick-swiper"
+              onSwiper={(swiper) => setActiveHotPickIndex(hotLoop ? swiper.realIndex % hotPicks.length : swiper.activeIndex)}
+              onSlideChange={(swiper) => setActiveHotPickIndex(hotLoop ? swiper.realIndex % hotPicks.length : swiper.activeIndex)}
+            >
+              {hotPicks.map((item, index) => (
+                <SwiperSlide key={`hot-${item.id ?? 'na'}-${index}`} className="hotpick-slide">
+                  <div
+                    className="group relative w-full rounded-[10px] overflow-hidden cursor-pointer"
+                    onClick={() => navigate(`/eventdetail/${item.id}`)}
+                  >
+                    <img
+                      src={item.image}
+                      alt={`Hot Pick ${index + 1}`}
+                      className="w-full aspect-poster-4-5 object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/FPlogo.png'; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+            {/* 중앙 캡션 */}
+            <div className="mt-4 md:mt-6 text-center px-4">
+              <div key={activeHotPickIndex} className={`text-xl md:text-[28px] font-extrabold leading-tight truncate anim-fadeInUp ${isDark ? 'text-white' : 'text-black'}`}>
+                {hotPicks[activeHotPickIndex]?.title}
+              </div>
+              <div key={`meta-${activeHotPickIndex}`} className="mt-2 space-y-1 anim-fadeInUp">
+                <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <HiOutlineCalendar className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+                  <span className="truncate">
+                    {(hotPicks[activeHotPickIndex]?.date || "").replaceAll('.', '-').replace(' ~ ', ' - ')}
+                  </span>
+                </div>
+                <div className={`text-xs md:text-sm flex items-center justify-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <FaMapMarkerAlt className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+                  <span className="truncate">
+                    {hotPicks[activeHotPickIndex]?.location}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 행사 섹션 */}
+      <div className="py-8 md:py-16 theme-surface theme-transition">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex justify-between items-center mb-6 md:mb-8">
+            <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>{t('main.events')}</h2>
+          </div>
+
+          {/* 필터 버튼들 */}
+          <div className="mb-6 md:mb-8">
+            <div className="flex md:flex-wrap overflow-x-auto md:overflow-visible whitespace-nowrap no-scrollbar gap-2 md:gap-4 -mx-4 px-4">
+              {getTranslatedCategories().map((category) => (
+                <button
+                  key={category.key}
+                  onClick={() => handleCategoryChange(category.key)}
+                  className={`shrink-0 inline-flex px-3 py-3 md:px-4 md:py-2 rounded-full text-xs md:text-sm border theme-transition whitespace-nowrap ${selectedCategory === category.key
+                    ? (isDark
+                      ? 'dm-light font-bold border-gray-300'
+                      : 'bg-black text-white font-bold border-gray-800')
+                    : (isDark
+                      ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
+                      : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
+                    }`}
+                >
+                  {category.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
                     {/* 행사 카드들 */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
@@ -1159,7 +1183,7 @@ const hotLoop = hotPicks.length >= 3;
 
                                         <img
                                             className="w-full aspect-poster-4-5 object-cover rounded-[10px] transition-transform duration-500 ease-out group-hover:scale-105"
-                                            alt={event.title}
+                                            alt={getEventTitle(event, i18n)}
                                             src={event.thumbnailUrl}
                                         />
                                         <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -1176,9 +1200,9 @@ const hotLoop = hotPicks.length >= 3;
                                     <div className="mt-4 text-left">
 
                                         <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2`}>
-                                            {event.mainCategory}
+                                            {translateCategory(event.mainCategory, t)}
                                         </span>
-                                        <h3 className={`font-bold text-lg md:text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{event.title}</h3>
+                                        <h3 className={`font-bold text-lg md:text-xl mb-2 truncate ${isDark ? 'text-white' : 'text-black'}`}>{getEventTitle(event, i18n)}</h3>
                                         <div className={`text-xs md:text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                                             <div className="font-bold">{event.location}</div>
                                             <div>{dayjs(event.startDate).format('YYYY.MM.DD')} ~ {dayjs(event.endDate).format('YYYY.MM.DD')}</div>
@@ -1205,7 +1229,6 @@ const hotLoop = hotPicks.length >= 3;
                 </div>
             </div>
 
-
-        </div>
-    );
+    </div>
+  );
 }; 

@@ -23,6 +23,7 @@ const BoothPaymentPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const applicationId = searchParams.get('applicationId');
+  const success = searchParams.get('success');
 
   useEffect(() => {
     if (!applicationId) {
@@ -31,8 +32,17 @@ const BoothPaymentPage: React.FC = () => {
       return;
     }
 
+    // URL에 success=true 파라미터가 있으면 결제 성공 처리
+    if (success === 'true') {
+      toast.success('결제가 성공적으로 완료되었습니다!');
+      // URL에서 success 파라미터 제거
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('success');
+      window.history.replaceState({}, '', newUrl);
+    }
+
     fetchPaymentInfo();
-  }, [applicationId]);
+  }, [applicationId, success]);
 
   const fetchPaymentInfo = async () => {
     try {
@@ -67,7 +77,8 @@ const BoothPaymentPage: React.FC = () => {
         name: `${paymentInfo.eventTitle} - ${paymentInfo.boothTitle}`,
         amount: paymentInfo.price,
         buyer_email: paymentInfo.contactEmail,
-        buyer_name: paymentInfo.managerName
+        buyer_name: paymentInfo.managerName,
+        m_redirect_url: `${window.location.origin}/booth/payment?applicationId=${paymentInfo.applicationId}&success=true`
       };
 
       // 3. 아임포트 결제 요청

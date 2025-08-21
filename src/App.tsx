@@ -81,7 +81,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { ThemeProvider } from './context/ThemeContext';
-import { useScrollToTop } from './hooks/useScrollToTop';
+
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
 import { RefundList } from "./pages/user_refund/RefundList";
@@ -109,9 +109,58 @@ import BoothInfoManagement from "./pages/booth_admin/BoothInfoManagement";
 import BoothEdit from "./pages/booth_admin/BoothEdit";
 
 function AppContent() {
-    useScrollToTop();
     const [isTokenValidated, setIsTokenValidated] = useState(false);
     const location = useLocation();
+
+    // 전역 스크롤 리셋 - 모든 페이지 전환 시 실행
+    useEffect(() => {
+        const resetScroll = () => {
+            // 즉시 실행
+            window.scrollTo(0, 0);
+            if (document.documentElement) {
+                document.documentElement.scrollTop = 0;
+            }
+            if (document.body) {
+                document.body.scrollTop = 0;
+            }
+
+            // 약간의 지연 후 한 번 더 실행
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                if (document.documentElement) {
+                    document.documentElement.scrollTop = 0;
+                }
+                if (document.body) {
+                    document.body.scrollTop = 0;
+                }
+            }, 100);
+
+            // 더 긴 지연 후 한 번 더 실행
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                if (document.documentElement) {
+                    document.documentElement.scrollTop = 0;
+                }
+                if (document.body) {
+                    document.body.scrollTop = 0;
+                }
+            }, 300);
+        };
+
+        // 페이지 전환 시마다 스크롤 리셋
+        resetScroll();
+
+        // 히스토리 변경 이벤트 리스너 추가
+        const handlePopState = () => {
+            setTimeout(resetScroll, 50);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [location.pathname]);
 
     // 앱 시작 시 토큰 유효성 검증
     useEffect(() => {
@@ -295,7 +344,7 @@ function AppContent() {
                         {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
                         <Route path="/booth/payment" element={<BoothPaymentPage />} />
                         <Route path="/booth/cancel" element={<BoothCancelPage />} />
-                        
+
                         {/* 배너 관련 공개 페이지 (이메일에서 접근) */}
                         <Route path="/banner/payment" element={<BannerPaymentPage />} />
 

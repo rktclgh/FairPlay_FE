@@ -10,6 +10,7 @@ import ticketReservationService from "../../services/ticketReservationService";
 import { saveAttendeeAndShareTicket } from "../../services/attendee";
 import type { ShareTicketSaveRequestDto } from "../../services/types/attendeeType";
 import NewLoader from "../../components/NewLoader";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
 
 // 이벤트 회차 정보
 interface EventSchedule {
@@ -56,6 +57,7 @@ interface TicketReservationForm {
 }
 
 export const TicketReservation = () => {
+    useScrollToTop();
     // eventId
     const { eventId } = useParams();
     const navigate = useNavigate();
@@ -64,6 +66,7 @@ export const TicketReservation = () => {
     // URL 파라미터에서 scheduleId 가져오기
     const scheduleIdParam = searchParams.get('scheduleId');
     const scheduleId = scheduleIdParam ? parseInt(scheduleIdParam) : null;
+    const success = searchParams.get('success');
 
     const [eventData, setEventData] = useState<EventDetail | null>(null);
     const [availableTickets, setAvailableTickets] = useState<TicketReservationOption[]>([]);
@@ -90,6 +93,15 @@ export const TicketReservation = () => {
     const ticketReservationOptions = availableTickets;
 
     useEffect(() => {
+        // URL에 success=true 파라미터가 있으면 결제 성공 처리
+        if (success === 'true') {
+            toast.success('결제가 성공적으로 완료되었습니다!');
+            // URL에서 success 파라미터 제거
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('success');
+            window.history.replaceState({}, '', newUrl);
+        }
+        
         // 사용자 정보 로드
         const loadUserInfo = async () => {
             try {
@@ -523,10 +535,10 @@ export const TicketReservation = () => {
                         {[0, 1, 2].map((step) => (
                             <div key={step} className="flex items-center">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white ${currentStep === step
-                                        ? 'animate-pulse-blue'  // 현재 단계: 깜박이는 파란색
-                                        : currentStep > step
-                                            ? 'bg-blue-600'  // 완료된 단계: 파란색
-                                            : 'bg-gray-200 text-gray-600'  // 미진행 단계: 회색
+                                    ? 'animate-pulse-blue'  // 현재 단계: 깜박이는 파란색
+                                    : currentStep > step
+                                        ? 'bg-blue-600'  // 완료된 단계: 파란색
+                                        : 'bg-gray-200 text-gray-600'  // 미진행 단계: 회색
                                     }`}>
                                     {step + 1}
                                 </div>
@@ -560,8 +572,8 @@ export const TicketReservation = () => {
                                     <div
                                         key={option.ticketId}
                                         className={`border rounded-lg p-4 cursor-pointer transition-colors ${ticketReservationForm.selectedOption === option.ticketId.toString()
-                                                ? 'border-blue-500 bg-blue-50'
-                                                : 'border-gray-200 hover:border-gray-300'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                         onClick={() => handleOptionSelect(option.ticketId)}
                                     >

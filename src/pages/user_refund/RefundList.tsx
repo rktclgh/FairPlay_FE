@@ -263,92 +263,100 @@ export const RefundList = () => {
                     </div>
 
                     {/* 검색 필터 */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                    <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6 mb-6">
                         {/* 검색 조건 헤더 */}
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-medium text-gray-900">검색 조건</h3>
+                        <div className="flex items-center justify-between mb-3 md:mb-4">
+                            <h3 className="text-base md:text-lg font-medium text-gray-900">검색 조건</h3>
                             <button
                                 onClick={handleResetFilters}
-                                className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-md transition-colors"
+                                className="flex items-center gap-2 px-2 md:px-3 py-1.5 md:py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-md transition-colors text-xs md:text-sm"
                                 title="검색 조건 초기화"
                             >
-                                <RotateCcw className="w-4 h-4" />
+                                <RotateCcw className="w-3 md:w-4 h-3 md:h-4" />
                                 초기화
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
                                     행사명
                                 </label>
                                 <input
                                     type="text"
                                     value={filters.eventName || ""}
                                     onChange={(e) => setFilters(prev => ({ ...prev, eventName: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm"
                                     placeholder="행사명 검색"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    결제일 시작
-                                </label>
-                                <input
-                                    type="date"
-                                    value={filters.paymentDateFrom || ""}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, paymentDateFrom: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+                            <div className="sm:col-span-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                                            결제일 시작
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={filters.paymentDateFrom || ""}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, paymentDateFrom: e.target.value }))}
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                                            결제일 종료
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={filters.paymentDateTo || ""}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, paymentDateTo: e.target.value }))}
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    결제일 종료
-                                </label>
-                                <input
-                                    type="date"
-                                    value={filters.paymentDateTo || ""}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, paymentDateTo: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    환불 상태
-                                </label>
-                                <select
-                                    value={filters.refundStatus || ""}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, refundStatus: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">전체</option>
-                                    <option value="REQUESTED">요청</option>
-                                    <option value="APPROVED">승인</option>
-                                    <option value="REJECTED">거부</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    결제 유형
-                                </label>
-                                <select
-                                    value={filters.paymentTargetType || ""}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, paymentTargetType: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">전체</option>
-                                    <option value="RESERVATION">예약</option>
-                                    <option value="BOOTH">부스</option>
-                                    <option value="AD">광고</option>
-                                </select>
+                            <div className="sm:col-span-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                                            환불 상태
+                                        </label>
+                                        <select
+                                            value={filters.refundStatus || ""}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, refundStatus: e.target.value }))}
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm"
+                                        >
+                                            <option value="">전체</option>
+                                            <option value="REQUESTED">요청</option>
+                                            <option value="APPROVED">승인</option>
+                                            <option value="REJECTED">거부</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                                            결제 유형
+                                        </label>
+                                        <select
+                                            value={filters.paymentTargetType || ""}
+                                            onChange={(e) => setFilters(prev => ({ ...prev, paymentTargetType: e.target.value }))}
+                                            className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm"
+                                        >
+                                            <option value="">전체</option>
+                                            <option value="RESERVATION">예약</option>
+                                            <option value="BOOTH">부스</option>
+                                            <option value="AD">광고</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex justify-end items-center mt-6">
+                        <div className="flex justify-end items-center mt-4 md:mt-6">
                             <button
                                 onClick={handleRefundRequest}
-                                className="border border-green-600 text-green-600 px-6 py-2 rounded-[10px] hover:bg-green-50 flex items-center gap-2 transition-colors"
+                                className="border border-green-600 text-green-600 px-4 md:px-6 py-1.5 md:py-2 rounded-[10px] hover:bg-green-50 flex items-center gap-2 transition-colors text-xs md:text-sm"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3 md:w-4 h-3 md:h-4" />
                                 환불 요청
                             </button>
                         </div>
@@ -379,9 +387,7 @@ export const RefundList = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             행사명
                                         </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            신청자
-                                        </th>
+
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             결제 유형
                                         </th>
@@ -402,13 +408,13 @@ export const RefundList = () => {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                                            <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                                                 로딩 중...
                                             </td>
                                         </tr>
                                     ) : refunds.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                                            <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                                                 환불 요청이 없습니다.
                                             </td>
                                         </tr>
@@ -423,10 +429,7 @@ export const RefundList = () => {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {refund.eventName || '-'}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm text-gray-900">{refund.userName}</div>
-                                                        <div className="text-sm text-gray-500">{refund.userEmail}</div>
-                                                    </td>
+
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {refund.paymentTargetName}
                                                     </td>
