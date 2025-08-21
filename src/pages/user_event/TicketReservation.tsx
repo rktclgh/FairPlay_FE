@@ -67,6 +67,11 @@ export const TicketReservation = () => {
     const scheduleIdParam = searchParams.get('scheduleId');
     const scheduleId = scheduleIdParam ? parseInt(scheduleIdParam) : null;
     const success = searchParams.get('success');
+    
+    // 모바일 결제 완료 후 리다이렉트 파라미터
+    const impUid = searchParams.get('imp_uid');
+    const merchantUid = searchParams.get('merchant_uid');
+    const impSuccess = searchParams.get('imp_success');
 
     const [eventData, setEventData] = useState<EventDetail | null>(null);
     const [availableTickets, setAvailableTickets] = useState<TicketReservationOption[]>([]);
@@ -78,6 +83,8 @@ export const TicketReservation = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentAttempts, setPaymentAttempts] = useState(0);
     const [lastAttemptTime, setLastAttemptTime] = useState(0);
+    const [paymentStep, setPaymentStep] = useState(''); // 결제 단계 표시
+    const [paymentSuccess, setPaymentSuccess] = useState(false); // 결제 성공 상태
 
     const [ticketReservationForm, setTicketReservationForm] = useState<TicketReservationForm>({
         selectedOption: "",
@@ -93,8 +100,12 @@ export const TicketReservation = () => {
     const ticketReservationOptions = availableTickets;
 
     useEffect(() => {
-        // URL에 success=true 파라미터가 있으면 결제 성공 처리
-        if (success === 'true') {
+        // 모바일 결제 완료 후 리다이렉트 처리
+        if (impSuccess === 'true' && impUid && merchantUid) {
+            console.log('모바일 결제 완료 감지:', { impUid, merchantUid });
+            handleMobilePaymentSuccess(impUid, merchantUid);
+        } else if (success === 'true') {
+            // 기존 success=true 파라미터 처리 (호환성)
             toast.success('결제가 성공적으로 완료되었습니다!');
             // URL에서 success 파라미터 제거
             const newUrl = new URL(window.location);
@@ -180,7 +191,7 @@ export const TicketReservation = () => {
 
                 // 에러 발생 시 이벤트 상세 페이지로 돌아가기
                 setTimeout(() => {
-                    navigate(`/event/${eventId}`);
+                    navigate(`/eventdetail/${eventId}`);
                 }, 2000);
             }
         };
@@ -193,7 +204,7 @@ export const TicketReservation = () => {
         };
 
         initializeData();
-    }, [eventId, scheduleId, navigate]);
+    }, [eventId, scheduleId, navigate, impSuccess, impUid, merchantUid, success]);
 
     // 회차별 티켓 로드 함수
     const loadScheduleTickets = async (scheduleId: number) => {
@@ -344,6 +355,51 @@ export const TicketReservation = () => {
     }, [isProcessing]);
 
 
+    // 모바일 결제 성공 후 처리 함수
+    const handleMobilePaymentSuccess = async (impUid: string, merchantUid: string) => {
+        try {
+            console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
+            
+            // 1. 결제 완료 처리 API 호출
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/payments/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: JSON.stringify({
+                    merchantUid: merchantUid,
+                    impUid: impUid
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`결제 완료 처리 실패: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('결제 완료 처리 성공:', result);
+            
+            toast.success('결제가 성공적으로 완료되었습니다!');
+            
+            // URL 정리
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('imp_uid');
+            newUrl.searchParams.delete('merchant_uid');
+            newUrl.searchParams.delete('imp_success');
+            window.history.replaceState({}, '', newUrl);
+            
+            // 마이페이지로 이동
+            setTimeout(() => {
+                navigate('/mypage/reservation');
+            }, 2000);
+            
+        } catch (error) {
+            console.error('모바일 결제 완료 처리 오류:', error);
+            toast.error('결제 완료 처리 중 오류가 발생했습니다.');
+        }
+    };
+    
     // 중복 클릭 방지 및 결제 처리 함수
     const handlePayment = async () => {
         const now = Date.now();
@@ -378,13 +434,16 @@ export const TicketReservation = () => {
 
         // 3. 결제 처리 시작 - 상태 업데이트
         setIsProcessing(true);
+        setPaymentSuccess(false);
         setPaymentAttempts(prev => prev + 1);
         setLastAttemptTime(now);
+        setPaymentStep('결제 준비 중...');
 
-        // 처리 시작 알림
-        toast.info('결제를 처리 중입니다. 잠시만 기다려주세요...');
+        // 처리 시작 알림 제거 (시각적 UI로 대체)
 
         try {
+            setPaymentStep('결제 정보 준비 중...');
+            
             // 예약 데이터 준비
             const reservationData = {
                 scheduleId: scheduleId,
@@ -397,6 +456,8 @@ export const TicketReservation = () => {
                 paymentMethod: ticketReservationForm.paymentMethod
             };
 
+            setPaymentStep('결제 처리 중...');
+            
             // 결제 처리 (결제 → 예약 생성 → target_id 업데이트)
             const result = await paymentService.processPayment(
                 eventData.titleKr,
@@ -410,7 +471,9 @@ export const TicketReservation = () => {
                 reservationData
             );
 
-            // 참석자 저장 및 폼 생성
+            setPaymentStep('티켓 발급 중...');
+            
+            // 참석자 저장 및 펼 생성
             const shareTicketData: ShareTicketSaveRequestDto = {
                 reservationId: result.targetId,
                 totalAllowed: ticketReservationForm.quantity
@@ -418,12 +481,38 @@ export const TicketReservation = () => {
             await saveAttendeeAndShareTicket(shareTicketData);
 
             console.log('결제 및 예약 성공:', result);
-            toast.success("결제 및 예매가 완료되었습니다!");
-            navigate("/mypage/reservation");
+            
+            setPaymentStep('결제 완료!');
+            setPaymentSuccess(true);
+            
+            // 결제 성공 후 사용자가 결과를 확인할 시간 제공
+            setTimeout(() => {
+                navigate("/mypage/reservation");
+            }, 2500);
 
         } catch (error) {
             console.error('결제 처리 중 오류:', error);
-            toast.error(error instanceof Error ? error.message : '결제 중 오류가 발생했습니다.');
+            setPaymentStep('결제 실패');
+            
+            // 더 상세한 에러 메시지 제공
+            let errorMessage = '결제 중 오류가 발생했습니다.';
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+                } else if (error.message.includes('재고')) {
+                    errorMessage = '티켓 재고가 부족합니다. 다른 수량을 선택해주세요.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            toast.error(errorMessage);
+            
+            // 에러 발생 시 3초 후 상태 초기화
+            setTimeout(() => {
+                setPaymentStep('');
+                setPaymentSuccess(false);
+            }, 3000);
         } finally {
             // 4. 결제 처리 완료 - 상태 초기화
             setIsProcessing(false);
@@ -456,7 +545,7 @@ export const TicketReservation = () => {
                                 window.history.back();
                             } else {
                                 // 히스토리가 없으면 직접 이동 후 강제 새로고침
-                                navigate(`/event/${eventId}`);
+                                navigate(`/eventdetail/${eventId}`);
                                 setTimeout(() => window.location.reload(), 100);
                             }
                         }}
@@ -748,11 +837,45 @@ export const TicketReservation = () => {
                         </div>
                     )}
 
+                    {/* 결제 진행 상황 표시 */}
+                    {(isProcessing || paymentSuccess) && (
+                        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                                {!paymentSuccess ? (
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                ) : (
+                                    <div className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center">
+                                        <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                )}
+                                <div>
+                                    <div className={`font-medium ${
+                                        paymentSuccess ? 'text-green-800' : 'text-blue-800'
+                                    }`}>
+                                        {paymentSuccess ? '결제 완료!' : paymentStep}
+                                    </div>
+                                    {paymentSuccess && (
+                                        <div className="text-sm text-green-600 mt-1">
+                                            잠시 후 마이페이지로 이동합니다...
+                                        </div>
+                                    )}
+                                    {!paymentSuccess && isProcessing && (
+                                        <div className="text-sm text-blue-600 mt-1">
+                                            페이지를 닫지 마세요.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* 버튼 */}
                     <div className="flex justify-between mt-8">
                         <button
                             onClick={handlePrevStep}
-                            disabled={currentStep === 0}
+                            disabled={currentStep === 0 || isProcessing}
                             className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
                         >
                             이전
@@ -763,7 +886,8 @@ export const TicketReservation = () => {
                                 onClick={handleNextStep}
                                 disabled={
                                     (currentStep === 0 && !validateStep0()) ||
-                                    (currentStep === 1 && !validateStep1())
+                                    (currentStep === 1 && !validateStep1()) ||
+                                    isProcessing
                                 }
                                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 border-0 outline-none focus:outline-none"
                             >
@@ -772,9 +896,16 @@ export const TicketReservation = () => {
                         ) : (
                             <button
                                 onClick={handlePayment}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium border-0 outline-none focus:outline-none"
+                                disabled={isProcessing}
+                                className={`px-6 py-2 rounded-md transition-colors duration-200 font-medium border-0 outline-none focus:outline-none ${
+                                    paymentSuccess 
+                                        ? 'bg-green-600 text-white cursor-not-allowed' 
+                                        : isProcessing 
+                                            ? 'bg-gray-400 text-white cursor-not-allowed'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
                             >
-                                결제하기
+                                {paymentSuccess ? '결제 완료' : isProcessing ? '결제 중...' : '결제하기'}
                             </button>
                         )}
                     </div>
