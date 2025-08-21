@@ -77,6 +77,13 @@ export const BoothAdminSideNav: React.FC<BoothAdminSideNavProps> = ({ className 
                             >
                                 체험 관리
                             </Link>
+                            <Link
+                                to="/booth-admin/experience-reserver-management"
+                                className={linkClass("/booth-admin/experience-reserver-management")}
+                                style={linkStyle("/booth-admin/experience-reserver-management")}
+                            >
+                                체험자 관리
+                            </Link>
                         </div>
                     </div>
 

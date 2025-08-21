@@ -103,6 +103,7 @@ import TermsOfUse from "./pages/footer/TermsOfUse";
 import Policy from "./pages/footer/Policy";
 import BoothPaymentPage from "./pages/booth/BoothPaymentPage";
 import BoothCancelPage from "./pages/booth/BoothCancelPage";
+import BannerPaymentPage from "./pages/banner/BannerPaymentPage";
 import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 import BoothInfoManagement from "./pages/booth_admin/BoothInfoManagement";
 import BoothEdit from "./pages/booth_admin/BoothEdit";
@@ -294,6 +295,9 @@ function AppContent() {
                         {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
                         <Route path="/booth/payment" element={<BoothPaymentPage />} />
                         <Route path="/booth/cancel" element={<BoothCancelPage />} />
+                        
+                        {/* 배너 관련 공개 페이지 (이메일에서 접근) */}
+                        <Route path="/banner/payment" element={<BannerPaymentPage />} />
 
                         {/* 부스 체험 (행사관리자) 라우트 제거됨 */}
                         <Route path="/events/:eventId/booth-experiences" element={<BoothExperienceList />} />
