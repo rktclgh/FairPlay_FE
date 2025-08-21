@@ -43,11 +43,39 @@ const DUMMY_REMITTANCES: RemittanceItem[] = Array.from({ length: 23 }).map((_, i
     const fee = 500 + (i % 3) * 250;
     const net = amount - fee;
     const statuses: RemittanceStatus[] = ["대기", "송금중", "완료", "실패"];
+
+    // 현실적인 행사명 배열
+    const eventNames = [
+        "2025 서울 봄 페스티벌",
+        "부산 해운대 음악제",
+        "대구 국제 영화제",
+        "인천 항구 문화축제",
+        "광주 비엔날레",
+        "대전 과학 엑스포",
+        "울산 산업 박람회",
+        "세종 도시 건설 박람회",
+        "수원 화성 문화제",
+        "고양 국제 꽃박람회",
+        "용인 한류 콘서트",
+        "평택 항구 무역박람회",
+        "춘천 막국수 축제",
+        "강릉 커피 엑스포",
+        "전주 한옥마을 축제",
+        "광주 김치 축제",
+        "순천만 정원박람회",
+        "여수 세계 엑스포",
+        "목포 해양 문화제",
+        "포항 제철 축제",
+        "구미 전자 박람회",
+        "창원 국제 공연예술제",
+        "제주 올레 걷기 축제"
+    ];
+
     return {
         id: 202507500 + i,
         settlementId: 202507000 + i,
         eventId: 1000 + i,
-        eventTitle: `정산 행사 ${i + 1}`,
+        eventTitle: eventNames[i % eventNames.length],
         recipientName: i % 2 === 0 ? "페어플레이 주식회사" : "홍길동",
         bankName: i % 2 === 0 ? "카카오뱅크" : "신한은행",
         accountNumber: i % 2 === 0 ? "3333-12-3456789" : "110-123-456789",
@@ -227,7 +255,7 @@ export const RemittanceHistory: React.FC = () => {
             <div
                 key={r.id}
                 className={`grid grid-cols-9 gap-3 py-5 px-6 text-sm items-center ${idx !== items.length - 1 ? "border-b border-gray-200" : ""}`}
-                style={{ gridTemplateColumns: "1fr 2fr 1.3fr 1.3fr 1.1fr 1.1fr 1.1fr 1fr 0.9fr" }}
+                style={{ gridTemplateColumns: "1fr 2fr 1.3fr 1.3fr 1.1fr 1.1fr 1.1fr 1fr 1.2fr" }}
             >
                 <div className="text-left text-gray-700">{r.id}</div>
                 <div className="text-left font-bold text-black truncate">{r.eventTitle}</div>
@@ -344,7 +372,7 @@ export const RemittanceHistory: React.FC = () => {
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* 헤더 */}
                         <div className="bg-gray-50 border-b border-gray-200 py-4 px-6">
-                            <div className="grid grid-cols-10 gap-3 text-sm font-bold text-gray-700" style={{ gridTemplateColumns: "1fr 2fr 1.3fr 1.3fr 1.1fr 1.1fr 1.1fr 1fr 0.9fr 1.2fr" }}>
+                            <div className="grid grid-cols-9 gap-3 text-sm font-bold text-gray-700" style={{ gridTemplateColumns: "1fr 2fr 1.3fr 1.3fr 1.1fr 1.1fr 1.1fr 1fr 1.2fr" }}>
                                 <div className="text-left">송금 ID</div>
                                 <div className="text-left">행사명</div>
                                 <div className="text-left">수취인</div>
@@ -354,7 +382,6 @@ export const RemittanceHistory: React.FC = () => {
                                 <div className="text-right">실제 입금액</div>
                                 <div className="text-center">상태</div>
                                 <div className="text-center">상세</div>
-                                <div className="text-center">승인/반려</div>
                             </div>
                         </div>
                         {/* 요약 바 */}
@@ -374,8 +401,8 @@ export const RemittanceHistory: React.FC = () => {
                                 items.length === 0 ? tableBody : items.map((r, idx) => (
                                     <div
                                         key={r.id}
-                                        className={`grid grid-cols-10 gap-3 py-5 px-6 text-sm items-center ${idx !== items.length - 1 ? "border-b border-gray-200" : ""}`}
-                                        style={{ gridTemplateColumns: "1fr 2fr 1.3fr 1.3fr 1.1fr 1.1fr 1.1fr 1fr 0.9fr 1.2fr" }}
+                                        className={`grid grid-cols-9 gap-3 py-5 px-6 text-sm items-center ${idx !== items.length - 1 ? "border-b border-gray-200" : ""}`}
+                                        style={{ gridTemplateColumns: "1fr 2fr 1.3fr 1.3fr 1.1fr 1.1fr 1.1fr 1fr 1.2fr" }}
                                     >
                                         <div className="text-left text-gray-700">{r.id}</div>
                                         <div className="text-left font-bold text-black truncate">{r.eventTitle}</div>
@@ -392,46 +419,6 @@ export const RemittanceHistory: React.FC = () => {
                                             >
                                                 상세보기
                                             </button>
-                                        </div>
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        if (USE_DUMMY_REMITTANCE) {
-                                                            setItems(prev => prev.map(it => it.id === r.id ? { ...it, status: "완료" } : it));
-                                                            toast.success("승인 처리되었습니다.");
-                                                            return;
-                                                        }
-                                                        await api.post(`/api/admin/remittances/${r.id}/approve`);
-                                                        toast.success("승인 처리되었습니다.");
-                                                        fetchRemittances();
-                                                    } catch (err) {
-                                                        console.error("승인 실패:", err);
-                                                        toast.error("승인에 실패했습니다.");
-                                                    }
-                                                }}
-                                                className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none"
-                                            >승인</button>
-                                            <button
-                                                onClick={async () => {
-                                                    const reason = window.prompt("반려 사유를 입력하세요");
-                                                    if (reason === null) return;
-                                                    try {
-                                                        if (USE_DUMMY_REMITTANCE) {
-                                                            setItems(prev => prev.map(it => it.id === r.id ? { ...it, status: "실패", memo: reason || it.memo } : it));
-                                                            toast.success("반려 처리되었습니다.");
-                                                            return;
-                                                        }
-                                                        await api.post(`/api/admin/remittances/${r.id}/reject`, { reason });
-                                                        toast.success("반려 처리되었습니다.");
-                                                        fetchRemittances();
-                                                    } catch (err) {
-                                                        console.error("반려 실패:", err);
-                                                        toast.error("반려에 실패했습니다.");
-                                                    }
-                                                }}
-                                                className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none"
-                                            >반려</button>
                                         </div>
                                     </div>
                                 ))
