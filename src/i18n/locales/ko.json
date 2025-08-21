@@ -366,7 +366,7 @@
       "changePassword": "비밀번호 변경",
       "oldPassword": "이전 비밀번호",
       "newPassword": "새 비밀번호",
-      "passwordRule": "영문, 숫자, 특수문자 조합 8-20자",
+      "passwordRule": "8자 이상 16자 이하",
       "cancel": "취소",
       "saving": "변경 중...",
       "save": "저장",
@@ -618,7 +618,7 @@
     "noRefunds": "환불 요청이 없습니다.",
     "statusNames": {
       "REQUESTED": "요청",
-      "APPROVED": "승인", 
+      "APPROVED": "승인",
       "REJECTED": "거부"
     },
     "won": "원"
@@ -682,7 +682,7 @@
     "loadFailed": "예약 목록을 불러오는데 실패했습니다.",
     "statusBadges": {
       "WAITING": "대기중",
-      "READY": "입장가능", 
+      "READY": "입장가능",
       "IN_PROGRESS": "체험중",
       "COMPLETED": "완료",
       "CANCELLED": "취소됨",
@@ -697,17 +697,17 @@
     "noEvents": "이벤트가 없습니다",
     "noPriceInfo": "가격 정보 없음",
     "upcoming": "진행 예정",
-    "ongoing": "진행중", 
+    "ongoing": "진행중",
     "ended": "종료",
     "free": "무료",
     "viewModes": {
       "list": "목록",
-      "calendar": "캘린더",  
+      "calendar": "캘린더",
       "map": "지도"
     },
     "filters": {
       "region": "지역",
-      "category": "카테고리", 
+      "category": "카테고리",
       "status": "상태",
       "dateRange": "기간"
     },
@@ -809,4 +809,3 @@
     }
   }
 }
-

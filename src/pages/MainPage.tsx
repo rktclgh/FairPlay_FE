@@ -1018,7 +1018,11 @@ const hotLoop = hotPicks.length >= 3;
         {paidAdvertisements.map((ad, index) => (
   <div key={`hero-thumb-${ad.id ?? 'na'}-${index}`}
             className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-            onMouseEnter={() => (window as any).heroSwiper?.slideToLoop(index)}
+            onMouseEnter={() => {
+              if (heroLoop && (window as any).heroSwiper) {
+                (window as any).heroSwiper.slideToLoop(index);
+              }
+            }}
           >
             <img className="w-full h-full object-cover rounded-[10px] shadow-lg"
                  src={ad.thumbnailUrl || ad.imageUrl || '/images/FPlogo.png'}
@@ -1053,8 +1057,8 @@ const hotLoop = hotPicks.length >= 3;
         watchSlidesProgress
         speed={900}
         className="w-full hotpick-swiper"
-        onSwiper={(swiper) => setActiveHotPickIndex(swiper.realIndex % hotPicks.length)}
-        onSlideChange={(swiper) => setActiveHotPickIndex(swiper.realIndex % hotPicks.length)}
+        onSwiper={(swiper) => setActiveHotPickIndex(hotLoop ? swiper.realIndex % hotPicks.length : swiper.activeIndex)}
+        onSlideChange={(swiper) => setActiveHotPickIndex(hotLoop ? swiper.realIndex % hotPicks.length : swiper.activeIndex)}
       >
        {hotPicks.map((item, index) => (
   <SwiperSlide key={`hot-${item.id ?? 'na'}-${index}`} className="hotpick-slide">

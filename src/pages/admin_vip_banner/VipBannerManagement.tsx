@@ -223,15 +223,33 @@ const formatKRW = (n: number | string) =>
  
 
   const activateBanner = async (id: string) => {
-  await api.patch(`/api/admin/banners/${id}/status`, {
-    statusCode: "ACTIVE"
-  });
+  try {
+    await api.patch(`/api/admin/banners/${id}/status`, {
+      statusCode: "ACTIVE"
+    });
+    
+    // 성공 시 배너 목록 새로고침
+    await fetchVip();
+    alert('배너가 성공적으로 활성화되었습니다.');
+  } catch (err: any) {
+    console.error("activateBanner error:", err?.response?.data || err);
+    alert(`배너 활성화 실패: ${err?.response?.data?.message ?? "요청 실패"}`);
+  }
 };
 
 const deactivateBanner = async (id: string) => {
-  await api.patch(`/api/admin/banners/${id}/status`, {
-    statusCode: "INACTIVE"
-  });
+  try {
+    await api.patch(`/api/admin/banners/${id}/status`, {
+      statusCode: "INACTIVE"
+    });
+    
+    // 성공 시 배너 목록 새로고침
+    await fetchVip();
+    alert('배너가 성공적으로 비활성화되었습니다.');
+  } catch (err: any) {
+    console.error("deactivateBanner error:", err?.response?.data || err);
+    alert(`배너 비활성화 실패: ${err?.response?.data?.message ?? "요청 실패"}`);
+  }
 };
 
 
