@@ -80,10 +80,16 @@ export const TicketReservation = () => {
     const [currentStep, setCurrentStep] = useState(0); // 0: 티켓 선택, 1: 예매자 정보, 2: 예매 확인
 
     // 중복 클릭 방지를 위한 상태
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(
+        // PG사 결제 완료 시 즉시 로딩 상태로 시작
+        impSuccess === 'true' && impUid && merchantUid
+    );
     const [paymentAttempts, setPaymentAttempts] = useState(0);
     const [lastAttemptTime, setLastAttemptTime] = useState(0);
-    const [paymentStep, setPaymentStep] = useState(''); // 결제 단계 표시
+    const [paymentStep, setPaymentStep] = useState(
+        // PG사 결제 완료 시 즉시 메시지 표시
+        impSuccess === 'true' && impUid && merchantUid ? '박람회를 지배하는 중...' : ''
+    ); // 결제 단계 표시
     const [paymentSuccess, setPaymentSuccess] = useState(false); // 결제 성공 상태
 
     const [ticketReservationForm, setTicketReservationForm] = useState<TicketReservationForm>({
@@ -103,7 +109,16 @@ export const TicketReservation = () => {
         // 모바일 결제 완료 후 리다이렉트 처리
         if (impSuccess === 'true' && impUid && merchantUid) {
             console.log('모바일 결제 완료 감지:', { impUid, merchantUid });
+            // 상태는 이미 useState 초기값에서 설정됨
             handleMobilePaymentSuccess(impUid, merchantUid);
+        } else if (impSuccess === 'false') {
+            // 결제 취소 또는 실패 시 URL 파라미터만 정리
+            console.log('모바일 결제 취소/실패 감지');
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('imp_uid');
+            newUrl.searchParams.delete('merchant_uid');
+            newUrl.searchParams.delete('imp_success');
+            window.history.replaceState({}, '', newUrl);
         } else if (success === 'true') {
             // 기존 success=true 파라미터 처리 (호환성)
             toast.success('결제가 성공적으로 완료되었습니다!');
@@ -357,6 +372,25 @@ export const TicketReservation = () => {
 
     // 모바일 결제 성공 후 처리 함수
     const handleMobilePaymentSuccess = async (impUid: string, merchantUid: string) => {
+        // 재미있는 메시지들
+        const funMessages = [
+            '박람회를 지배하는 중...',
+            '공연을 나의 것으로 만드는 중...',
+            '축제의 주인공이 되는 중...',
+            '티켓을 황금으로 변환하는 중...',
+            '최고의 자리를 예약하는 중...'
+        ];
+        
+        let messageIndex = 0;
+        setPaymentSuccess(false);
+        setPaymentStep(funMessages[messageIndex]);
+        
+        // 메시지 로테이션 인터벌
+        const messageInterval = setInterval(() => {
+            messageIndex = (messageIndex + 1) % funMessages.length;
+            setPaymentStep(funMessages[messageIndex]);
+        }, 1500);
+        
         try {
             console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
             
@@ -380,7 +414,15 @@ export const TicketReservation = () => {
             const result = await response.json();
             console.log('결제 완료 처리 성공:', result);
             
-            toast.success('결제가 성공적으로 완료되었습니다!');
+            // 메시지 로테이션 중지
+            clearInterval(messageInterval);
+            setPaymentStep('티켓 발급 완료!');
+            setPaymentSuccess(true);
+            
+            // PC와 동일하게 2.5초 후 이동 (토스트 알림 제거)
+            setTimeout(() => {
+                navigate('/mypage/reservation');
+            }, 2500);
             
             // URL 정리
             const newUrl = new URL(window.location);
@@ -389,14 +431,34 @@ export const TicketReservation = () => {
             newUrl.searchParams.delete('imp_success');
             window.history.replaceState({}, '', newUrl);
             
-            // 마이페이지로 이동
-            setTimeout(() => {
-                navigate('/mypage/reservation');
-            }, 2000);
-            
         } catch (error) {
             console.error('모바일 결제 완료 처리 오류:', error);
-            toast.error('결제 완료 처리 중 오류가 발생했습니다.');
+            // 메시지 로테이션 중지
+            clearInterval(messageInterval);
+            setPaymentStep('결제 실패');
+            
+            // PC와 동일한 상세 에러 메시지 처리
+            let errorMessage = '결제 완료 처리 중 오류가 발생했습니다.';
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            toast.error(errorMessage);
+            
+            // PC와 동일하게 3초 후 상태 초기화
+            setTimeout(() => {
+                setPaymentStep('');
+                setPaymentSuccess(false);
+            }, 3000);
+        } finally {
+            // 메시지 로테이션 정리 (에러가 발생하더라도 인터벌 정리)
+            clearInterval(messageInterval);
+            // PC와 동일한 상태 초기화
+            setIsProcessing(false);
         }
     };
     
@@ -839,36 +901,74 @@ export const TicketReservation = () => {
 
                     {/* 결제 진행 상황 표시 */}
                     {(isProcessing || paymentSuccess) && (
-                        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                                {!paymentSuccess ? (
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                ) : (
-                                    <div className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center">
-                                        <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
+                        <>
+                            {/* 블러 오버레이 */}
+                            <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center">
+                                <div className="bg-white rounded-2xl p-8 mx-4 max-w-sm w-full shadow-2xl">
+                                    <div className="text-center">
+                                        {!paymentSuccess ? (
+                                            <>
+                                                {/* 로딩 애니메이션 */}
+                                                <div className="mb-6">
+                                                    <div className="relative">
+                                                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <div className="animate-pulse h-8 w-8 bg-blue-600 rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* 메인 메시지 */}
+                                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                                    티켓이 발급중입니다!
+                                                </h3>
+                                                <p className="text-gray-600 mb-4">
+                                                    잠시만 기다려주세요!
+                                                </p>
+                                                
+                                                {/* 진행 상태 */}
+                                                <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                                                    <div className="text-sm font-medium text-blue-800">
+                                                        {paymentStep}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* 주의사항 */}
+                                                <div className="text-xs text-gray-500">
+                                                    페이지를 닫지 마세요
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {/* 성공 아이콘 */}
+                                                <div className="mb-6">
+                                                    <div className="h-16 w-16 bg-green-500 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                                                        <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* 성공 메시지 */}
+                                                <h3 className="text-xl font-bold text-green-800 mb-2">
+                                                    티켓 발급 완료!
+                                                </h3>
+                                                <p className="text-gray-600 mb-4">
+                                                    결제가 성공적으로 완료되었습니다
+                                                </p>
+                                                
+                                                {/* 리다이렉션 안내 */}
+                                                <div className="bg-green-50 rounded-lg p-3">
+                                                    <div className="text-sm text-green-700">
+                                                        잠시 후 예약 내역으로 이동합니다...
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
-                                )}
-                                <div>
-                                    <div className={`font-medium ${
-                                        paymentSuccess ? 'text-green-800' : 'text-blue-800'
-                                    }`}>
-                                        {paymentSuccess ? '결제 완료!' : paymentStep}
-                                    </div>
-                                    {paymentSuccess && (
-                                        <div className="text-sm text-green-600 mt-1">
-                                            잠시 후 마이페이지로 이동합니다...
-                                        </div>
-                                    )}
-                                    {!paymentSuccess && isProcessing && (
-                                        <div className="text-sm text-blue-600 mt-1">
-                                            페이지를 닫지 마세요.
-                                        </div>
-                                    )}
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
 
                     {/* 버튼 */}
