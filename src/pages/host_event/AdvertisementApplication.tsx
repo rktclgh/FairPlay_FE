@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { HostSideNav } from '../../components/HostSideNav';
 import { useFileUpload } from '../../hooks/useFileUpload';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
 // 유틸 
@@ -75,15 +75,17 @@ async function getSlots(params: { type: BannerSlotType; from: string; to: string
   return data;
 }*/
 
-// [추가] 신청 생성 API
+// [추가] 신청 생성 API - 임시로 원래 방식으로 되돌림
 async function createApplication(eventId: number, body: Omit<CreateApplicationRequestDto, 'eventId'>): Promise<number> {
-  const { data } = await api.post(`/api/banner/applications/${eventId}`, body);
+  const bodyWithEventId = { ...body, eventId };
+  const { data } = await api.post(`/api/banner/applications`, bodyWithEventId);
   return data as number; // application id
 }
 
 const AdvertisementApplication: React.FC = () => {
   const navigate = useNavigate();
-  const { eventId } = useParams<{ eventId: string }>();
+  const [eventId, setEventId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedTypes, setSelectedTypes] = useState({
     mainBanner: false,
     searchTop: false
@@ -167,7 +169,10 @@ const AdvertisementApplication: React.FC = () => {
   React.useEffect(() => {
     (async () => {
       try {
+        console.log('HERO 슬롯 데이터 요청 중...', { type: "HERO", from: monthRange.from, to: monthRange.to });
         const list = await getSlots({ type: "HERO", from: monthRange.from, to: monthRange.to });
+        console.log('HERO 슬롯 데이터 응답:', list);
+        
         // 같은 날짜의 여러 priority 상태를 맵으로 변환
         const next: Record<string, Record<string, 'available' | 'reserved' | 'sold'>> = {};
         for (const s of list) {
@@ -179,9 +184,11 @@ const AdvertisementApplication: React.FC = () => {
               s.status === "LOCKED" ? "reserved" :
                 "sold";
         }
+        console.log('변환된 inventoryStatus:', next);
         setInventoryStatus(next);
       } catch (e) {
         console.error("HERO slots load failed", e);
+        console.error("에러 상세:", e);
         setInventoryStatus({});
       }
     })();
@@ -189,7 +196,14 @@ const AdvertisementApplication: React.FC = () => {
 
   // 특정 날짜의 특정 순위가 구매 가능한지 확인
   const isRankAvailable = (date: string, rank: string) => {
-    return inventoryStatus[date]?.[rank] === 'available';
+    // inventoryStatus가 비어있으면 임시로 모든 순위를 사용 가능으로 처리
+    if (Object.keys(inventoryStatus).length === 0) {
+      console.log('inventoryStatus가 비어있음, 임시로 available 처리');
+      return true;
+    }
+    const status = inventoryStatus[date]?.[rank];
+    console.log(`날짜 ${date}, 순위 ${rank}의 상태:`, status);
+    return status === 'available';
   };
 
   // 재고 상태에 따른 텍스트 반환
@@ -307,6 +321,25 @@ const AdvertisementApplication: React.FC = () => {
     }
     return true;
   };
+
+  // 호스트의 행사 정보 가져오기
+  React.useEffect(() => {
+    const fetchHostEvent = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/api/events/manager/event'); // 호스트의 행사 가져오는 API
+        setEventId(response.data); // response.data가 직접 eventId
+      } catch (error) {
+        console.error('행사 정보 가져오기 실패:', error);
+        alert('행사 정보를 가져올 수 없습니다. 행사를 먼저 등록해주세요.');
+        navigate('/host/events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHostEvent();
+  }, [navigate]);
 
   const { uploadedFiles, uploadFile, removeFile } = useFileUpload();
 
@@ -472,9 +505,15 @@ const AdvertisementApplication: React.FC = () => {
       if (selectedTypes.mainBanner || selectedTypes.searchTop) {
         navigate("/admin_dashboard/advertisement-applications");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      const errorMessage = e.response?.data?.message || "신청 처리 중 오류가 발생했습니다.";
+      if (errorMessage.includes("이미 신청된 광고가 있습니다")) {
+        alert(`${errorMessage}\n\n페이지를 새로고침하여 최신 상태를 확인해주세요.`);
+        window.location.reload();
+      } else {
+        alert(errorMessage);
+      }
     }
   };
 
@@ -504,6 +543,24 @@ const AdvertisementApplication: React.FC = () => {
     }
     return days;
   };
+
+  // 로딩 중이면 로딩 화면 표시
+  if (loading) {
+    return (
+      <div className="bg-white flex flex-row justify-center w-full">
+        <div className="bg-white w-[1256px] min-h-screen relative">
+          <TopNav />
+          <HostSideNav className="!absolute !left-0 !top-[117px]" />
+          <div className="absolute left-64 top-[220px] w-[949px] flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">행사 정보를 가져오는 중...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white flex flex-row justify-center w-full">
@@ -646,10 +703,8 @@ const AdvertisementApplication: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  )}
                 </div>
               </div>
-            </div>
 
                 {/* 날짜 및 순위 선택 섹션 */}
                 <div className="mt-6">
@@ -1031,18 +1086,6 @@ const AdvertisementApplication: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2 pt-2">
-                    <label className="block text-sm text-gray-700">이벤트 ID</label>
-                    <input
-                      type="number"
-                      value={mdPickMeta.eventId}
-                      onChange={(e) => setMdPickMeta(v => ({ ...v, eventId: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="예: 456"
-                    />
-                  </div>
-
-
 
                   {/* MD PICK 상태 확인 */}
                   {searchTopForm.startDate && searchTopForm.endDate && (
