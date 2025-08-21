@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       port: 5173,
-      strictPort: true,
+      strictPort: false,
       cors: true,
       historyApiFallback: true,
       proxy: {
