@@ -23,6 +23,7 @@ const BannerPaymentPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const applicationId = searchParams.get('applicationId');
+  const success = searchParams.get('success');
 
   useEffect(() => {
     if (!applicationId) {
@@ -31,8 +32,17 @@ const BannerPaymentPage: React.FC = () => {
       return;
     }
 
+    // URL에 success=true 파라미터가 있으면 결제 성공 처리
+    if (success === 'true') {
+      toast.success('결제가 성공적으로 완료되었습니다!');
+      // URL에서 success 파라미터 제거
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('success');
+      window.history.replaceState({}, '', newUrl);
+    }
+
     fetchPaymentInfo();
-  }, [applicationId]);
+  }, [applicationId, success]);
 
   const fetchPaymentInfo = async () => {
     try {
@@ -60,24 +70,45 @@ const BannerPaymentPage: React.FC = () => {
       await paymentService.initialize();
       
       // 2. 결제 요청 데이터 준비
+      const merchantUid = `banner_${Date.now()}`;
       const paymentRequest = {
         pg: 'uplus', // 가장 일반적인 웹표준 결제
         pay_method: 'card',
-        merchant_uid: `banner_${Date.now()}`,
+        merchant_uid: merchantUid,
         name: `배너 광고 - ${paymentInfo.title}`,
         amount: paymentInfo.totalAmount,
         buyer_email: paymentInfo.applicantEmail,
-        buyer_name: paymentInfo.applicantName
+        buyer_name: paymentInfo.applicantName,
+        m_redirect_url: `${window.location.origin}/banner/payment?applicationId=${paymentInfo.applicationId}&success=true`
       };
 
-      // 3. 아임포트 결제 요청
+      // 3. 백엔드에 결제 요청 저장
+      const saveResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/banners/payment/request-from-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          merchantUid: merchantUid,
+          price: paymentInfo.totalAmount,
+          quantity: 1,
+          targetId: paymentInfo.applicationId,
+          paymentTargetType: 'BANNER_APPLICATION'
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('결제 요청 저장에 실패했습니다.');
+      }
+
+      // 4. 아임포트 결제 요청
       const paymentResponse = await paymentService.requestPayment(paymentRequest);
       
       if (!paymentResponse.success) {
         throw new Error(paymentResponse.error_msg || '결제가 취소되었습니다.');
       }
 
-      // 4. 결제 성공 시 백엔드에 결제 완료 알림
+      // 5. 결제 성공 시 백엔드에 결제 완료 알림
       const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/banners/payment/complete`, {
         method: 'POST',
         headers: {

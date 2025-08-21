@@ -66,6 +66,7 @@ export const TicketReservation = () => {
     // URL 파라미터에서 scheduleId 가져오기
     const scheduleIdParam = searchParams.get('scheduleId');
     const scheduleId = scheduleIdParam ? parseInt(scheduleIdParam) : null;
+    const success = searchParams.get('success');
 
     const [eventData, setEventData] = useState<EventDetail | null>(null);
     const [availableTickets, setAvailableTickets] = useState<TicketReservationOption[]>([]);
@@ -92,6 +93,15 @@ export const TicketReservation = () => {
     const ticketReservationOptions = availableTickets;
 
     useEffect(() => {
+        // URL에 success=true 파라미터가 있으면 결제 성공 처리
+        if (success === 'true') {
+            toast.success('결제가 성공적으로 완료되었습니다!');
+            // URL에서 success 파라미터 제거
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('success');
+            window.history.replaceState({}, '', newUrl);
+        }
+        
         // 사용자 정보 로드
         const loadUserInfo = async () => {
             try {
