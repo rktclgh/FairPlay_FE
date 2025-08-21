@@ -165,7 +165,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
 
                     {/* 전자명함 카테고리 */}
                     <div className="mb-4 space-y-0">
-                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">전자명함</h3>
+                        <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">{t('mypage.navigation.eBusinessCard')}</h3>
                         <div className="space-y-1">
                             <Link
                                 to="/mypage/business-card"
@@ -184,7 +184,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/business-card" ? "black" : "#00000080";
                                 }}
                             >
-                                내 전자명함
+                                {t('mypage.navigation.myBusinessCard')}
                             </Link>
                             <Link
                                 to="/mypage/business-card-wallet"
@@ -203,7 +203,7 @@ export const AttendeeSideNav: React.FC<AttendeeSideNavProps> = ({ className = ""
                                     e.currentTarget.style.color = location.pathname === "/mypage/business-card-wallet" ? "black" : "#00000080";
                                 }}
                             >
-                                명함 지갑
+                                {t('mypage.navigation.eBusinessCard')}
                             </Link>
                         </div>
                     </div>

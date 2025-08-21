@@ -83,7 +83,18 @@ class BusinessCardService {
         }
     }
 
-    // 소셜 미디어 URL 생성 헬퍼
+    // 소셜 미디어 URL 생성 헬퍼 (이제 URL을 직접 입력받으므로 검증만 수행)
+    validateSocialMediaUrl(url: string): boolean {
+        if (!url) return true; // 빈 값은 유효
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+    
+    // 소셜 미디어 URL 정규화 (레거시 지원을 위해 유지)
     getSocialMediaUrl(platform: string, username: string): string {
         const platforms: Record<string, string> = {
             instagram: `https://instagram.com/${username}`,
