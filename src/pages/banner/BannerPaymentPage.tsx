@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import paymentService from '../../services/paymentService';
 
+console.log('=== BannerPaymentPage 모듈 로드됨 ===');
+
 interface BannerPaymentInfo {
   applicationId: number;
   title: string;
@@ -25,6 +27,10 @@ const BannerPaymentPage: React.FC = () => {
   const applicationId = searchParams.get('applicationId');
   const success = searchParams.get('success');
 
+  console.log('=== BannerPaymentPage 컴포넌트 로드됨 ===');
+  console.log('URL 파라미터 - applicationId:', applicationId);
+  console.log('URL 파라미터 - success:', success);
+
   useEffect(() => {
     if (!applicationId) {
       setError('배너 신청 ID가 필요합니다.');
@@ -46,9 +52,20 @@ const BannerPaymentPage: React.FC = () => {
 
   const fetchPaymentInfo = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/banners/payment/payment-page/${applicationId}`);
+      const url = `${import.meta.env.VITE_BACKEND_BASE_URL}/api/banners/payment/payment-page/${applicationId}`;
+      console.log('=== 배너 결제 정보 조회 요청 ===');
+      console.log('Application ID:', applicationId);
+      console.log('Request URL:', url);
+      console.log('VITE_BACKEND_BASE_URL:', import.meta.env.VITE_BACKEND_BASE_URL);
+      
+      const response = await fetch(url);
+      
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Error response body:', errorText);
         throw new Error('결제 정보를 불러올 수 없습니다.');
       }
 

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { adminStatisticsService, type ReservationStatisticsDto, type ReservationWeeklyStatisticsDto, type ReservationCategoryStatisticsDto, type ReservationEventStatisticsDto, type PageableResponse } from "../../services/adminStatistics.service";
+import { adminStatisticsService, type ReservationStatisticsDto, type ReservationWeeklyStatisticsDto, type ReservationCategoryStatisticsDto } from "../../services/adminStatistics.service";
 
 export const ReservationStatistics: React.FC = () => {
     const [selectedPeriod, setSelectedPeriod] = useState('week');
@@ -24,43 +24,8 @@ export const ReservationStatistics: React.FC = () => {
     // 백엔드에서 받아올 카테고리별 예약 통계 데이터
     const [categoryData, setCategoryData] = useState<ReservationCategoryStatisticsDto[]>([]);
 
-    // 백엔드에서 받아올 행사별 예약 통계 데이터 (페이지네이션)
-    const [eventStatistics, setEventStatistics] = useState<PageableResponse<ReservationEventStatisticsDto>>({
-        content: [],
-        totalElements: 0,
-        totalPages: 0,
-        pageable: {
-            pageNumber: 0,
-            pageSize: 5,
-            sort: { empty: true, sorted: false, unsorted: true },
-            offset: 0,
-            unpaged: false,
-            paged: true
-        },
-        last: true,
-        size: 5,
-        number: 0,
-        sort: { empty: true, sorted: false, unsorted: true },
-        first: true,
-        numberOfElements: 0,
-        empty: true
-    });
-
-    // 페이지네이션 상태
-    const [currentPage, setCurrentPage] = useState(0);
-    const [pageSize] = useState(8); // 8개씩 표시
-
+    // 샘플 데이터 (월별/분기별용)
     const [trendData] = useState({
-        week: [
-            { period: '1주차', reservations: 45, amount: 1575000 },
-            { period: '2주차', reservations: 52, amount: 1820000 },
-            { period: '3주차', reservations: 48, amount: 1680000 },
-            { period: '4주차', reservations: 61, amount: 2135000 },
-            { period: '5주차', reservations: 55, amount: 1925000 },
-            { period: '6주차', reservations: 58, amount: 2030000 },
-            { period: '7주차', reservations: 62, amount: 2170000 },
-            { period: '8주차', reservations: 65, amount: 2275000 }
-        ],
         month: [
             { period: '1월', reservations: 120, amount: 4200000 },
             { period: '2월', reservations: 135, amount: 4725000 },
@@ -78,23 +43,25 @@ export const ReservationStatistics: React.FC = () => {
         ]
     });
 
-    // 행사별 예약 순위 데이터 로드
-    const loadEventStatistics = useCallback(async (categoryId?: number, page: number = 0) => {
-        try {
-            const eventData = await adminStatisticsService.getEventStatisticsPaged(categoryId, page, pageSize);
-            console.log('행사별 예약 통계 데이터:', eventData);
-            setEventStatistics(eventData);
-        } catch (error) {
-            console.error('행사별 예약 통계 데이터 로드 실패:', error);
-        }
-    }, [pageSize]);
+    const [eventRankings] = useState([
+        { rank: 1, name: '2025 서울 국제 박람회', category: '박람회', reservations: 156, totalAmount: 7800000 },
+        { rank: 2, name: '스타트업 창업 세미나', category: '강연/세미나', reservations: 89, totalAmount: 4450000 },
+        { rank: 3, name: '서울 아트 페어', category: '전시/행사', reservations: 78, totalAmount: 3900000 },
+        { rank: 4, name: 'K-POP 콘서트', category: '공연', reservations: 67, totalAmount: 3350000 },
+        { rank: 5, name: '한국 전통 축제', category: '축제', reservations: 45, totalAmount: 2250000 },
+        { rank: 6, name: 'IT 개발자 컨퍼런스', category: '강연/세미나', reservations: 42, totalAmount: 2100000 },
+        { rank: 7, name: '패션 트렌드 쇼', category: '전시/행사', reservations: 38, totalAmount: 1900000 },
+        { rank: 8, name: '클래식 음악회', category: '공연', reservations: 35, totalAmount: 1750000 }
+    ]);
+
+    const [filteredEvents, setFilteredEvents] = useState(eventRankings);
 
     // 예약 통계 데이터 로드
-    const loadReservationStatistics = useCallback(async () => {
+    const loadReservationStatistics = async () => {
         try {
             setLoading(true);
             
-            // 기본 통계, 주간 데이터, 카테고리 데이터, 행사별 데이터를 병렬로 로드
+            // 기본 통계, 주간 데이터, 카테고리 데이터를 병렬로 로드
             const [statisticsData, weeklyStatisticsData, categoryStatisticsData] = await Promise.all([
                 adminStatisticsService.getReservationStatistics(),
                 adminStatisticsService.getWeeklyReservationStatistics(),
@@ -108,54 +75,34 @@ export const ReservationStatistics: React.FC = () => {
             setStatsData(statisticsData);
             setWeeklyData(weeklyStatisticsData);
             setCategoryData(categoryStatisticsData);
-            
-            // 행사별 통계도 로드
-            await loadEventStatistics();
         } catch (error) {
             console.error('예약 통계 데이터 로드 실패:', error);
-            // 실패시 기본값 유지
         } finally {
             setLoading(false);
         }
-    }, [loadEventStatistics]);
+    };
 
     // 컴포넌트 마운트시 데이터 로드
     useEffect(() => {
         loadReservationStatistics();
-    }, [loadReservationStatistics]);
+    }, []);
 
-    // 카테고리 또는 페이지 변경시 행사별 데이터 다시 로드
+    // 검색 및 필터링
     useEffect(() => {
-        const categoryId = selectedCategory === 'all' ? undefined : getCategoryId(selectedCategory);
-        loadEventStatistics(categoryId, currentPage);
-    }, [selectedCategory, currentPage, loadEventStatistics]);
+        let filtered = eventRankings;
 
-    // 카테고리명을 ID로 변환하는 헬퍼 함수 (실제 백엔드 카테고리 ID에 맞게 수정 필요)
-    const getCategoryId = (categoryName: string): number | undefined => {
-        const categoryMap: Record<string, number> = {
-            '박람회': 1,
-            '강연/세미나': 2,
-            '전시/행사': 3,
-            '공연': 4,
-            '축제': 5
-        };
-        return categoryMap[categoryName];
-    };
-
-    // 검색 필터링된 이벤트 목록
-    const getFilteredEvents = () => {
-        if (!searchKeyword) {
-            return eventStatistics.content;
+        if (selectedCategory !== 'all') {
+            filtered = filtered.filter(event => event.category === selectedCategory);
         }
-        return eventStatistics.content.filter(event =>
-            event.eventName.toLowerCase().includes(searchKeyword.toLowerCase())
-        );
-    };
 
-    // 페이지 변경 핸들러
-    const handlePageChange = (newPage: number) => {
-        setCurrentPage(newPage);
-    };
+        if (searchKeyword) {
+            filtered = filtered.filter(event =>
+                event.name.toLowerCase().includes(searchKeyword.toLowerCase())
+            );
+        }
+
+        setFilteredEvents(filtered);
+    }, [selectedCategory, searchKeyword, eventRankings]);
 
     // 금액 포맷팅
     const formatCurrency = (amount: number) => {
@@ -165,13 +112,6 @@ export const ReservationStatistics: React.FC = () => {
     // 백엔드 카테고리 데이터를 차트 형식으로 변환
     const transformCategoryDataForChart = () => {
         const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#0088fe', '#00c49f'];
-        
-        // 데이터가 비어있을 때 기본값 반환
-        if (!categoryData || categoryData.length === 0) {
-            return [
-                { name: '데이터 없음', value: 1, color: '#e5e7eb' }
-            ];
-        }
         
         return categoryData.map((item, index) => ({
             name: item.category,
@@ -183,7 +123,7 @@ export const ReservationStatistics: React.FC = () => {
     // 백엔드 주간 데이터를 차트 형식으로 변환
     const transformWeeklyDataForChart = () => {
         return weeklyData.map((item, index) => ({
-            period: `${item.date}일`,
+            period: `${index + 1}주차`,
             reservations: item.totalQuantity,
             date: item.date
         }));
@@ -195,15 +135,6 @@ export const ReservationStatistics: React.FC = () => {
             return transformWeeklyDataForChart();
         }
         return trendData[selectedPeriod as keyof typeof trendData];
-    };
-
-    // 전월대비 상승폭 색상
-    const getChangeColor = (change: number) => {
-        return change >= 0 ? 'text-green-600' : 'text-red-600';
-    };
-
-    const getChangeIcon = (change: number) => {
-        return change >= 0 ? '↗' : '↘';
     };
 
     return (
@@ -219,7 +150,16 @@ export const ReservationStatistics: React.FC = () => {
                 {/* 사이드바 */}
                 <AdminSideNav className="!absolute !left-0 !top-[117px]" />
 
+                {/* 로딩 표시 */}
+                {loading && (
+                    <div className="absolute left-64 top-[195px] w-[949px] flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <span className="ml-4 text-gray-600">데이터를 불러오는 중...</span>
+                    </div>
+                )}
+
                 {/* 메인 콘텐츠 */}
+                {!loading && (
                 <div className="absolute left-64 top-[195px] w-[949px] pb-20 space-y-6">
 
                     {/* 주요 지표 카드들 */}
@@ -300,32 +240,21 @@ export const ReservationStatistics: React.FC = () => {
                                 </select>
                             </div>
                             <p className="text-sm text-gray-600 mb-4">
-                                {selectedPeriod === 'week' 
-                                    ? '파란색 선: 주별 예약 건수를 나타냅니다 (실제 데이터)'
-                                    : '파란색 선: 예약 건수, 초록색 선: 예약 금액을 나타냅니다 (샘플 데이터)'
-                                }
+                                파란색 선: 주별 예약 건수를 나타냅니다 (실제 데이터)
                             </p>
                             <ResponsiveContainer width="100%" height={300}>
                                 <LineChart data={getChartData()}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="period" />
                                     <YAxis yAxisId="left" label={{ value: '예약 수 (건)', angle: -90, position: 'insideLeft' }} />
-                                    {selectedPeriod !== 'week' && (
-                                        <YAxis yAxisId="right" orientation="right" label={{ value: '금액 (원)', angle: 90, position: 'insideRight' }} />
-                                    )}
                                     <Tooltip formatter={(value, name) => {
                                         if (name === 'reservations') {
                                             return [`${value}건`, '예약 수'];
-                                        } else if (name === 'amount') {
-                                            return [`₩${formatCurrency(Number(value))}`, '금액'];
                                         }
                                         return [value, name];
                                     }} />
                                     <Legend />
                                     <Line yAxisId="left" type="monotone" dataKey="reservations" stroke="#3b82f6" strokeWidth={2} name="예약 수 (건)" />
-                                    {selectedPeriod !== 'week' && (
-                                        <Line yAxisId="right" type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} name="금액 (원)" />
-                                    )}
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -334,43 +263,27 @@ export const ReservationStatistics: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">카테고리별 예약</h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                각 카테고리별 예약 건수의 비율을 원형 차트로 표시합니다 {categoryData.length > 0 ? '(실제 데이터)' : '(데이터 로딩 중...)'}
+                                각 카테고리별 예약 건수의 비율을 원형 차트로 표시합니다 (실제 데이터)
                             </p>
-                            {loading ? (
-                                <div className="flex items-center justify-center h-[300px]">
-                                    <div className="text-gray-500">데이터를 불러오는 중...</div>
-                                </div>
-                            ) : (
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <PieChart>
-                                        <Pie
-                                            data={transformCategoryDataForChart()}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={({ name, percent }) => 
-                                                categoryData.length > 0 
-                                                    ? `${name} ${(percent * 100).toFixed(0)}%`
-                                                    : name
-                                            }
-                                            outerRadius={80}
-                                            fill="#8884d8"
-                                            dataKey="value"
-                                        >
-                                            {transformCategoryDataForChart().map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip formatter={(value) => [`${value}건`, '예약 수']} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            )}
-                            {/* 디버그 정보 */}
-                            {process.env.NODE_ENV === 'development' && (
-                                <div className="mt-2 text-xs text-gray-400">
-                                    디버그: 카테고리 데이터 개수 - {categoryData.length}개
-                                </div>
-                            )}
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={transformCategoryDataForChart()}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                    >
+                                        {transformCategoryDataForChart().map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value) => [`${value}건`, '예약 수']} />
+                                </PieChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
 
@@ -413,20 +326,19 @@ export const ReservationStatistics: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {getFilteredEvents().map((event, index) => (
-                                        <tr key={`${event.eventName}-${index}`} className="hover:bg-gray-50">
+                                    {filteredEvents.map((event) => (
+                                        <tr key={event.rank} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-                                                    index + 1 + (currentPage * pageSize) === 1 ? 'bg-yellow-100 text-yellow-800' :
-                                                    index + 1 + (currentPage * pageSize) === 2 ? 'bg-gray-100 text-gray-800' :
-                                                    index + 1 + (currentPage * pageSize) === 3 ? 'bg-orange-100 text-orange-800' :
-                                                    'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                    {index + 1 + (currentPage * pageSize)}
+                                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${event.rank === 1 ? 'bg-yellow-100 text-yellow-800' :
+                                                    event.rank === 2 ? 'bg-gray-100 text-gray-800' :
+                                                        event.rank === 3 ? 'bg-orange-100 text-orange-800' :
+                                                            'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                    {event.rank}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {event.eventName}
+                                                {event.name}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -434,7 +346,7 @@ export const ReservationStatistics: React.FC = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {formatCurrency(event.reservationCount)}건
+                                                {formatCurrency(event.reservations)}건
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                                                 ₩{formatCurrency(event.totalAmount)}
@@ -444,46 +356,9 @@ export const ReservationStatistics: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
-
-                        {/* 페이지네이션 */}
-                        {eventStatistics.totalPages > 1 && (
-                            <div className="flex items-center justify-between mt-4">
-                                <div className="text-sm text-gray-700">
-                                    총 {eventStatistics.totalElements}개의 행사 중 {(currentPage * pageSize) + 1} - {Math.min((currentPage + 1) * pageSize, eventStatistics.totalElements)}개 표시
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <button
-                                        onClick={() => handlePageChange(currentPage - 1)}
-                                        disabled={currentPage === 0}
-                                        className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        이전
-                                    </button>
-                                    {Array.from({ length: eventStatistics.totalPages }, (_, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => handlePageChange(index)}
-                                            className={`px-3 py-2 text-sm border rounded-lg ${
-                                                currentPage === index
-                                                    ? 'bg-blue-500 text-white border-blue-500'
-                                                    : 'border-gray-300 hover:bg-gray-50'
-                                            }`}
-                                        >
-                                            {index + 1}
-                                        </button>
-                                    ))}
-                                    <button
-                                        onClick={() => handlePageChange(currentPage + 1)}
-                                        disabled={currentPage === eventStatistics.totalPages - 1}
-                                        className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        다음
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
+                )}
             </div>
         </div>
     );

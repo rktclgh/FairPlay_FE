@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { toast } from "react-toastify";
-import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
+import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaTicketAlt, FaUser, FaCreditCard } from "react-icons/fa";
 import { eventApi } from "../../services/api";
 import authManager from "../../utils/auth";
 import paymentService from "../../services/paymentService";
@@ -66,7 +66,7 @@ export const TicketReservation = () => {
     const scheduleIdParam = searchParams.get('scheduleId');
     const scheduleId = scheduleIdParam ? parseInt(scheduleIdParam) : null;
     const success = searchParams.get('success');
-    
+
     // 모바일 결제 완료 후 리다이렉트 파라미터
     const impUid = searchParams.get('imp_uid');
     const merchantUid = searchParams.get('merchant_uid');
@@ -118,31 +118,31 @@ export const TicketReservation = () => {
                 'kcp',
                 'toss'
             ];
-            
+
             // PG사 URL 감지
             const isPGPage = pgUrls.some(pgUrl => currentUrl.includes(pgUrl));
-            
+
             if (isPGPage) {
                 console.log('PG사 중간 페이지 감지:', currentUrl);
-                
+
                 // 모든 방법으로 결제 정보 추출 시도
                 const urlParams = new URLSearchParams(window.location.search);
-                const impUid = urlParams.get('imp_uid') || 
-                             urlParams.get('IMP_UID') ||
-                             localStorage.getItem('pending_imp_uid');
-                             
-                const merchantUid = urlParams.get('merchant_uid') || 
-                                  urlParams.get('LGD_OID') ||
-                                  localStorage.getItem('pending_merchant_uid');
-                                  
+                const impUid = urlParams.get('imp_uid') ||
+                    urlParams.get('IMP_UID') ||
+                    localStorage.getItem('pending_imp_uid');
+
+                const merchantUid = urlParams.get('merchant_uid') ||
+                    urlParams.get('LGD_OID') ||
+                    localStorage.getItem('pending_merchant_uid');
+
                 const savedEventId = localStorage.getItem('pending_event_id') || eventId;
                 const savedScheduleId = localStorage.getItem('pending_schedule_id') || scheduleId;
-                
-                console.log('추출된 결제 정보:', { 
+
+                console.log('추출된 결제 정보:', {
                     impUid, merchantUid, savedEventId, savedScheduleId,
-                    currentUrl, urlParams: Object.fromEntries(urlParams) 
+                    currentUrl, urlParams: Object.fromEntries(urlParams)
                 });
-                
+
                 // 일정 시간 후 강제 리다이렉션 (결제 정보가 없어도)
                 const forceRedirect = () => {
                     if (savedEventId && savedScheduleId) {
@@ -151,7 +151,7 @@ export const TicketReservation = () => {
                         window.location.href = redirectUrl;
                     }
                 };
-                
+
                 if (impUid && merchantUid && savedEventId && savedScheduleId) {
                     // 결제 완료 처리 페이지로 리다이렉션
                     const redirectUrl = `/ticketreservation/${savedEventId}/${savedScheduleId}?imp_success=true&imp_uid=${impUid}&merchant_uid=${merchantUid}`;
@@ -164,20 +164,20 @@ export const TicketReservation = () => {
                 }
             }
         };
-        
+
         // 즉시 체크
         handlePGRedirect();
-        
+
         // 주기적 체크 (1초마다)
         const intervalId = setInterval(handlePGRedirect, 1000);
-        
+
         // URL 변경 감지
         const handleUrlChange = () => {
             setTimeout(handlePGRedirect, 100);
         };
-        
+
         window.addEventListener('popstate', handleUrlChange);
-        
+
         return () => {
             clearInterval(intervalId);
             window.removeEventListener('popstate', handleUrlChange);
@@ -195,7 +195,7 @@ export const TicketReservation = () => {
             console.log('강제 리다이렉션 감지, 결제 상태 확인 중...');
             setIsProcessing(true);
             setPaymentStep('결제 상태 확인 중...');
-            
+
             // 저장된 정보로 결제 상태 확인 시도
             const savedMerchantUid = localStorage.getItem('pending_merchant_uid');
             if (savedMerchantUid) {
@@ -222,7 +222,7 @@ export const TicketReservation = () => {
             newUrl.searchParams.delete('success');
             window.history.replaceState({}, '', newUrl);
         }
-        
+
         // 사용자 정보 로드
         const loadUserInfo = async () => {
             try {
@@ -475,20 +475,20 @@ export const TicketReservation = () => {
             '티켓을 황금으로 변환하는 중...',
             '최고의 자리를 예약하는 중...'
         ];
-        
+
         let messageIndex = 0;
         setPaymentSuccess(false);
         setPaymentStep(funMessages[messageIndex]);
-        
+
         // 메시지 로테이션 인터벌
         const messageInterval = setInterval(() => {
             messageIndex = (messageIndex + 1) % funMessages.length;
             setPaymentStep(funMessages[messageIndex]);
         }, 1500);
-        
+
         try {
             console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
-            
+
             // 1. 결제 완료 처리 API 호출  
             const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/payments/complete`, {
                 method: 'POST',
@@ -501,21 +501,21 @@ export const TicketReservation = () => {
                     impUid: impUid
                 })
             });
-            
+
             if (!completeResponse.ok) {
                 throw new Error(`결제 완료 처리 실패: ${completeResponse.status}`);
             }
-            
+
             const completeResult = await completeResponse.json();
             console.log('결제 완료 처리 성공:', completeResult);
-            
+
             // 2. 저장된 폼 데이터로 예약 생성 (PC와 동일한 로직)
             const savedFormData = JSON.parse(localStorage.getItem('ticketReservationForm') || '{}');
             const savedSelectedTicket = JSON.parse(localStorage.getItem('selectedTicket') || '{}');
-            
+
             if (savedFormData && savedSelectedTicket) {
                 console.log('저장된 예약 정보로 예약 생성:', { savedFormData, savedSelectedTicket });
-                
+
                 const reservationData = {
                     scheduleId: scheduleId,
                     ticketId: savedSelectedTicket.ticketId,
@@ -526,41 +526,41 @@ export const TicketReservation = () => {
                     buyer_email: savedFormData.buyer_email,
                     paymentMethod: savedFormData.paymentMethod || 'card'
                 };
-                
+
                 // 예약은 결제 완료 시 자동으로 생성됨 (PaymentService에서 처리)
                 console.log('모바일 결제 완료:', completeResult);
             }
-            
+
             // 결제 성공 시 localStorage 정리
             localStorage.removeItem('pending_imp_uid');
             localStorage.removeItem('pending_merchant_uid');
             localStorage.removeItem('pending_event_id');
             localStorage.removeItem('pending_schedule_id');
             localStorage.removeItem('current_merchant_uid');
-            
+
             // 메시지 로테이션 중지
             clearInterval(messageInterval);
             setPaymentStep('티켓 발급 완료!');
             setPaymentSuccess(true);
-            
+
             // PC와 동일하게 2.5초 후 이동 (토스트 알림 제거)
             setTimeout(() => {
                 navigate('/mypage/reservation');
             }, 2500);
-            
+
             // URL 정리
             const newUrl = new URL(window.location);
             newUrl.searchParams.delete('imp_uid');
             newUrl.searchParams.delete('merchant_uid');
             newUrl.searchParams.delete('imp_success');
             window.history.replaceState({}, '', newUrl);
-            
+
         } catch (error) {
             console.error('모바일 결제 완료 처리 오류:', error);
             // 메시지 로테이션 중지
             clearInterval(messageInterval);
             setPaymentStep('결제 실패');
-            
+
             // PC와 동일한 상세 에러 메시지 처리
             let errorMessage = '결제 완료 처리 중 오류가 발생했습니다.';
             if (error instanceof Error) {
@@ -570,9 +570,9 @@ export const TicketReservation = () => {
                     errorMessage = error.message;
                 }
             }
-            
+
             toast.error(errorMessage);
-            
+
             // PC와 동일하게 3초 후 상태 초기화
             setTimeout(() => {
                 setPaymentStep('');
@@ -585,7 +585,7 @@ export const TicketReservation = () => {
             setIsProcessing(false);
         }
     };
-    
+
     // 중복 클릭 방지 및 결제 처리 함수
     const handlePayment = async () => {
         const now = Date.now();
@@ -596,7 +596,7 @@ export const TicketReservation = () => {
             toast.warning('결제가 진행 중입니다. 잠시만 기다려주세요.');
             return;
         }
-        
+
         // 1-1. merchantUid 중복 방지 체크
         const existingMerchantUid = localStorage.getItem('current_merchant_uid');
         if (existingMerchantUid) {
@@ -638,7 +638,7 @@ export const TicketReservation = () => {
 
         try {
             setPaymentStep('결제 정보 준비 중...');
-            
+
             // 예약 데이터 준비
             const reservationData = {
                 scheduleId: scheduleId,
@@ -652,7 +652,7 @@ export const TicketReservation = () => {
             };
 
             setPaymentStep('결제 처리 중...');
-            
+
             // PG사 중간 페이지 감지를 위한 정보 저장
             const tempMerchantUid = `TICKET_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
             localStorage.setItem('pending_merchant_uid', tempMerchantUid);
@@ -660,7 +660,7 @@ export const TicketReservation = () => {
             localStorage.setItem('pending_schedule_id', scheduleId);
             // 현재 결제 중복 방지
             localStorage.setItem('current_merchant_uid', tempMerchantUid);
-            
+
             // 결제 처리 (결제 → 예약 생성 → target_id 업데이트)
             const result = await paymentService.processPayment(
                 eventData.titleKr,
@@ -675,7 +675,7 @@ export const TicketReservation = () => {
             );
 
             setPaymentStep('티켓 발급 중...');
-            
+
             // 참석자 저장 및 펼 생성
             const shareTicketData: ShareTicketSaveRequestDto = {
                 reservationId: result.targetId,
@@ -684,17 +684,17 @@ export const TicketReservation = () => {
             await saveAttendeeAndShareTicket(shareTicketData);
 
             console.log('결제 및 예약 성공:', result);
-            
+
             // 결제 성공 시 localStorage 정리
             localStorage.removeItem('pending_imp_uid');
             localStorage.removeItem('pending_merchant_uid');
             localStorage.removeItem('pending_event_id');
             localStorage.removeItem('pending_schedule_id');
             localStorage.removeItem('current_merchant_uid');
-            
+
             setPaymentStep('결제 완료!');
             setPaymentSuccess(true);
-            
+
             // 결제 성공 후 사용자가 결과를 확인할 시간 제공
             setTimeout(() => {
                 navigate("/mypage/reservation");
@@ -703,7 +703,7 @@ export const TicketReservation = () => {
         } catch (error) {
             console.error('결제 처리 중 오류:', error);
             setPaymentStep('결제 실패');
-            
+
             // 더 상세한 에러 메시지 제공
             let errorMessage = '결제 중 오류가 발생했습니다.';
             if (error instanceof Error) {
@@ -715,9 +715,9 @@ export const TicketReservation = () => {
                     errorMessage = error.message;
                 }
             }
-            
+
             toast.error(errorMessage);
-            
+
             // 에러 발생 시 3초 후 상태 초기화
             setTimeout(() => {
                 setPaymentStep('');
@@ -734,7 +734,7 @@ export const TicketReservation = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
                 <TopNav />
                 <div className="flex items-center justify-center h-64">
                     <NewLoader />
@@ -744,12 +744,12 @@ export const TicketReservation = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
             <TopNav />
 
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="max-w-5xl mx-auto px-4 py-8">
                 {/* 헤더 */}
-                <div className="mb-8">
+                <div className="mb-8 md:mb-12 animate-fade-in">
                     <button
                         onClick={() => {
                             // 브라우저 히스토리로 뒤로가기 (더 자연스러운 이동)
@@ -761,51 +761,55 @@ export const TicketReservation = () => {
                                 setTimeout(() => window.location.reload(), 100);
                             }
                         }}
-                        className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
+                        className="group flex items-center text-slate-600 hover:text-slate-800 mb-4 md:mb-6 transition-all duration-300 hover:translate-x-[-4px]"
                     >
-                        <FaArrowLeft className="mr-2" />
-                        이벤트 상세로 돌아가기
+                        <FaArrowLeft className="mr-2 md:mr-3 text-base md:text-lg group-hover:scale-110 transition-transform duration-300" />
+                        <span className="font-medium text-sm md:text-base">이벤트 상세로 돌아가기</span>
                     </button>
 
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        {eventData?.titleKr} 예매
-                    </h1>
+                    <div className="text-center mb-6 md:mb-8">
+                        <h1 className="text-2xl md:text-4xl font-bold text-slate-900 mb-3 md:mb-4 bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                            {eventData?.titleKr} 예매
+                        </h1>
 
-                    <div className="flex items-center space-x-6 text-gray-600">
-                        <div className="flex items-center">
-                            <FaCalendarAlt className="mr-2" />
-                            {eventData && `${eventData.startDate} ~ ${eventData.endDate}`}
-                        </div>
-                        <div className="flex items-center">
-                            <FaMapMarkerAlt className="mr-2" />
-                            {eventData?.placeName || eventData?.address}
+                        <div className="flex flex-col md:flex-row items-center justify-center space-y-2 md:space-y-0 md:space-x-8 text-slate-600">
+                            <div className="flex items-center group">
+                                <FaCalendarAlt className="mr-2 md:mr-3 text-base md:text-lg group-hover:text-blue-600 transition-colors duration-300" />
+                                <span className="font-medium text-sm md:text-base">{eventData && `${eventData.startDate} ~ ${eventData.endDate}`}</span>
+                            </div>
+                            <div className="flex items-center group">
+                                <FaMapMarkerAlt className="mr-2 md:mr-3 text-base md:text-lg group-hover:text-blue-600 transition-colors duration-300" />
+                                <span className="font-medium text-sm md:text-base">{eventData?.placeName || eventData?.address}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* 선택된 회차 정보 표시 */}
                 {selectedSchedule && (
-                    <div className="mb-8 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                    <h3 className="text-base font-medium text-gray-900">선택된 회차</h3>
+                    <div className="mb-8 md:mb-10 animate-slide-up">
+                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-4 md:p-8">
+                            <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                                <div className="w-2 md:w-3 h-2 md:h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
+                                <h3 className="text-base md:text-lg font-semibold text-slate-900">선택된 회차</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+                                <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
+                                    <div className="w-8 md:w-10 h-8 md:h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <FaCalendarAlt className="text-blue-600 text-sm md:text-base" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs md:text-sm text-slate-600">날짜</p>
+                                        <p className="font-semibold text-slate-900 text-sm md:text-base">{selectedSchedule.date}</p>
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-4 text-gray-700">
-                                        <div className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            <span className="text-sm font-medium">{selectedSchedule.date}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span className="text-sm font-medium">{selectedSchedule.startTime} - {selectedSchedule.endTime}</span>
-                                        </div>
+                                <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+                                    <div className="w-8 md:w-10 h-8 md:h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <FaCalendarAlt className="text-purple-600 text-sm md:text-base" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs md:text-sm text-slate-600">시간</p>
+                                        <p className="font-semibold text-slate-900 text-sm md:text-base">{selectedSchedule.startTime} - {selectedSchedule.endTime}</p>
                                     </div>
                                 </div>
                             </div>
@@ -814,115 +818,125 @@ export const TicketReservation = () => {
                 )}
 
                 {/* 진행 단계 표시 */}
-                <div className="mb-8">
-                    <style>
-                        {`
-                        @keyframes pulse-blue {
-                            0%, 100% { 
-                                background-color: rgb(37, 99, 235);
-                                opacity: 1; 
-                            }
-                            50% { 
-                                background-color: rgb(96, 165, 250);
-                                opacity: 0.8; 
-                            }
-                        }
-                        .animate-pulse-blue {
-                            animation: pulse-blue 1.5s ease-in-out infinite;
-                        }
-                        `}
-                    </style>
-                    <div className="flex items-center justify-between">
+                <div className="mb-8 md:mb-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                    <div className="flex items-center justify-center">
                         {[0, 1, 2].map((step) => (
                             <div key={step} className="flex items-center">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white ${currentStep === step
-                                    ? 'animate-pulse-blue'  // 현재 단계: 깜박이는 파란색
+                                <div className={`relative w-8 md:w-12 h-8 md:h-12 rounded-full flex items-center justify-center text-xs md:text-sm font-semibold transition-all duration-500 ${currentStep === step
+                                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white scale-110 shadow-lg shadow-blue-500/30'
                                     : currentStep > step
-                                        ? 'bg-blue-600'  // 완료된 단계: 파란색
-                                        : 'bg-gray-200 text-gray-600'  // 미진행 단계: 회색
+                                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                                        : 'bg-slate-200 text-slate-600'
                                     }`}>
                                     {step + 1}
+                                    {currentStep === step && (
+                                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-ping opacity-75"></div>
+                                    )}
                                 </div>
                                 {step < 2 && (
-                                    <div className={`w-24 h-1 mx-2 ${currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
+                                    <div className={`w-16 md:w-32 h-1 mx-2 md:mx-4 transition-all duration-500 ${currentStep > step
+                                        ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                        : 'bg-slate-200'
                                         }`} />
                                 )}
                             </div>
                         ))}
                     </div>
-                    <div className="flex justify-between mt-2 text-sm">
-                        <span className={currentStep === 0 ? 'text-blue-600 font-medium animate-pulse' : currentStep > 0 ? 'text-blue-600' : 'text-gray-600'}>
+                    <div className="flex flex-col md:flex-row justify-center mt-4 md:mt-6 space-y-2 md:space-y-0 md:space-x-24">
+                        <span className={`text-xs md:text-sm font-medium transition-all duration-300 text-center ${currentStep === 0
+                            ? 'text-blue-600 scale-110'
+                            : currentStep > 0
+                                ? 'text-green-600'
+                                : 'text-slate-500'
+                            }`}>
+                            <FaTicketAlt className="inline mr-1 md:mr-2" />
                             티켓 선택
                         </span>
-                        <span className={currentStep === 1 ? 'text-blue-600 font-medium animate-pulse' : currentStep > 1 ? 'text-blue-600' : 'text-gray-600'}>
+                        <span className={`text-xs md:text-sm font-medium transition-all duration-300 text-center ${currentStep === 1
+                            ? 'text-blue-600 scale-110'
+                            : currentStep > 1
+                                ? 'text-green-600'
+                                : 'text-slate-500'
+                            }`}>
+                            <FaUser className="inline mr-1 md:mr-2" />
                             예매자 정보
                         </span>
-                        <span className={currentStep === 2 ? 'text-blue-600 font-medium animate-pulse' : 'text-gray-600'}>
+                        <span className={`text-xs md:text-sm font-medium transition-all duration-300 text-center ${currentStep === 2
+                            ? 'text-blue-600 scale-110'
+                            : 'text-slate-500'
+                            }`}>
+                            <FaCreditCard className="inline mr-1 md:mr-2" />
                             예매 확인
                         </span>
                     </div>
                 </div>
 
                 {/* 단계별 컨텐츠 */}
-                <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-4 md:p-8 animate-slide-up" style={{ animationDelay: '0.4s' }}>
                     {currentStep === 0 && (
-                        <div>
-                            <h2 className="text-xl font-semibold mb-6">티켓 선택</h2>
-                            <div className="space-y-4">
-                                {ticketReservationOptions.map((option) => (
+                        <div className="animate-fade-in">
+                            <h2 className="text-xl md:text-2xl font-bold mb-6 text-slate-900 flex items-center gap-2 md:gap-3">
+                                <FaTicketAlt className="text-blue-600 text-lg md:text-xl" />
+                                티켓 선택
+                            </h2>
+                            <div className="space-y-3">
+                                {ticketReservationOptions.map((option, index) => (
                                     <div
                                         key={option.ticketId}
-                                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${ticketReservationForm.selectedOption === option.ticketId.toString()
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                        className={`border-2 rounded-xl p-3 md:p-4 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${ticketReservationForm.selectedOption === option.ticketId.toString()
+                                            ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 shadow-lg shadow-blue-500/20'
+                                            : 'border-slate-200 hover:border-slate-300 bg-white'
                                             }`}
                                         onClick={() => handleOptionSelect(option.ticketId)}
+                                        style={{ animationDelay: `${index * 0.1}s` }}
                                     >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="font-medium text-gray-900">{option.name}</h3>
+                                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-0">
+                                            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                                                <h3 className="text-base md:text-lg font-semibold text-slate-900">{option.name}</h3>
+                                                <span className="flex items-center gap-2 text-xs md:text-sm text-slate-600">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                    재고: {option.saleQuantity}개
+                                                </span>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-lg font-semibold text-gray-900">
+                                            <div className="text-left md:text-right">
+                                                <span className="text-lg md:text-xl font-bold text-slate-900">
                                                     {option.price === 0 ? '무료' : `${option.price.toLocaleString()}원`}
                                                 </span>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    재고: {option.saleQuantity}개
-                                                </p>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                                 {ticketReservationOptions.length === 0 && (
-                                    <div className="text-center py-8 text-gray-500">
-                                        판매 가능한 티켓이 없습니다.
+                                    <div className="text-center py-6 md:py-8 text-slate-500">
+                                        <FaTicketAlt className="text-2xl md:text-3xl mx-auto mb-2 md:mb-3 text-slate-300" />
+                                        <span className="text-sm md:text-base">판매 가능한 티켓이 없습니다.</span>
                                     </div>
                                 )}
                             </div>
 
                             {ticketReservationForm.selectedOption && (
-                                <div className="mt-6">
-                                    <h3 className="font-medium text-gray-900 mb-3">수량 선택</h3>
-                                    <div className="flex items-center space-x-4">
+                                <div className="mt-6 animate-fade-in">
+                                    <h3 className="font-semibold text-slate-900 mb-3 text-base md:text-lg">수량 선택</h3>
+                                    <div className="flex items-center justify-center space-x-4 md:space-x-6">
                                         <button
                                             onClick={() => handleQuantityChange(ticketReservationForm.quantity - 1)}
                                             disabled={ticketReservationForm.quantity <= 1}
-                                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center disabled:opacity-50"
+                                            className="w-10 md:w-12 h-10 md:h-12 rounded-full border-2 border-slate-300 flex items-center justify-center disabled:opacity-50 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 disabled:hover:border-slate-300 disabled:hover:bg-white"
                                         >
-                                            -
+                                            <span className="text-lg md:text-xl font-bold text-slate-600">-</span>
                                         </button>
-                                        <span className="text-lg font-medium w-12 text-center">
+                                        <span className="text-2xl md:text-3xl font-bold text-slate-900 w-12 md:w-16 text-center">
                                             {ticketReservationForm.quantity}
                                         </span>
                                         <button
                                             onClick={() => handleQuantityChange(ticketReservationForm.quantity + 1)}
                                             disabled={ticketReservationForm.quantity >= getMaxQuantity(getSelectedTicket())}
-                                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center disabled:opacity-50"
+                                            className="w-10 md:w-12 h-10 md:h-12 rounded-full border-2 border-slate-300 flex items-center justify-center disabled:opacity-50 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 disabled:hover:border-slate-300 disabled:hover:bg-white"
                                         >
-                                            +
+                                            <span className="text-xl font-bold text-slate-600">+</span>
                                         </button>
                                     </div>
-                                    <p className="text-sm text-gray-600 mt-2">
+                                    <p className="text-xs md:text-sm text-slate-600 mt-3 text-center">
                                         {getQuantityLimitText(getSelectedTicket())}
                                     </p>
                                 </div>
@@ -931,117 +945,127 @@ export const TicketReservation = () => {
                     )}
 
                     {currentStep === 1 && (
-                        <div>
-                            <h2 className="text-xl font-semibold mb-6">예매자 정보</h2>
-                            <div className="space-y-4">
+                        <div className="animate-fade-in">
+                            <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 text-slate-900 flex items-center gap-2 md:gap-3">
+                                <FaUser className="text-blue-600 text-lg md:text-xl" />
+                                예매자 정보
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2 md:mb-3">
                                         예매자명 *
                                     </label>
                                     <input
                                         type="text"
                                         value={ticketReservationForm.buyer_name}
                                         onChange={(e) => handleInputChange('buyer_name', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                                        className="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 transition-all duration-300 text-sm md:text-base"
                                         placeholder="예매자명을 입력하세요"
                                         disabled
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">로그인된 사용자 정보가 자동으로 입력됩니다</p>
+                                    <p className="text-xs text-slate-500 mt-1 md:mt-2">로그인된 사용자 정보가 자동으로 입력됩니다</p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2 md:mb-3">
                                         연락처 *
                                     </label>
                                     <input
                                         type="tel"
                                         value={ticketReservationForm.buyer_phone}
                                         onChange={(e) => handleInputChange('buyer_phone', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-sm md:text-base"
                                         placeholder="010-0000-0000"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2 md:mb-3">
                                         이메일 *
                                     </label>
                                     <input
                                         type="email"
                                         value={ticketReservationForm.buyer_email}
                                         onChange={(e) => handleInputChange('buyer_email', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-sm md:text-base"
                                         placeholder="이메일을 입력하세요"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2 md:mb-3">
                                         결제 방법 *
                                     </label>
                                     <select
                                         value={ticketReservationForm.paymentMethod}
                                         onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-sm md:text-base"
                                     >
                                         <option value="card">신용카드</option>
-                                        {/*<option value="trans">계좌이체</option>
-                                        <option value="kakaopay">카카오페이</option>*/}
                                     </select>
-                                    <p className="text-xs text-gray-500 mt-1">실제 결제는 다음 단계에서 진행됩니다</p>
+                                    <p className="text-xs text-slate-500 mt-1 md:mt-2">실제 결제는 다음 단계에서 진행됩니다</p>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {currentStep === 2 && (
-                        <div>
-                            <h2 className="text-xl font-semibold mb-6">예매 확인</h2>
-                            <div className="space-y-6">
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <h3 className="font-medium text-gray-900 mb-3">예매 정보</h3>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">이벤트:</span>
-                                            <span className="font-medium">{eventData?.titleKr}</span>
+                        <div className="animate-fade-in">
+                            <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 text-slate-900 flex items-center gap-2 md:gap-3">
+                                <FaCreditCard className="text-blue-600 text-lg md:text-xl" />
+                                예매 확인
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4 md:p-6">
+                                    <h3 className="font-semibold text-slate-900 mb-3 md:mb-4 flex items-center gap-2 text-sm md:text-base">
+                                        <FaTicketAlt className="text-blue-600" />
+                                        예매 정보
+                                    </h3>
+                                    <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
+                                        <div className="flex justify-between items-center py-2 border-b border-blue-100">
+                                            <span className="text-slate-600 font-medium">이벤트:</span>
+                                            <span className="font-semibold text-slate-900 text-right">{eventData?.titleKr}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">회차:</span>
-                                            <span className="font-medium">
+                                        <div className="flex justify-between items-center py-2 border-b border-blue-100">
+                                            <span className="text-slate-600 font-medium">회차:</span>
+                                            <span className="font-semibold text-slate-900 text-right">
                                                 {selectedSchedule?.date} {selectedSchedule?.startTime} - {selectedSchedule?.endTime}
                                             </span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">예매 옵션:</span>
-                                            <span className="font-medium">{getSelectedTicket()?.name}</span>
+                                        <div className="flex justify-between items-center py-2 border-b border-blue-100">
+                                            <span className="text-slate-600 font-medium">예매 옵션:</span>
+                                            <span className="font-semibold text-slate-900 text-right">{getSelectedTicket()?.name}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">수량:</span>
-                                            <span className="font-medium">{ticketReservationForm.quantity}매</span>
+                                        <div className="flex justify-between items-center py-2 border-b border-blue-100">
+                                            <span className="text-slate-600 font-medium">수량:</span>
+                                            <span className="font-semibold text-slate-900 text-right">{ticketReservationForm.quantity}매</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">총 금액:</span>
-                                            <span className="font-medium text-lg text-blue-600">
+                                        <div className="flex justify-between items-center py-3">
+                                            <span className="text-slate-600 font-medium">총 금액:</span>
+                                            <span className="text-lg md:text-2xl font-bold text-blue-600 text-right">
                                                 {calculateTotal().toLocaleString()}원
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                    <h3 className="font-medium text-gray-900 mb-3">예매자 정보</h3>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">이름:</span>
-                                            <span className="font-medium">{ticketReservationForm.buyer_name}</span>
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 md:p-6">
+                                    <h3 className="font-semibold text-slate-900 mb-3 md:mb-4 flex items-center gap-2 text-sm md:text-base">
+                                        <FaUser className="text-green-600" />
+                                        예매자 정보
+                                    </h3>
+                                    <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
+                                        <div className="flex justify-between items-center py-2 border-b border-green-100">
+                                            <span className="text-slate-600 font-medium">이름:</span>
+                                            <span className="font-semibold text-slate-900 text-right">{ticketReservationForm.buyer_name}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">연락처:</span>
-                                            <span className="font-medium">{ticketReservationForm.buyer_phone}</span>
+                                        <div className="flex justify-between items-center py-2 border-b border-green-100">
+                                            <span className="text-slate-600 font-medium">연락처:</span>
+                                            <span className="font-semibold text-slate-900 text-right">{ticketReservationForm.buyer_phone}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">이메일:</span>
-                                            <span className="font-medium">{ticketReservationForm.buyer_email}</span>
+                                        <div className="flex justify-between items-center py-3">
+                                            <span className="text-slate-600 font-medium">이메일:</span>
+                                            <span className="font-semibold text-slate-900 text-right">{ticketReservationForm.buyer_email}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1053,62 +1077,62 @@ export const TicketReservation = () => {
                     {(isProcessing || paymentSuccess) && (
                         <>
                             {/* 블러 오버레이 */}
-                            <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center">
-                                <div className="bg-white rounded-2xl p-8 mx-4 max-w-sm w-full shadow-2xl">
+                            <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center animate-fade-in">
+                                <div className="bg-white rounded-3xl p-10 mx-4 max-w-md w-full shadow-2xl border border-white/20 animate-scale-in">
                                     <div className="text-center">
                                         {!paymentSuccess ? (
                                             <>
                                                 {/* 로딩 애니메이션 */}
-                                                <div className="mb-6">
+                                                <div className="mb-8">
                                                     <div className="relative">
-                                                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+                                                        <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
                                                         <div className="absolute inset-0 flex items-center justify-center">
-                                                            <div className="animate-pulse h-8 w-8 bg-blue-600 rounded-full"></div>
+                                                            <div className="animate-pulse h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* 메인 메시지 */}
-                                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                                <h3 className="text-2xl font-bold text-slate-900 mb-3">
                                                     티켓이 발급중입니다!
                                                 </h3>
-                                                <p className="text-gray-600 mb-4">
+                                                <p className="text-slate-600 mb-6">
                                                     잠시만 기다려주세요!
                                                 </p>
-                                                
+
                                                 {/* 진행 상태 */}
-                                                <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                                                    <div className="text-sm font-medium text-blue-800">
+                                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4 mb-6">
+                                                    <div className="text-sm font-semibold text-blue-800">
                                                         {paymentStep}
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* 주의사항 */}
-                                                <div className="text-xs text-gray-500">
+                                                <div className="text-xs text-slate-500">
                                                     페이지를 닫지 마세요
                                                 </div>
                                             </>
                                         ) : (
                                             <>
                                                 {/* 성공 아이콘 */}
-                                                <div className="mb-6">
-                                                    <div className="h-16 w-16 bg-green-500 rounded-full flex items-center justify-center mx-auto animate-bounce">
-                                                        <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <div className="mb-8">
+                                                    <div className="h-20 w-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                                                        <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                                                         </svg>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* 성공 메시지 */}
-                                                <h3 className="text-xl font-bold text-green-800 mb-2">
+                                                <h3 className="text-2xl font-bold text-green-800 mb-3">
                                                     티켓 발급 완료!
                                                 </h3>
-                                                <p className="text-gray-600 mb-4">
+                                                <p className="text-slate-600 mb-6">
                                                     결제가 성공적으로 완료되었습니다
                                                 </p>
-                                                
+
                                                 {/* 리다이렉션 안내 */}
-                                                <div className="bg-green-50 rounded-lg p-3">
+                                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4">
                                                     <div className="text-sm text-green-700">
                                                         잠시 후 예약 내역으로 이동합니다...
                                                     </div>
@@ -1122,13 +1146,13 @@ export const TicketReservation = () => {
                     )}
 
                     {/* 버튼 */}
-                    <div className="flex justify-between mt-8">
+                    <div className="flex flex-col md:flex-row justify-between gap-3 md:gap-0 mt-8 md:mt-10">
                         <button
                             onClick={handlePrevStep}
                             disabled={currentStep === 0 || isProcessing}
-                            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+                            className="group px-6 md:px-8 py-2 md:py-3 border-2 border-slate-300 rounded-xl text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-300 text-sm md:text-base order-2 md:order-1"
                         >
-                            이전
+                            <span className="group-hover:translate-x-[-2px] transition-transform duration-300 inline-block">이전</span>
                         </button>
 
                         {currentStep < 2 ? (
@@ -1139,21 +1163,20 @@ export const TicketReservation = () => {
                                     (currentStep === 1 && !validateStep1()) ||
                                     isProcessing
                                 }
-                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 border-0 outline-none focus:outline-none"
+                                className="group px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-blue-500 disabled:hover:to-purple-500 shadow-lg hover:shadow-xl transform hover:scale-105 border-0 outline-none focus:outline-none text-sm md:text-base order-1 md:order-2"
                             >
-                                다음
+                                <span className="group-hover:translate-x-[2px] transition-transform duration-300 inline-block">다음</span>
                             </button>
                         ) : (
                             <button
                                 onClick={handlePayment}
                                 disabled={isProcessing}
-                                className={`px-6 py-2 rounded-md transition-colors duration-200 font-medium border-0 outline-none focus:outline-none ${
-                                    paymentSuccess 
-                                        ? 'bg-green-600 text-white cursor-not-allowed' 
-                                        : isProcessing 
-                                            ? 'bg-gray-400 text-white cursor-not-allowed'
-                                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
+                                className={`group px-6 md:px-8 py-2 md:py-3 rounded-xl transition-all duration-300 font-semibold border-0 outline-none focus:outline-none transform hover:scale-105 text-sm md:text-base order-1 md:order-2 ${paymentSuccess
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white cursor-not-allowed shadow-lg'
+                                    : isProcessing
+                                        ? 'bg-slate-400 text-white cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg hover:shadow-xl'
+                                    }`}
                             >
                                 {paymentSuccess ? '결제 완료' : isProcessing ? '결제 중...' : '결제하기'}
                             </button>
@@ -1161,6 +1184,36 @@ export const TicketReservation = () => {
                     </div>
                 </div>
             </div>
+
+            {/* 커스텀 CSS 애니메이션 */}
+            <style jsx>{`
+                @keyframes fade-in {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                @keyframes slide-up {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                @keyframes scale-in {
+                    from { opacity: 0; transform: scale(0.9); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                
+                .animate-fade-in {
+                    animation: fade-in 0.6s ease-out forwards;
+                }
+                
+                .animate-slide-up {
+                    animation: slide-up 0.8s ease-out forwards;
+                }
+                
+                .animate-scale-in {
+                    animation: scale-in 0.4s ease-out forwards;
+                }
+            `}</style>
         </div>
     );
 };

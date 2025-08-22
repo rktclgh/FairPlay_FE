@@ -43,6 +43,15 @@ const translateCategory = (category: string, t: any): string => {
   return categoryMap[category] ? t(categoryMap[category]) : category;
 };
 
+// 카테고리별 색상 정의
+const categoryColors = {
+  "박람회": "bg-blue-100 text-blue-800 border border-blue-200",
+  "공연": "bg-red-100 text-red-800 border border-red-200",
+  "강연/세미나": "bg-green-100 text-green-800 border border-green-200",
+  "전시/행사": "bg-yellow-100 text-yellow-800 border border-yellow-200",
+  "축제": "bg-gray-100 text-gray-800 border border-gray-300"
+};
+
 // 이벤트 제목 선택 함수 (번역 여부에 따라 한글/영문 제목 선택)
 const getEventTitle = (event: EventSummaryDto, i18n: any): string => {
   // 현재 언어가 영어이고 영문 제목이 있는 경우 영문 제목 사용
@@ -1239,7 +1248,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
                   </div>
                   <div className="mt-4 text-left">
 
-                    <span className={`${isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'} inline-block px-3 py-1 rounded text-xs mb-2 font-['Roboto']`}>
+                    <span className={`inline-block px-3 py-1 rounded text-xs mb-2 font-['Roboto'] ${categoryColors[event.mainCategory as keyof typeof categoryColors] || "bg-gray-100 text-gray-700"}`}>
                       {translateCategory(event.mainCategory, t)}
                     </span>
                     <h3 className={`font-bold text-lg md:text-xl mb-2 truncate font-['Roboto'] ${isDark ? 'text-white' : 'text-black'}`}>{getEventTitle(event, i18n)}</h3>

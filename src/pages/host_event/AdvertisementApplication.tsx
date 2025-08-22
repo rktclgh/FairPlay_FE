@@ -43,7 +43,6 @@ interface CreateApplicationItem {
 }
 
 interface CreateApplicationRequestDto {
-  eventId: number;
   bannerType: BannerSlotType;   // "HERO" | "SEARCH_TOP"
   title: string;
   imageUrl: string;
@@ -76,14 +75,17 @@ async function getSlots(params: { type: BannerSlotType; from: string; to: string
   return data;
 }*/
 
-// [추가] 신청 생성 API
-async function createApplication(body: CreateApplicationRequestDto): Promise<number> {
-  const { data } = await api.post("/api/banner/applications", body);
+// [추가] 신청 생성 API - 임시로 원래 방식으로 되돌림
+async function createApplication(eventId: number, body: Omit<CreateApplicationRequestDto, 'eventId'>): Promise<number> {
+  const bodyWithEventId = { ...body, eventId };
+  const { data } = await api.post(`/api/banner/applications`, bodyWithEventId);
   return data as number; // application id
 }
 
 const AdvertisementApplication: React.FC = () => {
   const navigate = useNavigate();
+  const [eventId, setEventId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedTypes, setSelectedTypes] = useState({
     mainBanner: false,
     searchTop: false
@@ -104,16 +106,13 @@ const AdvertisementApplication: React.FC = () => {
     endDate: ''
   });
 
-  // [추가] 메인 배너 신청에 필요한 입력값 (백엔드 DTO 필수 필드)
-  const [heroMeta, setHeroMeta] = useState<{
-    eventId: string;
-    title: string;
-    linkUrl: string;
-  }>({ eventId: '', title: '', linkUrl: '' });
+  // 링크 URL은 행사 상세 페이지로 자동 설정
 
 
   // 슬롯 기반 상태(서버 연동)
   const [slotsByDate, setSlotsByDate] = useState<Record<string, SlotResponseDto[]>>({});
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   // 선택한 기간 슬롯 조회 (서버)
   React.useEffect(() => {
@@ -123,6 +122,8 @@ const AdvertisementApplication: React.FC = () => {
       const to = searchTopForm.endDate;
       if (new Date(from) > new Date(to)) return;
       try {
+        setLoadingAvailability(true);
+        setAvailabilityError(null);
         const list = await getSlots({ type: "SEARCH_TOP", from, to });
         const grouped: Record<string, SlotResponseDto[]> = {};
         for (const s of list) {
@@ -135,7 +136,10 @@ const AdvertisementApplication: React.FC = () => {
         setSlotsByDate(grouped);
       } catch (e) {
         console.error(e);
+        setAvailabilityError("가용 정보를 가져오지 못했어요.");
         setSlotsByDate({});
+      } finally {
+        setLoadingAvailability(false);
       }
     };
     fetch();
@@ -165,7 +169,10 @@ const AdvertisementApplication: React.FC = () => {
   React.useEffect(() => {
     (async () => {
       try {
+        console.log('HERO 슬롯 데이터 요청 중...', { type: "HERO", from: monthRange.from, to: monthRange.to });
         const list = await getSlots({ type: "HERO", from: monthRange.from, to: monthRange.to });
+        console.log('HERO 슬롯 데이터 응답:', list);
+        
         // 같은 날짜의 여러 priority 상태를 맵으로 변환
         const next: Record<string, Record<string, 'available' | 'reserved' | 'sold'>> = {};
         for (const s of list) {
@@ -177,9 +184,11 @@ const AdvertisementApplication: React.FC = () => {
               s.status === "LOCKED" ? "reserved" :
                 "sold";
         }
+        console.log('변환된 inventoryStatus:', next);
         setInventoryStatus(next);
       } catch (e) {
         console.error("HERO slots load failed", e);
+        console.error("에러 상세:", e);
         setInventoryStatus({});
       }
     })();
@@ -187,7 +196,14 @@ const AdvertisementApplication: React.FC = () => {
 
   // 특정 날짜의 특정 순위가 구매 가능한지 확인
   const isRankAvailable = (date: string, rank: string) => {
-    return inventoryStatus[date]?.[rank] === 'available';
+    // inventoryStatus가 비어있으면 임시로 모든 순위를 사용 가능으로 처리
+    if (Object.keys(inventoryStatus).length === 0) {
+      console.log('inventoryStatus가 비어있음, 임시로 available 처리');
+      return true;
+    }
+    const status = inventoryStatus[date]?.[rank];
+    console.log(`날짜 ${date}, 순위 ${rank}의 상태:`, status);
+    return status === 'available';
   };
 
   // 재고 상태에 따른 텍스트 반환
@@ -234,11 +250,7 @@ const AdvertisementApplication: React.FC = () => {
     return { priority: available[0].priority ?? 1, price: available[0].price };
   };
 
-  const [mdPickMeta, setMdPickMeta] = useState<{
-    eventId: string;
-    title: string;
-    linkUrl: string;
-  }>({ eventId: '', title: '', linkUrl: '' });
+  // MD PICK 링크 URL도 행사 상세 페이지로 자동 설정
 
   const getMdPickStatusText = (date: string) => {
     const slots = getDateSlots(date); // slotsByDate[date] ?? []
@@ -309,6 +321,25 @@ const AdvertisementApplication: React.FC = () => {
     }
     return true;
   };
+
+  // 호스트의 행사 정보 가져오기
+  React.useEffect(() => {
+    const fetchHostEvent = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/api/events/manager/event'); // 호스트의 행사 가져오는 API
+        setEventId(response.data); // response.data가 직접 eventId
+      } catch (error) {
+        console.error('행사 정보 가져오기 실패:', error);
+        alert('행사 정보를 가져올 수 없습니다. 행사를 먼저 등록해주세요.');
+        navigate('/host/events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHostEvent();
+  }, [navigate]);
 
   const { uploadedFiles, uploadFile, removeFile } = useFileUpload();
 
@@ -402,19 +433,14 @@ const AdvertisementApplication: React.FC = () => {
           return;
         }
 
-        // 이미지 URL(필수) 준비: 업로드한 md_pick 파일 사용
-        const mdPickFile = uploadedFiles.get?.('md_pick') ?? null; // useFileUpload가 Map 기반이라고 가정
-        if (!mdPickFile) {
-          alert("MD PICK 이미지를 업로드해주세요.");
-          return;
-        }
-        if (!mdPickMeta.eventId) {
-          alert("MD PICK: 이벤트 ID를 입력해주세요.");
-          return;
-        }
+  // MD PICK은 이미지가 필요하지 않으므로 빈 문자열 사용
+  if (!eventId) {
+    alert("이벤트 ID가 필요합니다. URL을 확인해주세요.");
+    return;
+  }
 
-        const mdPickImageUrl =
-          `${import.meta.env.VITE_BACKEND_BASE_URL ?? window.location.origin}${mdPickFile.url}`;
+  const mdPickImageUrl = ""; // MD PICK은 이미지 없음
+  const eventDetailUrl = `/events/${eventId}`; // 행사 상세 페이지 URL
 
         // ❗ DTO는 date 필드명 사용 (slotDate 아님)
         const items = dates
@@ -429,15 +455,14 @@ const AdvertisementApplication: React.FC = () => {
           return;
         }
 
-        const appId = await createApplication({
-          eventId: Number(mdPickMeta.eventId),
-          bannerType: "SEARCH_TOP",
-          title: mdPickMeta.title || "MD PICK 광고",
-          imageUrl: mdPickImageUrl,                  // DTO상 필수 + URL 형식
-          linkUrl: mdPickMeta.linkUrl || undefined,  // 빈 문자열 보내지 말 것
-          items,
-          // lockMinutes: 2880,
-        });
+  const appId = await createApplication(Number(eventId), {
+    bannerType: "SEARCH_TOP",
+    title: "MD PICK 광고", // 행사 정보에서 전달받은 제목 사용
+    imageUrl: mdPickImageUrl,                  // 빈 문자열
+    linkUrl: eventDetailUrl,  // 행사 상세 페이지 URL
+    items,
+    // lockMinutes: 2880,
+  });
 
         alert(`MD PICK 신청이 접수되었습니다. 신청번호: ${appId}`);
 
@@ -450,25 +475,24 @@ const AdvertisementApplication: React.FC = () => {
           alert("메인 배너 이미지를 업로드해주세요.");
           return;
         }
-        if (!heroMeta.eventId || !heroMeta.title) {
-          alert("이벤트 ID와 제목을 입력해주세요.");
+        if (!eventId) {
+          alert("이벤트 ID가 필요합니다. URL을 확인해주세요.");
           return;
         }
 
-        const imageUrl =
-          `${import.meta.env.VITE_BACKEND_BASE_URL ?? window.location.origin}${uploaded.url}`;
+        // 행사 신청과 동일하게 s3Key를 사용하여 백엔드에서 CDN URL 생성
+        const heroEventDetailUrl = `/events/${eventId}`; // 행사 상세 페이지 URL
 
         const items = mainBannerForm.map(({ date, rank }) => ({
           date,
           priority: Number(rank),
         }));
 
-        const appId = await createApplication({
-          eventId: Number(heroMeta.eventId),
+        const appId = await createApplication(Number(eventId), {
           bannerType: "HERO",
-          title: heroMeta.title,
-          imageUrl,
-          linkUrl: heroMeta.linkUrl || undefined,
+          title: "메인 배너 광고", // 행사 정보에서 전달받은 제목 사용
+          imageUrl: uploaded.key, // s3Key를 전달하여 백엔드에서 CDN URL 생성
+          linkUrl: heroEventDetailUrl, // 행사 상세 페이지 URL
           items,
           // lockMinutes: 2880,
         });
@@ -480,9 +504,15 @@ const AdvertisementApplication: React.FC = () => {
       if (selectedTypes.mainBanner || selectedTypes.searchTop) {
         navigate("/admin_dashboard/advertisement-applications");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      const errorMessage = e.response?.data?.message || "신청 처리 중 오류가 발생했습니다.";
+      if (errorMessage.includes("이미 신청된 광고가 있습니다")) {
+        alert(`${errorMessage}\n\n페이지를 새로고침하여 최신 상태를 확인해주세요.`);
+        window.location.reload();
+      } else {
+        alert(errorMessage);
+      }
     }
   };
 
@@ -512,6 +542,24 @@ const AdvertisementApplication: React.FC = () => {
     }
     return days;
   };
+
+  // 로딩 중이면 로딩 화면 표시
+  if (loading) {
+    return (
+      <div className="bg-white flex flex-row justify-center w-full">
+        <div className="bg-white w-[1256px] min-h-screen relative">
+          <TopNav />
+          <HostSideNav className="!absolute !left-0 !top-[117px]" />
+          <div className="absolute left-64 top-[220px] w-[949px] flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">행사 정보를 가져오는 중...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white flex flex-row justify-center w-full">
@@ -654,36 +702,8 @@ const AdvertisementApplication: React.FC = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* [추가] 메인 배너 신청 메타 정보 입력 */}
-                    <div className="space-y-2 pt-2">
-                      <label className="block text-sm text-gray-700">이벤트 ID</label>
-                      <input
-                        type="number"
-                        value={heroMeta.eventId}
-                        onChange={(e) => setHeroMeta(v => ({ ...v, eventId: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="예: 123"
-                      />
-                      <label className="block text-sm text-gray-700 mt-3">배너 제목</label>
-                      <input
-                        type="text"
-                        value={heroMeta.title}
-                        onChange={(e) => setHeroMeta(v => ({ ...v, title: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="노출될 제목"
-                      />
-                      <label className="block text-sm text-gray-700 mt-3">링크 URL (선택)</label>
-                      <input
-                        type="url"
-                        value={heroMeta.linkUrl}
-                        onChange={(e) => setHeroMeta(v => ({ ...v, linkUrl: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="https://..."
-                      />
-                    </div>
-                  </div>
                 </div>
+              </div>
 
                 {/* 날짜 및 순위 선택 섹션 */}
                 <div className="mt-6">
@@ -1017,7 +1037,7 @@ const AdvertisementApplication: React.FC = () => {
               </div>
 
               <p className="text-gray-600 mb-4">
-                메인화면 EVENTS 섹션과 이벤트오버뷰 페이지의 행사목록 최상단에 MD PICK 스티커와 함께 우선노출됩니다.<br></br>
+                메인화면 EVENTS 섹션과 행사 목록 페이지의 목록형 보기에서 최상단에 MD PICK 스티커와 함께 우선노출됩니다.<br></br>
                 <span className="font-semibold text-red-600">최대 2개 행사만 동시 노출 가능</span>합니다.
               </p>
 
@@ -1065,18 +1085,6 @@ const AdvertisementApplication: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2 pt-2">
-                    <label className="block text-sm text-gray-700">이벤트 ID</label>
-                    <input
-                      type="number"
-                      value={mdPickMeta.eventId}
-                      onChange={(e) => setMdPickMeta(v => ({ ...v, eventId: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="예: 456"
-                    />
-                  </div>
-
-
 
                   {/* MD PICK 상태 확인 */}
                   {searchTopForm.startDate && searchTopForm.endDate && (
