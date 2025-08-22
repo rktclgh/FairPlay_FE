@@ -480,8 +480,7 @@ const AdvertisementApplication: React.FC = () => {
           return;
         }
 
-        const imageUrl =
-          `${import.meta.env.VITE_BACKEND_BASE_URL ?? window.location.origin}${uploaded.url}`;
+        // 행사 신청과 동일하게 s3Key를 사용하여 백엔드에서 CDN URL 생성
         const heroEventDetailUrl = `/events/${eventId}`; // 행사 상세 페이지 URL
 
         const items = mainBannerForm.map(({ date, rank }) => ({
@@ -492,7 +491,7 @@ const AdvertisementApplication: React.FC = () => {
         const appId = await createApplication(Number(eventId), {
           bannerType: "HERO",
           title: "메인 배너 광고", // 행사 정보에서 전달받은 제목 사용
-          imageUrl,
+          imageUrl: uploaded.key, // s3Key를 전달하여 백엔드에서 CDN URL 생성
           linkUrl: heroEventDetailUrl, // 행사 상세 페이지 URL
           items,
           // lockMinutes: 2880,
