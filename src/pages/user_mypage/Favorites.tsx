@@ -6,15 +6,16 @@ import api from "../../api/axios";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
+import { eventAPI } from "../../services/event";
 
 interface WishlistEvent {
   eventId: number;
   eventTitle: string;
   categoryName: string;
   location: string;
+  placeName?: string; // 행사 장소명 추가
   startDate: string;
   endDate: string;
-  price: number;
   thumbnailUrl: string;
   addedAt?: string; // 찜한 날짜 추가
 }
@@ -22,15 +23,7 @@ interface WishlistEvent {
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("ko-KR").replace(/\s/g, "");
 const fmtRange = (s: string, e: string) => `${fmtDate(s)} ~ ${fmtDate(e)}`;
-const fmtPrice = (p: number, t: any) => {
-  if (p === 0) return t('mypage.favorites.free');
-  const currentLang = t('language.korean') === '한국어' ? 'ko' : 'en';
-  if (currentLang === 'ko') {
-    return `${p.toLocaleString("ko-KR")}원 ~`;
-  } else {
-    return `$${Math.round(p / 1000)} ~`;
-  }
-};
+
 
 export const MyPageFavorites = () => {
   const { t } = useTranslation();
@@ -46,11 +39,32 @@ export const MyPageFavorites = () => {
         withCredentials: true,
       });
 
-      // 최근에 추가된 순으로 정렬 (addedAt이 있으면 사용, 없으면 현재 시간 기준)
-      const sortedEvents = (res.data || []).map(event => ({
-        ...event,
-        addedAt: event.addedAt || new Date().toISOString() // 임시로 현재 시간 사용
-      })).sort((a, b) => new Date(a.addedAt!).getTime() - new Date(b.addedAt!).getTime());
+      // 각 위시리스트 이벤트에 대해 상세 정보를 가져와서 placeName 추가
+      const eventsWithDetails = await Promise.all(
+        (res.data || []).map(async (event) => {
+          try {
+            // 이벤트 상세 정보에서 placeName 가져오기
+            const eventDetail = await eventAPI.getEventDetail(event.eventId);
+            return {
+              ...event,
+              placeName: eventDetail.placeName,
+              addedAt: event.addedAt || new Date().toISOString()
+            };
+          } catch (error) {
+            console.error(`이벤트 ${event.eventId} 상세 정보 로드 실패:`, error);
+            // 상세 정보를 가져올 수 없는 경우 기존 데이터 사용
+            return {
+              ...event,
+              addedAt: event.addedAt || new Date().toISOString()
+            };
+          }
+        })
+      );
+
+      // 최근에 추가된 순으로 정렬
+      const sortedEvents = eventsWithDetails.sort((a, b) =>
+        new Date(a.addedAt!).getTime() - new Date(b.addedAt!).getTime()
+      );
 
       setEvents(sortedEvents);
     } catch (e) {
@@ -151,15 +165,17 @@ export const MyPageFavorites = () => {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                   {displayEvents.map((event) => (
-                    <div key={event.eventId} className="relative">
+                    <div key={event.eventId} className="relative group">
                       <div className="relative">
                         <img
-                          className="w-full h-48 md:h-64 object-cover rounded-[10px]"
+                          className="w-full h-48 md:h-64 object-cover rounded-[10px] cursor-pointer transition-transform duration-500 ease-out group-hover:scale-105"
                           alt={event.eventTitle}
                           src={event.thumbnailUrl || "/images/NoImage.png"}
+                          onClick={() => window.location.href = `/eventdetail/${event.eventId}`}
                         />
+                        <div className="absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                         <FaHeart
-                          className="absolute top-4 right-4 w-5 h-5 cursor-pointer text-red-500 drop-shadow-lg"
+                          className="absolute top-4 right-4 w-5 h-5 cursor-pointer text-red-500 drop-shadow-lg z-30"
                           onClick={(e) => {
                             e.stopPropagation();
                             removeWishlist(event.eventId);
@@ -169,30 +185,27 @@ export const MyPageFavorites = () => {
                       </div>
 
                       <div className="mt-4 text-left">
-                        <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2">
+                        <span className="inline-block px-3 py-1 bg-blue-100 rounded text-xs text-blue-700 mb-2 font-['Roboto']">
                           {event.categoryName}
                         </span>
                         <h3
-                          className="text-base md:text-lg font-extrabold text-black mb-2 truncate"
+                          className="text-base md:text-lg font-extrabold text-black mb-2 truncate font-['Roboto']"
                           style={{ fontWeight: 800 }}
                         >
                           <Link
                             to={`/eventdetail/${event.eventId}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="block no-underline text-black visited:text-black hover:underline hover:text-black"
+                            className="block no-underline text-black visited:text-black hover:underline hover:text-black font-['Roboto']"
                             style={{ fontWeight: 800 }}
                           >
                             {event.eventTitle}
                           </Link>
                         </h3>
 
-                        <div className="text-sm text-gray-600 mb-2">
-                          <div className="font-bold">{event.location}</div>
+                        <div className="text-sm text-gray-600 mb-2 font-['Roboto']">
+                          <div className="font-bold">{event.placeName || event.location}</div>
                           <div>{fmtRange(event.startDate, event.endDate)}</div>
                         </div>
-                        <p className="font-bold text-base md:text-lg text-[#ff6b35]">
-                          {fmtPrice(event.price, t)}
-                        </p>
                       </div>
                     </div>
                   ))}
