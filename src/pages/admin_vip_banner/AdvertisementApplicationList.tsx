@@ -89,7 +89,7 @@ const AdvertisementApplicationList: React.FC = () => {
     };
 
     const paymentToFront = (paymentStatus?: string): 'pending' | 'completed' | 'canceled' => {
-        if (paymentStatus === 'PAID' || paymentStatus === 'REFUNDED') return 'completed';
+        if (paymentStatus === 'PAID' || paymentStatus === 'COMPLETED' || paymentStatus === 'REFUNDED') return 'completed';
         if (paymentStatus === 'N/A') return 'canceled';
         return 'pending';
     };
