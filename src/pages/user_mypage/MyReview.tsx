@@ -421,14 +421,17 @@ export const MyPageMyReview = () => {
                                 {writeReviewsState?.map((item) => (
                                     <div
                                         key={item.reservationId}
-                                        className="flex flex-col md:flex-row gap-4 md:gap-6 cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                                        className="flex flex-col md:flex-row gap-4 md:gap-6 cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-300 group hover:scale-105"
                                         onClick={() => handleEventClick(item.event, item.reservationId)}
                                     >
-                                        <img
-                                            src={item.event.thumbnail}
-                                            alt="preview"
-                                            className="w-full md:w-[158px] h-48 md:h-[190px] object-cover rounded-lg"
-                                        />
+                                        <div className="relative">
+                                            <img
+                                                src={item.event.thumbnail}
+                                                alt="preview"
+                                                className="w-full md:w-[158px] h-48 md:h-[190px] object-cover rounded-lg"
+                                            />
+                                            <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                        </div>
                                         <div className="flex flex-col gap-2 relative">
                                             <div className="flex flex-col md:flex-row md:items-center gap-2">
                                                 <p className="text-lg font-semibold">{item.event.title}</p>
