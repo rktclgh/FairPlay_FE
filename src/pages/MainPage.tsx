@@ -512,12 +512,12 @@ export const Main: React.FC = () => {
 
   // 번역된 카테고리 배열 생성
   const getTranslatedCategories = () => [
-    { key: "전체", label: t('categories.all'), color: "bg-gray-100 text-gray-700 border-gray-300" },
-    { key: "박람회", label: t('categories.exhibition'), color: "bg-blue-100 text-blue-800 border-blue-200" },
-    { key: "공연", label: t('categories.performance'), color: "bg-red-100 text-red-800 border-red-200" },
-    { key: "강연/세미나", label: t('categories.lecture'), color: "bg-green-100 text-green-800 border-green-200" },
-    { key: "전시/행사", label: t('categories.event'), color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-    { key: "축제", label: t('categories.festival'), color: "bg-gray-100 text-gray-800 border-gray-300" }
+    { key: "전체", label: t('categories.all') },
+    { key: "박람회", label: t('categories.exhibition') },
+    { key: "공연", label: t('categories.performance') },
+    { key: "강연/세미나", label: t('categories.lecture') },
+    { key: "전시/행사", label: t('categories.event') },
+    { key: "축제", label: t('categories.festival') }
   ];
 
 
@@ -1195,9 +1195,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
                       : 'bg-black text-white font-bold border-gray-800')
                     : (isDark
                       ? 'bg-black text-white border-gray-600 hover:bg-gray-800 font-semibold'
-                      : category.key === "전체"
-                        ? 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold'
-                        : category.color + ' hover:opacity-80 font-semibold')
+                      : 'bg-white text-black border-gray-400 hover:bg-gray-50 font-semibold')
                     }`}
                 >
                   {category.label}
