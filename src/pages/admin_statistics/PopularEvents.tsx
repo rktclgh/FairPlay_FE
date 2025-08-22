@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
-import { adminStatisticsService, type PopularTop5Item } from "../../services/adminStatistics.service";
+import { adminStatisticsService, type PopularTop5Item, type PopularEventStatisticsDto, type Top5EventStatisticsDto, type EventCategoryStatisticsDto, type PageableResponse } from "../../services/adminStatistics.service";
 
 export const PopularEvents: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -17,84 +17,52 @@ export const PopularEvents: React.FC = () => {
     const [loadingFemale, setLoadingFemale] = useState<boolean>(false);
     const [loadingAge, setLoadingAge] = useState<boolean>(false);
 
-    // 샘플 데이터 (실제로는 API에서 가져올 데이터)
-    const [statsData] = useState({
-        averageViews: 2847,
-        averageReservations: 89,
-        averageInterests: 156
+    // 백엔드에서 받아올 인기 이벤트 통계 데이터
+    const [popularData, setPopularData] = useState<PopularEventStatisticsDto>({
+        averageViewCount: 0,
+        averageReservationCount: 0,
+        averageWishlistCount: 0
     });
+    const [loadingPopular, setLoadingPopular] = useState<boolean>(false);
 
-    const [topViewsData] = useState([
-        { name: '2025 서울 국제 박람회', views: 12500, category: '박람회' },
-        { name: 'K-POP 콘서트', views: 8900, category: '공연' },
-        { name: '스타트업 창업 세미나', views: 7200, category: '강연/세미나' },
-        { name: '서울 아트 페어', views: 6800, category: '전시/행사' },
-        { name: 'IT 개발자 컨퍼런스', views: 6100, category: '강연/세미나' }
-    ]);
+    // 백엔드에서 받아올 TOP 5 카테고리 통계 데이터
+    const [top5ViewsData, setTop5ViewsData] = useState<Top5EventStatisticsDto[]>([]);
+    const [top5ReservationsData, setTop5ReservationsData] = useState<Top5EventStatisticsDto[]>([]);
+    const [top5WishlistData, setTop5WishlistData] = useState<Top5EventStatisticsDto[]>([]);
+    const [loadingTop5Views, setLoadingTop5Views] = useState<boolean>(false);
+    const [loadingTop5Reservations, setLoadingTop5Reservations] = useState<boolean>(false);
+    const [loadingTop5Wishlist, setLoadingTop5Wishlist] = useState<boolean>(false);
 
-    const [topReservationsData] = useState([
-        { name: '2025 서울 국제 박람회', reservations: 156, category: '박람회' },
-        { name: '스타트업 창업 세미나', reservations: 89, category: '강연/세미나' },
-        { name: '서울 아트 페어', reservations: 78, category: '전시/행사' },
-        { name: 'K-POP 콘서트', reservations: 67, category: '공연' },
-        { name: '한국 전통 축제', reservations: 45, category: '축제' }
-    ]);
+    // 페이징 상태 추가
+    const [popularEventsData, setPopularEventsData] = useState<EventCategoryStatisticsDto[]>([]);
+    const [loadingPopularEvents, setLoadingPopularEvents] = useState<boolean>(false);
+    const [currentPage, setCurrentPage] = useState<number>(0);
+    const [totalPages, setTotalPages] = useState<number>(0);
+    const [totalElements, setTotalElements] = useState<number>(0);
+    const [pageSize] = useState<number>(10);
 
-    const [topInterestsData] = useState([
-        { name: '2025 서울 국제 박람회', interests: 234, category: '박람회' },
-        { name: 'K-POP 콘서트', interests: 189, category: '공연' },
-        { name: '서울 아트 페어', interests: 167, category: '전시/행사' },
-        { name: '스타트업 창업 세미나', interests: 145, category: '강연/세미나' },
-        { name: '패션 트렌드 쇼', interests: 123, category: '전시/행사' }
-    ]);
-
-    const [allPopularEvents] = useState([
-        { rank: 1, name: '2025 서울 국제 박람회', category: '박람회', views: 12500, reservations: 156, interests: 234 },
-        { rank: 2, name: 'K-POP 콘서트', category: '공연', views: 8900, reservations: 67, interests: 189 },
-        { rank: 3, name: '스타트업 창업 세미나', category: '강연/세미나', views: 7200, reservations: 89, interests: 145 },
-        { rank: 4, name: '서울 아트 페어', category: '전시/행사', views: 6800, reservations: 78, interests: 167 },
-        { rank: 5, name: 'IT 개발자 컨퍼런스', category: '강연/세미나', views: 6100, reservations: 42, interests: 98 },
-        { rank: 6, name: '한국 전통 축제', category: '축제', views: 5800, reservations: 45, interests: 87 },
-        { rank: 7, name: '패션 트렌드 쇼', category: '전시/행사', views: 5200, reservations: 38, interests: 123 },
-        { rank: 8, name: '클래식 음악회', category: '공연', views: 4800, reservations: 35, interests: 76 },
-        { rank: 9, name: '반려동물 박람회', category: '박람회', views: 4500, reservations: 32, interests: 89 },
-        { rank: 10, name: '건강 다이어트 세미나', category: '강연/세미나', views: 4200, reservations: 28, interests: 65 }
-    ]);
-
-    const [filteredEvents, setFilteredEvents] = useState(allPopularEvents);
+    const [filteredEvents, setFilteredEvents] = useState<EventCategoryStatisticsDto[]>([]);
 
     // 검색 및 필터링
     useEffect(() => {
-        let filtered = allPopularEvents;
+        let filtered = popularEventsData;
 
         if (selectedCategory !== 'all') {
-            filtered = filtered.filter(event => event.category === selectedCategory);
+            filtered = filtered.filter((event: EventCategoryStatisticsDto) => event.categoryName === selectedCategory);
         }
 
         if (searchKeyword) {
-            filtered = filtered.filter(event =>
-                event.name.toLowerCase().includes(searchKeyword.toLowerCase())
+            filtered = filtered.filter((event: EventCategoryStatisticsDto) =>
+                event.categoryName.toLowerCase().includes(searchKeyword.toLowerCase())
             );
         }
 
         setFilteredEvents(filtered);
-    }, [selectedCategory, searchKeyword]);
+    }, [selectedCategory, searchKeyword, popularEventsData]);
 
     // 숫자 포맷팅
     const formatNumber = (num: number) => {
         return new Intl.NumberFormat('ko-KR').format(num);
-    };
-
-    // 카테고리별 색상
-    const getCategoryColor = (category: string) => {
-        const colors: Record<string, string> = {
-            '박람회': '#8884d8',
-            '강연/세미나': '#82ca9d',
-            '전시/행사': '#ffc658',
-            '공연': '#ff7300',
-            '축제': '#8dd1e1'
-        };
-        return colors[category] || '#8884d8';
     };
 
     // 성별 Top5 로드
@@ -144,6 +112,88 @@ export const PopularEvents: React.FC = () => {
         return () => { ignore = true; };
     }, [ageGroup]);
 
+    // 인기 이벤트 통계 로드
+    useEffect(() => {
+        let ignore = false;
+        const load = async () => {
+            try {
+                setLoadingPopular(true);
+                const data = await adminStatisticsService.getPopularEvents();
+                if (!ignore) setPopularData(data);
+            } finally {
+                if (!ignore) setLoadingPopular(false);
+            }
+        };
+        load();
+        return () => { ignore = true; };
+    }, []);
+
+    // TOP 5 카테고리 통계 로드
+    useEffect(() => {
+        let ignore = false;
+        
+        // 조회수 TOP 5 (code: 1)
+        const loadViews = async () => {
+            try {
+                setLoadingTop5Views(true);
+                const data = await adminStatisticsService.getTop5Events(1);
+                if (!ignore) setTop5ViewsData(data);
+            } finally {
+                if (!ignore) setLoadingTop5Views(false);
+            }
+        };
+
+        // 예약수 TOP 5 (code: 2)
+        const loadReservations = async () => {
+            try {
+                setLoadingTop5Reservations(true);
+                const data = await adminStatisticsService.getTop5Events(2);
+                if (!ignore) setTop5ReservationsData(data);
+            } finally {
+                if (!ignore) setLoadingTop5Reservations(false);
+            }
+        };
+
+        // 좋아요수 TOP 5 (code: 3)
+        const loadWishlist = async () => {
+            try {
+                setLoadingTop5Wishlist(true);
+                const data = await adminStatisticsService.getTop5Events(3);
+                if (!ignore) setTop5WishlistData(data);
+                console.log('TOP 5 좋아요수 데이터:', data);
+            } finally {
+                if (!ignore) setLoadingTop5Wishlist(false);
+            }
+        };
+
+        loadViews();
+        loadReservations();
+        loadWishlist();
+        
+        return () => { ignore = true; };
+    }, []);
+
+    // 인기 카테고리 이벤트 로드
+    useEffect(() => {
+        let ignore = false;
+        const loadPopularEvents = async () => {
+            try {
+                setLoadingPopularEvents(true);
+                const response = await adminStatisticsService.getPopularCategoryEvents(currentPage, pageSize);
+                if (!ignore) {
+                    setPopularEventsData(response.content);
+                    setTotalPages(response.totalPages);
+                    setTotalElements(response.totalElements);
+                }
+                console.log('인기 카테고리 이벤트 데이터:', response);
+            } finally {
+                if (!ignore) setLoadingPopularEvents(false);
+            }
+        };
+        loadPopularEvents();
+        return () => { ignore = true; };
+    }, [currentPage, pageSize]);
+
     return (
         <div className="bg-white flex flex-row justify-center w-full">
             <div className="bg-white w-[1256px] min-h-screen relative">
@@ -167,7 +217,7 @@ export const PopularEvents: React.FC = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">평균 조회 수</p>
-                                    <p className="text-2xl font-bold text-gray-900">{formatNumber(statsData.averageViews)}회</p>
+                                    <p className="text-2xl font-bold text-gray-900">{formatNumber(popularData.averageViewCount)}회</p>
                                 </div>
                                 <div className="p-2 bg-blue-100 rounded-full">
                                     <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +233,7 @@ export const PopularEvents: React.FC = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">평균 예약 수</p>
-                                    <p className="text-2xl font-bold text-gray-900">{formatNumber(statsData.averageReservations)}건</p>
+                                    <p className="text-2xl font-bold text-gray-900">{formatNumber(popularData.averageReservationCount)}건</p>
                                 </div>
                                 <div className="p-2 bg-green-100 rounded-full">
                                     <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,7 +248,7 @@ export const PopularEvents: React.FC = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">평균 관심 수</p>
-                                    <p className="text-2xl font-bold text-gray-900">{formatNumber(statsData.averageInterests)}건</p>
+                                    <p className="text-2xl font-bold text-gray-900">{formatNumber(popularData.averageWishlistCount)}건</p>
                                 </div>
                                 <div className="p-2 bg-purple-100 rounded-full">
                                     <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,109 +264,121 @@ export const PopularEvents: React.FC = () => {
                         {/* 조회 수 TOP 5 */}
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">조회 수 TOP 5</h3>
-                            <div className="space-y-3">
-                                {topViewsData.map((event, index) => (
-                                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                                                index === 1 ? 'bg-gray-100 text-gray-800' :
-                                                    index === 2 ? 'bg-orange-100 text-orange-800' :
-                                                        'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                {index + 1}
-                                            </span>
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {event.name}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-blue-500 rounded-full"
-                                                    style={{
-                                                        width: `${(event.views / topViewsData[0].views) * 100}%`
-                                                    }}
-                                                ></div>
+                            {loadingTop5Views ? (
+                                <div className="h-24 flex items-center justify-center text-gray-500">로딩 중...</div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {top5ViewsData.slice(0, 5).map((event, index) => (
+                                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                    index === 1 ? 'bg-gray-100 text-gray-800' :
+                                                        index === 2 ? 'bg-orange-100 text-orange-800' :
+                                                            'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {event.eventName}
+                                                </span>
                                             </div>
-                                            <span className="text-sm font-semibold text-blue-600 min-w-[60px] text-right">
-                                                {formatNumber(event.views)}회
-                                            </span>
+                                            <div className="flex items-center justify-between">
+                                                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-blue-500 rounded-full"
+                                                        style={{
+                                                            width: `${top5ViewsData.length > 0 ? (event.cnt / Math.max(...top5ViewsData.map(e => e.cnt))) * 100 : 0}%`
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-sm font-semibold text-blue-600 min-w-[60px] text-right">
+                                                    {formatNumber(event.cnt)}회
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* 예약 수 TOP 5 */}
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">예약 수 TOP 5</h3>
-                            <div className="space-y-3">
-                                {topReservationsData.map((event, index) => (
-                                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                                                index === 1 ? 'bg-gray-100 text-gray-800' :
-                                                    index === 2 ? 'bg-orange-100 text-orange-800' :
-                                                        'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                {index + 1}
-                                            </span>
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {event.name}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-green-500 rounded-full"
-                                                    style={{
-                                                        width: `${(event.reservations / topReservationsData[0].reservations) * 100}%`
-                                                    }}
-                                                ></div>
+                            {loadingTop5Reservations ? (
+                                <div className="h-24 flex items-center justify-center text-gray-500">로딩 중...</div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {top5ReservationsData.slice(0, 5).map((event, index) => (
+                                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                    index === 1 ? 'bg-gray-100 text-gray-800' :
+                                                        index === 2 ? 'bg-orange-100 text-orange-800' :
+                                                            'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {event.eventName}
+                                                </span>
                                             </div>
-                                            <span className="text-sm font-semibold text-green-600 min-w-[60px] text-right">
-                                                {formatNumber(event.reservations)}건
-                                            </span>
+                                            <div className="flex items-center justify-between">
+                                                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-green-500 rounded-full"
+                                                        style={{
+                                                            width: `${top5ReservationsData.length > 0 ? (event.cnt / Math.max(...top5ReservationsData.map(e => e.cnt))) * 100 : 0}%`
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-sm font-semibold text-green-600 min-w-[60px] text-right">
+                                                    {formatNumber(event.cnt)}건
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* 관심 수 TOP 5 */}
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">관심 수 TOP 5</h3>
-                            <div className="space-y-3">
-                                {topInterestsData.map((event, index) => (
-                                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                                                index === 1 ? 'bg-gray-100 text-gray-800' :
-                                                    index === 2 ? 'bg-orange-100 text-orange-800' :
-                                                        'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                {index + 1}
-                                            </span>
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {event.name}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-purple-500 rounded-full"
-                                                    style={{
-                                                        width: `${(event.interests / topInterestsData[0].interests) * 100}%`
-                                                    }}
-                                                ></div>
+                            {loadingTop5Wishlist ? (
+                                <div className="h-24 flex items-center justify-center text-gray-500">로딩 중...</div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {top5WishlistData.slice(0, 5).map((event, index) => (
+                                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                    index === 1 ? 'bg-gray-100 text-gray-800' :
+                                                        index === 2 ? 'bg-orange-100 text-orange-800' :
+                                                            'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {event.eventName}
+                                                </span>
                                             </div>
-                                            <span className="text-sm font-semibold text-purple-600 min-w-[60px] text-right">
-                                                {formatNumber(event.interests)}건
-                                            </span>
+                                            <div className="flex items-center justify-between">
+                                                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-purple-500 rounded-full"
+                                                        style={{
+                                                            width: `${top5WishlistData.length > 0 ? (event.cnt / Math.max(...top5WishlistData.map(e => e.cnt))) * 100 : 0}%`
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-sm font-semibold text-purple-600 min-w-[60px] text-right">
+                                                    {formatNumber(event.cnt)}건
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -452,50 +514,77 @@ export const PopularEvents: React.FC = () => {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순위</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">행사명</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리명</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">조회 수</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">예약 수</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이벤트 수</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관심 수</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredEvents.map((event) => (
-                                        <tr key={event.rank} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${event.rank === 1 ? 'bg-yellow-100 text-yellow-800' :
-                                                    event.rank === 2 ? 'bg-gray-100 text-gray-800' :
-                                                        event.rank === 3 ? 'bg-orange-100 text-orange-800' :
-                                                            'bg-blue-100 text-blue-800'
-                                                    }`}>
-                                                    {event.rank}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {event.name}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <span
-                                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                                                    style={{ backgroundColor: getCategoryColor(event.category) }}
-                                                >
-                                                    {event.category}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {formatNumber(event.views)}회
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {formatNumber(event.reservations)}건
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {formatNumber(event.interests)}건
+                                    {loadingPopularEvents ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                                                로딩 중...
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        filteredEvents.map((event, index) => (
+                                            <tr key={`${event.categoryName}-${index}`} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                        index === 1 ? 'bg-gray-100 text-gray-800' :
+                                                            index === 2 ? 'bg-orange-100 text-orange-800' :
+                                                                'bg-blue-100 text-blue-800'
+                                                        }`}>
+                                                        {index + 1}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {event.categoryName}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {formatNumber(event.totalViewCount)}회
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {formatNumber(event.totalEventCount)}개
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {formatNumber(event.totalWishlistCount)}건
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* 페이지네이션 추가 */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-6">
+                                <div className="text-sm text-gray-700">
+                                    총 {formatNumber(totalElements)}개 중 {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, totalElements)}개 표시
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(currentPage - 1)}
+                                        disabled={currentPage === 0}
+                                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        이전
+                                    </button>
+                                    <span className="px-3 py-2 text-sm font-medium text-gray-700">
+                                        {currentPage + 1} / {totalPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage(currentPage + 1)}
+                                        disabled={currentPage >= totalPages - 1}
+                                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        다음
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

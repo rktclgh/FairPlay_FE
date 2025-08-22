@@ -76,8 +76,26 @@ export const EventComparison: React.FC = () => {
     const loadEventData = useCallback(async (page: number = 0) => {
         try {
             setLoading(true);
-            const response = await adminStatisticsService.getEventComparison(page, pageSize);
-            console.log('백엔드에서 받은 데이터:', response);
+            
+            // 선택된 상태를 백엔드 코드로 변환
+            let statusCode: number | undefined;
+            switch (selectedStatus) {
+                case "예정":
+                    statusCode = 1;
+                    break;
+                case "진행중":
+                    statusCode = 2;
+                    break;
+                case "종료됨":
+                    statusCode = 3;
+                    break;
+                case "전체":
+                default:
+                    statusCode = undefined; // 전체인 경우 필터링하지 않음
+                    break;
+            }
+            
+            const response = await adminStatisticsService.getEventComparison(page, pageSize, statusCode);
             
             // 페이징 정보 업데이트 (response는 PageableResponse 객체)
             setTotalPages(response.totalPages);
@@ -87,7 +105,6 @@ export const EventComparison: React.FC = () => {
             const transformedData = transformEventData(response.content);
             setEventData(transformedData);
         } catch (err) {
-            console.error('이벤트 비교 데이터 로드 실패:', err);
             // 실패시 빈 배열로 설정
             setEventData([]);
             setTotalPages(0);
@@ -95,11 +112,16 @@ export const EventComparison: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [pageSize]);
+    }, [pageSize, selectedStatus]); // selectedStatus 의존성 추가
 
     useEffect(() => {
         loadEventData(currentPage);
     }, [currentPage, loadEventData]);
+
+    // 상태 변경 시 첫 페이지로 리셋
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [selectedStatus]);
 
 
     // 정렬 함수
@@ -112,14 +134,9 @@ export const EventComparison: React.FC = () => {
         }
     };
 
-    // 정렬된 데이터 반환
+    // 정렬된 데이터 반환 (백엔드에서 이미 필터링된 데이터이므로 상태 필터링 제거)
     const getSortedData = () => {
-        const filteredData = eventData.filter(event => {
-            if (selectedStatus === "전체") return true;
-            return event.status === selectedStatus;
-        });
-
-        return filteredData.sort((a, b) => {
+        return eventData.sort((a, b) => {
             const aValue = a[sortField as keyof EventData];
             const bValue = b[sortField as keyof EventData];
 

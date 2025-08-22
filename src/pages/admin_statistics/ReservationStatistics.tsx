@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { adminStatisticsService, type ReservationStatisticsDto, type ReservationWeeklyStatisticsDto, type ReservationCategoryStatisticsDto, type ReservationEventStatisticsDto, type PageableResponse } from "../../services/adminStatistics.service";
 
 export const ReservationStatistics: React.FC = () => {
-    const [selectedPeriod, setSelectedPeriod] = useState('month');
+    const [selectedPeriod, setSelectedPeriod] = useState('week');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchKeyword, setSearchKeyword] = useState('');
     const [loading, setLoading] = useState<boolean>(true);
@@ -165,6 +165,13 @@ export const ReservationStatistics: React.FC = () => {
     // 백엔드 카테고리 데이터를 차트 형식으로 변환
     const transformCategoryDataForChart = () => {
         const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#0088fe', '#00c49f'];
+        
+        // 데이터가 비어있을 때 기본값 반환
+        if (!categoryData || categoryData.length === 0) {
+            return [
+                { name: '데이터 없음', value: 1, color: '#e5e7eb' }
+            ];
+        }
         
         return categoryData.map((item, index) => ({
             name: item.category,
@@ -327,27 +334,43 @@ export const ReservationStatistics: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">카테고리별 예약</h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                각 카테고리별 예약 건수의 비율을 원형 차트로 표시합니다
+                                각 카테고리별 예약 건수의 비율을 원형 차트로 표시합니다 {categoryData.length > 0 ? '(실제 데이터)' : '(데이터 로딩 중...)'}
                             </p>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={transformCategoryDataForChart()}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
-                                        {transformCategoryDataForChart().map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value) => [`${value}건`, '예약 수']} />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            {loading ? (
+                                <div className="flex items-center justify-center h-[300px]">
+                                    <div className="text-gray-500">데이터를 불러오는 중...</div>
+                                </div>
+                            ) : (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={transformCategoryDataForChart()}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percent }) => 
+                                                categoryData.length > 0 
+                                                    ? `${name} ${(percent * 100).toFixed(0)}%`
+                                                    : name
+                                            }
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                        >
+                                            {transformCategoryDataForChart().map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value) => [`${value}건`, '예약 수']} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            )}
+                            {/* 디버그 정보 */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <div className="mt-2 text-xs text-gray-400">
+                                    디버그: 카테고리 데이터 개수 - {categoryData.length}개
+                                </div>
+                            )}
                         </div>
                     </div>
 

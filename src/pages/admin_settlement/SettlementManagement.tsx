@@ -146,34 +146,80 @@ const RevenueSourcesSection: React.FC<RevenueSourcesSectionProps> = ({
         );
     }
 
-    // getEventCompare API 데이터만 사용
-    const totals = { "예매": 0, "부스": 0, "광고": 0, "기타": 0 } as Record<string, number>;
+
+    // getEventCompare API 데이터 분석 및 검증
+    const totals = { "티켓": 0, "부스": 0, "광고": 0, "부스 신청": 0,"배너 신청" :0 } as Record<string, number>;
     
     eventCompareData.forEach(item => {
-        totals["예매"] += item.reservationAmount || 0;
-        totals["부스"] += item.boothAmount || 0;
-        totals["광고"] += item.adAmount || 0;
-        totals["기타"] += item.etcAmount || 0;
+  
+        const reservation = item.reservationAmount || 0;
+        const booth = item.boothAmount || item.booth_amount || 0;
+        const ad = item.adAmount || item.ad_amount || item.advertisement_amount || 0;
+        const boothApp = item.boothApplication || item.booth_application_amount || 0;
+        const bannerApp = item.bannerApplication || item.banner_amount || 0;
+
+        totals["티켓"] += reservation;
+        totals["부스"] += booth;
+        totals["광고"] += ad;
+        totals["부스 신청"] += boothApp;
+        totals["배너 신청"] += bannerApp;
+
+        
+
+       
     });
 
-    const data = Object.entries(totals).map(([label, value]) => ({ label, value }));
+    // 0원 항목 포함 여부를 결정 (필요시 수정 가능)
+    const showZeroValues = true; // true로 변경하면 0원 항목도 표시
+    
+    const displayTotals = showZeroValues 
+        ? totals 
+        : Object.entries(totals)
+            .filter(([, value]) => value > 0)
+            .reduce((acc, [key, value]) => {
+                acc[key] = value;
+                return acc;
+            }, {} as Record<string, number>);
+
+
+
+    const data = Object.entries(displayTotals).map(([label, value]) => ({ label, value }));
+    
+
+    
     const maxVal = Math.max(1, ...data.map(d => d.value));
     const totalRevenue = data.reduce((sum, d) => sum + d.value, 0);
 
-    // 데이터가 없는 경우
-    if (totalRevenue === 0) {
+    // 데이터가 없는 경우 (모든 값이 0)
+    if (totalRevenue === 0 || data.length === 0) {
         return (
             <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">수익 출처별 매출 비교</h3>
                 <div className="text-center py-8 text-gray-500">
                     수익 출처별 데이터가 없습니다.
                 </div>
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                        <strong>디버깅 정보:</strong>
+                    </p>
+                    <p className="text-xs text-yellow-600 mt-1">
+                        원본 데이터: {JSON.stringify(totals)}
+                    </p>
+                    <p className="text-xs text-yellow-600">
+                        API 응답: {JSON.stringify(eventCompareData)}
+                    </p>
+                </div>
             </div>
         );
     }
 
-    // 색상 팔레트
-    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
+    // "기타"만 있거나 기타의 비율이 너무 높은 경우 경고
+    const etcRatio = (totals["기타"] / totalRevenue) * 100;
+    const hasOnlyEtc = data.length === 1 && data[0].label === "기타";
+    const etcDominant = etcRatio > 80; // 80% 이상이 기타인 경우
+
+    // 색상 팔레트 (5개 항목 지원)
+    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
     // 데이터를 내림차순으로 정렬
     const sortedData = data.sort((a, b) => b.value - a.value);
@@ -182,15 +228,41 @@ const RevenueSourcesSection: React.FC<RevenueSourcesSectionProps> = ({
         <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">수익 출처별 매출 비교</h3>
 
+            {/* "기타"가 지배적인 경우 경고 메시지 */}
+            {(hasOnlyEtc || etcDominant) && (
+                <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-start">
+                        <div className="flex-1">
+                            <details className="mt-2">
+                                <summary className="text-xs text-orange-700 cursor-pointer hover:text-orange-800">
+                                    디버깅 정보 보기
+                                </summary>
+                                <div className="mt-2 text-xs text-orange-600 bg-orange-100 p-2 rounded">
+                                    <p><strong>현재 집계:</strong></p>
+                                    <ul className="ml-4 mt-1">
+                                        <li>티켓: {totals["티켓"].toLocaleString()}원</li>
+                                        <li>부스: {totals["부스"].toLocaleString()}원</li>
+                                        <li>광고: {totals["광고"].toLocaleString()}원</li>
+                                        <li>부스 신청: {totals["부스 신청"].toLocaleString()}원</li>
+                                        <li>배너 신청: {totals["배너 신청"].toLocaleString()}원</li>
+                                    </ul>
+                                    <p className="mt-2"><strong>예상되는 paymentTargetName 값:</strong> "티켓", "부스", "광고", "부스 신청", "배너 신청"</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 상단 요약 카드 */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-5 gap-3 mb-6">
                 {sortedData.map((d, i) => (
-                    <div key={i} className="bg-gray-50 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold" style={{ color: colors[i] }}>
+                    <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold" style={{ color: colors[i] }}>
                             {totalRevenue > 0 ? ((d.value / totalRevenue) * 100).toFixed(1) : '0.0'}%
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">{d.label}</div>
-                        <div className="text-lg font-semibold text-gray-900 mt-2">
+                        <div className="text-xs text-gray-600 mt-1">{d.label}</div>
+                        <div className="text-sm font-semibold text-gray-900 mt-1">
                             {new Intl.NumberFormat("ko-KR").format(d.value)}원
                         </div>
                     </div>
@@ -226,9 +298,9 @@ const RevenueSourcesSection: React.FC<RevenueSourcesSectionProps> = ({
                 {/* 오른쪽: 원형 차트 (시각적 표현) */}
                 <div>
                     <h4 className="text-md font-medium text-gray-700 mb-4">비율 분포</h4>
-                    <div className="relative w-32 h-32 mx-auto">
+                    <div className="relative w-48 h-48 mx-auto">
                         {/* 원형 차트 시각화 */}
-                        <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                        <svg className="w-48 h-48 transform -rotate-90" viewBox="0 0 100 100">
                             {sortedData.map((d, i) => {
                                 const percentage = totalRevenue > 0 ? (d.value / totalRevenue) * 100 : 0;
                                 const radius = 40;
@@ -250,7 +322,7 @@ const RevenueSourcesSection: React.FC<RevenueSourcesSectionProps> = ({
                                         r={radius}
                                         fill="none"
                                         stroke={colors[i]}
-                                        strokeWidth="8"
+                                        strokeWidth="10"
                                         strokeDasharray={strokeDasharray}
                                         strokeDashoffset={strokeDashoffset}
                                         transform={`rotate(${startAngle} 50 50)`}
@@ -263,10 +335,10 @@ const RevenueSourcesSection: React.FC<RevenueSourcesSectionProps> = ({
                         {/* 중앙 텍스트 */}
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
-                                <div className="text-lg font-bold text-gray-900">
+                                <div className="text-xl font-bold text-gray-900">
                                     {new Intl.NumberFormat("ko-KR").format(totalRevenue)}원
                                 </div>
-                                <div className="text-xs text-gray-500">총 매출</div>
+                                <div className="text-sm text-gray-500">총 매출</div>
                             </div>
                         </div>
                     </div>
@@ -405,9 +477,14 @@ export const SettlementManagement: React.FC = () => {
         try {
             setLoading(true);
             
-            // getAllSales API 사용
-            const response = await adminStatisticsService.getAllSales();
-            const settlements = response.content.flat(); // AllSalesDto[] 배열을 평탄화
+            // getAllSales API 사용 - 서버 사이드 페이징
+            const response = await adminStatisticsService.getAllSales(
+                currentPage - 1, // API는 0-based 페이징
+                10 // 페이지 크기
+            );
+            
+            // 백엔드에서 이미 페이징된 데이터를 직접 사용
+            const settlements = response.content; // 이미 AllSalesDto[] 배열
             
             // SettlementItem 형식으로 변환
             const formattedSettlements: SettlementItem[] = settlements.map(item => {
@@ -427,7 +504,7 @@ export const SettlementManagement: React.FC = () => {
                 };
             });
 
-            // 검색 및 필터링 적용
+            // 클라이언트 사이드 필터링 (서버에서 지원하지 않는 경우에만)
             let filteredList = formattedSettlements;
             
             if (searchName) {
@@ -448,22 +525,17 @@ export const SettlementManagement: React.FC = () => {
                 );
             }
 
-            // 페이지네이션 적용
-            const pageSize = 10;
-            const from = (currentPage - 1) * pageSize;
-            const pageData = filteredList.slice(from, from + pageSize);
-            
-            // 요약 정보 계산
+            // 백엔드 페이징 정보 사용 (클라이언트 페이징 제거)
             const sum = {
                 totalGross: filteredList.reduce((a, b) => a + b.totalAmount, 0),
                 totalNet: filteredList.reduce((a, b) => a + b.totalRevenue, 0),
                 totalFee: filteredList.reduce((a, b) => a + b.totalFee, 0),
-                totalCount: filteredList.length,
+                totalCount: response.totalElements, // 백엔드에서 제공하는 전체 개수
             };
 
-            setSettlements(pageData);
-            setTotalElements(filteredList.length);
-            setTotalPages(Math.max(1, Math.ceil(filteredList.length / pageSize)));
+            setSettlements(filteredList);
+            setTotalElements(response.totalElements); // 백엔드 totalElements 사용
+            setTotalPages(response.totalPages); // 백엔드 totalPages 사용
             setSummary(sum);
             
         } catch (err) {
@@ -536,10 +608,7 @@ export const SettlementManagement: React.FC = () => {
             // Excel 파일 다운로드
             const blob = await adminStatisticsService.exportSettlements(
                 exportStartDate,
-                exportEndDate,
-                searchName || undefined,
-                undefined, // settlementStatus - 현재 사용하지 않음
-                undefined  // disputeStatus - 현재 사용하지 않음
+                exportEndDate
             );
 
             // 파일 다운로드 처리

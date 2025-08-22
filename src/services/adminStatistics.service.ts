@@ -1,5 +1,6 @@
 import type { Fetcher } from "react-router-dom";
 import api from "../api/axios";
+import type { get } from "http";
 
 export interface PopularTop5Item {
   eventTitle: string;
@@ -45,13 +46,18 @@ export interface EventCompareDto{
   startDate : string;
   endDate : string;
   modifyDate : string;
+}
 
+export interface Top3EventCompareDto {
+  top3Events: EventCompareDto[];
+  userCount: number;
+  reservationCount: number;
+  totalRevenue: number;
 }
 
 export interface TotalSalesStatistics {
   totalRevenue: number;
   totalPayments: number;
-  averageSales: number;
 }
 
 export interface DailySalesDto{
@@ -59,9 +65,16 @@ export interface DailySalesDto{
   reservationAmount : number;
   boothAmount : number;
   adAmount : number;
-  etcAmount : number;
+  boothApplication : number;
+  bannerApplication : number;
   totalAmount : number;
   totalCount : number;
+  // 백엔드에서 다른 필드명을 사용할 수 있는 경우를 위한 optional 필드들
+  booth_amount? : number;
+  ad_amount? : number;
+  advertisement_amount? : number;
+  booth_application_amount? : number;
+  banner_amount? : number;
 }
 
 export interface AllSalesDto{
@@ -95,6 +108,30 @@ export interface ReservationEventStatisticsDto{
   totalAmount : number;
 }
 
+export interface PopularEventStatisticsDto{
+  averageViewCount : number;
+  averageReservationCount : number;
+  averageWishlistCount : number;
+}
+
+export interface EventCategoryStatisticsDto{
+  categoryName: string;
+  totalViewCount: number;
+  totalEventCount: number;
+  totalWishlistCount: number;
+}
+export interface Top5EventStatisticsDto{
+  eventName :string;
+  cnt : number;
+}
+
+export interface Top3EventCompareDto {
+  top3Events: EventCompareDto[];
+  userCount: number;
+  reservationCount: number;
+  totalRevenue: number;
+}
+
 export const adminStatisticsService = {
   // 성별별 TOP5: /api/admin/statistics/popular/gender/{gender}
   async getTop5ByMale( ): Promise<PopularTop5Item[]> {
@@ -121,12 +158,17 @@ export const adminStatisticsService = {
   async getEventComparison(
     page: number = 0,
     size: number = 5,
+    status?: number,
     sort?: string
   ): Promise<PageableResponse<EventCompareDto>>{
     const params: Record<string, string | number> = {
       page,
       size
     };
+    
+    if (status !== undefined) {
+      params.status = status;
+    }
     
     if (sort) {
       params.sort = sort;
@@ -202,7 +244,7 @@ async getEventCompare(): Promise<DailySalesDto> {
     page: number = 0,
     size: number = 5,
     sort?: string
-  ): Promise<PageableResponse<AllSalesDto[]>> {
+  ): Promise<PageableResponse<AllSalesDto>> {
     const params: Record<string, string | number> = {
       page,
       size
@@ -212,7 +254,7 @@ async getEventCompare(): Promise<DailySalesDto> {
       params.sort = sort;
     }
 
-    const res = await api.get<PageableResponse<AllSalesDto[]>>(
+    const res = await api.get<PageableResponse<AllSalesDto>>(
       `/api/sales-statistics/all-sales`,
       { params }
     );
@@ -259,6 +301,67 @@ async getEventCompare(): Promise<DailySalesDto> {
     }];
   },
 
+  async getPopularCategoryEvents(
+    page: number = 0,
+    size: number = 5,
+    sort?: string
+  ): Promise<PageableResponse<EventCategoryStatisticsDto>>{
+    const params: Record<string, string | number> = {
+      page,
+      size
+    };
+    
+    if (sort) {
+      params.sort = sort;
+    }
+
+    const res = await api.get<PageableResponse<EventCategoryStatisticsDto>>(
+      `/api/popular-events/get-category-statistics`,
+      { params }
+    );
+    return res.data || {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      pageable: {
+        pageNumber: 0,
+        pageSize: 5,
+        sort: { empty: true, sorted: false, unsorted: true },
+        offset: 0,
+        unpaged: false,
+        paged: true
+      },
+      last: true,
+      size: 5,
+      number: 0,
+      sort: { empty: true, sorted: false, unsorted: true },
+      first: true,
+      numberOfElements: 0,
+      empty: true
+    };
+  },
+
+  async getPopularEvents():Promise<PopularEventStatisticsDto>{
+    const res = await api.get<PopularEventStatisticsDto>(
+      `/api/popular-events/get-popular-statistics`
+    );
+    return res.data || {
+      averageViewCount: 0,
+      averageReservationCount: 0,
+      averageWishlistCount: 0
+    };
+  },
+
+  async getTop5Events(code: number):Promise<Top5EventStatisticsDto[]>{
+    const res = await api.get<Top5EventStatisticsDto[]>(
+      `/api/popular-events/get-top5/${code}`
+    );
+    return res.data || [{
+      eventName: "",
+      cnt: 0
+
+    }];
+  },
 
   async getReservationCategoryStatistics():Promise<ReservationCategoryStatisticsDto[]> {
     const res = await api.get<ReservationCategoryStatisticsDto[]>(
@@ -309,4 +412,5 @@ async getEventCompare(): Promise<DailySalesDto> {
       empty: true
     };
   },
+
 };
