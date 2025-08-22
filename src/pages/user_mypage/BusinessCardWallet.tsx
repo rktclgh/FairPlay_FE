@@ -24,7 +24,7 @@ export default function BusinessCardWallet(): JSX.Element {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingMemo, setEditingMemo] = useState<{ cardId: number; memo: string } | null>(null);
     const [qrScannerOpen, setQrScannerOpen] = useState(false);
-    
+
     // 페이징 관련 상태
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(6); // 페이지당 항목 수
@@ -77,7 +77,7 @@ export default function BusinessCardWallet(): JSX.Element {
                         : card
                 )
             );
-            
+
             setEditingMemo(null);
             toast.success(t('businessCardWallet.memoSaved'));
         } catch (error: any) {
@@ -98,7 +98,7 @@ export default function BusinessCardWallet(): JSX.Element {
                         : card
                 )
             );
-            
+
             setEditingMemo(null);
             toast.success(t('businessCardWallet.memoSaved'));
         } catch (error: any) {
@@ -112,7 +112,7 @@ export default function BusinessCardWallet(): JSX.Element {
         try {
             // QR 코드 URL에서 사용자 ID 추출
             const userId = businessCardService.extractUserIdFromQRUrl(scannedUrl);
-            
+
             if (!userId) {
                 toast.error(t('businessCardWallet.invalidQR'));
                 return;
@@ -121,10 +121,10 @@ export default function BusinessCardWallet(): JSX.Element {
             // 인코딩된 사용자 ID로 명함 수집
             await businessCardService.collectBusinessCardByEncodedId(userId);
             toast.success(t('businessCardWallet.cardCollected'));
-            
+
             // 수집된 명함 목록 새로고침
             await loadCollectedCards();
-            
+
         } catch (error: any) {
             console.error('명함 수집 실패:', error);
             const message = error.response?.data?.message || t('businessCardWallet.collectError');
@@ -134,10 +134,10 @@ export default function BusinessCardWallet(): JSX.Element {
 
     const filteredCards = collectedCards.filter(card => {
         if (!searchTerm) return true;
-        
+
         const searchLower = searchTerm.toLowerCase();
         const businessCard = card.businessCard;
-        
+
         return (
             businessCard?.name?.toLowerCase().includes(searchLower) ||
             businessCard?.company?.toLowerCase().includes(searchLower) ||
@@ -145,30 +145,30 @@ export default function BusinessCardWallet(): JSX.Element {
             card.memo?.toLowerCase().includes(searchLower)
         );
     });
-    
+
     // 페이징 계산
     const totalPages = Math.ceil(filteredCards.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentCards = filteredCards.slice(startIndex, endIndex);
-    
+
     // 검색어 변경 시 첫 페이지로 이동
     React.useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm]);
-    
+
     // 페이지 변경 핸들러
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
         // 페이지 변경 시 상단으로 스크롤
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-    
+
     // 페이지 번호 배열 생성 (최대 5개씩 표시)
     const getPageNumbers = () => {
         const pageNumbers = [];
         const maxVisiblePages = 5;
-        
+
         if (totalPages <= maxVisiblePages) {
             for (let i = 1; i <= totalPages; i++) {
                 pageNumbers.push(i);
@@ -176,12 +176,12 @@ export default function BusinessCardWallet(): JSX.Element {
         } else {
             const start = Math.max(1, currentPage - 2);
             const end = Math.min(totalPages, start + maxVisiblePages - 1);
-            
+
             for (let i = start; i <= end; i++) {
                 pageNumbers.push(i);
             }
         }
-        
+
         return pageNumbers;
     };
 
@@ -234,9 +234,8 @@ export default function BusinessCardWallet(): JSX.Element {
                 )}
 
                 {/* 모바일 사이드바 */}
-                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${
-                    isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                }`}>
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}>
                     <div className="p-4">
                         <button
                             onClick={() => setIsMobileSidebarOpen(false)}
@@ -327,7 +326,7 @@ export default function BusinessCardWallet(): JSX.Element {
                                     />
                                 ))}
                             </div>
-                            
+
                             {/* 페이징 */}
                             {totalPages > 1 && (
                                 <div className="flex justify-center items-center space-x-2 mt-8">
@@ -335,39 +334,36 @@ export default function BusinessCardWallet(): JSX.Element {
                                     <button
                                         onClick={() => handlePageChange(currentPage - 1)}
                                         disabled={currentPage === 1}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                            currentPage === 1
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentPage === 1
                                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         {t('businessCardWallet.previous')}
                                     </button>
-                                    
+
                                     {/* 페이지 번호들 */}
                                     {getPageNumbers().map((pageNum) => (
                                         <button
                                             key={pageNum}
                                             onClick={() => handlePageChange(pageNum)}
-                                            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                                currentPage === pageNum
+                                            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentPage === pageNum
                                                     ? 'bg-blue-600 text-white'
                                                     : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                                            }`}
+                                                }`}
                                         >
                                             {pageNum}
                                         </button>
                                     ))}
-                                    
+
                                     {/* 다음 페이지 */}
                                     <button
                                         onClick={() => handlePageChange(currentPage + 1)}
                                         disabled={currentPage === totalPages}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                            currentPage === totalPages
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
                                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         {t('businessCardWallet.next')}
                                     </button>

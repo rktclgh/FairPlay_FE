@@ -131,7 +131,7 @@ export const MyPageMyReview = () => {
     };
 
     const handleEventClick = (event: EventDto, reservationId: number) => {
-        
+
 
         if (writeReviewsState?.some(review => review.reservationId === reservationId && review.hasReview)) {
             alert("이미 리뷰 작성이 완료된 행사입니다.");
@@ -341,31 +341,37 @@ export const MyPageMyReview = () => {
             <div className="bg-white w-full md:w-[1256px] min-h-screen relative">
                 {/* 제목과 탭 - 웹화면에서 원래 위치로 유지, 모바일에서 맨 왼쪽으로 이동 */}
                 <div className="md:absolute md:top-[137px] md:left-64 left-0 right-4 top-24 relative md:static">
-                    <div className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-xl md:text-2xl leading-[54px] tracking-[0] whitespace-nowrap mb-4">
+                    <div className="font-['Roboto-Bold',Helvetica] font-bold text-gray-900 text-2xl md:text-3xl leading-tight tracking-tight mb-8">
                         관람평
                     </div>
 
                     {/* 탭 네비게이션 */}
-                    <div className="w-full md:w-[947px] border-b border-[#0000001a] pb-2">
-                        <div className="flex flex-row gap-4 md:gap-0">
+                    <div className="w-full md:w-[947px]">
+                        <div className="flex flex-row gap-0">
                             <div
                                 onClick={() => setActiveTab('write')}
-                                className={`flex-1 md:flex-none md:w-[200px] h-[54px] flex justify-center items-center text-base cursor-pointer hover:text-gray-700 z-10 focus:outline-none border-b-2 transition-colors ${activeTab === 'write'
-                                    ? "[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black border-black"
-                                    : "[font-family:'Roboto-Regular',Helvetica] font-normal text-black border-transparent"
+                                className={`flex-1 md:flex-none md:w-[200px] h-12 flex justify-center items-center text-base cursor-pointer transition-all duration-200 focus:outline-none relative font-['Roboto',sans-serif] ${activeTab === 'write'
+                                    ? "text-black font-bold"
+                                    : "text-gray-500 hover:text-gray-700 font-medium"
                                     }`}
                             >
                                 관람평 쓰기
+                                {activeTab === 'write' && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black rounded-full" />
+                                )}
                             </div>
 
                             <div
                                 onClick={() => setActiveTab('my')}
-                                className={`flex-1 md:flex-none md:w-[200px] h-[54px] flex justify-center items-center text-base cursor-pointer hover:text-gray-700 z-10 focus:outline-none border-b-2 transition-colors ${activeTab === 'my'
-                                    ? "[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black border-black"
-                                    : "[font-family:'Roboto-Regular',Helvetica] font-normal text-black border-transparent"
+                                className={`flex-1 md:flex-none md:w-[200px] h-12 flex justify-center items-center text-base cursor-pointer transition-all duration-200 focus:outline-none relative font-['Roboto',sans-serif] ${activeTab === 'my'
+                                    ? "text-black font-bold"
+                                    : "text-gray-500 hover:text-gray-700 font-medium"
                                     }`}
                             >
                                 내 관람평
+                                {activeTab === 'my' && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black rounded-full" />
+                                )}
                             </div>
                         </div>
                     </div>
@@ -392,7 +398,7 @@ export const MyPageMyReview = () => {
                 )}
 
                 {/* 모바일 사이드바 */}
-                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}>
                     <div className="p-4">
                         <button
@@ -421,57 +427,48 @@ export const MyPageMyReview = () => {
                                 {writeReviewsState?.map((item) => (
                                     <div
                                         key={item.reservationId}
-                                        className="flex flex-col md:flex-row gap-4 md:gap-6 cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                                        className="flex flex-col md:flex-row gap-6 cursor-pointer p-6 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 group hover:scale-[1.02] bg-white"
                                         onClick={() => handleEventClick(item.event, item.reservationId)}
                                     >
-                                        <img
-                                            src={item.event.thumbnail}
-                                            alt="preview"
-                                            className="w-full md:w-[158px] h-48 md:h-[190px] object-cover rounded-lg"
-                                        />
-                                        <div className="flex flex-col gap-2 relative">
-                                            <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                                <p className="text-lg font-semibold">{item.event.title}</p>
+                                        <div className="relative overflow-hidden rounded-xl">
+                                            <img
+                                                src={item.event.thumbnail}
+                                                alt="preview"
+                                                className="w-full md:w-[160px] h-48 md:h-[200px] object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                        </div>
+                                        <div className="flex flex-col gap-4 relative flex-1">
+                                            <div className="flex flex-col md:flex-row md:items-start gap-3">
+                                                <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                                    {item.event.title}
+                                                </h3>
                                                 {/* 상태 배지 */}
-                                                <div className={`px-2 py-1 rounded-full text-xs font-medium w-fit ${item.hasReview
-                                                    ? 'bg-green-100 text-green-700 border border-green-200'
-                                                    : 'bg-gray-100 text-gray-600 border border-gray-200'
+                                                <div className={`px-2 py-1 rounded-md text-xs font-medium w-fit ${item.hasReview
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-600'
                                                     }`}>
-                                                    {item.hasReview ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                            </svg>
-                                                            작성 완료
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-1">
-                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                            </svg>
-                                                            작성 전
-                                                        </div>
-                                                    )}
+                                                    {item.hasReview ? '작성 완료' : '작성 전'}
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-1 gap-2 md:gap-4 text-sm">
-                                                <div className="flex gap-2 md:gap-4">
-                                                    <div className="text-black font-semibold w-12 md:w-12">일시</div>
-                                                    <div className="text-[#000000b2]">{item.event.eventScheduleInfo.startDate}</div>
+                                            <div className="grid grid-cols-1 gap-3 text-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-gray-600 font-medium w-16">일시</div>
+                                                    <div className="text-gray-800">{item.event.eventScheduleInfo.startDate}</div>
                                                 </div>
-                                                <div className="flex gap-2 md:gap-4">
-                                                    <div className="text-black font-semibold w-12 md:w-12">관람일</div>
-                                                    <div className="text-[#000000b2]">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-gray-600 font-medium w-16">관람일</div>
+                                                    <div className="text-gray-800">
                                                         {item.event.viewingScheduleInfo.date} ({item.event.viewingScheduleInfo.dayOfWeek}) {item.event.viewingScheduleInfo.startTime}
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-2 md:gap-4">
-                                                    <div className="text-black font-semibold w-12 md:w-12">장소</div>
-                                                    <div className="text-[#000000b2]">{item.event.buildingName !== null ? item.event.buildingName : item.event.address}</div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-gray-600 font-medium w-16">장소</div>
+                                                    <div className="text-gray-800">{item.event.buildingName !== null ? item.event.buildingName : item.event.address}</div>
                                                 </div>
-                                                <div className="flex gap-2 md:gap-4">
-                                                    <div className="text-black font-semibold w-12 md:w-12">티켓</div>
-                                                    <div className="text-[#000000b2]">{item.ticketContent}</div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-gray-600 font-medium w-16">티켓</div>
+                                                    <div className="text-gray-800">{item.ticketContent}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -479,27 +476,29 @@ export const MyPageMyReview = () => {
                                 ))}
                                 {/* 페이지네이션 */}
                                 {writeTotalPages >= 0 && (
-                                    <div className="flex justify-center mt-8">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex justify-center mt-12">
+                                        <div className="flex items-center gap-1">
                                             {/* 이전 페이지 버튼 */}
                                             <button
                                                 onClick={() => setWritePage(writePage - 1)}
                                                 disabled={writePage === 0}
-                                                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === 1
-                                                    ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                                    : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${writePage === 0
+                                                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                    : "text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
                                                     }`}
                                             >
-                                                &lt;
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                                </svg>
                                             </button>
                                             {/* 페이지 번호 버튼 */}
                                             {Array.from({ length: writeTotalPages }, (_, page) => (
                                                 <button
                                                     key={page}
                                                     onClick={() => setWritePage(page)} // 0-based
-                                                    className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === page
-                                                        ? "bg-black text-white border-black"
-                                                        : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${writePage === page
+                                                        ? "bg-blue-600 text-white shadow-md"
+                                                        : "text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
                                                         }`}
                                                 >
                                                     {page + 1}
@@ -509,12 +508,14 @@ export const MyPageMyReview = () => {
                                             <button
                                                 onClick={() => setWritePage(writePage + 1)}
                                                 disabled={writePage === writeTotalPages - 1}
-                                                className={`px-3 py-2 rounded border text-sm font-normal transition-colors ${writePage === writeTotalPages
-                                                    ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                                    : "text-[#00000099] border-[#00000033] hover:bg-gray-50"
+                                                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${writePage === writeTotalPages - 1
+                                                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                    : "text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
                                                     }`}
                                             >
-                                                &gt;
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
                                             </button>
                                         </div>
                                     </div>
@@ -687,18 +688,18 @@ export const MyPageMyReview = () => {
                 {activeTab === 'my' && (
                     <>
                         {/* Select All Section */}
-                        <div className="md:absolute md:w-[947px] md:top-[263px] md:left-64 left-0 right-4 top-48 relative bg-neutral-100 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:px-3.5 gap-4 md:gap-0">
+                        <div className="md:absolute md:w-[947px] md:top-[263px] md:left-64 left-0 right-4 top-48 relative bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between p-6 gap-4 md:gap-0 border border-blue-100">
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
                                     checked={selectAll}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
-                                    className="w-[18px] h-[18px] bg-white border border-[#666666]"
+                                    className="w-5 h-5 bg-white border-2 border-blue-300 rounded-md checked:bg-blue-600 checked:border-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                                 />
-                                <span className="ml-2.5 text-black text-sm leading-[21px] [font-family:'Roboto-Regular',Helvetica] font-normal">
+                                <span className="ml-3 text-gray-800 text-sm font-medium">
                                     전체 선택
                                 </span>
-                                <span className="ml-6 [font-family:'Roboto-Regular',Helvetica] font-normal text-[#00000099] text-sm">
+                                <span className="ml-6 text-blue-600 text-sm font-medium">
                                     {selectedReviews.length}개 선택됨
                                 </span>
                             </div>
@@ -707,8 +708,11 @@ export const MyPageMyReview = () => {
                             {selectedReviews.length > 0 && (
                                 <button
                                     onClick={handleBulkDelete}
-                                    className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors [font-family:'Roboto-Medium',Helvetica] font-medium"
+                                    className="px-6 py-2.5 bg-red-500 text-white text-sm font-medium rounded-xl hover:bg-red-600 hover:shadow-lg transition-all duration-200 flex items-center gap-2"
                                 >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
                                     선택 삭제 ({selectedReviews.length}개)
                                 </button>
                             )}
@@ -717,53 +721,53 @@ export const MyPageMyReview = () => {
                         {/* Review Cards */}
                         <div className="md:absolute md:top-[334px] md:left-64 left-0 right-4 top-64 relative space-y-4 pb-20">
                             {savedReviews?.map((data) => (
-                                <div key={data.review.reviewId} className="w-full md:w-[947px] rounded-lg border border-[#0000001f] bg-white p-5 relative">
+                                <div key={data.review.reviewId} className="w-full md:w-[947px] rounded-2xl border border-gray-100 bg-white p-6 relative hover:shadow-lg transition-all duration-300">
                                     {/* Checkbox */}
                                     <input
                                         type="checkbox"
                                         checked={selectedReviews.includes(data.review.reviewId)}
                                         onChange={(e) => handleSelectReview(data.review.reviewId, e.target.checked)}
-                                        className="absolute top-[21px] left-[19px] w-[17px] h-[18px] bg-white border border-[#666666]"
+                                        className="absolute top-6 left-6 w-5 h-5 bg-white border-2 border-blue-300 rounded-md checked:bg-blue-600 checked:border-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                                     />
 
                                     {/* Action Buttons */}
-                                    <div className="absolute top-[21px] right-[19px] flex gap-1">
+                                    <div className="absolute top-6 right-6 flex gap-2">
                                         <button
                                             onClick={() => handleEditReview(data)}
-                                            className="w-10 h-7 text-xs font-medium border border-[#0000001f] bg-white rounded flex items-center justify-center hover:bg-gray-50 whitespace-nowrap focus:outline-none"
+                                            className="px-4 py-2 text-xs font-medium border border-blue-500 text-blue-500 bg-transparent rounded-[10px] hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 focus:outline-none transition-all duration-200"
                                         >
                                             수정
                                         </button>
                                         <button
                                             onClick={(e) => handleSingleDelete(data.review.reviewId, e)}
-                                            className="w-10 h-7 text-xs font-medium bg-[#ff3838] text-white border border-[#ff3838] rounded flex items-center justify-center hover:bg-[#e62e2e] whitespace-nowrap focus:outline-none"
+                                            className="px-4 py-2 text-xs font-medium border border-red-500 text-red-500 bg-transparent rounded-[10px] hover:bg-red-50 hover:border-red-600 hover:text-red-600 focus:outline-none transition-all duration-200"
                                         >
                                             삭제
                                         </button>
                                     </div>
 
                                     {/* Content */}
-                                    <div className="ml-[31px]">
-                                        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
-                                            <h3 className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-black text-base leading-6">
+                                    <div className="ml-16">
+                                        <div className="flex flex-col md:flex-row md:items-start gap-3 mb-4">
+                                            <h3 className="font-bold text-gray-900 text-lg leading-tight">
                                                 {data.event.title}
                                             </h3>
                                             {/* 공개/비공개 배지 */}
-                                            <div className={`px-2 py-1 rounded-full text-xs font-medium w-fit ${data.review.visible
-                                                ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                                : 'bg-gray-100 text-gray-600 border border-gray-200'
+                                            <div className={`px-3 py-1.5 rounded-full text-xs font-semibold w-fit ${data.review.visible
+                                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                : 'bg-gray-50 text-gray-600 border border-gray-200'
                                                 }`}>
                                                 {data.review.visible ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                                                             <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                                                         </svg>
                                                         공개
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-1">
-                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
                                                             <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
                                                         </svg>
@@ -772,11 +776,11 @@ export const MyPageMyReview = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-4">
-                                            <span className="[font-family:'Roboto-Regular',Helvetica] text-[#000000b2] text-sm leading-[21px]">
+                                        <div className="flex flex-col md:flex-row gap-3 md:gap-6 mb-4 text-sm">
+                                            <span className="text-gray-600 font-medium">
                                                 {data.event.viewingScheduleInfo.date} ({data.event.viewingScheduleInfo.dayOfWeek}) {data.event.viewingScheduleInfo.startTime}
                                             </span>
-                                            <span className="[font-family:'Roboto-Regular',Helvetica] text-[#000000b2] text-sm leading-[21px]">
+                                            <span className="text-gray-600 font-medium">
                                                 {data.event.buildingName}
                                             </span>
                                         </div>
@@ -787,21 +791,21 @@ export const MyPageMyReview = () => {
                                         </div>
 
                                         {/* Review Content */}
-                                        <p className="[font-family:'Roboto-Regular',Helvetica] text-black text-sm leading-[21px] mb-4 max-w-full md:max-w-[888px]">
+                                        <p className="text-gray-800 text-sm leading-relaxed mb-6 max-w-full md:max-w-[888px]">
                                             {data.review.comment}
                                         </p>
 
                                         {/* Like Count and Date */}
-                                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-0">
+                                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-0 pt-4 border-t border-gray-100">
                                             <div className="flex items-center gap-2">
                                                 <svg className="w-4 h-4 fill-red-500 text-red-500" viewBox="0 0 24 24">
                                                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                                 </svg>
-                                                <span className="[font-family:'Roboto-Regular',Helvetica] text-[#00000099] text-sm">
+                                                <span className="text-gray-600 text-sm font-medium">
                                                     좋아요 {data.review.reactions}개
                                                 </span>
                                             </div>
-                                            <span className="[font-family:'Roboto-Regular',Helvetica] text-[#00000080] text-xs">
+                                            <span className="text-gray-500 text-xs">
                                                 작성일: {formattedDate(data.review.createdAt)}
                                             </span>
                                         </div>

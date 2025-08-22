@@ -13,6 +13,8 @@ export default function Reservation(): JSX.Element {
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     // 카테고리 정보 캐시
     const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
@@ -67,6 +69,27 @@ export default function Reservation(): JSX.Element {
 
         loadReservationsWithCategories();
     }, []);
+
+    // 페이지 변경 시 맨 위로 스크롤
+    useEffect(() => {
+        if (currentPage > 1) {
+            // DOM이 업데이트된 후 스크롤 실행
+            const timer = setTimeout(() => {
+                try {
+                    // 부드러운 스크롤 시도
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                } catch {
+                    // 에러 발생 시 즉시 스크롤
+                    window.scrollTo(0, 0);
+                }
+            }, 200);
+
+            return () => clearTimeout(timer);
+        }
+    }, [currentPage]);
 
     // 결제 상태에 따른 색상 결정
     const getPaymentStatusColor = (paymentStatus?: string) => {
@@ -131,7 +154,7 @@ export default function Reservation(): JSX.Element {
                 )}
 
                 {/* 모바일 사이드바 */}
-                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                <div className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}>
                     <div className="p-4">
                         <button
@@ -169,119 +192,160 @@ export default function Reservation(): JSX.Element {
                             <div className="text-gray-500">{t('mypage.reservation.noReservations')}</div>
                         </div>
                     ) : (
-                        <div className="space-y-[30px]">
-                            {reservations.map((reservation) => (
-                                <div
-                                    key={reservation.reservationId}
-                                    className="border-none shadow-none bg-transparent"
-                                >
-                                    <div className="p-0 flex flex-col md:flex-row items-start gap-[31px] relative">
-                                        <img
-                                            className="w-full md:w-[158px] h-[190px] object-cover rounded"
-                                            alt="Event"
-                                            src={reservation.eventThumbnailUrl || "/images/NoImage.png"}
-                                        />
+                        <div className="space-y-[50px]">
+                            {reservations
+                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                .map((reservation) => (
+                                    <div
+                                        key={reservation.reservationId}
+                                        className="border-none shadow-none bg-transparent"
+                                    >
+                                        <div className="p-0 flex flex-col md:flex-row items-start gap-[31px] relative">
+                                            <img
+                                                className="w-full md:w-[158px] h-[190px] object-cover rounded"
+                                                alt="Event"
+                                                src={reservation.eventThumbnailUrl || "/images/NoImage.png"}
+                                            />
 
-                                        <div className="flex-1 w-full">
-                                            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-[15px]">
-                                                <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-                                                    {reservation.eventName}
-                                                </h3>
+                                            <div className="flex-1 w-full">
+                                                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-[15px]">
+                                                    <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                                                        {reservation.eventName}
+                                                    </h3>
 
-                                                {/* 카테고리 정보 - 행사 타이틀 오른쪽에 배치 */}
-                                                {reservation.mainCategory && (
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`px-3 py-1 rounded text-xs ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
-                                                            reservation.mainCategory === "공연" ? "bg-red-100 text-red-800 border border-red-200" :
-                                                                reservation.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border border-green-200" :
-                                                                    reservation.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
-                                                                        reservation.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border border-gray-300" :
-                                                                            "bg-gray-100 text-gray-700 border border-gray-200"
-                                                            }`}>
-                                                            {reservation.mainCategory}
-                                                        </span>
-                                                        {reservation.subCategory && (
-                                                            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
-                                                                {reservation.subCategory}
+                                                    {/* 카테고리 정보 - 행사 타이틀 오른쪽에 배치 */}
+                                                    {reservation.mainCategory && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`px-3 py-1 rounded text-xs ${reservation.mainCategory === "박람회" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                                                                reservation.mainCategory === "공연" ? "bg-red-100 text-red-800 border border-red-200" :
+                                                                    reservation.mainCategory === "강연/세미나" ? "bg-green-100 text-green-800 border border-green-200" :
+                                                                        reservation.mainCategory === "전시/행사" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
+                                                                            reservation.mainCategory === "축제" ? "bg-gray-100 text-gray-800 border border-gray-300" :
+                                                                                "bg-gray-100 text-gray-700 border border-gray-200"
+                                                                }`}>
+                                                                {reservation.mainCategory}
                                                             </span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="mb-[15px] flex flex-col md:flex-row gap-4 md:gap-[245px]">
-                                                <div>
-                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        {t('mypage.reservation.bookingDate')}
-                                                    </div>
-                                                    <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                        {formatDate(reservation.createdAt)}
-                                                    </div>
+                                                            {reservation.subCategory && (
+                                                                <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">
+                                                                    {reservation.subCategory}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                {/* 행사 정보 */}
-                                                {reservation.scheduleDate && (
-                                                    <div>
-                                                        <div className="[font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                            {t('mypage.reservation.eventInfo')}
+                                                <div className="mb-[15px] grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div className="md:col-span-1">
+                                                        <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                            {t('mypage.reservation.bookingDate')}
                                                         </div>
-                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6">
-                                                            <div>{formatDate(reservation.scheduleDate)}</div>
-                                                            {reservation.startTime && reservation.endTime && (
-                                                                <div className="text-sm text-gray-600 mt-1">
-                                                                    {reservation.startTime.slice(0, 5)} - {reservation.endTime.slice(0, 5)}
-                                                                </div>
+                                                        <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                            {formatDate(reservation.createdAt)}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 행사 정보 */}
+                                                    {reservation.scheduleDate && (
+                                                        <div className="md:col-span-1">
+                                                            <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                                행사 일시
+                                                            </div>
+                                                            <div className="[font-family:'Roboto-Regular',Helvetica] font-normal text-black text-base tracking-[0] leading-6">
+                                                                <div>{formatDate(reservation.scheduleDate)}</div>
+                                                                {reservation.startTime && reservation.endTime && (
+                                                                    <div className="text-sm text-gray-600 mt-1">
+                                                                        {reservation.startTime.slice(0, 5)} - {reservation.endTime.slice(0, 5)}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div className="md:col-span-1">
+                                                        <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                            {t('mypage.reservation.ticketInfo')}
+                                                        </div>
+                                                        <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                            {reservation.ticketName} (₩{reservation.ticketPrice.toLocaleString()})
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="md:col-span-1">
+                                                        <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                            {t('mypage.reservation.paymentMethod')}
+                                                        </div>
+                                                        <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-[21px] whitespace-nowrap">
+                                                            {(() => {
+                                                                if (reservation.paymentMethod === 'card' || reservation.paymentMethod === '카드') return '신용 카드';
+                                                                if (reservation.paymentMethod) return reservation.paymentMethod;
+                                                                if (reservation.price === 0) return t('mypage.reservation.free');
+                                                                return t('mypage.reservation.unpaid');
+                                                            })()}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="md:col-span-1">
+                                                        <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
+                                                            {t('mypage.reservation.paymentAmount')}
+                                                        </div>
+                                                        <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
+                                                            {formatAmount(reservation.price, reservation.quantity)}
+                                                            {reservation.quantity > 1 && (
+                                                                <span className="text-gray-500 ml-1">({reservation.quantity}매)</span>
                                                             )}
                                                         </div>
                                                     </div>
-                                                )}
-                                            </div>
-
-                                            <div className="flex flex-col md:flex-row gap-4 md:gap-[100px]">
-                                                <div>
-                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        {t('mypage.reservation.paymentAmount')}
-                                                    </div>
-                                                    <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                        {formatAmount(reservation.price, reservation.quantity)}
-                                                        {reservation.quantity > 1 && (
-                                                            <span className="text-gray-500 ml-1">({reservation.quantity}매)</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        {t('mypage.reservation.paymentMethod')}
-                                                    </div>
-                                                    <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                        {reservation.paymentMethod || (reservation.price === 0 ? t('mypage.reservation.free') : t('mypage.reservation.unpaid'))}
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <div className="w-20 [font-family:'Roboto-SemiBold',Helvetica] font-semibold text-[#666666] text-sm tracking-[0] leading-[21px] whitespace-nowrap mb-[8px]">
-                                                        {t('mypage.reservation.ticketInfo')}
-                                                    </div>
-                                                    <div className="[font-family:'Roboto-Medium',Helvetica] font-medium text-black text-base tracking-[0] leading-6 whitespace-nowrap">
-                                                        {reservation.ticketName} (₩{reservation.ticketPrice.toLocaleString()})
-                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="absolute top-0 right-0">
-                                            <div
-                                                className={`${getPaymentStatusColor(reservation.paymentStatus)} text-white border-none rounded h-[27px] px-1.5 flex items-center justify-center`}
-                                            >
-                                                <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-xs tracking-[0] leading-[18px]">
-                                                    {reservation.paymentStatus || t('mypage.reservation.paymentPending')}
-                                                </span>
+                                            <div className="absolute top-0 right-0">
+                                                <div
+                                                    className={`${getPaymentStatusColor(reservation.paymentStatus)} text-white border-none rounded h-[27px] px-1.5 flex items-center justify-center`}
+                                                >
+                                                    <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-xs tracking-[0] leading-[18px]">
+                                                        {reservation.paymentStatus || t('mypage.reservation.paymentPending')}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+                                ))}
+
+                            {/* 페이지네이션 */}
+                            {reservations.length > itemsPerPage && (
+                                <div className="flex justify-center items-center space-x-2 mt-8">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        이전
+                                    </button>
+
+                                    {Array.from({ length: Math.ceil(reservations.length / itemsPerPage) }, (_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === i + 1
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(reservations.length / itemsPerPage)))}
+                                        disabled={currentPage === Math.ceil(reservations.length / itemsPerPage)}
+                                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        다음
+                                    </button>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     )}
                 </div>
