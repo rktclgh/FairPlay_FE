@@ -6,8 +6,6 @@ import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaTicketAlt, FaUser, FaCred
 import { eventApi } from "../../services/api";
 import authManager from "../../utils/auth";
 import paymentService from "../../services/paymentService";
-import { saveAttendeeAndShareTicket } from "../../services/attendee";
-import type { ShareTicketSaveRequestDto } from "../../services/types/attendeeType";
 import NewLoader from "../../components/NewLoader";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 
@@ -675,13 +673,6 @@ export const TicketReservation = () => {
             );
 
             setPaymentStep('티켓 발급 중...');
-
-            // 참석자 저장 및 펼 생성
-            const shareTicketData: ShareTicketSaveRequestDto = {
-                reservationId: result.targetId,
-                totalAllowed: ticketReservationForm.quantity
-            }
-            await saveAttendeeAndShareTicket(shareTicketData);
 
             console.log('결제 및 예약 성공:', result);
 
