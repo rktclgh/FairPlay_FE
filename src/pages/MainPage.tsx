@@ -148,6 +148,7 @@ type BannerResp = {
   endDate?: string | null;
   statusCode?: string | null;        // "ACTIVE"
   bannerTypeCode?: string | null;    // "HERO"
+  smallImageUrl?: string | null;
 };
 
 // 서버 응답 (FixedTopDto 가정: eventId 필수)
@@ -588,7 +589,7 @@ export const Main: React.FC = () => {
               eventId: eid,
               title: get(r, "title") ?? "",
               imageUrl: img,
-              thumbnailUrl: img,
+              thumbnailUrl: get(r, "smallImageUrl", "smallImageUrl") ?? img,
               // ★ eventId가 있으면 상세로 바로 가는 내부 링크를 만들어 둠
               linkUrl: rawLink || (eid ? `/eventdetail/${eid}` : ""),
               startDate: get(r, "startDate", "start_date") ?? "",
@@ -1079,20 +1080,25 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
           {/* 썸네일 바: 2장 이상일 때만 */}
           {heroLoop && (
             <div className="absolute bottom-0 left-0 right-0 flex justify-center space-x-3 pb-8 z-10">
-              {paidAdvertisements.map((ad, index) => (
-                <div key={`hero-thumb-${ad.id ?? 'na'}-${index}`}
-                  className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
-                  onMouseEnter={() => {
-                    if (heroLoop && (window as any).heroSwiper) {
-                      (window as any).heroSwiper.slideToLoop(index);
-                    }
-                  }}
-                >
-                  <img className="w-full h-full object-cover rounded-[10px] shadow-lg"
-                    src={ad.thumbnailUrl || ad.imageUrl || '/images/FPlogo.png'}
-                    alt={`Paid Ad ${ad.id}`} />
-                </div>
-              ))}
+              {paidAdvertisements.map((ad, index) => {
+                // 행사 썸네일이 있으면 사용, 없으면 기본 이미지
+                const thumbnailSrc = ad.thumbnailUrl || ad.imageUrl || '/images/FPlogo.png';
+                
+                return (
+                  <div key={`hero-thumb-${ad.id ?? 'na'}-${index}`}
+                    className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
+                    onMouseEnter={() => {
+                      if (heroLoop && (window as any).heroSwiper) {
+                        (window as any).heroSwiper.slideToLoop(index);
+                      }
+                    }}
+                  >
+                    <img className="w-full h-full object-cover rounded-[10px] shadow-lg"
+                      src={thumbnailSrc}
+                      alt={`Event Thumbnail ${ad.id}`} />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
