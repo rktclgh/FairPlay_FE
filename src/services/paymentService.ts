@@ -44,6 +44,8 @@ export interface PaymentCompletionRequest {
     impUid: string;
     amount: number;
     applyNum?: string; // 카드 승인번호
+    scheduleId?: number;
+    ticketId?: number;
 }
 
 // 아임포트 응답 인터페이스
@@ -239,6 +241,19 @@ class PaymentService {
             console.log('merchantUid:', merchantUid);
 
             // 1. 백엔드에 결제 요청 정보 저장 (PENDING 상태) - paymentId 반환
+            console.log('🔵 [PaymentService] savePaymentRequest 데이터:', {
+                eventId: eventId,
+                paymentTargetType: paymentTargetType,
+                quantity: quantity,
+                price: amount / quantity,
+                amount: amount,
+                merchantUid: merchantUid,
+                pgProvider: 'uplus',
+                scheduleId: reservationData?.scheduleId,
+                ticketId: reservationData?.ticketId,
+                reservationData: reservationData
+            });
+            
             const savedPayment = await this.savePaymentRequest({
                 eventId: eventId,
                 paymentTargetType: paymentTargetType,
@@ -246,7 +261,9 @@ class PaymentService {
                 price: amount / quantity,
                 amount:amount,
                 merchantUid: merchantUid,
-                pgProvider: 'uplus'
+                pgProvider: 'uplus',
+                scheduleId: reservationData?.scheduleId,
+                ticketId: reservationData?.ticketId
             });
             
             console.log('저장된 paymentId:', savedPayment.paymentId);
@@ -280,7 +297,9 @@ class PaymentService {
                 merchantUid: paymentResponse.merchant_uid,
                 impUid: paymentResponse.imp_uid!,
                 amount: paymentResponse.paid_amount!,
-                applyNum: paymentResponse.apply_num
+                applyNum: paymentResponse.apply_num,
+                scheduleId: reservationData?.scheduleId,
+                ticketId: reservationData?.ticketId
             });
 
             console.log('결제 완료 결과:', completionResult);
@@ -380,6 +399,8 @@ class PaymentService {
         amount: number;
         merchantUid: string;
         pgProvider: string;
+        scheduleId?: number;
+        ticketId?: number;
     }): Promise<any> {
         try {
             const response = await authManager.authenticatedFetch('/api/payments/request', {
@@ -395,6 +416,8 @@ class PaymentService {
                     amount: paymentData.amount,
                     merchantUid: paymentData.merchantUid,
                     pgProvider: paymentData.pgProvider,
+                    scheduleId: paymentData.scheduleId,
+                    ticketId: paymentData.ticketId
                 })
             });
 
@@ -463,7 +486,9 @@ class PaymentService {
                     merchantUid: completionData.merchantUid,
                     impUid: completionData.impUid,
                     amount: completionData.amount,
-                    applyNum: completionData.applyNum
+                    applyNum: completionData.applyNum,
+                    scheduleId: completionData.scheduleId,
+                    ticketId: completionData.ticketId
                 })
             });
 

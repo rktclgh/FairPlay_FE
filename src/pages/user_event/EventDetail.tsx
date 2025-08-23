@@ -743,13 +743,15 @@ const EventDetail = (): JSX.Element => {
                 <div className="mt-16 mb-8 border border-gray-200 rounded-lg">
                     <div className="p-4 md:p-6">
                         <h3 className="text-lg md:text-[20.3px] font-semibold text-[#212121] mb-4 md:mb-6">
-                            날짜 및 회차 선택
+                            {eventData.mainCategory === "공연" && allSchedules.length === 0 ? "행사 일정" : "날짜 및 회차 선택"}
                         </h3>
 
                         <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
-                            {/* 좌측: 달력 - 모바일에서는 전체 너비, 데스크톱에서는 30% */}
-                            <div className="w-full lg:w-[30%]">
-                                <h4 className="text-base font-medium text-gray-900 mb-4">날짜 선택</h4>
+                            {/* 좌측: 달력 - 공연이면서 회차가 없는 경우 전체 너비, 아니면 30% */}
+                            <div className={`w-full ${eventData.mainCategory === "공연" && allSchedules.length === 0 ? "lg:w-full" : "lg:w-[30%]"}`}>
+                                <h4 className="text-base font-medium text-gray-900 mb-4">
+                                    {eventData.mainCategory === "공연" && allSchedules.length === 0 ? "행사 날짜" : "날짜 선택"}
+                                </h4>
 
                                 {/* 달력 헤더 */}
                                 <div className="flex items-center justify-between mb-3">
@@ -847,11 +849,12 @@ const EventDetail = (): JSX.Element => {
                                 </div>
                             </div>
 
-                            {/* 중앙: 회차 목록 - 모바일에서는 전체 너비, 데스크톱에서는 40% */}
-                            <div className="w-full lg:w-[40%]">
-                                <h4 className="text-base font-medium text-gray-900 mb-4">
-                                    회차 선택 {selectedDate && `(${selectedDate})`}
-                                </h4>
+                            {/* 중앙: 회차 목록 - 공연이면서 회차가 없는 경우가 아닐 때만 표시 */}
+                            {!(eventData.mainCategory === "공연" && allSchedules.length === 0) && (
+                                <div className="w-full lg:w-[40%]">
+                                    <h4 className="text-base font-medium text-gray-900 mb-4">
+                                        회차 선택 {selectedDate && `(${selectedDate})`}
+                                    </h4>
 
                                 <div className="space-y-2 max-h-80 overflow-y-auto">
                                     {availableSchedules.length > 0 ? (
@@ -901,11 +904,13 @@ const EventDetail = (): JSX.Element => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                                </div>
+                            )}
 
-                            {/* 우측: 예매 가능 여부 정보 - 모바일에서는 전체 너비, 데스크톱에서는 30% */}
-                            <div className="w-full lg:w-[30%]">
-                                <h4 className="text-base font-medium text-gray-900 mb-4">행사 일별 예매 현황</h4>
+                            {/* 우측: 예매 가능 여부 정보 - 공연이면서 회차가 없는 경우가 아닐 때만 표시 */}
+                            {!(eventData.mainCategory === "공연" && allSchedules.length === 0) && (
+                                <div className="w-full lg:w-[30%]">
+                                    <h4 className="text-base font-medium text-gray-900 mb-4">행사 일별 예매 현황</h4>
 
                                 <div className="space-y-3">
                                     {/* 범례 */}
@@ -1041,7 +1046,8 @@ const EventDetail = (): JSX.Element => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1050,7 +1056,12 @@ const EventDetail = (): JSX.Element => {
                 <div className="flex justify-center mb-8 md:mb-12 px-4 md:px-0">
                     <button
                         onClick={() => {
-                            if (eventData.mainCategory !== "공연") {
+                            // 공연이면서 회차가 없는 경우 - 외부 예매 링크 모달
+                            if (eventData.mainCategory === "공연" && allSchedules.length === 0) {
+                                setIsExternalBookingOpen(true);
+                            }
+                            // 공연이지만 회차가 있는 경우 또는 비공연인 경우 - 회차 선택 필요
+                            else {
                                 // 회차가 선택되지 않았으면 경고
                                 if (!selectedScheduleId) {
                                     toast.error('회차를 선택해주세요.');
@@ -1058,13 +1069,10 @@ const EventDetail = (): JSX.Element => {
                                 }
                                 // 티켓 예매 페이지로 scheduleId와 함께 이동
                                 navigate(`/ticket-reservation/${eventId}?scheduleId=${selectedScheduleId}`);
-                            } else {
-                                // 공연의 경우 외부 예매 링크 모달
-                                setIsExternalBookingOpen(true);
                             }
                         }}
-                        disabled={eventData.mainCategory !== "공연" && !selectedScheduleId}
-                        className={`w-full max-w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${eventData.mainCategory === "공연" || selectedScheduleId
+                        disabled={!(eventData.mainCategory === "공연" && allSchedules.length === 0) && !selectedScheduleId}
+                        className={`w-full max-w-[196px] h-[38px] rounded-[10px] font-bold flex items-center justify-center transition-colors ${(eventData.mainCategory === "공연" && allSchedules.length === 0) || selectedScheduleId
                             ? 'bg-[#ef6156] hover:bg-[#d85147] text-white cursor-pointer'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
