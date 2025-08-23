@@ -101,9 +101,32 @@ export default function MyTickets(): JSX.Element {
                 setLoading(true);
                 const reservations = await reservationService.getMyReservations();
 
+                // 환불된 예약 제외 (다양한 환불 상태 확인)
+                const activeReservations = reservations.filter(reservation => {
+                    const paymentStatus = reservation.paymentStatus?.toLowerCase();
+                    const reservationStatus = reservation.reservationStatus?.toLowerCase();
+                    
+                    // 환불 관련 상태들을 모두 확인
+                    const isRefunded = paymentStatus?.includes('환불') || 
+                                      paymentStatus?.includes('refund') ||
+                                      reservationStatus?.includes('환불') || 
+                                      reservationStatus?.includes('refund') ||
+                                      reservationStatus?.includes('취소') ||
+                                      reservationStatus?.includes('cancel');
+                    
+                    console.log('Reservation filter check:', {
+                        reservationId: reservation.reservationId,
+                        paymentStatus: reservation.paymentStatus,
+                        reservationStatus: reservation.reservationStatus,
+                        isRefunded: isRefunded
+                    });
+                    
+                    return !isRefunded;
+                });
+
                 // 각 예약에 대해 카테고리 정보 추가 (캐시 활용)
                 const reservationsWithCategories = await Promise.all(
-                    reservations.map(async (reservation) => {
+                    activeReservations.map(async (reservation) => {
                         // 캐시된 카테고리 정보가 있으면 사용
                         if (eventCategoryCache.current.has(reservation.eventId)) {
                             const cached = eventCategoryCache.current.get(reservation.eventId)!;
