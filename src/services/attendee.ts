@@ -5,9 +5,7 @@ import type {
     AttendeeListInfoResponseDto,
     AttendeeUpdateRequestDto,
     ShareTicketInfoResponseDto,
-    TokenResponseDto,
-    ShareTicketSaveRequestDto,
-    ShareTicketSaveResponseDto
+    TokenResponseDto
 } from "./types/attendeeType";
 
 const setAuthorization = () => {
@@ -18,12 +16,6 @@ const setAuthorization = () => {
 // 폼 링크 조회
 export const getFormInfo = async (token: string): Promise<ShareTicketInfoResponseDto> => {
     const res = await api.get<ShareTicketInfoResponseDto>(`/api/form?token=${token}`);
-    return res.data;
-}
-
-// 폼 링크 생성
-export const saveAttendeeAndShareTicket = async (data: ShareTicketSaveRequestDto): Promise<ShareTicketSaveResponseDto> => {
-    const res = await api.post<ShareTicketSaveResponseDto>(`/api/form`, data, {headers: setAuthorization()});
     return res.data;
 }
 

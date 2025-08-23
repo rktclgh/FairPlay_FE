@@ -39,13 +39,3 @@ export interface ShareTicketInfoResponseDto{
 export interface TokenResponseDto{
     token: string
 }
-
-export interface ShareTicketSaveRequestDto{
-    reservationId: number,
-    totalAllowed: number
-}
-
-export interface ShareTicketSaveResponseDto{
-    reservationId: number,
-    token: string
-}
