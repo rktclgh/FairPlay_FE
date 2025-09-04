@@ -32,10 +32,7 @@ export const LoginPage = () => {
                 password
             });
 
-            const { accessToken, refreshToken } = res.data;
-            localStorage.setItem("accessToken", accessToken);
-            localStorage.setItem("refreshToken", refreshToken);
-
+            // HTTP-only 쿠키 방식에서는 토큰을 localStorage에 저장하지 않음
             toast.success(t('auth.loginSuccess'));
 
             // API를 통해 사용자 역할 조회

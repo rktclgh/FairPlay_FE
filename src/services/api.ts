@@ -237,72 +237,29 @@ class EventApi {
     });
   }
 
-  // 사용자 정보 조회
+  // 사용자 정보 조회 (HTTP-only 쿠키 방식)
   async getUserInfo(): Promise<UserInfo> {
     return new Promise((resolve, reject) => {
       setTimeout(async () => {
         try {
-          // 로그인 토큰 확인
-          const accessToken = localStorage.getItem("accessToken");
-          const refreshToken = localStorage.getItem("refreshToken");
+          console.log("사용자 정보 조회 시작 - HTTP-only 쿠키 방식");
 
-          console.log("사용자 정보 조회 시작 - 토큰 확인:", {
-            accessToken: !!accessToken,
-            refreshToken: !!refreshToken,
-          });
-
-          if (!accessToken && !refreshToken) {
-            throw new Error("로그인이 필요합니다.");
-          }
-
-          // 실제 백엔드 API 호출 시도
+          // HTTP-only 쿠키로 API 호출
           try {
             console.log("API 호출 시도: /api/users/mypage");
-
-            // 여러 가능한 엔드포인트 시도
-            const endpoints = [
-              "/api/users/mypage",
-              "/api/users/me",
-              "/api/user/profile",
-            ];
-
-            let response = null;
-            let successfulEndpoint = null;
-
-            for (const endpoint of endpoints) {
-              try {
-                console.log(`엔드포인트 시도: ${endpoint}`);
-                response = await authManager.authenticatedFetch(endpoint);
-
-                console.log(
-                  `${endpoint} 응답 상태:`,
-                  response.status,
-                  response.statusText
-                );
-
-                if (response.ok) {
-                  successfulEndpoint = endpoint;
-                  break;
-                }
-              } catch (endpointError) {
-                console.log(`${endpoint} 호출 실패:`, endpointError);
-                continue;
-              }
-            }
+            const response = await authManager.authenticatedFetch("/api/users/mypage");
 
             if (response && response.ok) {
               const userData = await response.json();
-              console.log(`성공한 엔드포인트: ${successfulEndpoint}`);
               console.log("API 응답 데이터:", userData);
 
               // API 응답 구조에 맞게 데이터 매핑
               const mappedUserData: UserInfo = {
-                userId: userData.userId || userData.id || 1,
+                userId: userData.userId,
                 email: userData.email,
-                phone: userData.phone || userData.phoneNumber || "",
-                name: userData.name || userData.username || "",
-                nickname:
-                  userData.nickname || userData.name || userData.username || "",
+                phone: userData.phone || "",
+                name: userData.name,
+                nickname: userData.nickname || userData.name,
                 role: userData.role || "USER",
               };
               console.log("매핑된 사용자 데이터:", mappedUserData);
@@ -328,25 +285,9 @@ class EventApi {
             console.log("API 호출 실패로 인해 localStorage 기반 데이터 사용");
           }
 
-          // API 호출 실패 시 accessToken에서 정보 추출
-          const token = localStorage.getItem("accessToken");
-          if (token) {
-            try {
-              const payload = JSON.parse(atob(token.split(".")[1]));
-              const userData: UserInfo = {
-                userId: parseInt(payload.sub),
-                email: payload.email || "",
-                phone: payload.phone || "010-0000-0000",
-                name: payload.name || "사용자",
-                nickname: payload.name || "사용자",
-                role: payload.role || "COMMON",
-              };
-              console.log("accessToken 기반 사용자 데이터:", userData);
-              resolve(userData);
-            } catch (error) {
-              console.error("토큰 파싱 실패:", error);
-            }
-          }
+          // 백엔드 API 실패 시 기본 mock 데이터 사용
+          console.warn("백엔드 API 실패, 기본 mock 데이터 사용");
+          resolve(this.mockUserInfo);
 
           if (false) {
             // 기존 localStorage 로직 비활성화
@@ -383,21 +324,12 @@ class EventApi {
     });
   }
 
-  // 비밀번호 변경 - 기존 로직 유지
+  // 비밀번호 변경 - 세션 기반으로 수정
   async changePassword(request: PasswordChangeRequest): Promise<boolean> {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      throw new Error("로그인이 필요합니다.");
-    }
-
     try {
       console.log("비밀번호 변경 API 호출:", {
         url: "/api/users/mypage/password",
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
         body: {
           currentPassword: request.currentPassword,
           newPassword: request.newPassword,
@@ -407,9 +339,9 @@ class EventApi {
       const response = await fetch("/api/users/mypage/password", {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
+        credentials: "include", // 쿠키 포함
         body: JSON.stringify({
           currentPassword: request.currentPassword,
           newPassword: request.newPassword,
@@ -465,17 +397,12 @@ class EventApi {
     }
   }
 
-  // 알림 목록 조회
+  // 알림 목록 조회 - 세션 기반으로 수정
   async getNotifications(): Promise<Notification[]> {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      console.log("로그인 토큰 없음, 알림을 조회할 수 없습니다.");
-      return [];
-    }
-
     try {
-      const response =
-        await authManager.authenticatedFetch("/api/notifications");
+      const response = await fetch("/api/notifications", {
+        credentials: "include", // 쿠키 포함
+      });
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -493,19 +420,14 @@ class EventApi {
     }
   }
 
-  // 알림 읽음 처리
+  // 알림 읽음 처리 - 세션 기반으로 수정
   async markNotificationAsRead(notificationId: number): Promise<boolean> {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) return false;
-
     try {
       const response = await fetch(
         `/api/notifications/${notificationId}/read`,
         {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          credentials: "include", // 쿠키 포함
         }
       );
       return response.ok;
@@ -515,17 +437,12 @@ class EventApi {
     }
   }
 
-  // 알림 삭제
+  // 알림 삭제 - 세션 기반으로 수정
   async deleteNotification(notificationId: number): Promise<boolean> {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) return false;
-
     try {
       const response = await fetch(`/api/notifications/${notificationId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        credentials: "include", // 쿠키 포함
       });
       return response.ok;
     } catch (error) {
@@ -534,13 +451,10 @@ class EventApi {
     }
   }
 
-  // 여러 알림 삭제
+  // 여러 알림 삭제 - 세션 기반으로 수정
   async deleteMultipleNotifications(
     notificationIds: number[]
   ): Promise<boolean> {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) return false;
-
     try {
       // @RequestParam으로 각각의 notificationIds를 보내기
       const params = notificationIds.map(id => `notificationIds=${id}`).join('&');
@@ -548,9 +462,7 @@ class EventApi {
         `/api/notifications?${params}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          credentials: "include", // 쿠키 포함
         }
       );
       return response.ok;
