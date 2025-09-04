@@ -3,31 +3,8 @@ import api from "../api/axios";
 // LocalStorage 키 상수
 const ROLE_CODE_KEY = "roleCode";
 
-// JWT 토큰을 파싱하여 역할 정보 추출
-const getRoleFromToken = (): string | null => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.role || null;
-    }
-    return null;
-  } catch (error) {
-    console.error('토큰에서 역할 추출 실패:', error);
-    return null;
-  }
-};
-
 export const getCachedRoleCode = (): string | null => {
-  // 먼저 JWT 토큰에서 역할 정보 추출 시도
-  const roleFromToken = getRoleFromToken();
-  if (roleFromToken) {
-    // 토큰에서 가져온 역할을 캐시에 저장
-    setCachedRoleCode(roleFromToken);
-    return roleFromToken;
-  }
-  
-  // 토큰에서 못 가져오면 localStorage 캐시 확인
+  // localStorage 캐시에서 역할 정보 확인 (세션 기반으로 변경)
   try {
     return localStorage.getItem(ROLE_CODE_KEY);
   } catch {

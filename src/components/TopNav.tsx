@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
-import { requireAuth, isAuthenticated } from '../utils/authGuard';
+import { requireAuth, isAuthenticated, checkAuthenticationStatus } from '../utils/authGuard';
 import { hasHostPermission, hasBoothManagerPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 import { useTheme } from '../context/ThemeContext';
@@ -46,8 +46,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		}
 	}, [isSearchOpen]);
 
-	const checkLoginStatus = useCallback(() => {
-		const loggedIn = isAuthenticated();
+	const checkLoginStatus = useCallback(async () => {
+		const loggedIn = await checkAuthenticationStatus();
 		setIsLoggedIn(loggedIn);
 		if (loggedIn) {
 			connect(); // 로그인 시 웹소켓 연결
@@ -87,11 +87,18 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		return () => window.removeEventListener('resize', measure);
 	}, []);
 
-	const handleAuthClick = (e: React.MouseEvent) => {
+	const handleAuthClick = async (e: React.MouseEvent) => {
 		if (isLoggedIn) {
 			e.preventDefault();
-			localStorage.removeItem('accessToken');
-			localStorage.removeItem('refreshToken');
+			try {
+				// 백엔드 로그아웃 API 호출 (세션 삭제)
+				await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/auth/logout`, {}, {
+					withCredentials: true
+				});
+			} catch (error) {
+				console.error('로그아웃 실패:', error);
+			}
+			
 			clearCachedRoleCode();
 			setIsLoggedIn(false);
 			disconnect(); // 로그아웃 시 웹소켓 연결 해제
@@ -140,8 +147,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		}
 	};
 
-	const toggleNotification = () => {
-		if (!requireAuth(navigate, t('common.notification'))) {
+	const toggleNotification = async () => {
+		if (!(await requireAuth(navigate, t('common.notification')))) {
 			return;
 		}
 		setIsNotificationOpen(prev => !prev);
@@ -180,22 +187,17 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
 	// 운영자(전체 관리자) 문의 채팅방 생성/입장
 	const handleCustomerService = async () => {
-		if (!requireAuth(navigate, t('common.customerService'))) {
+		if (!(await requireAuth(navigate, t('common.customerService')))) {
 			return;
 		}
 
 		try {
-			const token = localStorage.getItem('accessToken');
-			const api = axios.create({
-				baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
-				headers: {
-					'Authorization': `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				}
-			});
-
-			// ADMIN 권한을 가진 사용자에게 연결하는 1:N 구조 (전용 API 사용)
-			const response = await api.post('/api/chat/admin-inquiry');
+			// 세션 기반 API 호출 (토큰 헤더 제거, withCredentials 사용)
+			const response = await axios.post(
+				`${import.meta.env.VITE_BACKEND_BASE_URL}/api/chat/admin-inquiry`,
+				{},
+				{ withCredentials: true }
+			);
 
 			const chatRoomId = response.data.chatRoomId;
 			openChatRoomGlobal(chatRoomId);
@@ -274,24 +276,22 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 									setIsSearchOpen(prev => !prev);
 								}}
 							/>
-							<HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={() => {
-								if (!requireAuth(navigate, t('navigation.mypage'))) {
+							<HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={async () => {
+								if (!(await requireAuth(navigate, t('navigation.mypage')))) {
 									return;
 								}
 
-								(async () => {
-									const role = await getRoleCode();
-									if (!role) { navigate('/login'); return; }
-									if (role === 'ADMIN') {
-										navigate('/admin_dashboard');
-									} else if (hasHostPermission(role)) {
-										navigate('/host/dashboard');
-									} else if (hasBoothManagerPermission(role)) {
-										navigate('/booth-admin/dashboard');
-									} else {
-										navigate('/mypage/info');
-									}
-								})();
+								const role = await getRoleCode();
+								if (!role) { navigate('/login'); return; }
+								if (role === 'ADMIN') {
+									navigate('/admin_dashboard');
+								} else if (hasHostPermission(role)) {
+									navigate('/host/dashboard');
+								} else if (hasBoothManagerPermission(role)) {
+									navigate('/booth-admin/dashboard');
+								} else {
+									navigate('/mypage/info');
+								}
 							}} />
 							<LanguageToggle />
 						</div>

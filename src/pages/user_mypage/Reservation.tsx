@@ -7,9 +7,11 @@ import reservationService from "../../services/reservationService";
 import type { ReservationResponseDto } from "../../services/reservationService";
 import { eventAPI } from "../../services/event";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
+import { useNavigate } from "react-router-dom";
 
 export default function Reservation(): JSX.Element {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [reservations, setReservations] = useState<ReservationResponseDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -198,7 +200,8 @@ export default function Reservation(): JSX.Element {
                                 .map((reservation) => (
                                     <div
                                         key={reservation.reservationId}
-                                        className="border-none shadow-none bg-transparent"
+                                        className="border-none shadow-none bg-transparent cursor-pointer hover:bg-gray-50 transition-colors duration-200 p-4 rounded-lg"
+                                        onClick={() => navigate(`/eventdetail/${reservation.eventId}`)}
                                     >
                                         <div className="p-0 flex flex-col md:flex-row items-start gap-[31px] relative">
                                             <img

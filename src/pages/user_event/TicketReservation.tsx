@@ -488,11 +488,12 @@ export const TicketReservation = () => {
             console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
 
             // 1. 결제 완료 처리 API 호출  
-            const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/payments/complete`, {
+            const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL || window.location.origin;
+            const completeResponse = await fetch(`${backendUrl}/api/payments/complete`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
                 },
                 body: JSON.stringify({
                     merchantUid: merchantUid,
@@ -534,7 +535,6 @@ export const TicketReservation = () => {
             localStorage.removeItem('pending_merchant_uid');
             localStorage.removeItem('pending_event_id');
             localStorage.removeItem('pending_schedule_id');
-            localStorage.removeItem('current_merchant_uid');
 
             // 메시지 로테이션 중지
             clearInterval(messageInterval);
@@ -558,6 +558,16 @@ export const TicketReservation = () => {
             // 메시지 로테이션 중지
             clearInterval(messageInterval);
             setPaymentStep('결제 실패');
+
+            // 모바일 결제 실패 시 백엔드 락도 해제
+            try {
+                await authManager.authenticatedFetch('/api/payments/status/clear', {
+                    method: 'POST'
+                });
+                console.log('백엔드 결제 락 해제 완료');
+            } catch (clearError) {
+                console.warn('백엔드 결제 락 해제 실패:', clearError);
+            }
 
             // PC와 동일한 상세 에러 메시지 처리
             let errorMessage = '결제 완료 처리 중 오류가 발생했습니다.';
@@ -595,12 +605,19 @@ export const TicketReservation = () => {
             return;
         }
 
-        // 1-1. merchantUid 중복 방지 체크
-        const existingMerchantUid = localStorage.getItem('current_merchant_uid');
-        if (existingMerchantUid) {
-            console.log('기존 결제 진행 중 감지:', existingMerchantUid);
-            toast.warning('이미 진행 중인 결제가 있습니다.');
-            return;
+        // 1-1. 백엔드에서 결제 진행 상태 확인
+        try {
+            const statusResponse = await authManager.authenticatedFetch('/api/payments/status');
+            if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                if (statusData.inProgress) {
+                    console.log('백엔드에서 결제 진행 중 감지');
+                    toast.warning('이미 진행 중인 결제가 있습니다. 잠시 후 다시 시도해주세요.');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.warn('결제 상태 확인 실패, 계속 진행:', error);
         }
 
         // 2. 연속 시도 제한 - 5초 내 3회 제한
@@ -651,13 +668,11 @@ export const TicketReservation = () => {
 
             setPaymentStep('결제 처리 중...');
 
-            // PG사 중간 페이지 감지를 위한 정보 저장
+            // PG사 중간 페이지 감지를 위한 정보 저장 (최소화)
             const tempMerchantUid = `TICKET_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
             localStorage.setItem('pending_merchant_uid', tempMerchantUid);
             localStorage.setItem('pending_event_id', eventId);
             localStorage.setItem('pending_schedule_id', scheduleId);
-            // 현재 결제 중복 방지
-            localStorage.setItem('current_merchant_uid', tempMerchantUid);
 
             // 결제 처리 (결제 → 예약 생성 → target_id 업데이트)
             const result = await paymentService.processPayment(
@@ -681,7 +696,6 @@ export const TicketReservation = () => {
             localStorage.removeItem('pending_merchant_uid');
             localStorage.removeItem('pending_event_id');
             localStorage.removeItem('pending_schedule_id');
-            localStorage.removeItem('current_merchant_uid');
 
             setPaymentStep('결제 완료!');
             setPaymentSuccess(true);
@@ -694,6 +708,16 @@ export const TicketReservation = () => {
         } catch (error) {
             console.error('결제 처리 중 오류:', error);
             setPaymentStep('결제 실패');
+
+            // 결제 실패 시 백엔드 락도 해제
+            try {
+                await authManager.authenticatedFetch('/api/payments/status/clear', {
+                    method: 'POST'
+                });
+                console.log('백엔드 결제 락 해제 완료');
+            } catch (clearError) {
+                console.warn('백엔드 결제 락 해제 실패:', clearError);
+            }
 
             // 더 상세한 에러 메시지 제공
             let errorMessage = '결제 중 오류가 발생했습니다.';
@@ -715,8 +739,6 @@ export const TicketReservation = () => {
                 setPaymentSuccess(false);
             }, 3000);
         } finally {
-            // 결제 완료/실패 시 localStorage 정리
-            localStorage.removeItem('current_merchant_uid');
             // 4. 결제 처리 완료 - 상태 초기화
             setIsProcessing(false);
         }
