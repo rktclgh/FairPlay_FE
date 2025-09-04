@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
-import { requireAuth, isAuthenticated } from '../utils/authGuard';
+import { requireAuth, isAuthenticated, checkAuthenticationStatus } from '../utils/authGuard';
 import { hasHostPermission, hasBoothManagerPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 import { useTheme } from '../context/ThemeContext';
@@ -46,8 +46,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		}
 	}, [isSearchOpen]);
 
-	const checkLoginStatus = useCallback(() => {
-		const loggedIn = isAuthenticated();
+	const checkLoginStatus = useCallback(async () => {
+		const loggedIn = await checkAuthenticationStatus();
 		setIsLoggedIn(loggedIn);
 		if (loggedIn) {
 			connect(); // 로그인 시 웹소켓 연결

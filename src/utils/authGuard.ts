@@ -2,7 +2,7 @@ import { NavigateFunction } from 'react-router-dom';
 import api from '../api/axios';
 
 export const isAuthenticated = (): boolean => {
-  // 쿠키 기반 인증 상태 체크 (API 호출하지 않음)
+  // 쿠키 기반 인증 상태 체크 (API 호출하지 않음) - 기존 코드 유지
   const cookies = document.cookie.split(';');
   for (let cookie of cookies) {
     const [name] = cookie.trim().split('=');
@@ -11,6 +11,18 @@ export const isAuthenticated = (): boolean => {
     }
   }
   return false;
+};
+
+export const checkAuthenticationStatus = async (): Promise<boolean> => {
+  try {
+    // API 호출로 실제 인증 상태 확인 (HTTP-only 쿠키 사용)
+    await api.get('/api/events/user/role', {
+      headers: { 'X-Silent-Auth': 'true' }
+    });
+    return true;
+  } catch (error: any) {
+    return error.response?.status !== 401;
+  }
 };
 
 export const requireAuth = async (
