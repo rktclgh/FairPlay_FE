@@ -1,55 +1,53 @@
 import { NavigateFunction } from 'react-router-dom';
+import api from '../api/axios';
 
 export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem('accessToken');
-  
-  if (!token) {
-    return false;
-  }
-  
-  try {
-    // JWT 토큰이 만료되었는지 확인
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const isExpired = payload.exp * 1000 < Date.now();
-    
-    if (isExpired) {
-      // 만료된 토큰 제거
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      return false;
+  // 쿠키 기반 인증 상태 체크 (API 호출하지 않음) - 기존 코드 유지
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name] = cookie.trim().split('=');
+    if (name === 'FAIRPLAY_SESSION') {
+      return true;
     }
-    
+  }
+  return false;
+};
+
+export const checkAuthenticationStatus = async (): Promise<boolean> => {
+  try {
+    // API 호출로 실제 인증 상태 확인 (HTTP-only 쿠키 사용)
+    await api.get('/api/events/user/role', {
+      headers: { 'X-Silent-Auth': 'true' }
+    });
     return true;
-  } catch (error) {
-    // 토큰이 유효하지 않은 경우
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    return false;
+  } catch (error: any) {
+    return error.response?.status !== 401;
   }
 };
 
-export const requireAuth = (
+export const requireAuth = async (
   navigate: NavigateFunction, 
   feature: string = '기능'
-): boolean => {
-  if (!isAuthenticated()) {
-    alert(`로그인이 필요한 서비스입니다.`);
-    navigate('/login');
-    return false;
+): Promise<boolean> => {
+  try {
+    // 백엔드 API를 통해 실제 인증 상태 확인
+    const response = await api.get('/api/events/user/role');
+    return true;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      alert(`로그인이 필요한 서비스입니다.`);
+      navigate('/login');
+      return false;
+    }
+    return true;
   }
-  return true;
 };
 
-export const getUserIdFromToken = (): number | null => {
-  const token = localStorage.getItem('accessToken');
-  
-  if (!token) {
-    return null;
-  }
-  
+// 세션 기반 인증에서는 사용자 ID를 백엔드 API를 통해 가져옴
+export const getUserIdFromSession = async (): Promise<number | null> => {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return parseInt(payload.sub || payload.userId);
+    const response = await api.get('/api/events/user/role');
+    return response.data.userId;
   } catch (error) {
     return null;
   }

@@ -73,6 +73,8 @@ export default function MyTickets(): JSX.Element {
 
     // 모바일 사이드바 상태
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     // // ✅  웨이팅 메세지 설정
     const handleWebSocketMessage = useCallback((msg: string) => {
@@ -519,8 +521,11 @@ export default function MyTickets(): JSX.Element {
                             <div className="text-gray-500">{t('mypage.tickets.noReservations')}</div>
                         </div>
                     ) : (
-                        <div className="space-y-[47px] w-full md:w-[921px]">
-                            {reservations.map((reservation, index) => {
+                        <>
+                            <div className="space-y-[47px] w-full md:w-[921px]">
+                                {reservations
+                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                    .map((reservation, index) => {
                                 console.log('reservation:', reservation);
 
                                 const eventDate = `${formatDate(reservation.scheduleDate ?? null)} ${formatTime(reservation.startTime ?? null)} - ${formatTime(reservation.endTime ?? null)}`;
@@ -698,7 +703,42 @@ export default function MyTickets(): JSX.Element {
                                     </div>
                                 );
                             })}
-                        </div>
+                            </div>
+
+                            {/* 페이지네이션 */}
+                            {reservations.length > itemsPerPage && (
+                                <div className="flex justify-center items-center space-x-2 mt-8">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        이전
+                                    </button>
+
+                                    {Array.from({ length: Math.ceil(reservations.length / itemsPerPage) }, (_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === i + 1
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(reservations.length / itemsPerPage)))}
+                                        disabled={currentPage === Math.ceil(reservations.length / itemsPerPage)}
+                                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        다음
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

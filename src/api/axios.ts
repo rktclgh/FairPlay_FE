@@ -14,6 +14,9 @@ api.interceptors.response.use(
     let msg = "알 수 없는 오류가 발생했습니다.";
     let showToast = true;
     
+    // Silent auth 헤더가 있는 요청은 토스트를 표시하지 않음
+    const isSilentAuth = error.config?.headers?.['X-Silent-Auth'] === 'true';
+    
     // 네트워크 오류 (서버 연결 실패)
     if (error.code === 'ERR_NETWORK' || !error.response) {
       msg = "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.";
@@ -23,7 +26,10 @@ api.interceptors.response.use(
     // 서버 커스텀 메시지 있으면 그걸로
     else if (error.response?.data?.message) msg = error.response.data.message;
     else if (error.response?.data?.error) msg = error.response.data.error;
-    else if (error.response?.status === 401) msg = "로그인이 필요합니다.";
+    else if (error.response?.status === 401) {
+      msg = "로그인이 필요합니다.";
+      if (isSilentAuth) showToast = false; // Silent auth 시 토스트 숨김
+    }
     else if (error.response?.status === 403) msg = "권한이 없습니다.";
     else if (error.message) msg = error.message;
     
@@ -36,13 +42,7 @@ api.interceptors.response.use(
   }
 );
 
-// 인증 헤더 자동 추가 인터셉터
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// HTTP-only 쿠키 기반 인증으로 변경 - Authorization 헤더 인터셉터 제거
+// 쿠키는 withCredentials: true로 자동 전송됨
 
 export default api;

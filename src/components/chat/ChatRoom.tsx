@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../../api/axios";
 import { useChatSocket } from "./useChatSocket";
 import { ArrowLeft, Send } from "lucide-react";
 import UserOnlineStatus from "./UserOnlineStatus";
@@ -51,21 +51,22 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     };
 
     useEffect(() => {
-        // accessToken에서 userId 추출
-        const token = localStorage.getItem("accessToken");
-        if (token) {
+        // 세션 기반 사용자 정보 조회
+        const fetchUserInfo = async () => {
             try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                const userId = parseInt(payload.sub);
-                setMyUserId(userId);
-                const nameFromToken = payload.name || payload.nickname || "나";
-                setMyName(nameFromToken);
-                console.log("ChatRoom 사용자 ID 설정:", userId);
+                const response = await api.get('/api/events/user/role', {
+                    headers: { 'X-Silent-Auth': 'true' }
+                });
+                const userData = response.data;
+                setMyUserId(userData.userId);
+                setMyName(userData.name || "나");
+                console.log("ChatRoom 사용자 ID 설정:", userData.userId);
             } catch (error) {
-                console.error("토큰 파싱 실패:", error);
+                console.error("사용자 정보 조회 실패:", error);
                 setMyUserId(0);
             }
-        }
+        };
+        fetchUserInfo();
     }, []);
 
     // 메시지 처리 함수를 useCallback으로 메모이제이션
@@ -122,9 +123,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         console.log(`🔄 추가 메시지 로드 시작 - lastMessageId: ${oldestMessageId}`);
         
         try {
-            const response = await axios.get(`/api/chat/messages/cursor?chatRoomId=${roomId}&lastMessageId=${oldestMessageId}&size=20`, {
-                headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-            });
+            const response = await api.get(`/api/chat/messages/cursor?chatRoomId=${roomId}&lastMessageId=${oldestMessageId}&size=20`);
             
             const data = response.data;
             const newMessages = data.messages || [];
@@ -196,9 +195,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     // 최초 진입 시 기존 메시지 내역 조회
     useEffect(() => {
         // 페이징 API로 메시지 목록 가져오기 (최신 20개)
-        axios.get(`/api/chat/messages/cursor?chatRoomId=${roomId}&size=20`, {
-            headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-        }).then(res => {
+        api.get(`/api/chat/messages/cursor?chatRoomId=${roomId}&size=20`).then(res => {
             const data = res.data;
             const messageData = data.messages || [];
             
@@ -237,9 +234,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
 
         // 채팅방 정보 가져오기 (제목 설정용)
         if (!eventTitle && !isAdminInquiry) {
-            axios.get(`/api/chat/rooms`, {
-                headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-            }).then(res => {
+            api.get(`/api/chat/rooms`).then(res => {
                 const room = res.data.find((r: any) => r.chatRoomId === roomId);
                 if (room && room.eventTitle) {
                     setRoomTitle(room.eventTitle);
@@ -260,9 +255,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     // 메시지 읽음 처리
     const markMessagesAsRead = () => {
         // AI 채팅방도 백엔드로 읽음 처리 전송 (unreadCount 업데이트 위해)
-        axios.patch(`/api/chat/messages/read?chatRoomId=${roomId}`, {}, {
-            headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-        }).then(() => {
+        api.patch(`/api/chat/messages/read?chatRoomId=${roomId}`, {}).then(() => {
             // 성공 시 로컬 상태도 업데이트
             setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
         }).catch(err => {
