@@ -252,6 +252,23 @@ const deactivateBanner = async (id: string) => {
   }
 };
 
+const deleteBanner = async (id: string, title: string) => {
+  if (!confirm(`'${title}' 배너를 완전히 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없으며, 연결된 슬롯이 재사용 가능한 빈 슬롯으로 변경됩니다.`)) {
+    return;
+  }
+  
+  try {
+    const response = await api.delete(`/api/admin/banners/${id}`);
+    
+    // 성공 시 배너 목록 새로고침
+    await fetchVip();
+    alert(response.data?.message || '배너가 완전히 삭제되었습니다.');
+  } catch (err: any) {
+    console.error("deleteBanner error:", err?.response?.data || err);
+    alert(`배너 삭제 실패: ${err?.response?.data?.message ?? "요청 실패"}`);
+  }
+};
+
 
 useEffect(() => {
   (async () => {
@@ -379,6 +396,7 @@ useEffect(() => {
         )}
 
         <div className="space-y-4">
+            {/* 활성 배너들 먼저 표시 */}
             {mdPickBanners
   .filter(b => b.status === "active")
   .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
@@ -408,16 +426,92 @@ useEffect(() => {
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityBadgeClass(banner.priority)}`}>
           {banner.priority}순위
         </span>
-        <button
-          className="ml-1 px-2 py-1 text-xs rounded border"
-          onClick={() => deactivateBanner(banner.id)}
-          aria-label={`${banner.eventTitle} 비활성화`}
-        >
-          삭제(비활성)
-        </button>
+        {banner.status === 'active' ? (
+          <button
+            className="ml-1 px-2 py-1 text-xs rounded border bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+            onClick={() => deactivateBanner(banner.id)}
+            aria-label={`${banner.eventTitle} 비활성화`}
+          >
+            비활성화
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <button
+              className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+              onClick={() => activateBanner(banner.id)}
+              aria-label={`${banner.eventTitle} 활성화`}
+            >
+              활성화
+            </button>
+            <button
+              className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+              onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+              aria-label={`${banner.eventTitle} 완전 삭제`}
+            >
+              완전삭제
+            </button>
+          </div>
+        )}
       </div>
     </div>
 ))}
+
+          {/* 비활성 MD PICK 배너들 표시 */}
+          {mdPickBanners.filter(b => b.status === "inactive").length > 0 && (
+            <>
+              <div className="mt-6 pt-4 border-t">
+                <h4 className="text-sm font-medium text-gray-600 mb-3">비활성 MD PICK 배너</h4>
+                {mdPickBanners
+                  .filter(b => b.status === "inactive")
+                  .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
+                  .map((banner) => (
+                    <div
+                      key={`md-inactive-${banner.id}`}
+                      className="group flex items-center space-x-4 p-4 border rounded-lg hover:shadow-sm transition bg-gray-50 opacity-75"
+                    >
+                      <img
+                        src={banner.imageUrl || "/images/placeholder.png"}
+                        alt={banner.eventTitle || "MD PICK"}
+                        className="w-16 h-12 object-cover rounded grayscale"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-700 truncate">{banner.eventTitle}</h4>
+                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-200 text-gray-600">
+                            MD PICK (비활성)
+                          </span>
+                        </div>
+                        {banner.hostName && (
+                          <p className="text-sm text-gray-500 truncate">{banner.hostName}</p>
+                        )}
+                        <p className="text-xs text-gray-400">노출 날짜: {banner.date}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityBadgeClass(banner.priority)}`}>
+                          {banner.priority}순위
+                        </span>
+                        <div className="flex gap-1">
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                            onClick={() => activateBanner(banner.id)}
+                            aria-label={`${banner.eventTitle} 활성화`}
+                          >
+                            활성화
+                          </button>
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                            onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                            aria-label={`${banner.eventTitle} 완전 삭제`}
+                          >
+                            완전삭제
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
 
           {heroBanners
             .filter(b => b.status === "active")
@@ -437,15 +531,81 @@ useEffect(() => {
                   }`}>
                     {banner.rank}순위
                   </span>
-                  <button
-                    className="ml-3 px-2 py-1 text-xs rounded border"
-                    onClick={() => deactivateBanner(banner.id)}
-                  >
-                    삭제(비활성)
-                  </button>
+                  {banner.status === 'active' ? (
+                    <button
+                      className="ml-3 px-2 py-1 text-xs rounded border bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                      onClick={() => deactivateBanner(banner.id)}
+                    >
+                      비활성화
+                    </button>
+                  ) : (
+                    <div className="flex gap-1 ml-3">
+                      <button
+                        className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                        onClick={() => activateBanner(banner.id)}
+                      >
+                        활성화
+                      </button>
+                      <button
+                        className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                        onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                      >
+                        완전삭제
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
+
+          {/* 비활성 HERO 배너들 표시 */}
+          {heroBanners.filter(b => b.status === "inactive").length > 0 && (
+            <>
+              <div className="mt-6 pt-4 border-t">
+                <h4 className="text-sm font-medium text-gray-600 mb-3">비활성 HERO 배너</h4>
+                {heroBanners
+                  .filter(b => b.status === "inactive")
+                  .map((banner) => (
+                    <div key={`hero-inactive-${banner.id}`} className="flex items-center space-x-4 p-4 border rounded-lg bg-gray-50 opacity-75">
+                      <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded grayscale" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-700">{banner.eventTitle}</h4>
+                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-200 text-gray-600">
+                            HERO (비활성)
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500">{banner.hostName}</p>
+                        <p className="text-xs text-gray-400">{banner.startDate} ~ {banner.endDate}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          banner.rank === 1 ? "bg-red-100 text-red-800" :
+                          banner.rank === 2 ? "bg-orange-100 text-orange-800" :
+                          banner.rank === 3 ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800"
+                        }`}>
+                          {banner.rank}순위
+                        </span>
+                        <div className="flex gap-1 ml-3">
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                            onClick={() => activateBanner(banner.id)}
+                          >
+                            활성화
+                          </button>
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                            onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                          >
+                            완전삭제
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -564,6 +724,7 @@ useEffect(() => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">기간</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제 상태</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -602,6 +763,31 @@ useEffect(() => {
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                             결제 완료
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {banner.status === 'active' ? (
+                                            <button
+                                                className="px-2 py-1 text-xs rounded border bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                                                onClick={() => deactivateBanner(banner.id)}
+                                            >
+                                                비활성화
+                                            </button>
+                                        ) : (
+                                            <div className="flex gap-1">
+                                                <button
+                                                    className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                                    onClick={() => activateBanner(banner.id)}
+                                                >
+                                                    활성화
+                                                </button>
+                                                <button
+                                                    className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                                                    onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                                                >
+                                                    완전삭제
+                                                </button>
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
