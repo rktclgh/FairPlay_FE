@@ -73,6 +73,8 @@ export const VipBannerManagement: React.FC = () => {
     const [heroBanners, setHeroBanners] = useState<BannerData[]>([]);
     const [mdPickBanners, setMdPickBanners] = useState<MdPickData[]>([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
     // 대시보드 요약
 type Summary = {
@@ -164,16 +166,28 @@ const formatKRW = (n: number | string) =>
     setSummary(data);
   };
 
- const fetchVip = async () => {
+ const fetchVip = async (startDateFilter?: string, endDateFilter?: string) => {
+  // 날짜 문자열을 LocalDateTime 형식으로 변환
+  const fromParam = startDateFilter ? `${startDateFilter}T00:00:00` : undefined;
+  const toParam = endDateFilter ? `${endDateFilter}T23:59:59` : undefined;
+  
   // HERO
   const hero = await api.get<AdminBanner[]>("/api/admin/banners/vip", {
-    params: { type: "HERO" },
+    params: { 
+      type: "HERO",
+      from: fromParam,
+      to: toParam
+    },
   });
   setHeroBanners(hero.data.map(mapToUI));
 
   // MD PICK (= 검색 상단 고정)
   const md = await api.get<AdminBanner[]>("/api/admin/banners/vip", {
-    params: { type: "SEARCH_TOP" },
+    params: { 
+      type: "SEARCH_TOP",
+      from: fromParam,
+      to: toParam
+    },
   });
   setMdPickBanners(
     md.data
@@ -181,6 +195,18 @@ const formatKRW = (n: number | string) =>
       .map(mapToMdPickUI)
   );
 };
+
+  const applyDateFilter = () => {
+    fetchVip(startDate, endDate);
+  };
+
+  const resetDateFilter = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    setStartDate(today);
+    setEndDate(weekLater);
+    fetchVip();
+  };
 
 
 
@@ -249,6 +275,23 @@ const deactivateBanner = async (id: string) => {
   } catch (err: any) {
     console.error("deactivateBanner error:", err?.response?.data || err);
     alert(`배너 비활성화 실패: ${err?.response?.data?.message ?? "요청 실패"}`);
+  }
+};
+
+const deleteBanner = async (id: string, title: string) => {
+  if (!confirm(`'${title}' 배너를 완전히 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없으며, 연결된 슬롯이 재사용 가능한 빈 슬롯으로 변경됩니다.`)) {
+    return;
+  }
+  
+  try {
+    const response = await api.delete(`/api/admin/banners/${id}`);
+    
+    // 성공 시 배너 목록 새로고침
+    await fetchVip();
+    alert(response.data?.message || '배너가 완전히 삭제되었습니다.');
+  } catch (err: any) {
+    console.error("deleteBanner error:", err?.response?.data || err);
+    alert(`배너 삭제 실패: ${err?.response?.data?.message ?? "요청 실패"}`);
   }
 };
 
@@ -344,6 +387,44 @@ useEffect(() => {
           </button>
         </div>
 
+        {/* 날짜 필터 */}
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">시작 날짜:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">종료 날짜:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={applyDateFilter}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                필터 적용
+              </button>
+              <button
+                onClick={resetDateFilter}
+                className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              >
+                초기화
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* 추가 폼 */}
         {showAdd && (
           <div className="mb-6 grid grid-cols-1 md:grid-cols-6 gap-3 p-4 border rounded-md">
@@ -379,6 +460,7 @@ useEffect(() => {
         )}
 
         <div className="space-y-4">
+            {/* 활성 배너들 먼저 표시 (날짜순 정렬) */}
             {mdPickBanners
   .filter(b => b.status === "active")
   .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
@@ -408,19 +490,96 @@ useEffect(() => {
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityBadgeClass(banner.priority)}`}>
           {banner.priority}순위
         </span>
-        <button
-          className="ml-1 px-2 py-1 text-xs rounded border"
-          onClick={() => deactivateBanner(banner.id)}
-          aria-label={`${banner.eventTitle} 비활성화`}
-        >
-          삭제(비활성)
-        </button>
+        {banner.status === 'active' ? (
+          <button
+            className="ml-1 px-2 py-1 text-xs rounded border bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+            onClick={() => deactivateBanner(banner.id)}
+            aria-label={`${banner.eventTitle} 비활성화`}
+          >
+            비활성화
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <button
+              className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+              onClick={() => activateBanner(banner.id)}
+              aria-label={`${banner.eventTitle} 활성화`}
+            >
+              활성화
+            </button>
+            <button
+              className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+              onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+              aria-label={`${banner.eventTitle} 완전 삭제`}
+            >
+              완전삭제
+            </button>
+          </div>
+        )}
       </div>
     </div>
 ))}
 
+          {/* 비활성 MD PICK 배너들 표시 */}
+          {mdPickBanners.filter(b => b.status === "inactive").length > 0 && (
+            <>
+              <div className="mt-6 pt-4 border-t">
+                <h4 className="text-sm font-medium text-gray-600 mb-3">비활성 MD PICK 배너</h4>
+                {mdPickBanners
+                  .filter(b => b.status === "inactive")
+                  .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
+                  .map((banner) => (
+                    <div
+                      key={`md-inactive-${banner.id}`}
+                      className="group flex items-center space-x-4 p-4 border rounded-lg hover:shadow-sm transition bg-gray-50 opacity-75"
+                    >
+                      <img
+                        src={banner.imageUrl || "/images/placeholder.png"}
+                        alt={banner.eventTitle || "MD PICK"}
+                        className="w-16 h-12 object-cover rounded grayscale"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-700 truncate">{banner.eventTitle}</h4>
+                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-200 text-gray-600">
+                            MD PICK (비활성)
+                          </span>
+                        </div>
+                        {banner.hostName && (
+                          <p className="text-sm text-gray-500 truncate">{banner.hostName}</p>
+                        )}
+                        <p className="text-xs text-gray-400">노출 날짜: {banner.date}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityBadgeClass(banner.priority)}`}>
+                          {banner.priority}순위
+                        </span>
+                        <div className="flex gap-1">
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                            onClick={() => activateBanner(banner.id)}
+                            aria-label={`${banner.eventTitle} 활성화`}
+                          >
+                            활성화
+                          </button>
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                            onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                            aria-label={`${banner.eventTitle} 완전 삭제`}
+                          >
+                            완전삭제
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
+
           {heroBanners
             .filter(b => b.status === "active")
+            .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.rank - b.rank)
             .map((banner) => (
               <div key={banner.id} className="flex items-center space-x-4 p-4 border rounded-lg">
                 <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
@@ -437,15 +596,81 @@ useEffect(() => {
                   }`}>
                     {banner.rank}순위
                   </span>
-                  <button
-                    className="ml-3 px-2 py-1 text-xs rounded border"
-                    onClick={() => deactivateBanner(banner.id)}
-                  >
-                    삭제(비활성)
-                  </button>
+                  {banner.status === 'active' ? (
+                    <button
+                      className="ml-3 px-2 py-1 text-xs rounded border bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                      onClick={() => deactivateBanner(banner.id)}
+                    >
+                      비활성화
+                    </button>
+                  ) : (
+                    <div className="flex gap-1 ml-3">
+                      <button
+                        className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                        onClick={() => activateBanner(banner.id)}
+                      >
+                        활성화
+                      </button>
+                      <button
+                        className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                        onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                      >
+                        완전삭제
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
+
+          {/* 비활성 HERO 배너들 표시 */}
+          {heroBanners.filter(b => b.status === "inactive").length > 0 && (
+            <>
+              <div className="mt-6 pt-4 border-t">
+                <h4 className="text-sm font-medium text-gray-600 mb-3">비활성 HERO 배너</h4>
+                {heroBanners
+                  .filter(b => b.status === "inactive")
+                  .map((banner) => (
+                    <div key={`hero-inactive-${banner.id}`} className="flex items-center space-x-4 p-4 border rounded-lg bg-gray-50 opacity-75">
+                      <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded grayscale" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-700">{banner.eventTitle}</h4>
+                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-200 text-gray-600">
+                            HERO (비활성)
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500">{banner.hostName}</p>
+                        <p className="text-xs text-gray-400">{banner.startDate} ~ {banner.endDate}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          banner.rank === 1 ? "bg-red-100 text-red-800" :
+                          banner.rank === 2 ? "bg-orange-100 text-orange-800" :
+                          banner.rank === 3 ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800"
+                        }`}>
+                          {banner.rank}순위
+                        </span>
+                        <div className="flex gap-1 ml-3">
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                            onClick={() => activateBanner(banner.id)}
+                          >
+                            활성화
+                          </button>
+                          <button
+                            className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                            onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                          >
+                            완전삭제
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -473,9 +698,47 @@ useEffect(() => {
                     </p>
                 </div>
 
+                {/* 날짜 필터 */}
+                <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">시작 날짜:</label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">종료 날짜:</label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={applyDateFilter}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        필터 적용
+                      </button>
+                      <button
+                        onClick={resetDateFilter}
+                        className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                      >
+                        초기화
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 날짜 선택 */}
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">날짜 선택</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">스케줄 날짜 선택</label>
                     <input
                         type="date"
                         value={selectedDate}
@@ -564,10 +827,13 @@ useEffect(() => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">기간</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제 상태</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {heroBanners.map((banner) => (
+                            {heroBanners
+                              .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.rank - b.rank)
+                              .map((banner) => (
                                 <tr key={banner.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
@@ -603,6 +869,31 @@ useEffect(() => {
                                             결제 완료
                                         </span>
                                     </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {banner.status === 'active' ? (
+                                            <button
+                                                className="px-2 py-1 text-xs rounded border bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                                                onClick={() => deactivateBanner(banner.id)}
+                                            >
+                                                비활성화
+                                            </button>
+                                        ) : (
+                                            <div className="flex gap-1">
+                                                <button
+                                                    className="px-2 py-1 text-xs rounded border bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                                    onClick={() => activateBanner(banner.id)}
+                                                >
+                                                    활성화
+                                                </button>
+                                                <button
+                                                    className="px-2 py-1 text-xs rounded border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                                                    onClick={() => deleteBanner(banner.id, banner.eventTitle)}
+                                                >
+                                                    완전삭제
+                                                </button>
+                                            </div>
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -630,6 +921,44 @@ useEffect(() => {
                         호스트가 원하는 날짜를 먼저 결제한 사람이 해당 날짜를 차지합니다.
                         하루 최대 2개까지만 가능하며, 충돌이 발생하지 않습니다.
                     </p>
+                </div>
+
+                {/* 날짜 필터 */}
+                <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">시작 날짜:</label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">종료 날짜:</label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={applyDateFilter}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        필터 적용
+                      </button>
+                      <button
+                        onClick={resetDateFilter}
+                        className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                      >
+                        초기화
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 날짜별 MD PICK 현황 */}
@@ -664,8 +993,10 @@ useEffect(() => {
 
                 {/* MD PICK 목록 */}
                 <div className="space-y-4">
-                    <h4 className="font-medium text-gray-900">현재 등록된 MD PICK</h4>
-                    {mdPickBanners.map((banner) => (
+                    <h4 className="font-medium text-gray-900">현재 등록된 MD PICK (날짜순 정렬)</h4>
+                    {mdPickBanners
+                      .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
+                      .map((banner) => (
                         <div key={banner.id} className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center space-x-4">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${banner.priority === 1 ? 'bg-red-500' : 'bg-blue-500'

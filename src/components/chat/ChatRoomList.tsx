@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import axios from "axios";
+import api from "../../api/axios";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 import UserOnlineStatus from "./UserOnlineStatus";
@@ -38,9 +38,7 @@ export default function ChatRoomList({ onSelect }: Props) {
         try {
             // 백엔드에서 사용자 역할에 따라 적절한 채팅방 목록을 모두 반환
             // (복잡한 프론트엔드 역할 체크 로직 제거, 백엔드에서 처리)
-            const response = await axios.get(`/api/chat/rooms`, {
-                headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
-            });
+            const response = await api.get(`/api/chat/rooms`);
 
             const allRooms = response.data;
             console.log("백엔드에서 반환된 채팅방 수:", allRooms.length);
@@ -75,16 +73,16 @@ export default function ChatRoomList({ onSelect }: Props) {
         fetchRooms();
 
         // WebSocket 연결로 실시간 업데이트 (SockJS fallback 엔드포인트 사용)
-        const token = localStorage.getItem("accessToken");
+        // HTTP-only 쿠키 방식에서는 쿠키가 자동으로 포함됨
         const sockjsUrl = window.location.hostname === 'localhost'
             ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat-sockjs`
             : `${window.location.protocol}//${window.location.host}/ws/chat-sockjs`;
-        const sock = new SockJS(token ? `${sockjsUrl}?token=${token}` : sockjsUrl);
+        const sock = new SockJS(sockjsUrl, [], { withCredentials: true });
         const stomp = Stomp.over(sock);
         stomp.debug = () => { };
         clientRef.current = stomp;
 
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = {};
 
         stomp.connect(
             headers,

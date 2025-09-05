@@ -74,7 +74,8 @@ export function useChatSocket(
         
         console.log(`SockJS connecting to: ${sockjsUrl}`);
         
-        const sock = new SockJS(sockjsUrl, null, {
+        const sock = new SockJS(sockjsUrl, [], { 
+          withCredentials: true,
           transports: ['websocket', 'xhr-streaming', 'xhr-polling']
         });
         const stomp = Stomp.over(sock);

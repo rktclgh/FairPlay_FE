@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { MessageCircle, ChevronLeft } from "lucide-react";
 import ChatRoomList from "./ChatRoomList";
 import ChatRoom from "./ChatRoom";
-import axios from "axios";
+import api from "../../api/axios";
 import { isAuthenticated } from "../../utils/authGuard";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -44,9 +44,7 @@ export default function ChatModal({
         }
 
         try {
-            const response = await axios.get('/api/chat/presence/admin-status', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-            });
+            const response = await api.get('/api/chat/presence/admin-status');
             setHasOnlineAdmin(response.data.hasOnlineAdmin);
         } catch (error) {
             console.error('관리자 상태 확인 실패:', error);
@@ -59,9 +57,7 @@ export default function ChatModal({
         setLoading(true);
         try {
             // 먼저 기존 관리자 문의 채팅방이 있는지 확인
-            const existingResponse = await axios.get('/api/chat/rooms', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-            });
+            const existingResponse = await api.get('/api/chat/rooms');
 
             const existingAdminRoom = existingResponse.data.find((room: any) =>
                 room.targetType === 'ADMIN' && !room.closedAt
@@ -77,9 +73,7 @@ export default function ChatModal({
                 console.log('기존 관리자 문의 채팅방으로 연결:', roomData.chatRoomId);
             } else {
                 // 새 채팅방 생성
-                const response = await axios.post('/api/chat/admin-inquiry', {}, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-                });
+                const response = await api.post('/api/chat/admin-inquiry', {});
                 roomData = response.data;
                 console.log('새로운 관리자 문의 채팅방 생성:', roomData.chatRoomId);
             }
@@ -104,9 +98,7 @@ export default function ChatModal({
         setLoading(true);
         try {
             // 먼저 기존 AI 채팅방이 있는지 확인
-            const existingResponse = await axios.get('/api/chat/rooms', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-            });
+            const existingResponse = await api.get('/api/chat/rooms');
 
             const existingAiRoom = existingResponse.data.find((room: any) =>
                 room.targetType === 'AI' && !room.closedAt
@@ -122,9 +114,7 @@ export default function ChatModal({
                 console.log('기존 AI 채팅방으로 연결:', roomData.chatRoomId);
             } else {
                 // 새 채팅방 생성
-                const response = await axios.post('/api/chat/ai-inquiry', {}, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-                });
+                const response = await api.post('/api/chat/ai-inquiry', {});
                 roomData = response.data;
                 console.log('새로운 AI 채팅방 생성:', roomData.chatRoomId);
             }
