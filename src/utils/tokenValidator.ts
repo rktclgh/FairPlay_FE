@@ -1,6 +1,7 @@
 // tokenValidator.ts - 앱 시작 시 토큰 유효성 검증
 
 import authManager from './auth';
+import { isAuthenticated } from './authGuard';
 
 class TokenValidator {
   private static instance: TokenValidator;
@@ -19,11 +20,17 @@ class TokenValidator {
   async validateTokensOnStartup(): Promise<boolean> {
     if (this.isValidating) return false;
     
+    // 먼저 로컬 쿠키 체크 - 없으면 API 호출 안함
+    if (!isAuthenticated()) {
+      console.log('세션 쿠키가 없음 - 비로그인 상태');
+      return false;
+    }
+    
     console.log('앱 시작 시 토큰 유효성 검증 시작');
     this.isValidating = true;
 
     try {
-      // HTTP-only 쿠키 기반 인증이므로 간단한 API 호출로 세션 확인
+      // 쿠키가 있을 때만 HTTP-only 쿠키 기반 세션 확인
       const response = await authManager.authenticatedFetch('/api/users/mypage', {
         method: 'GET',
       });
@@ -55,8 +62,10 @@ class TokenValidator {
   startPeriodicValidation(): void {
     // 5분마다 세션 상태 확인
     setInterval(async () => {
-      // HTTP-only 쿠키 기반이므로 주기적으로 서버에 세션 확인
-      await this.validateTokensOnStartup();
+      // 로그인된 상태일 때만 주기적 검증
+      if (isAuthenticated()) {
+        await this.validateTokensOnStartup();
+      }
     }, 5 * 60 * 1000); // 5분
   }
 }

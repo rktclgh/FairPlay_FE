@@ -14,8 +14,13 @@ export const isAuthenticated = (): boolean => {
 };
 
 export const checkAuthenticationStatus = async (): Promise<boolean> => {
+  // 먼저 로컬 쿠키 체크 - 없으면 API 호출 안함
+  if (!isAuthenticated()) {
+    return false;
+  }
+  
   try {
-    // API 호출로 실제 인증 상태 확인 (HTTP-only 쿠키 사용)
+    // 쿠키가 있을 때만 API 호출로 실제 인증 상태 확인
     await api.get('/api/events/user/role', {
       headers: { 'X-Silent-Auth': 'true' }
     });
