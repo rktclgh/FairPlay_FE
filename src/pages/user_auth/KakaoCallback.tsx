@@ -26,17 +26,14 @@ const KakaoCallback = () => {
                 console.log('Current URL:', window.location.href);
                 
                 const response = await api.post('/api/auth/kakao', { code }); // POST JSON!
-                const { accessToken, refreshToken } = response.data;
 
-                localStorage.setItem('accessToken', accessToken);
-                localStorage.setItem('refreshToken', refreshToken);
-
+                // HTTP-only 쿠키 방식에서는 토큰을 localStorage에 저장하지 않음
                 toast.success('카카오 로그인에 성공했습니다!');
 
-                // accessToken에서 사용자 역할 추출
+                // API를 통해 사용자 역할 조회
                 try {
-                    const payload = JSON.parse(atob(accessToken.split('.')[1]));
-                    const userRole = payload.role;
+                    const roleResponse = await api.get("/api/events/user/role");
+                    const userRole = roleResponse.data.roleCode;
 
                     // 권한별 리다이렉션
                     if (hasHostPermission(userRole)) {
@@ -47,7 +44,7 @@ const KakaoCallback = () => {
                         navigate("/");
                     }
                 } catch (error) {
-                    console.error("토큰 파싱 실패:", error);
+                    console.error("Role API 호출 실패:", error);
                     navigate("/"); // 기본적으로 메인 페이지로
                 }
             } catch (error: any) {

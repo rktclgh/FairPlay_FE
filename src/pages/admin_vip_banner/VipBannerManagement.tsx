@@ -73,6 +73,8 @@ export const VipBannerManagement: React.FC = () => {
     const [heroBanners, setHeroBanners] = useState<BannerData[]>([]);
     const [mdPickBanners, setMdPickBanners] = useState<MdPickData[]>([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
     // 대시보드 요약
 type Summary = {
@@ -164,16 +166,28 @@ const formatKRW = (n: number | string) =>
     setSummary(data);
   };
 
- const fetchVip = async () => {
+ const fetchVip = async (startDateFilter?: string, endDateFilter?: string) => {
+  // 날짜 문자열을 LocalDateTime 형식으로 변환
+  const fromParam = startDateFilter ? `${startDateFilter}T00:00:00` : undefined;
+  const toParam = endDateFilter ? `${endDateFilter}T23:59:59` : undefined;
+  
   // HERO
   const hero = await api.get<AdminBanner[]>("/api/admin/banners/vip", {
-    params: { type: "HERO" },
+    params: { 
+      type: "HERO",
+      from: fromParam,
+      to: toParam
+    },
   });
   setHeroBanners(hero.data.map(mapToUI));
 
   // MD PICK (= 검색 상단 고정)
   const md = await api.get<AdminBanner[]>("/api/admin/banners/vip", {
-    params: { type: "SEARCH_TOP" },
+    params: { 
+      type: "SEARCH_TOP",
+      from: fromParam,
+      to: toParam
+    },
   });
   setMdPickBanners(
     md.data
@@ -181,6 +195,18 @@ const formatKRW = (n: number | string) =>
       .map(mapToMdPickUI)
   );
 };
+
+  const applyDateFilter = () => {
+    fetchVip(startDate, endDate);
+  };
+
+  const resetDateFilter = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    setStartDate(today);
+    setEndDate(weekLater);
+    fetchVip();
+  };
 
 
 
@@ -361,6 +387,44 @@ useEffect(() => {
           </button>
         </div>
 
+        {/* 날짜 필터 */}
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">시작 날짜:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">종료 날짜:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={applyDateFilter}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                필터 적용
+              </button>
+              <button
+                onClick={resetDateFilter}
+                className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              >
+                초기화
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* 추가 폼 */}
         {showAdd && (
           <div className="mb-6 grid grid-cols-1 md:grid-cols-6 gap-3 p-4 border rounded-md">
@@ -396,7 +460,7 @@ useEffect(() => {
         )}
 
         <div className="space-y-4">
-            {/* 활성 배너들 먼저 표시 */}
+            {/* 활성 배너들 먼저 표시 (날짜순 정렬) */}
             {mdPickBanners
   .filter(b => b.status === "active")
   .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
@@ -515,6 +579,7 @@ useEffect(() => {
 
           {heroBanners
             .filter(b => b.status === "active")
+            .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.rank - b.rank)
             .map((banner) => (
               <div key={banner.id} className="flex items-center space-x-4 p-4 border rounded-lg">
                 <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
@@ -633,9 +698,47 @@ useEffect(() => {
                     </p>
                 </div>
 
+                {/* 날짜 필터 */}
+                <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">시작 날짜:</label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">종료 날짜:</label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={applyDateFilter}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        필터 적용
+                      </button>
+                      <button
+                        onClick={resetDateFilter}
+                        className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                      >
+                        초기화
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 날짜 선택 */}
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">날짜 선택</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">스케줄 날짜 선택</label>
                     <input
                         type="date"
                         value={selectedDate}
@@ -728,7 +831,9 @@ useEffect(() => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {heroBanners.map((banner) => (
+                            {heroBanners
+                              .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.rank - b.rank)
+                              .map((banner) => (
                                 <tr key={banner.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <img src={banner.imageUrl} alt={banner.eventTitle} className="w-16 h-12 object-cover rounded" />
@@ -818,6 +923,44 @@ useEffect(() => {
                     </p>
                 </div>
 
+                {/* 날짜 필터 */}
+                <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">시작 날짜:</label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <label className="text-sm font-medium text-gray-700">종료 날짜:</label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={applyDateFilter}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        필터 적용
+                      </button>
+                      <button
+                        onClick={resetDateFilter}
+                        className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                      >
+                        초기화
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 날짜별 MD PICK 현황 */}
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">7일간 현황</label>
@@ -850,8 +993,10 @@ useEffect(() => {
 
                 {/* MD PICK 목록 */}
                 <div className="space-y-4">
-                    <h4 className="font-medium text-gray-900">현재 등록된 MD PICK</h4>
-                    {mdPickBanners.map((banner) => (
+                    <h4 className="font-medium text-gray-900">현재 등록된 MD PICK (날짜순 정렬)</h4>
+                    {mdPickBanners
+                      .sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority)
+                      .map((banner) => (
                         <div key={banner.id} className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center space-x-4">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${banner.priority === 1 ? 'bg-red-500' : 'bg-blue-500'
