@@ -1,8 +1,10 @@
 import { NavigateFunction } from 'react-router-dom';
-import api from '../api/axios';
 
+// AuthContext 없이 사용할 수 있는 레거시 함수들
+// 새로운 코드에서는 useAuth() 훅을 사용하는 것을 권장
+
+// 빠른 쿠키 체크 (동기)
 export const isAuthenticated = (): boolean => {
-  // 쿠키 기반 인증 상태 체크 (API 호출하지 않음) - 기존 코드 유지
   const cookies = document.cookie.split(';');
   for (let cookie of cookies) {
     const [name] = cookie.trim().split('=');
@@ -13,42 +15,21 @@ export const isAuthenticated = (): boolean => {
   return false;
 };
 
-export const checkAuthenticationStatus = async (): Promise<boolean> => {
-  try {
-    // API 호출로 실제 인증 상태 확인 (HTTP-only 쿠키 사용)
-    await api.get('/api/events/user/role', {
-      headers: { 'X-Silent-Auth': 'true' }
-    });
-    return true;
-  } catch (error: any) {
-    return error.response?.status !== 401;
-  }
-};
-
-export const requireAuth = async (
+// AuthContext 기반 인증 확인을 위한 헬퍼
+export const requireAuth = (
+  isAuth: boolean,
   navigate: NavigateFunction, 
   feature: string = '기능'
-): Promise<boolean> => {
-  try {
-    // 백엔드 API를 통해 실제 인증 상태 확인
-    const response = await api.get('/api/events/user/role');
-    return true;
-  } catch (error: any) {
-    if (error.response?.status === 401) {
-      alert(`로그인이 필요한 서비스입니다.`);
-      navigate('/login');
-      return false;
-    }
-    return true;
+): boolean => {
+  if (!isAuth) {
+    alert(`로그인이 필요한 서비스입니다.`);
+    navigate('/login');
+    return false;
   }
+  return true;
 };
 
-// 세션 기반 인증에서는 사용자 ID를 백엔드 API를 통해 가져옴
-export const getUserIdFromSession = async (): Promise<number | null> => {
-  try {
-    const response = await api.get('/api/events/user/role');
-    return response.data.userId;
-  } catch (error) {
-    return null;
-  }
+// AuthContext 기반 사용자 ID 가져오기
+export const getUserIdFromAuth = (user: { userId: number } | null): number | null => {
+  return user?.userId || null;
 };

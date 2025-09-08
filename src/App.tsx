@@ -82,6 +82,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
 
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
@@ -384,13 +385,15 @@ function AppContent() {
 function App() {
     return (
         <BrowserRouter>
-            <ThemeProvider>
-                <AppLayout>
-                    <AppContent />
-                </AppLayout>
-                {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
-                <ChatFloatingModal />
-            </ThemeProvider>
+            <AuthProvider>
+                <ThemeProvider>
+                    <AppLayout>
+                        <AppContent />
+                    </AppLayout>
+                    {/* 채팅 플로팅 버튼은 항상 표시하되, 클릭 시 인증 확인 */}
+                    <ChatFloatingModal />
+                </ThemeProvider>
+            </AuthProvider>
         </BrowserRouter>
     );
 }

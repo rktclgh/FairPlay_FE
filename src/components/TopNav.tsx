@@ -4,7 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
-import { requireAuth, isAuthenticated, checkAuthenticationStatus } from '../utils/authGuard';
+import { requireAuth } from '../utils/authGuard';
+import { useAuth } from '../context/AuthContext';
 import { hasHostPermission, hasBoothManagerPermission } from '../utils/permissions';
 import { clearCachedRoleCode, getRoleCode } from '../utils/role';
 import { useTheme } from '../context/ThemeContext';
@@ -19,8 +20,8 @@ interface TopNavProps {
 export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	const { isDark } = useTheme();
 	const { t } = useTranslation();
+	const { isAuthenticated, logout } = useAuth();
 	const [activeMenu, setActiveMenu] = useState<string>('HOME');
-	const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 	const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
 	const [mobileQuery, setMobileQuery] = useState<string>('');
 	const [desktopQuery, setDesktopQuery] = useState<string>('');
@@ -46,24 +47,17 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		}
 	}, [isSearchOpen]);
 
-	const checkLoginStatus = useCallback(async () => {
-		const loggedIn = await checkAuthenticationStatus();
-		setIsLoggedIn(loggedIn);
-		if (loggedIn) {
+	// AuthContext에서 인증 상태를 가져와 웹소켓 연결 관리
+	useEffect(() => {
+		if (isAuthenticated) {
 			connect(); // 로그인 시 웹소켓 연결
 		} else {
 			disconnect(); // 로그아웃 시 웹소켓 연결 해제
 		}
-	}, [connect, disconnect]);
-
-	useEffect(() => {
-		checkLoginStatus();
-		window.addEventListener('storage', checkLoginStatus); // 다른 탭에서 로그인/로그아웃 시 상태 동기화
 		return () => {
-			window.removeEventListener('storage', checkLoginStatus);
 			disconnect(); // 컴포넌트 언마운트 시 웹소켓 연결 해제
 		};
-	}, [checkLoginStatus, disconnect]);
+	}, [isAuthenticated, connect, disconnect]);
 
 	useEffect(() => {
 		const path = location.pathname;
@@ -88,19 +82,10 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	}, []);
 
 	const handleAuthClick = async (e: React.MouseEvent) => {
-		if (isLoggedIn) {
+		if (isAuthenticated) {
 			e.preventDefault();
-			try {
-				// 백엔드 로그아웃 API 호출 (세션 삭제)
-				await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/auth/logout`, {}, {
-					withCredentials: true
-				});
-			} catch (error) {
-				console.error('로그아웃 실패:', error);
-			}
-			
 			clearCachedRoleCode();
-			setIsLoggedIn(false);
+			await logout(); // AuthContext의 logout 사용
 			disconnect(); // 로그아웃 시 웹소켓 연결 해제
 			navigate('/');
 		}
@@ -115,7 +100,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	};
 
 	const handleMyPageAction = async () => {
-		if (!isLoggedIn) {
+		if (!isAuthenticated) {
 			navigate('/login');
 			setIsMyPageModalOpen(false);
 			return;
@@ -148,7 +133,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	};
 
 	const toggleNotification = async () => {
-		if (!(await requireAuth(navigate, t('common.notification')))) {
+		if (!requireAuth(isAuthenticated, navigate, t('common.notification'))) {
 			return;
 		}
 		setIsNotificationOpen(prev => !prev);
@@ -187,7 +172,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 
 	// 운영자(전체 관리자) 문의 채팅방 생성/입장
 	const handleCustomerService = async () => {
-		if (!(await requireAuth(navigate, t('common.customerService')))) {
+		if (!requireAuth(isAuthenticated, navigate, t('common.customerService'))) {
 			return;
 		}
 
@@ -228,7 +213,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 					</form>
 					<button onClick={toggleNotification} aria-label={t('common.notification')} className="relative shrink-0 inline-flex items-center justify-center h-10 w-10 appearance-none bg-transparent hover:bg-transparent active:bg-transparent focus:bg-transparent outline-none focus:outline-none">
 						<HiOutlineBell className="block flex-none w-6 h-6 text-gray-500" aria-hidden="true" />
-						{isLoggedIn && unreadCount > 0 && <span className="absolute top-2 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
+						{isAuthenticated && unreadCount > 0 && <span className="absolute top-2 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
 					</button>
 				</div>
 			</div>
@@ -248,16 +233,16 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 						className={`relative p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} bg-transparent border-none cursor-pointer focus:outline-none focus:ring-0`}
 					>
 						{t('common.notification')}
-						{isLoggedIn && unreadCount > 0 && (
+						{isAuthenticated && unreadCount > 0 && (
 							<span className="absolute top-0 -right-1 w-1 h-1 bg-red-500 rounded-full"></span>
 						)}
 					</button>
 					<Link
-						to={isLoggedIn ? "#" : "/login"}
+						to={isAuthenticated ? "#" : "/login"}
 						className={`p-0 text-xs ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-500 hover:text-black'} focus:outline-none focus:ring-0`}
 						onClick={handleAuthClick}
 					>
-						{isLoggedIn ? t('common.logout') : t('common.login')}
+						{isAuthenticated ? t('common.logout') : t('common.login')}
 					</Link>
 				</div>
 
@@ -277,7 +262,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 								}}
 							/>
 							<HiOutlineUser className={`w-5 h-5 ${isDark ? 'text-white' : 'text-black'} cursor-pointer`} onClick={async () => {
-								if (!(await requireAuth(navigate, t('navigation.mypage')))) {
+								if (!requireAuth(isAuthenticated, navigate, t('navigation.mypage'))) {
 									return;
 								}
 
@@ -469,7 +454,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 						>
 							{/* 사이드바 메뉴 */}
 							<div className="py-2">
-								{isLoggedIn ? (
+								{isAuthenticated ? (
 									<div>
 										<button
 											onClick={handleMyPageAction}

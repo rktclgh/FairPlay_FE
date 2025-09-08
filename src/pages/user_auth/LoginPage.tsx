@@ -9,10 +9,12 @@ import { hasHostPermission, hasEventManagerPermission, hasAdminPermission, hasBo
 import { setCachedRoleCode } from "../../utils/role";
 import { useTranslation } from "react-i18next";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
+import { useAuth } from "../../context/AuthContext";
 
 export const LoginPage = () => {
     useScrollToTop();
     const { t } = useTranslation();
+    const { login } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [password, setPassword] = useState("");
     const [email, setEmail] = useState("");
@@ -42,6 +44,15 @@ export const LoginPage = () => {
                 if (userRole) {
                     setCachedRoleCode(userRole);
                 }
+
+                // AuthContext에 사용자 정보 설정
+                const userData = {
+                    userId: roleResponse.data.userId,
+                    email: roleResponse.data.email || email,
+                    name: roleResponse.data.name || '',
+                    role: userRole
+                };
+                login(userData);
 
                 console.log("=== 로그인 디버깅 정보 ===");
                 console.log("Role API Response:", roleResponse.data);
