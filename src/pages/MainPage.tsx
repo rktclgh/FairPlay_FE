@@ -377,11 +377,11 @@ export const Main: React.FC = () => {
           setShowBirthdayModal(true);
         }
       } catch (err) {
-        console.error(err);
+        console.error('생년월일 확인 중 오류:', err);
       }
     };
     checkBirthday();
-  }, []);
+  }, [isAuthenticated]); // isAuthenticated를 의존성 배열에 추가
 
 
   const { isDark } = useTheme();
@@ -421,12 +421,11 @@ export const Main: React.FC = () => {
     try {
       if (wasLiked) {
         // 찜 취소
-        await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+        await api.delete(`/api/wishlist/${eventId}`);
       } else {
         // 찜 등록 (@RequestParam Long eventId)
         await api.post(`/api/wishlist`, null, {
-          params: { eventId },            // ★ body 말고 params!
-          headers: authHeaders(),
+          params: { eventId }            // ★ body 말고 params!
         });
       }
     } catch (e) {
@@ -619,12 +618,12 @@ export const Main: React.FC = () => {
   useEffect(() => {
     (async () => {
       // 로그인한 사용자만 위시리스트 로드
-      if (!isAuthenticated()) {
+      if (!isAuthenticated) {
         return;
       }
 
       try {
-        const res = await api.get("/api/wishlist", { headers: authHeaders() });
+        const res = await api.get("/api/wishlist");
         const s = new Set<number>();
         type WishlistItem = { eventId: number };
         (res.data as WishlistItem[] | undefined)?.forEach((w) => s.add(w.eventId));
@@ -633,7 +632,7 @@ export const Main: React.FC = () => {
         console.error("위시리스트 로드 실패:", e);
       }
     })();
-  }, []);
+  }, [isAuthenticated]);
 
 
   // 데이터 로드
@@ -900,7 +899,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
     <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
       <TopNav />
 
-      {isAuthenticated() && showBirthdayModal && (
+      {isAuthenticated && showBirthdayModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
           <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
 
