@@ -4,24 +4,25 @@ import { useTranslation } from "react-i18next";
 import { useNotificationSocket, Notification } from "../hooks/useNotificationSocket";
 import { formatDistanceToNow } from "date-fns";
 import { ko, enUS } from "date-fns/locale";
+import { useAuth } from "../context/AuthContext";
 
 export function NotificationBell() {
   const { t, i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
+    if (isAuthenticated) {
       connect();
     }
     
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [connect, disconnect, isAuthenticated]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

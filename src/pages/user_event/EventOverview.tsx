@@ -22,12 +22,10 @@ import EventMapPin from "../../components/EventMapPin";
 import { useTheme } from "../../context/ThemeContext";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 
-const authHeaders = () => {
-    const t = localStorage.getItem("accessToken");
-    return t ? { Authorization: `Bearer ${t}` } : {};
-};
+// HTTP-only 쿠키 사용으로 인해 헤더 처리는 axios interceptor에서 자동 처리됨
+const authHeaders = () => ({});
 
-const isAuthed = () => !!localStorage.getItem("accessToken");
+// 인증 상태는 useAuth 훅으로 확인
 
 // 카테고리 번역 함수
 const translateCategory = (category: string, t: any): string => {

@@ -16,13 +16,9 @@ class TokenValidator {
 
   // 앱 시작 시 쿠키 존재 여부만 체크 (실제 인증은 AuthContext에서 담당)
   async validateTokensOnStartup(): Promise<boolean> {
-    if (!isAuthenticated()) {
-      console.log('세션 쿠키가 없음 - 비로그인 상태');
-      return false;
-    }
-    
-    console.log('세션 쿠키 존재 - AuthContext가 인증 처리 담당');
-    return true; // 쿠키가 있으면 AuthContext가 실제 검증 담당
+    // HTTP-only 쿠키는 JavaScript로 접근 불가하므로 AuthContext에서만 인증 처리
+    console.log('HTTP-only 쿠키 사용으로 인해 AuthContext에서 인증 상태 관리');
+    return true; // AuthContext가 실제 검증 담당
   }
 
   // 주기적 검증은 AuthContext에서 담당하므로 제거

@@ -240,11 +240,31 @@ const fetchSearchTopToday = async (): Promise<SearchTopDto[]> => {
 
 export const Main: React.FC = () => {
   useScrollToTop();
-  // NEW 뱃지용 상태
+  
+  // Hook 선언을 최상단에 위치
+  const { isDark } = useTheme();
+  const { t, i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  // State 선언들
   const [newEventIds, setNewEventIds] = useState<Set<number>>(new Set());
   const [newAdded, setNewAdded] = useState<number[]>([]);
   const [newRemoved, setNewRemoved] = useState<number[]>([]);
   const [showNewDeltaBanner, setShowNewDeltaBanner] = useState(false);
+  const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
+  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+  const [gender, setGender] = useState<string>("")
+  const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(new Date().getFullYear());
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [events, setEvents] = useState<EventSummaryDto[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
+  const [loading, setLoading] = useState(true);
+  const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
+  const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
+  const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
+  const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
 
   // 오늘 키 (일자별 스냅샷 저장)
   const newTodayKey = `newpick:${dayjs().format("YYYY-MM-DD")}`;
@@ -267,16 +287,6 @@ export const Main: React.FC = () => {
 
   // NEW 여부 체크
   const isEventNew = (e: EventSummaryDto) => newEventIds.has(e.id);
-
-  const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
-
-  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
-  const [gender, setGender] = useState<string>("")
-  const today = new Date();
-
-  const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
-  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
 
   const getTodayDateString = () => {
     const today = new Date();
@@ -384,19 +394,7 @@ export const Main: React.FC = () => {
   }, [isAuthenticated]); // isAuthenticated를 의존성 배열에 추가
 
 
-  const { isDark } = useTheme();
-  const { t, i18n } = useTranslation();
-
-  const [events, setEvents] = useState<EventSummaryDto[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
-  const [loading, setLoading] = useState(true);
-
-  const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
-  const navigate = useNavigate();
-
   // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
-
-  const { isAuthenticated } = useAuth();
 
   const toggleWish = async (eventId: number) => {
     // 인증 확인
@@ -519,8 +517,7 @@ export const Main: React.FC = () => {
   ];
 
 
-  // 유료광고 행사 상태
-  const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
+  // 유료광고 행사 상태는 위에서 선언됨
 
 
   const fetchHeroBanners = async (): Promise<BannerResp[]> => {
@@ -820,9 +817,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
   }, []);
 
 
-  // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
-  const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
-  const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
+  // Hot Picks 상태는 위에서 선언됨
 
   useEffect(() => {
     const keys = paidAdvertisements.map((ad, i) => `hero-${ad.id ?? 'na'}-${i}`);

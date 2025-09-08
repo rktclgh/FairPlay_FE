@@ -1,9 +1,9 @@
 language: ko
 reviews:
   enabled: true
-  branches:
-    include:
-      - main
-      - develop
-      - feature/*
-  review_status: true
+  auto_review:
+    enabled: true
+    base_branches:
+        - main
+        - develop
+        - 'feature/.*'
