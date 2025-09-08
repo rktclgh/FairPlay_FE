@@ -366,7 +366,7 @@ export const Main: React.FC = () => {
 
   // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       return;
     }
 
