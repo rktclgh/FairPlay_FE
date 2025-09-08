@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 서버에서 사용자 정보 가져오기 (HTTP-only 쿠키 자동 전송)
   const fetchUserInfo = async (): Promise<User | null> => {
     try {
-      const response = await api.get('/api/events/user/role', {
+      const response = await api.get('/api/users/mypage', {
         headers: { 'X-Silent-Auth': 'true' }
       });
       
