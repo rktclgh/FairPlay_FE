@@ -9,7 +9,7 @@ import { HiOutlineCalendar } from "react-icons/hi";
 import { TopNav } from "../components/TopNav";
 import { useTheme } from "../context/ThemeContext";
 import { Link, useNavigate } from "react-router-dom";
-import { requireAuth, isAuthenticated } from "../utils/authGuard";
+import { useAuth } from "../context/AuthContext";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Navigation, EffectCoverflow } from "swiper/modules";
 import "swiper/css";
@@ -396,14 +396,12 @@ export const Main: React.FC = () => {
 
   // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
 
-  const authHeaders = () => {
-    const token = localStorage.getItem("accessToken");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
+  const { isAuthenticated } = useAuth();
 
   const toggleWish = async (eventId: number) => {
     // 인증 확인
-    if (!requireAuth(navigate, t('wishlist.requireAuth'))) {
+    if (!isAuthenticated) {
+      navigate('/login');
       return;
     }
 
