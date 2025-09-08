@@ -896,10 +896,42 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
 
       {isAuthenticated && showBirthdayModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
-          <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
+          {/* ================================= 모달 배경 클릭 차단 ================================= */}
+          <div 
+            className="bg-white p-6 rounded shadow-lg w-96 z-[9999]"
+            onClick={(e) => e.stopPropagation()} // 이벤트 버블링 방지로 모달 내부 클릭 시 닫히지 않음
+          >
+          {/* ================================================================================ */}
 
-            <h2 className="text-lg font-bold mb-4 font-['Roboto']">{t('main.personalInfo')}</h2>
+            <h2 className="text-lg font-bold mb-2 font-['Roboto']">{t('main.personalInfo')}</h2>
+            
+            {/* ================================= 티켓 예약 불가 안내 메시지 추가 ================================= */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    티켓 예약을 위해 생년월일이 필요합니다
+                  </h3>
+                  <div className="mt-1 text-xs text-red-700">
+                    생년월일을 입력하지 않으면 티켓 예약이 불가능합니다.<br />
+                    아래에서 생년월일을 입력해 주세요.
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* ============================================================================================= */}
 
+            {/* ================================= today 변수 선언 추가 ================================= */}
+            {(() => {
+              const today = new Date();
+              return (
+            <>
+            {/* ============================================================================================= */}
 
             {/* 달력 */}
             <div className="flex items-center justify-between mb-3">
@@ -1027,13 +1059,18 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
               {t('common.save')}
             </button>
 
-            {/* 모달 닫기 버튼 */}
-            <button
-              onClick={() => setShowBirthdayModal(false)}
-              className="mt-2 text-sm text-gray-500 hover:underline font-['Roboto']"
-            >
-              {t('common.close')}
-            </button>
+            {/* ================================= 닫기 버튼 제거 ================================= */}
+            {/* 생년월일 미입력자는 티켓 예약 불가하므로 모달을 강제로 닫을 수 없도록 수정 */}
+            <div className="mt-2 text-xs text-gray-500 font-['Roboto'] text-center">
+              생년월일을 입력해야만 모달이 닫힙니다.
+            </div>
+            {/* =============================================================================== */}
+            
+            {/* ================================= IIFE 닫기 ================================= */}
+            </>
+            );
+            })()}
+            {/* ======================================================================== */}
           </div>
         </div>
       )}

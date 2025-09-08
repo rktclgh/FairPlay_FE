@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
-import { isAuthenticated } from "../utils/authGuard";
+import { useAuth } from "../context/AuthContext";
 
 export type Notification = {
   notificationId: number;
@@ -15,6 +15,7 @@ export type Notification = {
 };
 
 export function useNotificationSocket() {
+  const { isAuthenticated } = useAuth();
   const clientRef = useRef<Stomp.Client | null>(null);
   const isConnectedRef = useRef(false);
   const subscriptionRef = useRef<Stomp.Subscription | null>(null);
@@ -79,21 +80,19 @@ export function useNotificationSocket() {
   }, [updateUnreadCount]);
 
   const connect = useCallback(() => {
-    if (isConnectedRef.current || !isAuthenticated()) return;
+    if (isConnectedRef.current || !isAuthenticated) return;
 
     console.log("Connecting to notification WebSocket...");
     isConnectedRef.current = true;
-
-    const token = localStorage.getItem("accessToken");
     
-    // SockJS fallback 엔드포인트 사용
+    // HTTP-only 쿠키 사용으로 토큰 파라미터 불필요 (쿠키가 자동 전송됨)
     const sockjsUrl = window.location.hostname === "localhost"
       ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/notifications-sockjs`
       : `${window.location.protocol}//${window.location.host}/ws/notifications-sockjs`;
     
-    console.log(`SockJS connecting to: ${sockjsUrl}`);
+    console.log(`SockJS connecting to: ${sockjsUrl} (using HTTP-only cookies)`);
     
-    const sock = new SockJS(token ? `${sockjsUrl}?token=${token}` : sockjsUrl);
+    const sock = new SockJS(sockjsUrl);
     const stomp = Stomp.over(sock);
 
     stomp.heartbeat.outgoing = 25000;
@@ -101,11 +100,8 @@ export function useNotificationSocket() {
     stomp.debug = () => {};
     clientRef.current = stomp;
 
-    // STOMP CONNECT 헤더에 토큰 추가
+    // HTTP-only 쿠키 사용으로 별도 인증 헤더 불필요
     const connectHeaders: any = {};
-    if (token) {
-      connectHeaders['Authorization'] = `Bearer ${token}`;
-    }
 
     stomp.connect(
       connectHeaders,
@@ -115,15 +111,14 @@ export function useNotificationSocket() {
 
         console.log("🔌 웹소켓 연결 성공, 구독 시작");
         
-        // 기존 알림 목록 직접 요청 (REST API 호출)
+        // 기존 알림 목록 직접 요청 (REST API 호출) - HTTP-only 쿠키 사용
         const fetchExistingNotifications = async () => {
           try {
-            const token = localStorage.getItem("accessToken");
-            if (!token) return;
+            if (!isAuthenticated) return;
             
             const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/notifications`, {
+              credentials: 'include', // HTTP-only 쿠키 포함
               headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               }
             });
@@ -253,10 +248,8 @@ export function useNotificationSocket() {
     const stomp = clientRef.current;
     if (!stomp || !stomp.connected) return;
 
-    const token = localStorage.getItem("accessToken");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-    stomp.send("/app/notifications/markRead", headers, JSON.stringify(notificationId));
+    // HTTP-only 쿠키는 웹소켓 연결 시 자동으로 전송되므로 별도 헤더 불필요
+    stomp.send("/app/notifications/markRead", {}, JSON.stringify(notificationId));
   }, []);
 
   const deleteNotification = useCallback((notificationId: number) => {
@@ -274,12 +267,9 @@ export function useNotificationSocket() {
       return updated;
     });
 
-    // 2. 백엔드로 soft delete 요청
-    const token = localStorage.getItem("accessToken");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
+    // 2. 백엔드로 soft delete 요청 - HTTP-only 쿠키 자동 사용
     console.log("🗑️ WebSocket으로 알림 삭제 요청:", notificationId);
-    stomp.send("/app/notifications/delete", headers, JSON.stringify(notificationId));
+    stomp.send("/app/notifications/delete", {}, JSON.stringify(notificationId));
     return true;
   }, [updateUnreadCount]);
 
