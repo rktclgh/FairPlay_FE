@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { toast } from 'react-toastify';
 import { hasHostPermission, hasBoothManagerPermission } from '../../utils/permissions';
+import { useAuth } from '../../context/AuthContext';
 
 const KakaoCallback = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { login } = useAuth();
     const didRequest = useRef(false);
 
     useEffect(() => {
@@ -34,6 +36,15 @@ const KakaoCallback = () => {
                 try {
                     const roleResponse = await api.get("/api/events/user/role");
                     const userRole = roleResponse.data.roleCode;
+
+                    // AuthContext에 사용자 정보 설정
+                    const userData = {
+                        userId: roleResponse.data.userId,
+                        email: roleResponse.data.email || '',
+                        name: roleResponse.data.name || '',
+                        role: userRole
+                    };
+                    login(userData);
 
                     // 권한별 리다이렉션
                     if (hasHostPermission(userRole)) {

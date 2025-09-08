@@ -3,7 +3,7 @@ import { MessageCircle, ChevronLeft } from "lucide-react";
 import ChatRoomList from "./ChatRoomList";
 import ChatRoom from "./ChatRoom";
 import api from "../../api/axios";
-import { isAuthenticated } from "../../utils/authGuard";
+import { useAuth } from "../../context/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
 
 type ChatRoomInfo = {
@@ -35,10 +35,14 @@ export default function ChatModal({
     const [selectedRoomInfo, setSelectedRoomInfo] = useState<ChatRoomInfo | null>(null);
     const [hasOnlineAdmin, setHasOnlineAdmin] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { isAuthenticated } = useAuth();
+
+    console.log('💬 ChatModal isAuthenticated:', isAuthenticated);
 
     // 관리자 온라인 상태 확인
     const checkAdminStatus = async () => {
-        if (!isAuthenticated()) {
+        if (!isAuthenticated) {
+            console.log('💬 ChatModal checkAdminStatus: 인증되지 않음');
             setHasOnlineAdmin(false);
             return;
         }
