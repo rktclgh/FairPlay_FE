@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
-import { isAuthenticated } from "../../utils/authGuard";
+import { useAuth } from "../../context/AuthContext";
 
 type ChatMessage = {
   chatMessageId: number;
@@ -16,6 +16,7 @@ export function useChatSocket(
   roomId: number,
   onMessage: (msg: ChatMessage) => void
 ) {
+  const { isAuthenticated } = useAuth();
   const clientRef = useRef<Stomp.Client | null>(null);
   const isConnectedRef = useRef(false);
   const currentRoomIdRef = useRef<number | null>(null);
@@ -54,10 +55,9 @@ export function useChatSocket(
       return () => {};
     }
 
-    // 비동기 인증 체크 및 연결
+    // 인증 상태 체크 및 연결
     const initializeConnection = async () => {
-      const authenticated = isAuthenticated();
-      if (!authenticated) {
+      if (!isAuthenticated) {
         console.log("User not authenticated, skipping WebSocket connection");
         return;
       }
@@ -268,7 +268,7 @@ export function useChatSocket(
         heartbeatIntervalRef.current = null;
       }
     };
-  }, [roomId, onMessage]);
+  }, [roomId, onMessage, isAuthenticated]);
   
   useEffect(() => {
     return () => {

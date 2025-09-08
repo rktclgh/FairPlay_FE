@@ -3,7 +3,7 @@ import api from "../../api/axios";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 import UserOnlineStatus from "./UserOnlineStatus";
-import { isAuthenticated } from "../../utils/authGuard";
+import { useAuth } from "../../context/AuthContext";
 
 // 채팅방 DTO 타입 정의 (API 응답 형태와 동일하게!)
 type ChatRoomDto = {
@@ -24,13 +24,17 @@ type Props = {
 };
 
 export default function ChatRoomList({ onSelect }: Props) {
+    const { isAuthenticated } = useAuth();
     const [rooms, setRooms] = useState<ChatRoomDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastMessageTimes, setLastMessageTimes] = useState<Record<number, string>>({});
     const clientRef = useRef<Stomp.Client | null>(null);
 
+    console.log('📝 ChatRoomList isAuthenticated:', isAuthenticated);
+
     const fetchRooms = useCallback(async () => {
-        if (!isAuthenticated()) {
+        if (!isAuthenticated) {
+            console.log('📝 ChatRoomList fetchRooms: 인증되지 않음');
             setLoading(false);
             return;
         }
@@ -62,10 +66,11 @@ export default function ChatRoomList({ onSelect }: Props) {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [isAuthenticated]);
 
     useEffect(() => {
-        if (!isAuthenticated()) {
+        if (!isAuthenticated) {
+            console.log('📝 ChatRoomList useEffect: 인증되지 않음');
             setLoading(false);
             return;
         }
@@ -108,9 +113,9 @@ export default function ChatRoomList({ onSelect }: Props) {
                 });
             }
         };
-    }, [fetchRooms]);
+    }, [fetchRooms, isAuthenticated]);
 
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 bg-white">
                 <p className="text-center">로그인이 필요한 서비스입니다.</p>

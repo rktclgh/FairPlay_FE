@@ -14,7 +14,7 @@ class AuthManager {
 
   // 로그아웃 처리
   logout(): void {
-    // 서버에 로그아웃 요청 (쿠키 삭제)
+    // 서버에 로그아웃 요청 (HTTP-only 쿠키 삭제)
     fetch('/api/auth/logout', {
       method: 'POST',
       credentials: 'include', // 쿠키 포함
@@ -24,6 +24,24 @@ class AuthManager {
     }).catch(error => {
       console.error('로그아웃 요청 실패:', error);
     });
+    
+    // 🔒 보안: 로컬스토리지의 모든 토큰 데이터 완전 삭제
+    const tokensToRemove = [
+      'accessToken', 'access_token', 'token', 
+      'refreshToken', 'refresh_token',
+      'authToken', 'sessionToken', 'userToken'
+    ];
+    
+    tokensToRemove.forEach(tokenKey => {
+      localStorage.removeItem(tokenKey);
+      sessionStorage.removeItem(tokenKey);
+    });
+
+    // 사용자 정보도 삭제
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('userInfo');
+    sessionStorage.removeItem('user');
     
     // 로그아웃 알림 메시지
     this.showLogoutMessage();
