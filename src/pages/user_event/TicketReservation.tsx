@@ -8,6 +8,7 @@ import authManager from "../../utils/auth";
 import paymentService from "../../services/paymentService";
 import NewLoader from "../../components/NewLoader";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
+import { useAuth } from "../../context/AuthContext";
 
 // 이벤트 회차 정보
 interface EventSchedule {
@@ -59,6 +60,10 @@ export const TicketReservation = () => {
     const { eventId } = useParams();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    
+    // ================================= 생년월일 검증용 추가 =================================
+    const { user } = useAuth();
+    // ====================================================================================
 
     // URL 파라미터에서 scheduleId 가져오기
     const scheduleIdParam = searchParams.get('scheduleId');
@@ -596,6 +601,30 @@ export const TicketReservation = () => {
 
     // 중복 클릭 방지 및 결제 처리 함수
     const handlePayment = async () => {
+        // ================================= 생년월일 검증 로직 =================================
+        // 사용자 정보 재조회로 최신 생년월일 정보 확인
+        try {
+            const response = await authManager.authenticatedFetch('/api/users/mypage');
+            if (response.ok) {
+                const userData = await response.json();
+                if (!userData.birthday) {
+                    toast.error('티켓 예약을 위해 생년월일 정보가 필요합니다.\n마이페이지에서 생년월일을 입력해 주세요.', {
+                        autoClose: 5000,
+                    });
+                    // 마이페이지로 리다이렉트
+                    setTimeout(() => {
+                        navigate('/mypage');
+                    }, 2000);
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('사용자 정보 확인 실패:', error);
+            toast.error('사용자 정보를 확인할 수 없습니다. 다시 시도해 주세요.');
+            return;
+        }
+        // =================================================================================
+        
         const now = Date.now();
 
         // 1. 중복 클릭 방지 - 이미 처리 중인 경우
