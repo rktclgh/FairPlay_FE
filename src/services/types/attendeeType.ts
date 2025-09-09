@@ -3,6 +3,7 @@ export interface AttendeeSaveRequestDto{
     name: string,
     email: string, 
     phone: string,
+    birth: Date,
     agreeToTerms: boolean
 }
 
@@ -13,6 +14,7 @@ export interface AttendeeInfoResponseDto{
     name: string,
     email: string, 
     phone: string,
+    birth: Date,
     agreeToTerms: boolean
 }
 
@@ -26,8 +28,9 @@ export interface AttendeeListInfoResponseDto{
 export interface AttendeeUpdateRequestDto{
     reservationId: number,
     name: string,
-    email: string, 
-    phone: string
+    email: string,
+    phone: string,
+    birth: string
 }
 
 export interface ShareTicketInfoResponseDto{
