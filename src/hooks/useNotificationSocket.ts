@@ -58,8 +58,23 @@ export function useNotificationSocket() {
     }
   }, [updateUnreadCount]);
 
+  // ================================= 중복 읽음 처리 방지 =================================
   const onNotificationRead = useCallback((notificationId: number) => {
+    console.log('📩 백엔드에서 읽음 처리 응답:', notificationId);
+    
     setNotifications(prev => {
+      const notification = prev.find(n => n.notificationId === notificationId);
+      if (!notification) {
+        console.log('📩 해당 알림 없음:', notificationId);
+        return prev;
+      }
+      
+      if (notification.isRead) {
+        console.log('📩 이미 읽음 처리된 알림 (스킵):', notificationId);
+        return prev; // 이미 읽음 처리된 경우 상태 변경 없음
+      }
+      
+      console.log('📩 백엔드 응답으로 읽음 상태 업데이트:', notificationId);
       const updated = prev.map(n => 
         n.notificationId === notificationId 
           ? { ...n, isRead: true }
@@ -69,6 +84,7 @@ export function useNotificationSocket() {
       return updated;
     });
   }, [updateUnreadCount]);
+  // ===============================================================================
 
   const onNotificationDeleted = useCallback((notificationId: number) => {
     console.log("🗑️ 알림 삭제 완료:", notificationId);
@@ -244,13 +260,40 @@ export function useNotificationSocket() {
     isConnectedRef.current = false;
   }, []);
 
+  // ================================= 낙관적 업데이트로 즉시 UI 반영 =================================
   const markAsRead = useCallback((notificationId: number) => {
-    const stomp = clientRef.current;
-    if (!stomp || !stomp.connected) return;
+    console.log('📖 알림 읽음 처리 시작:', notificationId);
+    
+    // 이미 읽은 알림이면 처리하지 않음
+    const notification = notifications.find(n => n.notificationId === notificationId);
+    if (!notification || notification.isRead) {
+      console.log('📖 이미 읽은 알림이거나 존재하지 않음:', notificationId);
+      return;
+    }
 
-    // HTTP-only 쿠키는 웹소켓 연결 시 자동으로 전송되므로 별도 헤더 불필요
-    stomp.send("/app/notifications/markRead", {}, JSON.stringify(notificationId));
-  }, []);
+    // 1. 즉시 UI 업데이트 (낙관적 업데이트)
+    setNotifications(prev => {
+      const updated = prev.map(n => 
+        n.notificationId === notificationId 
+          ? { ...n, isRead: true }
+          : n
+      );
+      updateUnreadCount(updated);
+      console.log('📖 즉시 UI 업데이트 완료:', notificationId);
+      return updated;
+    });
+
+    // 2. 백엔드 동기화
+    const stomp = clientRef.current;
+    if (stomp && stomp.connected) {
+      console.log('📖 WebSocket으로 백엔드 동기화:', notificationId);
+      stomp.send("/app/notifications/markRead", {}, JSON.stringify(notificationId));
+    } else {
+      console.warn('📖 WebSocket 연결 없음, 읽음 처리 스킵:', notificationId);
+      // WebSocket이 끊어진 경우에도 UI는 이미 업데이트 되어 사용자 경험 향상
+    }
+  }, [notifications, updateUnreadCount]);
+  // ===============================================================================================
 
   const deleteNotification = useCallback((notificationId: number) => {
     const stomp = clientRef.current;
