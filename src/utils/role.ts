@@ -31,7 +31,9 @@ export const clearCachedRoleCode = (): void => {
 // 역할 API 호출하여 roleCode를 가져오고 캐싱
 export const fetchAndCacheRoleCode = async (): Promise<string | null> => {
   try {
-    const res = await api.get("/api/events/user/role");
+    const res = await api.get("/api/events/user/role", {
+      headers: { 'X-Silent-Auth': 'true' }
+    });
     const roleCode: string | undefined = res?.data?.roleCode;
     if (roleCode) {
       setCachedRoleCode(roleCode);
