@@ -24,6 +24,7 @@ export function useNotificationSocket() {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000;
+  const pendingReadIds = useRef<Set<number>>(new Set());
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -160,7 +161,18 @@ export function useNotificationSocket() {
         // 기존 알림 로드
         fetchExistingNotifications();
 
-        // 잠시 후 개인 알림 구독 (기존 알림 로드 후)
+        // 오프라인 중 누적된 읽음 요청 플러시
+        const flushPendingReadRequests = () => {
+          if (pendingReadIds.current.size > 0) {
+            console.log("📤 큐에 있던 읽음 요청 플러시:", Array.from(pendingReadIds.current));
+            pendingReadIds.current.forEach(notificationId => {
+              stomp.send("/app/notifications/markRead", {}, JSON.stringify(notificationId));
+            });
+            pendingReadIds.current.clear();
+          }
+        };
+
+        // 잠시 후 개인 알림 구독 및 큐 플러시 (기존 알림 로드 후)
         setTimeout(() => {
           // 개인 알림 구독
           subscriptionRef.current = stomp.subscribe(
@@ -218,7 +230,10 @@ export function useNotificationSocket() {
             }
           );
           
-          console.log("🔔 실시간 알림 구독 완료");
+          // 구독 완료 후 큐에 있던 읽음 요청 플러시
+          flushPendingReadRequests();
+          
+          console.log("🔔 실시간 알림 구독 및 읽음 요청 플러시 완료");
         }, 100);
       },
       (error) => {
@@ -264,15 +279,14 @@ export function useNotificationSocket() {
   const markAsRead = useCallback((notificationId: number) => {
     console.log('📖 알림 읽음 처리 시작:', notificationId);
     
-    // 이미 읽은 알림이면 처리하지 않음
-    const notification = notifications.find(n => n.notificationId === notificationId);
-    if (!notification || notification.isRead) {
-      console.log('📖 이미 읽은 알림이거나 존재하지 않음:', notificationId);
-      return;
-    }
-
-    // 1. 즉시 UI 업데이트 (낙관적 업데이트)
+    // 1. 즉시 UI 업데이트 (낙관적 업데이트) — prev 기준으로만 판정
     setNotifications(prev => {
+      const target = prev.find(n => n.notificationId === notificationId);
+      if (!target || target.isRead) {
+        console.log('📖 이미 읽은 알림이거나 존재하지 않음:', notificationId);
+        return prev;
+      }
+      
       const updated = prev.map(n => 
         n.notificationId === notificationId 
           ? { ...n, isRead: true }
@@ -288,11 +302,14 @@ export function useNotificationSocket() {
     if (stomp && stomp.connected) {
       console.log('📖 WebSocket으로 백엔드 동기화:', notificationId);
       stomp.send("/app/notifications/markRead", {}, JSON.stringify(notificationId));
+      // 성공적으로 전송했으면 큐에서 제거
+      pendingReadIds.current.delete(notificationId);
     } else {
-      console.warn('📖 WebSocket 연결 없음, 읽음 처리 스킵:', notificationId);
-      // WebSocket이 끊어진 경우에도 UI는 이미 업데이트 되어 사용자 경험 향상
+      console.warn('📖 WebSocket 연결 없음, 읽음 요청을 큐에 저장:', notificationId);
+      // WebSocket이 끊어진 경우 큐에 저장
+      pendingReadIds.current.add(notificationId);
     }
-  }, [notifications, updateUnreadCount]);
+  }, [updateUnreadCount]);
   // ===============================================================================================
 
   const deleteNotification = useCallback((notificationId: number) => {
