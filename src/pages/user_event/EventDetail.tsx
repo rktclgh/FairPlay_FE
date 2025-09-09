@@ -4,6 +4,7 @@ import {TopNav} from "../../components/TopNav";
 import {MapPin} from "lucide-react";
 import {FaHeart} from "react-icons/fa";
 import {requireAuth} from "../../utils/authGuard";
+import {useAuth} from "../../context/AuthContext";
 import {VenueInfo} from "./VenueInfo";
 import {CancelPolicy} from "./CancelPolicy";
 import {Reviews} from "./Reviews";
@@ -42,17 +43,16 @@ interface EventSchedule {
     soldTicketCount: number;
 }
 
-const authHeaders = () => {
-    const t = localStorage.getItem("accessToken");
-    return t ? {Authorization: `Bearer ${t}`} : {};
-};
+// HTTP-only 쿠키 사용으로 인해 헤더 처리는 axios interceptor에서 자동 처리됨
+const authHeaders = () => ({});
 
-const isAuthed = () => !!localStorage.getItem("accessToken");
+// 인증 상태는 useAuth 훅으로 확인 (컴포넌트 내부에서 isAuthenticated 사용)
 
 const EventDetail = (): JSX.Element => {
     const {setAutoScrolling} = useScrollToTop();
     const {eventId} = useParams();
     const navigate = useNavigate();
+    const {isAuthenticated} = useAuth();
     const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -97,7 +97,7 @@ const EventDetail = (): JSX.Element => {
 
     // 초기 위시 상태 로드
     React.useEffect(() => {
-        if (!isAuthed()) return;
+        if (!isAuthenticated) return;
 
         (async () => {
             try {
@@ -117,7 +117,7 @@ const EventDetail = (): JSX.Element => {
     const toggleLike = async () => {
         if (!id || pending) return;
 
-        if (!isAuthed()) {
+        if (!isAuthenticated) {
             alert("로그인 후 이용할 수 있습니다.");
             navigate("/login", {state: {from: location.pathname}}); // 필요하면 search도 붙이려면 `${location.pathname}${location.search}`
             return;

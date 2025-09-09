@@ -7,6 +7,7 @@ interface Participant {
     name: string;
     phone: string;
     email: string;
+    birth: string;
 }
 
 interface RegistrationSuccessModalProps {
@@ -56,7 +57,15 @@ export default function RegistrationSuccessModal({
                                 <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
                                     {participant?.name}
                                 </span>
-                            </div>                          
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-700 text-sm">
+                                    {t('common.birth')}
+                                </span>
+                                <span className="[font-family:'Roboto-Regular',Helvetica] font-normal text-gray-900 text-sm">
+                                    {participant?.birth}
+                                </span>
+                            </div>  
                             <div className="flex justify-between">
                                 <span className="[font-family:'Roboto-Medium',Helvetica] font-medium text-gray-700 text-sm">
                                     {t('common.phone')}

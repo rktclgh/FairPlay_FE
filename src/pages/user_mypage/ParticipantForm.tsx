@@ -13,6 +13,7 @@ interface Participant {
     id: number;
     name: string;
     phone: string;
+    birth: string;
     email: string;
 };
 
@@ -23,6 +24,7 @@ export default function ParticipantForm(): JSX.Element {
         name: "",
         phone: "",
         email: "",
+        birth: "",
         agreeToTerms: false,
     });
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -131,6 +133,7 @@ export default function ParticipantForm(): JSX.Element {
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
+            birth: new Date(formData.birth),
             agreeToTerms: formData.agreeToTerms
         }
 
@@ -141,6 +144,7 @@ export default function ParticipantForm(): JSX.Element {
             id: res.attendeeId,
             name: res.name,
             phone: res.phone,
+            birth: res.birth.toISOString().split("T")[0],
             email: res.email,
         }
 
@@ -157,6 +161,7 @@ export default function ParticipantForm(): JSX.Element {
             name: "",
             phone: "",
             email: "",
+            birth: "",
             agreeToTerms: false,
         });
     };
@@ -242,6 +247,20 @@ export default function ParticipantForm(): JSX.Element {
                                         onChange={handleInputChange}
                                         placeholder="이름을 입력하세요"
                                         className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.name ? 'text-black font-medium' : 'text-[#0000004c]'}`}
+                                    />
+                                </div>
+                                {/* 생년월일 */}
+                                <div>
+                                    <label className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-[15px] leading-[30px] tracking-[0] block text-left mb-1">
+                                        생년월일
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="birth"
+                                        value={formData.birth}
+                                        onChange={handleInputChange}
+                                        placeholder="YYYY-MM-DD"
+                                        className={`w-full h-[54px] border-0 border-b border-[#0000001a] rounded-none pl-0 font-normal text-base bg-transparent outline-none text-left ${formData.birth ? 'text-black font-medium' : 'text-[#0000004c]'}`}
                                     />
                                 </div>
                                 {/* 휴대폰 번호 */}

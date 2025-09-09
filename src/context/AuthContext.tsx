@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 서버에서 사용자 정보 가져오기 (HTTP-only 쿠키 자동 전송)
   const fetchUserInfo = async (): Promise<User | null> => {
     try {
-      const response = await api.get('/api/events/user/role', {
+      const response = await api.get('/api/users/mypage', {
         headers: { 'X-Silent-Auth': 'true' }
       });
       
@@ -41,7 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
       return null;
-    } catch (error) {
+    } catch (error: any) {
+      // Silent 인증에서는 401 에러를 조용히 처리
+      if (error.response?.status === 401) {
+        return null;
+      }
+      console.error('AuthContext fetchUserInfo 에러:', error);
       return null;
     }
   };
@@ -134,17 +139,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
-  // 앱 시작 시 인증 상태 확인
+  // 앱 시작 시 인증 상태 확인 (React StrictMode 중복 실행 방지)
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeAuth = async () => {
+      if (!isMounted) return;
+      
       console.log('🔧 AuthContext 초기화 시작');
       setLoading(true);
-      await checkAuth();
-      setLoading(false);
-      console.log('🔧 AuthContext 초기화 완료, isAuthenticated:', isAuthenticated);
+      
+      // 쿠키 확인: 세션이 있는 경우에만 API 호출
+      const hasSessionCookie = document.cookie.includes('JSESSIONID') || 
+                               document.cookie.includes('SESSIONID') ||
+                               document.cookie.includes('session');
+      
+      if (hasSessionCookie) {
+        console.log('🍪 세션 쿠키 발견, 인증 상태 확인');
+        await checkAuth();
+      } else {
+        console.log('🚫 세션 쿠키 없음, 비로그인 상태로 설정');
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+      
+      if (isMounted) {
+        setLoading(false);
+        console.log('🔧 AuthContext 초기화 완료, isAuthenticated:', isAuthenticated);
+      }
     };
 
     initializeAuth();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const value: AuthContextType = {

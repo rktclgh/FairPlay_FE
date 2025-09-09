@@ -240,11 +240,31 @@ const fetchSearchTopToday = async (): Promise<SearchTopDto[]> => {
 
 export const Main: React.FC = () => {
   useScrollToTop();
-  // NEW 뱃지용 상태
+  
+  // Hook 선언을 최상단에 위치
+  const { isDark } = useTheme();
+  const { t, i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  // State 선언들
   const [newEventIds, setNewEventIds] = useState<Set<number>>(new Set());
   const [newAdded, setNewAdded] = useState<number[]>([]);
   const [newRemoved, setNewRemoved] = useState<number[]>([]);
   const [showNewDeltaBanner, setShowNewDeltaBanner] = useState(false);
+  const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
+  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+  const [gender, setGender] = useState<string>("")
+  const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(new Date().getFullYear());
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [events, setEvents] = useState<EventSummaryDto[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
+  const [loading, setLoading] = useState(true);
+  const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
+  const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
+  const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
+  const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
 
   // 오늘 키 (일자별 스냅샷 저장)
   const newTodayKey = `newpick:${dayjs().format("YYYY-MM-DD")}`;
@@ -267,16 +287,6 @@ export const Main: React.FC = () => {
 
   // NEW 여부 체크
   const isEventNew = (e: EventSummaryDto) => newEventIds.has(e.id);
-
-  const [mdPickEventIds, setMdPickEventIds] = useState<Set<number>>(new Set());
-
-  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
-  const [gender, setGender] = useState<string>("")
-  const today = new Date();
-
-  const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(today.getFullYear());
-  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(today.getMonth() + 1);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null); // 날짜 문자열로 변경
 
   const getTodayDateString = () => {
     const today = new Date();
@@ -366,7 +376,7 @@ export const Main: React.FC = () => {
 
   // 예: 로그인 시 생년월일 정보가 없으면 모달 표시
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       return;
     }
 
@@ -377,26 +387,14 @@ export const Main: React.FC = () => {
           setShowBirthdayModal(true);
         }
       } catch (err) {
-        console.error(err);
+        console.error('생년월일 확인 중 오류:', err);
       }
     };
     checkBirthday();
-  }, []);
+  }, [isAuthenticated]); // isAuthenticated를 의존성 배열에 추가
 
-
-  const { isDark } = useTheme();
-  const { t, i18n } = useTranslation();
-
-  const [events, setEvents] = useState<EventSummaryDto[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
-  const [loading, setLoading] = useState(true);
-
-  const [likedEvents, setLikedEvents] = useState<Set<number>>(new Set());
-  const navigate = useNavigate();
 
   // const formatDate = (date: Date): string => date.toISOString().slice(0, 10);
-
-  const { isAuthenticated } = useAuth();
 
   const toggleWish = async (eventId: number) => {
     // 인증 확인
@@ -421,12 +419,11 @@ export const Main: React.FC = () => {
     try {
       if (wasLiked) {
         // 찜 취소
-        await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+        await api.delete(`/api/wishlist/${eventId}`);
       } else {
         // 찜 등록 (@RequestParam Long eventId)
         await api.post(`/api/wishlist`, null, {
-          params: { eventId },            // ★ body 말고 params!
-          headers: authHeaders(),
+          params: { eventId }            // ★ body 말고 params!
         });
       }
     } catch (e) {
@@ -520,8 +517,7 @@ export const Main: React.FC = () => {
   ];
 
 
-  // 유료광고 행사 상태
-  const [paidAdvertisements, setPaidAdvertisements] = useState<PaidAdvertisement[]>([]);
+  // 유료광고 행사 상태는 위에서 선언됨
 
 
   const fetchHeroBanners = async (): Promise<BannerResp[]> => {
@@ -619,12 +615,12 @@ export const Main: React.FC = () => {
   useEffect(() => {
     (async () => {
       // 로그인한 사용자만 위시리스트 로드
-      if (!isAuthenticated()) {
+      if (!isAuthenticated) {
         return;
       }
 
       try {
-        const res = await api.get("/api/wishlist", { headers: authHeaders() });
+        const res = await api.get("/api/wishlist");
         const s = new Set<number>();
         type WishlistItem = { eventId: number };
         (res.data as WishlistItem[] | undefined)?.forEach((w) => s.add(w.eventId));
@@ -633,7 +629,7 @@ export const Main: React.FC = () => {
         console.error("위시리스트 로드 실패:", e);
       }
     })();
-  }, []);
+  }, [isAuthenticated]);
 
 
   // 데이터 로드
@@ -821,9 +817,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
   }, []);
 
 
-  // Hot Picks 상태 (백엔드 연결 후 실제 예매 데이터로 교체 예정)
-  const [hotPicks, setHotPicks] = useState<HotPick[]>([]);
-  const [activeHotPickIndex, setActiveHotPickIndex] = useState<number>(0);
+  // Hot Picks 상태는 위에서 선언됨
 
   useEffect(() => {
     const keys = paidAdvertisements.map((ad, i) => `hero-${ad.id ?? 'na'}-${i}`);
@@ -900,12 +894,44 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
     <div className={`min-h-screen ${isDark ? '' : 'bg-white'} theme-transition`}>
       <TopNav />
 
-      {isAuthenticated() && showBirthdayModal && (
+      {isAuthenticated && showBirthdayModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
-          <div className="bg-white p-6 rounded shadow-lg w-96 z-[9999]">
+          {/* ================================= 모달 배경 클릭 차단 ================================= */}
+          <div 
+            className="bg-white p-6 rounded shadow-lg w-96 z-[9999]"
+            onClick={(e) => e.stopPropagation()} // 이벤트 버블링 방지로 모달 내부 클릭 시 닫히지 않음
+          >
+          {/* ================================================================================ */}
 
-            <h2 className="text-lg font-bold mb-4 font-['Roboto']">{t('main.personalInfo')}</h2>
+            <h2 className="text-lg font-bold mb-2 font-['Roboto']">{t('main.personalInfo')}</h2>
+            
+            {/* ================================= 티켓 예약 불가 안내 메시지 추가 ================================= */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    티켓 예약을 위해 생년월일이 필요합니다
+                  </h3>
+                  <div className="mt-1 text-xs text-red-700">
+                    생년월일을 입력하지 않으면 티켓 예약이 불가능합니다.<br />
+                    아래에서 생년월일을 입력해 주세요.
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* ============================================================================================= */}
 
+            {/* ================================= today 변수 선언 추가 ================================= */}
+            {(() => {
+              const today = new Date();
+              return (
+            <>
+            {/* ============================================================================================= */}
 
             {/* 달력 */}
             <div className="flex items-center justify-between mb-3">
@@ -1033,13 +1059,18 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
               {t('common.save')}
             </button>
 
-            {/* 모달 닫기 버튼 */}
-            <button
-              onClick={() => setShowBirthdayModal(false)}
-              className="mt-2 text-sm text-gray-500 hover:underline font-['Roboto']"
-            >
-              {t('common.close')}
-            </button>
+            {/* ================================= 닫기 버튼 제거 ================================= */}
+            {/* 생년월일 미입력자는 티켓 예약 불가하므로 모달을 강제로 닫을 수 없도록 수정 */}
+            <div className="mt-2 text-xs text-gray-500 font-['Roboto'] text-center">
+              생년월일을 입력해야만 모달이 닫힙니다.
+            </div>
+            {/* =============================================================================== */}
+            
+            {/* ================================= IIFE 닫기 ================================= */}
+            </>
+            );
+            })()}
+            {/* ======================================================================== */}
           </div>
         </div>
       )}
