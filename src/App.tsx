@@ -109,6 +109,8 @@ import BannerPaymentPage from "./pages/banner/BannerPaymentPage";
 import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 import BoothInfoManagement from "./pages/booth_admin/BoothInfoManagement";
 import BoothEdit from "./pages/booth_admin/BoothEdit";
+import { HostBannerManagement } from "./pages/host_event/HostBannerManagement";
+import { BannerApplication } from "./pages/host_event/BannerApplication";
 
 function AppContent() {
     const [isTokenValidated, setIsTokenValidated] = useState(false);
@@ -256,6 +258,8 @@ function AppContent() {
                         <Route path="/host/event-version/:versionNumber" element={<HostRouteGuard><EventVersionDetail /></HostRouteGuard>} />
                         <Route path="/host/event-version/comparison" element={<HostRouteGuard><EventVersionComparison /></HostRouteGuard>} />
                         <Route path="/host/advertisement-application" element={<HostRouteGuard><AdvertisementApplication /></HostRouteGuard>} />
+                        <Route path="/host/banner-management" element={<HostRouteGuard><HostBannerManagement /></HostRouteGuard>} />
+                        <Route path="/host/banner-application" element={<HostRouteGuard><BannerApplication /></HostRouteGuard>} />
                         <Route path="/host/reservation-list/:eventId" element={<HostRouteGuard><ReservationList /></HostRouteGuard>} />
                         <Route path="/host/reservation-stats" element={<HostRouteGuard><ReservationStats /></HostRouteGuard>} />
                         <Route path="/host/payment-management" element={<HostRouteGuard><HostPaymentManagement /></HostRouteGuard>} />

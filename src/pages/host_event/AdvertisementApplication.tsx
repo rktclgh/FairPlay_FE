@@ -67,7 +67,7 @@ api.interceptors.request.use((config) => {
 
 // ---- API 함수 ----
 async function getSlots(params: { type: BannerSlotType; from: string; to: string }): Promise<SlotResponseDto[]> {
-  const { data } = await api.get("/api/banner/slots", { params: { type: params.type, from: params.from, to: params.to } });
+  const { data } = await api.get("/api/host/banner-management/slots", { params: { type: params.type, from: params.from, to: params.to } });
   return data;
 }
 /*async function lockSlots(body: LockSlotsRequestDto): Promise<LockSlotsResponseDto> {
@@ -75,10 +75,12 @@ async function getSlots(params: { type: BannerSlotType; from: string; to: string
   return data;
 }*/
 
-// [추가] 신청 생성 API - 임시로 원래 방식으로 되돌림
-async function createApplication(eventId: number, body: Omit<CreateApplicationRequestDto, 'eventId'>): Promise<number> {
-  const bodyWithEventId = { ...body, eventId };
-  const { data } = await api.post(`/api/banner/applications`, bodyWithEventId);
+// 새로운 배너 시스템 API
+async function createApplication(eventId: number, body: CreateApplicationRequestDto): Promise<number> {
+  const { data } = await api.post(`/api/host/banner-management/applications`, {
+    eventId,
+    ...body
+  });
   return data as number; // application id
 }
 
@@ -433,14 +435,13 @@ const AdvertisementApplication: React.FC = () => {
           return;
         }
 
-  // MD PICK은 이미지가 필요하지 않으므로 빈 문자열 사용
-  if (!eventId) {
-    alert("이벤트 ID가 필요합니다. URL을 확인해주세요.");
-    return;
-  }
+        // MD PICK은 이미지가 필요하지 않으므로 빈 문자열 사용
+        if (!eventId) {
+          alert("이벤트 ID가 필요합니다. URL을 확인해주세요.");
+          return;
+        }
 
-  const mdPickImageUrl = ""; // MD PICK은 이미지 없음
-  const eventDetailUrl = `/events/${eventId}`; // 행사 상세 페이지 URL
+        const eventDetailUrl = `/events/${eventId}`; // 행사 상세 페이지 URL
 
         // ❗ DTO는 date 필드명 사용 (slotDate 아님)
         const items = dates
@@ -455,13 +456,12 @@ const AdvertisementApplication: React.FC = () => {
           return;
         }
 
-  const appId = await createApplication(Number(eventId), {
+  const appId = await createApplication(eventId, {
     bannerType: "SEARCH_TOP",
-    title: "MD PICK 광고", // 행사 정보에서 전달받은 제목 사용
-    imageUrl: mdPickImageUrl,                  // 빈 문자열
+    title: "",  // MD PICK은 제목 불필요
+    imageUrl: "",  // MD PICK은 이미지 불필요
     linkUrl: eventDetailUrl,  // 행사 상세 페이지 URL
     items,
-    // lockMinutes: 2880,
   });
 
         alert(`MD PICK 신청이 접수되었습니다. 신청번호: ${appId}`);
@@ -488,21 +488,20 @@ const AdvertisementApplication: React.FC = () => {
           priority: Number(rank),
         }));
 
-        const appId = await createApplication(Number(eventId), {
+        const appId = await createApplication(eventId, {
           bannerType: "HERO",
-          title: "메인 배너 광고", // 행사 정보에서 전달받은 제목 사용
+          title: "",  // 제목 불필요
           imageUrl: uploaded.key, // s3Key를 전달하여 백엔드에서 CDN URL 생성
           linkUrl: heroEventDetailUrl, // 행사 상세 페이지 URL
           items,
-          // lockMinutes: 2880,
         });
 
         alert(`메인 배너 신청이 접수되었습니다. 신청번호: ${appId}`);
       }
 
-      // 둘 중 하나라도 성공했으면 목록으로 이동
+      // 둘 중 하나라도 성공했으면 배너 관리 페이지로 이동
       if (selectedTypes.mainBanner || selectedTypes.searchTop) {
-        navigate("/admin_dashboard/advertisement-applications");
+        navigate("/host/banner-management");
       }
     } catch (e: any) {
       console.error(e);

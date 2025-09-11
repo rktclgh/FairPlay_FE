@@ -227,7 +227,14 @@ class PaymentService {
         quantity:number,
         price:number,
         amount:number,
-        reservationData?: any
+        reservationData?: any,
+        paymentOptions?: {
+            mobile?: boolean;
+            isIOS?: boolean;
+            m_redirect_url?: string;
+            popup?: boolean;
+            pg?: string;
+        }
     ): Promise<any> {
         try {
             // 무료 티켓인지 확인
@@ -240,6 +247,9 @@ class PaymentService {
             const merchantUid = await this.generateMerchantUid(paymentTargetType);
             console.log('merchantUid:', merchantUid);
 
+            // pgProvider 모바일 옵션 고려  
+            const pgProvider = paymentOptions?.pg || 'uplus';
+
             // 1. 백엔드에 결제 요청 정보 저장 (PENDING 상태) - paymentId 반환
             console.log('🔵 [PaymentService] savePaymentRequest 데이터:', {
                 eventId: eventId,
@@ -248,12 +258,12 @@ class PaymentService {
                 price: amount / quantity,
                 amount: amount,
                 merchantUid: merchantUid,
-                pgProvider: 'uplus',
+                pgProvider: pgProvider,
                 scheduleId: reservationData?.scheduleId,
                 ticketId: reservationData?.ticketId,
+                paymentOptions: paymentOptions,
                 reservationData: reservationData
             });
-            
             const savedPayment = await this.savePaymentRequest({
                 eventId: eventId,
                 paymentTargetType: paymentTargetType,
@@ -261,36 +271,52 @@ class PaymentService {
                 price: amount / quantity,
                 amount:amount,
                 merchantUid: merchantUid,
-                pgProvider: 'uplus',
+                pgProvider: pgProvider,
                 scheduleId: reservationData?.scheduleId,
                 ticketId: reservationData?.ticketId
             });
             
             console.log('저장된 paymentId:', savedPayment.paymentId);
 
-            // 3. 결제 요청 데이터 준비
+            // 3. 결제 요청 데이터 준비 (모바일 옵션 적용)
             const scheduleId = reservationData?.scheduleId;
-            const redirectUrl = scheduleId 
-                ? `${window.location.origin}/ticket-reservation/${eventId}?scheduleId=${scheduleId}&success=true`
-                : `${window.location.origin}/ticket-reservation/${eventId}?success=true`;
+            const redirectUrl = paymentOptions?.m_redirect_url || 
+                (scheduleId 
+                    ? `${window.location.origin}/ticket-reservation/${eventId}?scheduleId=${scheduleId}&success=true`
+                    : `${window.location.origin}/ticket-reservation/${eventId}?success=true`);
                 
             const paymentRequest: PaymentRequest = {
-                pg: 'uplus',
+                pg: paymentOptions?.pg || 'uplus',
                 pay_method: 'card',
                 merchant_uid: merchantUid,
                 name: `${title}`,
                 amount: amount,
                 buyer_name: userName,
-                m_redirect_url: redirectUrl,
-                popup: false
+                m_redirect_url: paymentOptions?.mobile ? redirectUrl : undefined,
+                popup: paymentOptions?.popup !== undefined ? paymentOptions.popup : !paymentOptions?.mobile
             };
 
             // 4. 아임포트 결제 요청
+            console.log('🔵 [PaymentService] 아임포트 결제 요청:', paymentRequest);
             const paymentResponse = await this.requestPayment(paymentRequest);
 
             if (!paymentResponse.success) {
-                throw new Error(paymentResponse.error_msg || '결제가 실패했습니다.');
+                console.error('🔴 [PaymentService] 결제 실패:', paymentResponse);
+                let errorMessage = paymentResponse.error_msg || '결제가 실패했습니다.';
+                
+                // 모바일 결제 관련 특별한 에러 처리
+                if (paymentOptions?.mobile && paymentResponse.error_code) {
+                    if (paymentResponse.error_code.includes('PG_PROVIDER')) {
+                        errorMessage = '모바일 결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
+                    } else if (paymentResponse.error_code.includes('USER_CANCEL')) {
+                        errorMessage = '사용자가 결제를 취소했습니다.';
+                    }
+                }
+                
+                throw new Error(errorMessage);
             }
+            
+            console.log('🔵 [PaymentService] 결제 성공:', paymentResponse);
 
             // 5. 결제 성공 시 백엔드로 결과 전송 (아임포트 검증 + 결제 상태 변경 - COMPLETED)
             const completionResult = await this.completePayment({

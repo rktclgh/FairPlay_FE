@@ -599,6 +599,19 @@ export const TicketReservation = () => {
         }
     };
 
+    // 모바일 기기 감지 함수
+    const isMobileDevice = () => {
+        const userAgent = navigator.userAgent.toLowerCase();
+        const mobileKeywords = ['mobile', 'android', 'iphone', 'ipod', 'blackberry', 'windows phone'];
+        return mobileKeywords.some(keyword => userAgent.includes(keyword)) || 
+               /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    };
+
+    // iOS 기기 감지 함수  
+    const isIOSDevice = () => {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent);
+    };
+
     // 중복 클릭 방지 및 결제 처리 함수
     const handlePayment = async () => {
         // ================================= 생년월일 검증 로직 =================================
@@ -703,6 +716,22 @@ export const TicketReservation = () => {
             localStorage.setItem('pending_event_id', eventId);
             localStorage.setItem('pending_schedule_id', scheduleId);
 
+            // 모바일 기기에 따른 결제 옵션 설정
+            const paymentOptions = {
+                mobile: isMobileDevice(),
+                isIOS: isIOSDevice(),
+                // 모바일 결제 시 리다이렉션 URL 설정
+                m_redirect_url: isMobileDevice() 
+                    ? `${window.location.origin}/ticketreservation/${eventId}/${scheduleId}?imp_success=true&return_from_mobile=true`
+                    : undefined,
+                // 모바일 웹에서는 popup false, 앱에서는 true
+                popup: !isMobileDevice(),
+                // iOS에서는 특별한 처리
+                pg: isIOSDevice() ? 'uplus.mobx' : isMobileDevice() ? 'uplus.web' : 'uplus'
+            };
+
+            console.log('결제 옵션:', paymentOptions);
+
             // 결제 처리 (결제 → 예약 생성 → target_id 업데이트)
             const result = await paymentService.processPayment(
                 eventData.titleKr,
@@ -713,7 +742,8 @@ export const TicketReservation = () => {
                 ticketReservationForm.quantity,
                 selectedTicket.price,
                 totalAmount,
-                reservationData
+                reservationData,
+                paymentOptions // 모바일 옵션 추가
             );
 
             setPaymentStep('티켓 발급 중...');
