@@ -4,7 +4,7 @@ import { AttendeeSideNav } from "../user_mypage/AttendeeSideNav";
 import { Plus, Download, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import RefundRequestModal from "./RefundRequestModal";
-import authManager from "../../utils/auth";
+import api from "../../api/axios"; // HTTP-only 쿠키 기반 인증
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 
 // 환불 데이터 타입
@@ -83,15 +83,9 @@ export const RefundList = () => {
     const fetchRefunds = async () => {
         setLoading(true);
         try {
-            const response = await authManager.authenticatedFetch('/api/refunds/me', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (response.ok) {
-                const data: RefundData[] = await response.json();
+            // axios 사용 (withCredentials: true로 쿠키 자동 전송, interceptor에서 401 처리)
+            const response = await api.get<RefundData[]>('/api/refunds/me');
+            const data = response.data;
                 // 클라이언트 측에서 필터링 및 페이징 처리
                 let filteredData = data;
 
@@ -152,10 +146,8 @@ export const RefundList = () => {
                 setTotalElements(filteredData.length);
                 setTotalPages(Math.ceil(filteredData.length / filters.size));
                 setCurrentPage(filters.page);
-            } else {
-                console.error('환불 목록 조회 실패');
-            }
         } catch (error) {
+            console.error('환불 목록 조회 실패:', error);
             console.error('환불 목록 조회 중 오류:', error);
         } finally {
             setLoading(false);

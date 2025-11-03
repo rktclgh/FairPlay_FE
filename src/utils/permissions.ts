@@ -31,18 +31,26 @@ export const isCommonUser = (role: string): boolean => {
   return role === USER_ROLES.COMMON;
 };
 
-// 토큰에서 사용자 역할 추출
+/**
+ * ⚠️ DEPRECATED: 이 함수는 더 이상 사용되지 않습니다.
+ * HTTP-only 쿠키 기반 인증으로 마이그레이션되었습니다.
+ *
+ * 대신 다음을 사용하세요:
+ * ```tsx
+ * import { useAuth } from '../context/AuthContext';
+ *
+ * const { user } = useAuth();
+ * const role = user?.role;
+ * ```
+ *
+ * @deprecated HTTP-only 쿠키로 마이그레이션되어 JWT 디코딩이 불가능합니다. useAuth() 훅을 사용하세요.
+ */
 export const getUserRoleFromToken = (): string | null => {
-  try {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return null;
-
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.role || null;
-  } catch (error) {
-    console.error("토큰에서 역할 추출 실패:", error);
-    return null;
-  }
+  console.warn(
+    '⚠️ getUserRoleFromToken()은 deprecated되었습니다. ' +
+    'AuthContext의 useAuth() 훅을 사용하여 user.role을 가져오세요.'
+  );
+  return null; // HTTP-only 쿠키에서는 클라이언트에서 JWT를 디코딩할 수 없음
 };
 
 // 권한별 리다이렉션 경로

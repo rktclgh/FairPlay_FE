@@ -38,9 +38,8 @@ export const Reviews = ({ data, currentPage, onPageChange }: ReviewsProps) => {
   };
 
   const handleLike = async (reviewId: number) => {
-    if (!localStorage.getItem("accessToken")) {
-      alert("로그인한 회원만 좋아요 반응을 할 수 있습니다. 로그인해주세요.");
-    }
+    // HTTP-only 쿠키 기반 인증 체크는 API 호출 시 자동으로 처리됨
+    // 401 에러가 발생하면 axios interceptor가 자동 로그아웃 처리
 
     if(reviews.find(review => review.review.reviewId === reviewId)?.owner) {
       alert("본인이 작성한 관람평은 좋아요할 수 없습니다.");

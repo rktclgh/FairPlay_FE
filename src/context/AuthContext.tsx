@@ -179,8 +179,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 🔴 401 에러 시 자동 로그아웃 처리 (axios interceptor에서 트리거)
   useEffect(() => {
     const handleUnauthorized = () => {
-      console.log('🚨 401 Unauthorized 이벤트 감지, 자동 로그아웃 실행');
-      logout();
+      // 이미 로그인된 상태일 때만 로그아웃 처리 (비로그인 상태에서 401은 정상)
+      if (isAuthenticated) {
+        console.log('🚨 401 Unauthorized 이벤트 감지, 자동 로그아웃 실행');
+        logout();
+      } else {
+        console.log('ℹ️ 401 에러 발생했지만 이미 비로그인 상태 - 무시');
+      }
     };
 
     window.addEventListener('auth:unauthorized', handleUnauthorized);
@@ -188,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
-  }, [logout]);
+  }, [isAuthenticated, logout]);
 
   const value: AuthContextType = {
     isAuthenticated,

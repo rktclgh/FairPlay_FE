@@ -156,12 +156,14 @@ const BoothInfoManagement: React.FC = () => {
         try {
             // 우선 내 부스 신청 목록 조회
             const applicationsResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/my-booths`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
             });
 
             if (!applicationsResponse.ok) {
+                if (applicationsResponse.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('부스 정보를 불러올 수 없습니다.');
             }
 
@@ -322,14 +324,18 @@ const BoothInfoManagement: React.FC = () => {
 
             const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/events/${eventId}/booths/${boothId}`, {
                 method: 'PATCH',
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify(updateData),
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('부스 정보 수정에 실패했습니다.');
             }
 
@@ -349,14 +355,18 @@ const BoothInfoManagement: React.FC = () => {
         try {
             const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/events/${eventId}/booths/${boothId}/manager`, {
                 method: 'PATCH',
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify(adminData),
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('관리자 정보 수정에 실패했습니다.');
             }
 

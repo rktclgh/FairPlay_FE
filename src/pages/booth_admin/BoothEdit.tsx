@@ -114,12 +114,14 @@ const BoothEdit: React.FC = () => {
         try {
             // 먼저 내 부스 목록에서 해당 boothId의 eventId를 찾기
             const myBoothsResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/my-booths`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
             });
 
             if (!myBoothsResponse.ok) {
+                if (myBoothsResponse.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('부스 목록을 불러올 수 없습니다.');
             }
 
@@ -132,12 +134,14 @@ const BoothEdit: React.FC = () => {
 
             const eventId = currentBooth.eventId;
             const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/events/${eventId}/booths/${boothId}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('부스 정보를 불러올 수 없습니다.');
             }
 
@@ -207,12 +211,14 @@ const BoothEdit: React.FC = () => {
         try {
             // 먼저 내 부스 목록에서 해당 boothId의 eventId를 찾기
             const myBoothsResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/my-booths`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
             });
 
             if (!myBoothsResponse.ok) {
+                if (myBoothsResponse.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('부스 목록을 불러올 수 없습니다.');
             }
 
@@ -258,14 +264,18 @@ const BoothEdit: React.FC = () => {
 
             const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/events/${eventId}/booths/${boothId}`, {
                 method: 'PATCH',
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify(updateData),
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('부스 정보 수정에 실패했습니다.');
             }
 

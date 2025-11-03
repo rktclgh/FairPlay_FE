@@ -90,10 +90,10 @@ class AuthManager {
       },
     });
 
-    // 401 오류 시 로그아웃 처리
+    // 401 오류 시 전역 로그아웃 이벤트 발생 (AuthContext가 처리)
     if (response.status === 401) {
-      console.log('401 오류 발생, 세션 만료');
-      this.logout();
+      console.log('401 오류 발생, 세션 만료 - auth:unauthorized 이벤트 발생');
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
       throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.');
     }
 

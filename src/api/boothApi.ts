@@ -41,11 +41,9 @@ export const updateBoothAdminInfo = (eventId: number, boothId: number, data: Boo
     return api.patch(`/api/events/${eventId}/booths/${boothId}/manager`, data).then(res => res.data);
 };
 
+// HTTP-only 쿠키 기반 인증 - withCredentials로 자동 전송
 export const getUserRecentlyEventWaitingCount = async (eventId: number): Promise<BoothUserRecentlyWaitingCount> => {
-    const accessToken = localStorage.getItem("accessToken");
-    const res = await api.get<BoothUserRecentlyWaitingCount>(`/api/booth-experiences/user/${eventId}/waiting-count`, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    });
+    const res = await api.get<BoothUserRecentlyWaitingCount>(`/api/booth-experiences/user/${eventId}/waiting-count`);
     return res.data;
 }
 

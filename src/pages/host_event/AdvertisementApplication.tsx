@@ -3,7 +3,7 @@ import { TopNav } from '../../components/TopNav';
 import { HostSideNav } from '../../components/HostSideNav';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useNavigate } from 'react-router-dom';
-import axios from "axios";
+import api from "../../api/axios"; // HTTP-only 쿠키 기반 인증
 
 // 유틸 
 const toLocalDateStr = (d: Date) => {
@@ -51,21 +51,8 @@ interface CreateApplicationRequestDto {
   lockMinutes?: number;         // 옵션(기본 2880)
 }
 
-// ---- axios 인스턴스 ----
-const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_BASE_URL ?? "https://fair-play.ink",
-  withCredentials: true,
-});
-
-api.interceptors.request.use((config) => {
-  const token =
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("accessToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// ---- API 함수 ----
+// ---- API 함수 (HTTP-only 쿠키 기반 인증) ----
+// 글로벌 api 인스턴스 사용 - withCredentials와 401 interceptor 포함
 async function getSlots(params: { type: BannerSlotType; from: string; to: string }): Promise<SlotResponseDto[]> {
   const { data } = await api.get("/api/banner/slots", { params: { type: params.type, from: params.from, to: params.to } });
   return data;

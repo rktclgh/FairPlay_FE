@@ -3,14 +3,7 @@ import { TopNav } from "../../components/TopNav";
 import { AdminSideNav } from "../../components/AdminSideNav";
 import api from "../../api/axios";
 
-// Axios 인터셉터로 모든 요청에 JWT 자동 추가
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// HTTP-only 쿠키 기반 인증 - withCredentials로 자동 전송됨
 
 export const MessageTemplates: React.FC = () => {
   const [templates, setTemplates] = useState<string[]>([]); // 템플릿 목록
