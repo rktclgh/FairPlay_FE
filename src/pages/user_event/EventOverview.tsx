@@ -23,10 +23,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 import { useAuth } from "../../context/AuthContext";
 
-// HTTP-only 쿠키 사용으로 인해 헤더 처리는 axios interceptor에서 자동 처리됨
-const authHeaders = () => ({});
-
-// 인증 상태는 useAuth 훅으로 확인
+// HTTP-only 쿠키 기반 인증 - withCredentials로 자동 전송됨
 
 // 카테고리 번역 함수
 const translateCategory = (category: string, t: any): string => {
@@ -133,7 +130,6 @@ type CalendarGroupedDto = { date: string; titles: string[] };
 const fetchCalendarGrouped = (year: number, month: number) =>
     api.get<CalendarGroupedDto[]>("/api/calendar/events/grouped", {
         params: { year, month },
-        headers: authHeaders(),
     });
 
 export default function EventOverview() {
@@ -237,12 +233,11 @@ export default function EventOverview() {
         try {
             if (wasLiked) {
                 // 찜 취소
-                await api.delete(`/api/wishlist/${eventId}`, { headers: authHeaders() });
+                await api.delete(`/api/wishlist/${eventId}`);
             } else {
                 // 찜 등록 (@RequestParam Long eventId)
                 await api.post(`/api/wishlist`, null, {
                     params: { eventId },
-                    headers: authHeaders(),
                 });
             }
         } catch (e) {
@@ -268,9 +263,7 @@ export default function EventOverview() {
 
         (async () => {
             try {
-                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist", {
-                    headers: authHeaders(),
-                });
+                const { data } = await api.get<WishlistResponseDto[]>("/api/wishlist");
                 const s = new Set<number>();
                 (data ?? []).forEach(w => s.add(w.eventId));
                 setLikedEvents(s);

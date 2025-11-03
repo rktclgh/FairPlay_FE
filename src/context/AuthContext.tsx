@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 interface User {
@@ -21,6 +22,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,9 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 로그인 페이지로 리다이렉트
+    // 로그인 페이지로 리다이렉트 (React Router 사용)
     if (!window.location.pathname.includes('/login')) {
-      window.location.href = '/login';
+      navigate('/login', { replace: true });
     }
   };
 
@@ -142,18 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 앱 시작 시 인증 상태 확인 (React StrictMode 중복 실행 방지)
   useEffect(() => {
     let isMounted = true;
-    
+
     const initializeAuth = async () => {
       if (!isMounted) return;
-      
+
       console.log('🔧 AuthContext 초기화 시작');
       setLoading(true);
-      
+
       // 쿠키 확인: 세션이 있는 경우에만 API 호출
-      const hasSessionCookie = document.cookie.includes('JSESSIONID') || 
-                               document.cookie.includes('SESSIONID') ||
-                               document.cookie.includes('session');
-      
+      const hasSessionCookie = document.cookie.includes('FAIRPLAY_SESSION');
+
       if (hasSessionCookie) {
         console.log('🍪 세션 쿠키 발견, 인증 상태 확인');
         await checkAuth();
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
         setUser(null);
       }
-      
+
       if (isMounted) {
         setLoading(false);
         console.log('🔧 AuthContext 초기화 완료, isAuthenticated:', isAuthenticated);
@@ -170,11 +170,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initializeAuth();
-    
+
     return () => {
       isMounted = false;
     };
   }, []);
+
+  // 🔴 401 에러 시 자동 로그아웃 처리 (axios interceptor에서 트리거)
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.log('🚨 401 Unauthorized 이벤트 감지, 자동 로그아웃 실행');
+      logout();
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, [logout]);
 
   const value: AuthContextType = {
     isAuthenticated,
