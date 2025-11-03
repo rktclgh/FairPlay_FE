@@ -500,9 +500,9 @@ const AdvertisementApplication: React.FC = () => {
         alert(`메인 배너 신청이 접수되었습니다. 신청번호: ${appId}`);
       }
 
-      // 둘 중 하나라도 성공했으면 목록으로 이동
+      // 둘 중 하나라도 성공했으면 광고 관리 대시보드로 이동
       if (selectedTypes.mainBanner || selectedTypes.searchTop) {
-        navigate("/admin_dashboard/advertisement-applications");
+        navigate("/host/advertisement-dashboard");
       }
     } catch (e: any) {
       console.error(e);
