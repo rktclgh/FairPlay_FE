@@ -21,6 +21,7 @@ import { loadKakaoMap } from "../../lib/loadKakaoMap";
 import EventMapPin from "../../components/EventMapPin";
 import { useTheme } from "../../context/ThemeContext";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
+import { useAuth } from "../../context/AuthContext";
 
 // HTTP-only 쿠키 사용으로 인해 헤더 처리는 axios interceptor에서 자동 처리됨
 const authHeaders = () => ({});
@@ -139,6 +140,7 @@ export default function EventOverview() {
     useScrollToTop();
     const { isDark } = useTheme();
     const { t, i18n } = useTranslation();
+    const { isAuthenticated } = useAuth();
     const [events, setEvents] = React.useState<EventSummaryDto[]>([]);
     const [filteredEvents, setFilteredEvents] = React.useState<EventSummaryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState("all");
@@ -213,7 +215,7 @@ export default function EventOverview() {
     // 좋아요 토글 함수
     const toggleWish = async (eventId: number) => {
         // 인증 확인
-        if (!isAuthed()) {
+        if (!isAuthenticated) {
             alert(t('eventOverview.loginRequired'));
             navigate("/login", { state: { from: location.pathname } }); // 로그인 후 돌아올 수 있게
             return;
@@ -260,9 +262,9 @@ export default function EventOverview() {
     };
 
 
-    // 초기 위시리스트 로드 
+    // 초기 위시리스트 로드
     React.useEffect(() => {
-        if (!isAuthed()) return;
+        if (!isAuthenticated) return;
 
         (async () => {
             try {
@@ -276,7 +278,7 @@ export default function EventOverview() {
                 console.error("위시리스트 로드 실패:", e);
             }
         })();
-    }, []);
+    }, [isAuthenticated]);
 
     // 캘린더 데이터 상태
     const [calendarData, setCalendarData] = React.useState<Map<string, string[]>>(new Map());
@@ -287,7 +289,7 @@ export default function EventOverview() {
     // 캘린더 데이터 fetch (뷰/월 변경 시)
     React.useEffect(() => {
         //  비로그인: API 호출하지 않음
-        if (!isAuthed()) {
+        if (!isAuthenticated) {
             setCalendarLoading(false);
             setCalendarError(null);
             setCalendarData(new Map());
@@ -313,7 +315,7 @@ export default function EventOverview() {
                 setCalendarLoading(false);
             }
         })();
-    }, [viewMode, calendarYear, calendarMonth]);
+    }, [viewMode, calendarYear, calendarMonth, isAuthenticated]);
 
     // 헬퍼
     const formatDate = React.useCallback((date: Date) => {
