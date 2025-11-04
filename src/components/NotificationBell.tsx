@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bell, X, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNotificationSocket, Notification } from "../hooks/useNotificationSocket";
+import { useNotificationSse, Notification } from "../hooks/useNotificationSse"; // 웹소켓 → SSE 마이그레이션
 import { formatDistanceToNow } from "date-fns";
 import { ko, enUS } from "date-fns/locale";
 import { useAuth } from "../context/AuthContext";
@@ -11,16 +11,18 @@ export function NotificationBell() {
   const { isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
+  // SSE (Server-Sent Events) 기반 실시간 알림 시스템 - HTTP-only 쿠키 인증
+  const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSse();
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
+  // AuthContext에서 인증 상태를 가져와 SSE 연결 관리
   useEffect(() => {
     if (isAuthenticated) {
-      connect();
+      connect(); // 로그인 시 SSE 연결
     }
-    
+
     return () => {
-      disconnect();
+      disconnect(); // 컴포넌트 언마운트 시 SSE 연결 해제
     };
   }, [connect, disconnect, isAuthenticated]);
 
@@ -39,7 +41,7 @@ export function NotificationBell() {
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {
-      console.log("📖 알림 읽음 처리:", notification.notificationId);
+      console.log("📖 SSE + REST API를 통한 알림 읽음 처리:", notification.notificationId);
       markAsRead(notification.notificationId);
     }
     
@@ -58,7 +60,7 @@ export function NotificationBell() {
     
     // 0.3초 후 실제 삭제 (슬라이드 애니메이션과 함께)
     setTimeout(() => {
-      deleteNotification(notificationId); // 이미 즉시 UI 업데이트 + 백엔드 요청 처리됨
+      deleteNotification(notificationId); // SSE + REST API를 통한 삭제 처리 (즉시 UI 업데이트 + 백엔드 요청)
       setDeletingIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(notificationId);
