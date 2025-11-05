@@ -86,6 +86,7 @@ export const Footer: React.FC = () => {
                             <ul className="space-y-2">
                                 <li><Link to="/support/notices" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>{t('footer.notices')}</Link></li>
                                 <li><Link to="/support/faq" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>{t('footer.faq')}</Link></li>
+                                <li><Link to="/creators" className={`text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}>제작자 소개</Link></li>
                                 <li>
                                     <button
                                         type="button"

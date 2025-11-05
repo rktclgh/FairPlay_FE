@@ -250,6 +250,24 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({ className = "" }) =>
                         </div>
                     </div>
 
+                    {/* 제작자 관리 (전체 관리자 전용) */}
+                    {role === 'ADMIN' && (
+                        <div className="mb-4 space-y-0">
+                            <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">
+                                제작자 관리
+                            </h3>
+                            <div className="space-y-1">
+                                <Link
+                                    to="/admin_dashboard/creators"
+                                    className={linkClass("/admin_dashboard/creators")}
+                                    style={linkStyle("/admin_dashboard/creators")}
+                                >
+                                    제작자 목록
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
                     {/* 내 정보 관리 */}
                     <div className="mb-4 space-y-0">
                         <h3 className="[font-family:'Roboto-Bold',Helvetica] font-bold text-black text-lg tracking-[0] leading-[54px] whitespace-nowrap">

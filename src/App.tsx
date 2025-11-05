@@ -110,6 +110,9 @@ import BannerPaymentPage from "./pages/banner/BannerPaymentPage";
 import HostRefundManagement from "./pages/host_refund/HostRefundManagement";
 import BoothInfoManagement from "./pages/booth_admin/BoothInfoManagement";
 import BoothEdit from "./pages/booth_admin/BoothEdit";
+import CreatorList from "./pages/creators/CreatorList";
+import CreatorDetail from "./pages/creators/CreatorDetail";
+import { CreatorManagement } from "./pages/admin_dashboard/CreatorManagement";
 
 function AppContent() {
     const [isTokenValidated, setIsTokenValidated] = useState(false);
@@ -243,6 +246,11 @@ function AppContent() {
                         <Route path="/mypage/refund" element={<RefundList />} />
                         <Route path="/mypage/business-card" element={<BusinessCard />} />
                         <Route path="/mypage/business-card-wallet" element={<BusinessCardWallet />} />
+
+                        {/* 제작자 페이지 */}
+                        <Route path="/creators" element={<CreatorList />} />
+                        <Route path="/creators/:id" element={<CreatorDetail />} />
+
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/signup" element={<SignUpPage />} />
                         <Route path="/find-password" element={<FindPassword />} />
@@ -316,6 +324,9 @@ function AppContent() {
                         {/* 로그/보안 */}
                         <Route path="/admin_dashboard/logs/access" element={<AdminRouteGuard><AccessLogs /></AdminRouteGuard>} />
                         <Route path="/admin_dashboard/logs/changes" element={<AdminRouteGuard><ChangeLogs /></AdminRouteGuard>} />
+
+                        {/* 제작자 관리 */}
+                        <Route path="/admin_dashboard/creators" element={<AdminRouteGuard><CreatorManagement /></AdminRouteGuard>} />
 
                         {/* 내 정보 관리 */}
                         <Route path="/admin_dashboard/profile" element={<AdminRouteGuard><AdminProfile /></AdminRouteGuard>} />
