@@ -12,19 +12,9 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   // SSE (Server-Sent Events) 기반 실시간 알림 시스템 - HTTP-only 쿠키 인증
-  const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSse();
+  // useNotificationSse 훅 내부에서 isAuthenticated를 감지해서 자동으로 연결/해제를 관리합니다.
+  const { notifications, unreadCount, markAsRead, deleteNotification } = useNotificationSse();
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
-
-  // AuthContext에서 인증 상태를 가져와 SSE 연결 관리
-  useEffect(() => {
-    if (isAuthenticated) {
-      connect(); // 로그인 시 SSE 연결
-    }
-
-    return () => {
-      disconnect(); // 컴포넌트 언마운트 시 SSE 연결 해제
-    };
-  }, [connect, disconnect, isAuthenticated]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

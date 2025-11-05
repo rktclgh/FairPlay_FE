@@ -35,7 +35,8 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	const navigate = useNavigate();
 
 	// SSE (Server-Sent Events) 기반 실시간 알림 시스템 - HTTP-only 쿠키 인증
-	const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSse();
+	// useNotificationSse 훅 내부에서 isAuthenticated를 감지해서 자동으로 연결/해제를 관리합니다.
+	const { notifications, unreadCount, markAsRead, deleteNotification } = useNotificationSse();
 
 	// 검색 패널이 열릴 때 자동으로 입력폼에 포커스
 	useEffect(() => {
@@ -46,18 +47,6 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 			}, 100);
 		}
 	}, [isSearchOpen]);
-
-	// AuthContext에서 인증 상태를 가져와 SSE 연결 관리
-	useEffect(() => {
-		if (isAuthenticated) {
-			connect(); // 로그인 시 SSE 연결
-		} else {
-			disconnect(); // 로그아웃 시 SSE 연결 해제
-		}
-		return () => {
-			disconnect(); // 컴포넌트 언마운트 시 SSE 연결 해제
-		};
-	}, [isAuthenticated, connect, disconnect]);
 
 	useEffect(() => {
 		const path = location.pathname;
@@ -85,8 +74,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		if (isAuthenticated) {
 			e.preventDefault();
 			clearCachedRoleCode();
-			await logout(); // AuthContext의 logout 사용
-			disconnect(); // 로그아웃 시 SSE 연결 해제
+			await logout(); // AuthContext의 logout 사용 (SSE는 useNotificationSse 훅에서 자동 해제됨)
 			navigate('/');
 		}
 	};

@@ -18,7 +18,7 @@ export type Notification = {
  * HTTP-only 쿠키 기반 인증 사용 - 웹소켓 완전 대체
  */
 export function useNotificationSse() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
@@ -84,7 +84,11 @@ export function useNotificationSse() {
   }, [updateUnreadCount]);
 
   const connect = useCallback(() => {
-    if (eventSourceRef.current || !isAuthenticated) return;
+    // 🔒 인증 상태 확인 중이거나, 이미 연결되어 있거나, 인증되지 않은 경우 연결 중단
+    if (loading || eventSourceRef.current || !isAuthenticated) {
+      console.log("🚫 SSE 연결 조건 미충족:", { loading, hasConnection: !!eventSourceRef.current, isAuthenticated });
+      return;
+    }
 
     console.log("✅ SSE 연결 시작...");
 
@@ -168,8 +172,8 @@ export function useNotificationSse() {
       if (eventSource.readyState === EventSource.CLOSED) {
         eventSourceRef.current = null;
 
-        // 재연결 시도
-        if (reconnectAttempts.current < maxReconnectAttempts && isAuthenticated) {
+        // 재연결 시도 (인증 상태 확인 중이 아닐 때만)
+        if (reconnectAttempts.current < maxReconnectAttempts && isAuthenticated && !loading) {
           reconnectAttempts.current++;
           console.log(`🔄 SSE 재연결 시도 ${reconnectAttempts.current}/${maxReconnectAttempts}`);
 
@@ -182,7 +186,7 @@ export function useNotificationSse() {
       }
     };
 
-  }, [isAuthenticated, onNewNotification, onNotificationRead, onNotificationDeleted, updateUnreadCount]);
+  }, [loading, isAuthenticated, onNewNotification, onNotificationRead, onNotificationDeleted, updateUnreadCount]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -256,18 +260,27 @@ export function useNotificationSse() {
     }
   }, []);
 
-  // 인증 상태 변경 시 연결/해제
+  // 인증 상태 변경 시 연결/해제 (loading이 완료된 후에만)
   useEffect(() => {
+    // 🔒 인증 상태 확인이 완료될 때까지 대기
+    if (loading) {
+      console.log("⏳ SSE: 인증 상태 확인 중... 연결 대기");
+      return;
+    }
+
     if (isAuthenticated) {
+      console.log("✅ SSE: 인증됨 → 연결 시도");
       connect();
     } else {
+      console.log("❌ SSE: 미인증 → 연결 해제");
       disconnect();
     }
 
     return () => {
       disconnect();
     };
-  }, [isAuthenticated, connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, isAuthenticated]);
 
   return {
     notifications,
