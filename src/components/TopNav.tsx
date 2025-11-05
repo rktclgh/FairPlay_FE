@@ -3,7 +3,7 @@ import { HiOutlineSearch, HiOutlineUser, HiOutlineX, HiOutlineHome, HiOutlineCal
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
-import { useNotificationSocket } from '../hooks/useNotificationSocket';
+import { useNotificationSse } from '../hooks/useNotificationSse'; // 웹소켓 → SSE 마이그레이션
 import { requireAuth } from '../utils/authGuard';
 import { useAuth } from '../context/AuthContext';
 import { hasHostPermission, hasBoothManagerPermission } from '../utils/permissions';
@@ -34,8 +34,9 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	const location = useLocation();
 	const navigate = useNavigate();
 
-	// 웹소켓 기반 알림 시스템 사용
-	const { notifications, unreadCount, markAsRead, deleteNotification, connect, disconnect } = useNotificationSocket();
+	// SSE (Server-Sent Events) 기반 실시간 알림 시스템 - HTTP-only 쿠키 인증
+	// useNotificationSse 훅 내부에서 isAuthenticated를 감지해서 자동으로 연결/해제를 관리합니다.
+	const { notifications, unreadCount, markAsRead, deleteNotification } = useNotificationSse();
 
 	// 검색 패널이 열릴 때 자동으로 입력폼에 포커스
 	useEffect(() => {
@@ -46,18 +47,6 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 			}, 100);
 		}
 	}, [isSearchOpen]);
-
-	// AuthContext에서 인증 상태를 가져와 웹소켓 연결 관리
-	useEffect(() => {
-		if (isAuthenticated) {
-			connect(); // 로그인 시 웹소켓 연결
-		} else {
-			disconnect(); // 로그아웃 시 웹소켓 연결 해제
-		}
-		return () => {
-			disconnect(); // 컴포넌트 언마운트 시 웹소켓 연결 해제
-		};
-	}, [isAuthenticated, connect, disconnect]);
 
 	useEffect(() => {
 		const path = location.pathname;
@@ -85,8 +74,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 		if (isAuthenticated) {
 			e.preventDefault();
 			clearCachedRoleCode();
-			await logout(); // AuthContext의 logout 사용
-			disconnect(); // 로그아웃 시 웹소켓 연결 해제
+			await logout(); // AuthContext의 logout 사용 (SSE는 useNotificationSse 훅에서 자동 해제됨)
 			navigate('/');
 		}
 	};
@@ -140,7 +128,7 @@ export const TopNav: React.FC<TopNavProps> = ({ className = '' }) => {
 	};
 
 	const handleMarkAsRead = (notificationId: number) => {
-		markAsRead(notificationId); // 웹소켓을 통한 읽음 처리
+		markAsRead(notificationId); // SSE + REST API를 통한 읽음 처리
 	};
 
 	const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {

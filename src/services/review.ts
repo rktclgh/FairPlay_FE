@@ -14,15 +14,14 @@ import type {
   PageableRequest,
 } from "./types/reviewType";
 
-// 리뷰 저장
+// 리뷰 저장 - HTTP-only 쿠키 기반 인증
 export const saveReview = async (
   data: ReviewSaveRequestDto
 ): Promise<ReviewSaveResponseDto> => {
-  console.log("🔍 saveReview 호출됨:", data);
-  console.log("🔍 현재 토큰:", localStorage.getItem("accessToken"));
+  console.log("🔍 saveReview 호출됨 (HTTP-only 쿠키 인증):", data);
 
   try {
-    // axios 인터셉터에서 자동으로 Authorization 헤더 처리
+    // HTTP-only 쿠키로 인증 - withCredentials로 자동 전송, axios interceptor가 401 처리
     const res = await api.post<ReviewSaveResponseDto>(`/api/reviews`, data);
     console.log("✅ saveReview 성공:", res.data);
     return res.data;

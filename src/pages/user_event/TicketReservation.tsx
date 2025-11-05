@@ -492,13 +492,13 @@ export const TicketReservation = () => {
         try {
             console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
 
-            // 1. 결제 완료 처리 API 호출  
+            // 1. 결제 완료 처리 API 호출
             const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL || window.location.origin;
             const completeResponse = await fetch(`${backendUrl}/api/payments/complete`, {
                 method: 'POST',
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
                 },
                 body: JSON.stringify({
                     merchantUid: merchantUid,
@@ -507,6 +507,10 @@ export const TicketReservation = () => {
             });
 
             if (!completeResponse.ok) {
+                if (completeResponse.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error(`결제 완료 처리 실패: ${completeResponse.status}`);
             }
 

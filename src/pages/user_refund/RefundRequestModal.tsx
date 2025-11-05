@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, AlertCircle, RefreshCw } from "lucide-react";
-import authManager from "../../utils/auth";
+import api from "../../api/axios"; // HTTP-only 쿠키 기반 인증
 
 // 결제 데이터 타입
 interface PaymentData {
@@ -69,15 +69,10 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
     const loadPayments = async () => {
         setLoading(true);
         try {
-            const response = await authManager.authenticatedFetch('/api/payments/me');
-
-            if (response.ok) {
-                const data = await response.json();
-                setPayments(data);
-            } else {
-                console.error('결제 내역 조회 실패');
-                alert('결제 내역을 불러오는데 실패했습니다.');
-            }
+            // HTTP-only 쿠키로 인증, withCredentials로 자동 전송
+            const response = await api.get<PaymentData[]>('/api/payments/me');
+            setPayments(response.data);
+            // axios는 401 에러 시 interceptor가 자동으로 로그아웃 처리
         } catch (error) {
             console.error('결제 내역 조회 중 오류:', error);
             alert('결제 내역을 불러오는 중 오류가 발생했습니다.');
@@ -196,25 +191,18 @@ const RefundRequestModal: React.FC<RefundRequestModalProps> = ({ isOpen, onClose
 
         setSubmitting(true);
         try {
-            const response = await authManager.authenticatedFetch('/api/refunds/request-refund', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(refundForm)
-            });
+            // HTTP-only 쿠키로 인증, withCredentials로 자동 전송
+            await api.post('/api/refunds/request-refund', refundForm);
+            // axios는 401 에러 시 interceptor가 자동으로 로그아웃 처리
 
-            if (response.ok) {
-                alert('환불 요청이 성공적으로 제출되었습니다.');
-                onSuccess();
-            } else {
-                const errorData = await response.json();
-                alert(`환불 요청 실패: ${errorData.message || '알 수 없는 오류'}`);
-            }
-        } catch (error) {
+            alert('환불 요청이 성공적으로 제출되었습니다.');
+            onSuccess();
+        } catch (error: any) {
             console.error('환불 요청 중 오류:', error);
-            alert('환불 요청 중 오류가 발생했습니다.');
+
+            // 백엔드 에러 메시지가 있으면 표시
+            const errorMessage = error.response?.data?.message || '환불 요청 중 오류가 발생했습니다.';
+            alert(`환불 요청 실패: ${errorMessage}`);
         } finally {
             setSubmitting(false);
         }

@@ -93,17 +93,13 @@ const BoothAdminDashboard: React.FC = () => {
     const fetchBooths = async () => {
         try {
             const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/my-booths`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                },
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
             });
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    toast.error('로그인이 필요합니다. 다시 로그인해주세요.');
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
-                    navigate('/login');
+                    // fetch API는 axios interceptor를 거치지 않으므로 수동으로 이벤트 발생
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
                     return;
                 }
                 throw new Error(`HTTP ${response.status}: 부스 신청 정보를 불러올 수 없습니다.`);
@@ -158,14 +154,18 @@ const BoothAdminDashboard: React.FC = () => {
             // 2. 백엔드에 결제 정보 저장
             const requestResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/payment/request`, {
                 method: 'POST',
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify(paymentRequestData),
             });
 
             if (!requestResponse.ok) {
+                if (requestResponse.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('결제 정보 저장 실패');
             }
 
@@ -192,9 +192,9 @@ const BoothAdminDashboard: React.FC = () => {
             // 5. 결제 성공 시 백엔드에 결제 완료 알림
             const completeResponse = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/booths/payment/complete`, {
                 method: 'POST',
+                credentials: 'include', // HTTP-only 쿠키 자동 전송
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify({
                     merchantUid: paymentResponse.merchant_uid,
@@ -205,6 +205,10 @@ const BoothAdminDashboard: React.FC = () => {
             });
 
             if (!completeResponse.ok) {
+                if (completeResponse.status === 401) {
+                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
                 throw new Error('결제 완료 처리에 실패했습니다.');
             }
 

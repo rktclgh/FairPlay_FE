@@ -5,6 +5,7 @@ import QrTicket from "../../components/QrTicket";
 import { QrCode, RefreshCw, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useAuth } from "../../context/AuthContext"; // HTTP-only 쿠키 기반 인증
 import reservationService from "../../services/reservationService";
 import type { ReservationResponseDto } from "../../services/reservationService";
 import type {
@@ -29,6 +30,7 @@ import type { BoothSummary } from '../../types/booth';
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { user } = useAuth(); // HTTP-only 쿠키 기반 인증 - userId 가져오기
 
     //======= QR 티켓 ======= //
     const [isQrTicketOpen, setIsQrTicketOpen] = useState(false);
@@ -93,8 +95,8 @@ export default function MyTickets(): JSX.Element {
         setSuccessMessage(msg);   // 메시지를 state에 저장
     });
 
-    // ✅ 부스 웨이팅 웹소켓 - 주석처리 (더미 데이터 사용)
-    useWaitingSocket(userId > 0 ? userId : 0, handleWebSocketMessage);
+    // ✅ 부스 웨이팅 웹소켓 - HTTP-only 쿠키 기반 인증
+    useWaitingSocket(user?.userId || 0, handleWebSocketMessage);
 
     //======= 예약 내역 조회 ======= // 
     useEffect(() => {
@@ -252,11 +254,10 @@ export default function MyTickets(): JSX.Element {
     //======= 모바일 팜플렛 열기 ======= //
     const handlePamphletOpen = async (eventId: number) => {
         console.log('handlePamphletOpen 호출됨, eventId:', eventId);
-        const token = localStorage.getItem('accessToken');
-        if (token && userId === 0) {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const savedUserId = Number(payload.sub);
-            setUserId(savedUserId);
+
+        // HTTP-only 쿠키로 인증 - AuthContext에서 userId 가져오기
+        if (user?.userId && userId === 0) {
+            setUserId(user.userId);
         }
 
         try {
@@ -356,7 +357,8 @@ export default function MyTickets(): JSX.Element {
 
 
         try {
-            const res = await createReservation(selectedExperience.experienceId, userId, requestData);
+            // HTTP-only 쿠키로 인증 - AuthContext에서 userId 사용
+            const res = await createReservation(selectedExperience.experienceId, user?.userId || 0, requestData);
             setSavedExperience(res);
             // 실제 대기 등록 로직은 여기에 구현
             alert("대기 등록이 완료되었습니다.");

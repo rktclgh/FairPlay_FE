@@ -1,9 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import axios from 'axios';
-//import axios, { AxiosError } from 'axios';
+import api from '../../api/axios'; // HTTP-only 쿠키 기반 인증
 import {TopNav} from '../../components/TopNav';
 import {AdminSideNav} from '../../components/AdminSideNav';
-import authManager from "../../utils/auth";
 
 // ---- Backend response types ----
 type BackendApplyStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -65,12 +63,9 @@ const AdvertisementApplicationList: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
 
-//백엔드 베이스 URL & 토큰
+//백엔드 베이스 URL
     const BASE_URL = useMemo(() => import.meta.env.VITE_API_BASE_URL ?? 'https://fair-play.ink', []);
-    const getAuthHeaders = () => {
-        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-        return token ? {Authorization: `Bearer ${token}`} : {};
-    };
+    // HTTP-only 쿠키 기반 인증 - withCredentials로 자동 전송됨
 
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterType, setFilterType] = useState<string>('all');
@@ -136,9 +131,9 @@ const AdvertisementApplicationList: React.FC = () => {
             if (filterType !== 'all') params.type = filterType === 'mainBanner' ? 'HERO' : 'SEARCH_TOP';
             params.page = '0';
             params.size = '100';
-            const res = await axios.get<BackendListResponse<BackendApplicationItem>>(`/api/admin/banners/applications`, {
+            const res = await api.get<BackendListResponse<BackendApplicationItem>>(`/api/admin/banners/applications`, {
                 params,
-                headers: {...getAuthHeaders()}
+                headers: {...{}}
             });
             console.log(res.data);
             const content: BackendApplicationItem[] =
@@ -148,7 +143,7 @@ const AdvertisementApplicationList: React.FC = () => {
             const mapped = content.map(mapBackendItem);
             setApplications(mapped);
         } catch (e: unknown) {
-            if (axios.isAxiosError<{ message?: string }>(e)) {
+            if (api.isAxiosError<{ message?: string }>(e)) {
                 const apiMsg = e.response?.data?.message ?? e.message;
                 setError(apiMsg || '목록 조회 실패');
             } else {
@@ -260,13 +255,13 @@ const AdvertisementApplicationList: React.FC = () => {
                 console.log('승인 API 호출 시작:', {
                     url: `/api/admin/banners/applications/${id}/approve`,
                     id,
-                    headers: getAuthHeaders()
+                    headers: {}
                 });
 
-                const res = await axios.post(
+                const res = await api.post(
                     `/api/admin/banners/applications/${id}/approve`,
                     {note: 'approved from admin UI'},
-                    {headers: {'Content-Type': 'application/json', ...getAuthHeaders()}}
+                    {headers: {'Content-Type': 'application/json', ...{}}}
                 );
 
                 console.log('승인 API 응답:', res.data);
@@ -279,14 +274,14 @@ const AdvertisementApplicationList: React.FC = () => {
                 console.log('반려 API 호출 시작:', {
                     url: `/api/admin/banners/applications/${id}/reject`,
                     id,
-                    headers: getAuthHeaders()
+                    headers: {}
                 });
 
                 const reason = 'rejected from admin UI';
-                const res = await axios.post(
+                const res = await api.post(
                     `/api/admin/banners/applications/${id}/reject`,
                     {reason},
-                    {headers: {'Content-Type': 'application/json', ...getAuthHeaders()}}
+                    {headers: {'Content-Type': 'application/json', ...{}}}
                 );
 
                 console.log('반려 API 응답:', res.data);
@@ -299,7 +294,7 @@ const AdvertisementApplicationList: React.FC = () => {
         } catch (err: unknown) {
             console.error('API 호출 에러:', err);
 
-            if (axios.isAxiosError<{ message?: string }>(err)) {
+            if (api.isAxiosError<{ message?: string }>(err)) {
                 const code = err.response?.status;
                 const msg =
                     err.response?.data?.message ??

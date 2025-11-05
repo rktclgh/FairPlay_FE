@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { openChatRoomGlobal } from './chat/ChatFloatingModal';
+import api from '../api/axios'; // HTTP-only 쿠키 기반 인증
 
 export const Footer: React.FC = () => {
     const { isDark } = useTheme();
@@ -90,26 +91,20 @@ export const Footer: React.FC = () => {
                                         type="button"
                                         onClick={async () => {
                                             try {
-                                                const token = localStorage.getItem('accessToken');
-                                                if (!token) {
-                                                    window.location.href = '/login';
-                                                    return;
-                                                }
-                                                const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/chat/admin-inquiry`, {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'Authorization': `Bearer ${token}`,
-                                                        'Content-Type': 'application/json'
-                                                    }
-                                                });
-                                                if (!res.ok) throw new Error('admin-inquiry 실패');
-                                                const data = await res.json();
-                                                const chatRoomId = data?.chatRoomId;
+                                                // HTTP-only 쿠키로 인증 - withCredentials로 자동 전송
+                                                const res = await api.post<{ chatRoomId?: number }>('/api/chat/admin-inquiry');
+                                                const chatRoomId = res.data?.chatRoomId;
                                                 if (chatRoomId != null) {
                                                     openChatRoomGlobal(chatRoomId);
                                                 }
-                                            } catch (e) {
+                                            } catch (e: any) {
                                                 console.error('푸터 고객센터 채팅 오픈 실패', e);
+                                                // 401 에러는 axios interceptor가 자동으로 로그인 페이지로 리다이렉트
+                                                if (e?.response?.status === 401) {
+                                                    // 이미 interceptor에서 처리됨
+                                                    return;
+                                                }
+                                                alert('고객센터 채팅을 여는 중 오류가 발생했습니다.');
                                             }
                                         }}
                                         className={`text-left p-0 bg-transparent border-none cursor-pointer text-sm hover:underline ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-black'}`}

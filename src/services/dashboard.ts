@@ -97,13 +97,12 @@ export const dashboardAPI = {
     },
 
     /**
-     * 사용자의 담당 이벤트 조회 (한 계정당 하나)
+     * 사용자의 담당 이벤트 조회 (한 계정당 하나) - HTTP-only 쿠키 기반 인증
      */
     getMyEvent: async (): Promise<EventBasicInfo> => {
-        console.log('getMyEvent API 호출 시작');
-        const token = localStorage.getItem('accessToken');
-        console.log('토큰 확인:', token ? '토큰 있음' : '토큰 없음');
+        console.log('getMyEvent API 호출 시작 (HTTP-only 쿠키 인증)');
 
+        // HTTP-only 쿠키로 인증 - withCredentials로 자동 전송
         const response = await api.get('/api/events/my-event');
         console.log('담당 이벤트 응답:', response.data);
         return response.data;

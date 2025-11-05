@@ -10,6 +10,7 @@ import type { BoothDetailResponse } from '../../types/booth';
 import { checkBoothQr } from "../../services/qrTicket";
 import { getBoothExperiences, getManageableBooths } from "../../services/boothExperienceService";
 import { getBoothDetails } from "../../api/boothApi";
+import { useAuth } from "../../context/AuthContext";
 
 
 interface ScannedTicket {
@@ -25,6 +26,7 @@ interface ScannedTicket {
 
 
 const BoothQRScanPage: React.FC = () => {
+    const { user } = useAuth(); // HTTP-only 쿠키 기반 인증
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [scannedTickets, setScannedTickets] = useState<ScannedTicket[]>([]);
     const [currentTicket, setCurrentTicket] = useState<ScannedTicket | null>(null);
@@ -58,13 +60,13 @@ const BoothQRScanPage: React.FC = () => {
     
     useEffect(() => {
         const fetchBooth = async () => {
-            const token = localStorage.getItem("accessToken");
-            if (!token) alert("토큰이 유효하지 않습니다.");
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const userId = parseInt(payload.sub);
+            if (!user) {
+                toast.error("로그인이 필요합니다.");
+                return;
+            }
 
+            const userId = user.userId; // AuthContext에서 userId 가져오기
 
-            
             const resUser = await getManageableBooths();
             const booth = resUser.find(item => item.boothAdminId === userId);
             const res = await getBoothDetails(Number(booth?.eventId), Number(booth?.boothId));
@@ -77,7 +79,7 @@ const BoothQRScanPage: React.FC = () => {
         };
         fetchBooth();
         fetchExperiences();
-    },[])
+    }, [user])
 
     // 컴포넌트 언마운트 시 카메라 정리
     useEffect(() => {

@@ -22,14 +22,8 @@ interface PermissionOption {
     functionNameKr: string;
     enabled?: boolean;
 }
-// const accessToken = localStorage.getItem("accessToken");
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+
+// HTTP-only 쿠키 기반 인증 - withCredentials로 자동 전송됨
 
 // ===== [DUMMY-START] AccountRoles 테스트 더미 데이터 (나중에 전체 블록 삭제해도 무방) =====
 const USE_DUMMY_ACCOUNT_ROLES = false; // 더미 사용: true / 실제 API 사용: false
