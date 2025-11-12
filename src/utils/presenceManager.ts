@@ -114,10 +114,13 @@ class PresenceManager {
 
     /**
      * 초기화 (HTTP-only 쿠키 기반 - 세션 유효성은 서버 요청 시 확인)
+     *
+     * ⚠️ 주의: 인증된 사용자만 heartbeat를 시작해야 합니다.
+     * AuthContext에서 isAuthenticated가 true일 때만 startHeartbeat()를 호출하세요.
      */
     initialize() {
-        // 페이지 로드 시 heartbeat 시작 (세션 유효성은 첫 요청에서 확인)
-        this.startHeartbeat();
+        // ❌ 무조건 heartbeat 시작하지 않음 (AuthContext가 인증 상태 확인 후 시작)
+        // this.startHeartbeat();
 
         // 페이지 visibility 변경 감지
         document.addEventListener('visibilitychange', () => {

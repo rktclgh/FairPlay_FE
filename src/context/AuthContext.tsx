@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import presenceManager from '../utils/presenceManager';
 
 interface User {
   userId: number;
@@ -62,6 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('✅ AuthContext 인증 성공:', userData);
         setIsAuthenticated(true);
         setUser(userData);
+
+        // 인증 성공 시 presenceManager heartbeat 시작
+        presenceManager.startHeartbeat();
+
         return true;
       } else {
         console.log('❌ AuthContext 인증 실패: userData null');
@@ -82,6 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('🚀 AuthContext login 호출:', userData);
     setIsAuthenticated(true);
     setUser(userData);
+
+    // 로그인 성공 시 presenceManager heartbeat 시작
+    presenceManager.startHeartbeat();
   };
 
   // 로그아웃 처리 (HTTP-only 쿠키 + Redis 세션 + 로컬스토리지 정리)
@@ -92,6 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('서버 로그아웃 요청 실패:', error);
     }
+
+    // presenceManager heartbeat 중지
+    presenceManager.stopHeartbeat();
 
     // 로컬 상태 초기화
     setIsAuthenticated(false);
