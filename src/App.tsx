@@ -185,7 +185,7 @@ function AppContent() {
     useEffect(() => {
         if (!isTokenValidated) return;
 
-        // PresenceManager 초기화
+        // PresenceManager 초기화 (이벤트 리스너만 등록, heartbeat는 AuthContext에서 시작)
         presenceManager.initialize();
 
         // 정리
