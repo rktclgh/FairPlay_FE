@@ -96,7 +96,7 @@ export function useChatSocket(
         }, 10000);
         clientRef.current = stomp;
 
-        const connectHeaders: any = {};
+        const connectHeaders: Record<string, string> = {};
 
         stomp.connect(
           connectHeaders,

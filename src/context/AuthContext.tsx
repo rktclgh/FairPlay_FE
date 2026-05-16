@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import api from '../api/axios';
 import presenceManager from '../utils/presenceManager';
 
@@ -44,9 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Silent 인증에서는 401 에러를 조용히 처리
-      if (error.response?.status === 401) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
         return null;
       }
       console.error('AuthContext fetchUserInfo 에러:', error);
@@ -214,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {
