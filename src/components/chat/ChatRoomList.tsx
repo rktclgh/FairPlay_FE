@@ -82,7 +82,7 @@ export default function ChatRoomList({ onSelect }: Props) {
         const sockjsUrl = window.location.hostname === 'localhost'
             ? `${import.meta.env.VITE_BACKEND_BASE_URL}/ws/chat-sockjs`
             : `${window.location.protocol}//${window.location.host}/ws/chat-sockjs`;
-        const sock = new SockJS(sockjsUrl, [], { withCredentials: true });
+        const sock = new SockJS(sockjsUrl);
         const stomp = Stomp.over(sock);
         stomp.debug = () => { };
         clientRef.current = stomp;
@@ -204,4 +204,3 @@ export default function ChatRoomList({ onSelect }: Props) {
         </div>
     );
 }
-

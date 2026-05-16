@@ -1,6 +1,4 @@
-// tokenValidator.ts - 간단한 쿠키 체크만 담당 (AuthContext와 중복 제거)
-
-import { isAuthenticated } from './authGuard';
+// tokenValidator.ts - AuthContext owns HTTP-only session validation.
 
 class TokenValidator {
   private static instance: TokenValidator;
