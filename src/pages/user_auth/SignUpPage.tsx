@@ -9,10 +9,7 @@ import api from "../../api/axios";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
-// .env 환경변수 적용
-const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
-const REDIRECT_URI = `${import.meta.env.VITE_FRONTEND_BASE_URL}/auth/kakao/callback`;
+import { buildKakaoAuthorizeUrl } from "../../utils/kakaoAuth";
 
 export const SignUpPage = () => {
     const { t } = useTranslation();
@@ -155,7 +152,7 @@ export const SignUpPage = () => {
             toast.info(t('auth.verificationCodeSent'));
             setVerificationSent(true);
             setEmailVerificationTimer(30);
-        } catch (error) {
+        } catch {
             toast.error(t('auth.verificationCodeSendFailed'));
         } finally {
             setIsSendingVerification(false);
@@ -171,7 +168,9 @@ export const SignUpPage = () => {
             await api.post("/api/email/verify-code", { email, code: verificationCode });
             toast.success(t('auth.verificationSuccess2'));
             setVerified(true);
-        } catch { }
+        } catch {
+            toast.error(t('auth.verificationFailed'));
+        }
     };
 
     const handleSignUp = async () => {
@@ -190,13 +189,20 @@ export const SignUpPage = () => {
             });
             toast.success(t('auth.signupSuccess2'));
             navigate("/login");
-        } catch { }
+        } catch {
+            toast.error(t('auth.signupError'));
+        }
     };
 
     // 카카오 연동용 회원가입(로그인) 버튼
     const handleKakaoSignUp = () => {
-        window.location.href =
-            `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+        const kakaoAuth = buildKakaoAuthorizeUrl();
+        if (!kakaoAuth) {
+            toast.error(t('auth.kakaoNotConfigured'));
+            return;
+        }
+
+        window.location.href = kakaoAuth.url;
     };
 
     const isSignUpEnabled =
