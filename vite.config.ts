@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => {
         output: {
           // iOS Safari를 위한 청크 분할 최적화
           manualChunks: {
-            vendor: ["react", "react-dom"],
+            reactCore: ["react", "react-dom"],
             router: ["react-router-dom"]
           },
           // 🔒 파일명 해싱으로 추측 방지
