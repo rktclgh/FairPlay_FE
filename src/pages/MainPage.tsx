@@ -776,7 +776,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
             try {
               const d = await eventAPI.getEventDetail(id);
               extras.push({
-                id: d.eventId,
+                id: d.eventId ?? id,
                 title: d.titleKr,
                 thumbnailUrl: d.thumbnailUrl,
                 startDate: d.startDate,

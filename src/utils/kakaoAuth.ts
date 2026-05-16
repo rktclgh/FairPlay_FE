@@ -4,12 +4,8 @@ const KAKAO_CALLBACK_PATH = "/auth/kakao/callback";
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
 export const getKakaoRedirectUri = (): string => {
-  const currentOrigin = window.location.origin;
   const configuredFrontendBaseUrl = import.meta.env.VITE_FRONTEND_BASE_URL?.trim();
-  const baseUrl =
-    currentOrigin.includes("localhost") && configuredFrontendBaseUrl
-      ? configuredFrontendBaseUrl
-      : currentOrigin;
+  const baseUrl = configuredFrontendBaseUrl || window.location.origin;
 
   return `${stripTrailingSlash(baseUrl)}${KAKAO_CALLBACK_PATH}`;
 };

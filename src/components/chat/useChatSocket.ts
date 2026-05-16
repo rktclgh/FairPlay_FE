@@ -12,6 +12,29 @@ type ChatMessage = {
   isRead: boolean;
 };
 
+type IncomingChatMessage = Partial<ChatMessage> & {
+  type?: string;
+  content?: string;
+};
+
+const normalizeIncomingMessage = (
+  message: IncomingChatMessage,
+  roomId: number
+): ChatMessage => {
+  if (message.type === "system_error") {
+    return {
+      chatMessageId: -Date.now(),
+      chatRoomId: message.chatRoomId ?? roomId,
+      senderId: 999,
+      content: message.content ?? "AI 응답 생성 중 오류가 발생했습니다.",
+      sentAt: message.sentAt ?? new Date().toISOString(),
+      isRead: true,
+    };
+  }
+
+  return message as ChatMessage;
+};
+
 export function useChatSocket(
   roomId: number,
   onMessage: (msg: ChatMessage) => void,
@@ -168,7 +191,7 @@ export function useChatSocket(
                 topic,
                 (message) => {
                   try {
-                    const parsedMessage = JSON.parse(message.body);
+                    const parsedMessage = normalizeIncomingMessage(JSON.parse(message.body), roomId);
                     console.log(
                       "메시지 수신:",
                       parsedMessage.content,
@@ -262,7 +285,7 @@ export function useChatSocket(
           isAiChat ? `/topic/ai-chat.${roomId}` : `/topic/chat.${roomId}`,
           (message) => {
             try {
-              const parsedMessage = JSON.parse(message.body);
+              const parsedMessage = normalizeIncomingMessage(JSON.parse(message.body), roomId);
               console.log(
                 "메시지 수신:",
                 parsedMessage.content,
