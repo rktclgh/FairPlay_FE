@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
+  const isProduction = mode === "production";
 
   return {
     plugins: [react()],
@@ -33,8 +34,8 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "dist",
       target: "es2015", // iOS Safari 호환성 강화
-      minify: "terser",
-      sourcemap: true, // iOS 디버깅용
+      minify: "esbuild",
+      sourcemap: !isProduction,
       rollupOptions: {
         // SPA 라우팅을 위한 히스토리 API 폴백 지원
         input: {
@@ -43,11 +44,16 @@ export default defineConfig(({ mode }) => {
         output: {
           // iOS Safari를 위한 청크 분할 최적화
           manualChunks: {
-            vendor: ['react', 'react-dom'],
-            router: ['react-router-dom']
-          }
+            vendor: ["react", "react-dom"],
+            router: ["react-router-dom"]
+          },
+          // 🔒 파일명 해싱으로 추측 방지
+          entryFileNames: "assets/[name]-[hash].js",
+          chunkFileNames: "assets/[name]-[hash].js",
+          assetFileNames: "assets/[name]-[hash].[ext]",
         }
-      }
+      },
+      chunkSizeWarningLimit: 1000, // 청크 크기 경고 임계값 증가
     },
     preview: {
       // 빌드된 앱 미리보기에서도 히스토리 API 폴백 적용
