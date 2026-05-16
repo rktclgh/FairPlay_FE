@@ -32,6 +32,14 @@ jobs:
         timeout-minutes: 10
         run: npm run build
 
+      - name: Guard Cloudflare-blocked asset names
+        run: |
+          set -euo pipefail
+          if grep -R '/assets/vendor-' dist/index.html dist/assets 2>/dev/null; then
+            echo "The deployed Cloudflare zone blocks /assets/vendor-*.js. Rename the chunk before merging."
+            exit 1
+          fi
+
       - name: Typecheck changed files
         timeout-minutes: 5
         run: npm run typecheck:changed
