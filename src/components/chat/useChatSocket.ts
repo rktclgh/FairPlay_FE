@@ -74,8 +74,7 @@ export function useChatSocket(
         
         console.log(`SockJS connecting to: ${sockjsUrl}`);
         
-        const sock = new SockJS(sockjsUrl, [], { 
-          withCredentials: true,
+        const sock = new SockJS(sockjsUrl, [], {
           transports: ['websocket', 'xhr-streaming', 'xhr-polling']
         });
         const stomp = Stomp.over(sock);
@@ -190,9 +189,8 @@ export function useChatSocket(
                 `WebSocket 재연결 시도 ${reconnectAttempts.current}/${maxReconnectAttempts} (${reconnectDelay}ms 후)`
               );
 
-              setTimeout(async () => {
-                const stillAuthenticated = isAuthenticated();
-                if (stillAuthenticated && isMountedRef.current) {
+              setTimeout(() => {
+                if (isAuthenticated && isMountedRef.current) {
                   console.log(`실제 재연결 시도 ${reconnectAttempts.current}/${maxReconnectAttempts}`);
                   isConnectedRef.current = false;
                   
