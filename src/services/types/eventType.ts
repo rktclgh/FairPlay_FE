@@ -39,14 +39,17 @@ export interface EventSummaryDto {
     thumbnailUrl: string;
     region: string;
     eventStatusCode?: string; // 행사 상태 코드 추가
+    statusCode?: string; // 행사 목록 API 응답 상태 코드
 }
 
 export interface EventSummaryResponseDto {
     message?: string;
     events: EventSummaryDto[];
-    pageable: any; // 필요시 타입 지정
+    pageable?: any; // 필요시 타입 지정
     totalElements: number;
     totalPages: number;
+    currentPage?: number;
+    pageSize?: number;
 }
 
 // EventDetailRequestDto: 행사 상세 등록 요청

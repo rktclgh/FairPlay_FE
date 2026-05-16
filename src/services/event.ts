@@ -109,7 +109,7 @@ export const eventAPI = {
                 totalPages: 0,
                 totalElements: 0,
                 currentPage: 0,
-                pageSize: params.size || 20
+                pageSize: params?.size || 20
             };
         }
     },

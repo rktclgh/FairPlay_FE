@@ -181,6 +181,7 @@ type NewPickDto = {
   location: string | null;
   category: string | null;
   createdAt: string;   // ISO string "2025-08-20T13:25:30"
+  created_at?: string;
   isNew?: boolean;
 };
 
@@ -478,11 +479,10 @@ export const Main: React.FC = () => {
         page?: number;
         size?: number;
       } = {
+        includeHidden: false,
         page: 0,
         size: 20,
       };
-
-      params.includeHidden = false;
 
       if (selectedCategory !== t('categories.all') && selectedCategory !== "전체") {
         params.mainCategoryId = mapMainCategoryToId(selectedCategory);
@@ -521,10 +521,10 @@ export const Main: React.FC = () => {
 
 
   const fetchHeroBanners = async (): Promise<BannerResp[]> => {
-    const tries = [
+    const tries: Array<{ url: string; params?: Record<string, string> }> = [
       { url: "/api/banners/hero/active" },
       { url: "/api/banners", params: { type: "HERO", status: "ACTIVE" } },
-    ] as const;
+    ];
 
     for (const { url, params } of tries) {
       try {
@@ -735,14 +735,14 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
             try {
               const d = await eventAPI.getEventDetail(id);
               extras.push({
-                id: d.id,
-                title: d.title,
+                id: d.eventId,
+                title: d.titleKr,
                 thumbnailUrl: d.thumbnailUrl,
                 startDate: d.startDate,
                 endDate: d.endDate,
-                location: d.location,
+                location: d.placeName || d.address,
                 mainCategory: d.mainCategory,
-                minPrice: d.minPrice,
+                minPrice: 0,
               } as EventSummaryDto);
             } catch (e) {
               console.warn("MD PICK 개별 조회 실패:", id, e);
@@ -776,7 +776,10 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
 
             // 현재 진행 중이거나 예정된 이벤트 중 상위 10개 선택
             const hotPickCandidates = baseEvents
-              .filter(event => event.eventStatusCode === 'ONGOING' || event.eventStatusCode === 'UPCOMING')
+              .filter(event => {
+                const statusCode = event.eventStatusCode ?? event.statusCode;
+                return statusCode === 'ONGOING' || statusCode === 'UPCOMING';
+              })
               .slice(0, 10)
               .map(event => ({
                 id: event.id,
