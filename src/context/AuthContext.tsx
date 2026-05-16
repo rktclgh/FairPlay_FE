@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import api from '../api/axios';
 import presenceManager from '../utils/presenceManager';
 
@@ -44,9 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Silent 인증에서는 401 에러를 조용히 처리
-      if (error.response?.status === 401) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
         return null;
       }
       console.error('AuthContext fetchUserInfo 에러:', error);
@@ -162,17 +163,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔧 AuthContext 초기화 시작');
       setLoading(true);
 
-      // 쿠키 확인: 세션이 있는 경우에만 API 호출
-      const hasSessionCookie = document.cookie.includes('FAIRPLAY_SESSION');
-
-      if (hasSessionCookie) {
-        console.log('🍪 세션 쿠키 발견, 인증 상태 확인');
-        await checkAuth();
-      } else {
-        console.log('🚫 세션 쿠키 없음, 비로그인 상태로 설정');
-        setIsAuthenticated(false);
-        setUser(null);
-      }
+      // HTTP-only 세션 쿠키는 JS에서 읽을 수 없으므로 서버에 silent 확인을 바로 보낸다.
+      await checkAuth();
 
       if (isMounted) {
         setLoading(false);
@@ -223,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {
