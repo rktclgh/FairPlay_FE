@@ -14,9 +14,11 @@ type ChatMessage = {
 
 export function useChatSocket(
   roomId: number,
-  onMessage: (msg: ChatMessage) => void
+  onMessage: (msg: ChatMessage) => void,
+  options: { isAiChat?: boolean } = {}
 ) {
   const { isAuthenticated } = useAuth();
+  const isAiChat = Boolean(options.isAiChat);
   const clientRef = useRef<Stomp.Client | null>(null);
   const isConnectedRef = useRef(false);
   const currentRoomIdRef = useRef<number | null>(null);
@@ -126,8 +128,9 @@ export function useChatSocket(
             }, 30000);
 
             if (!subscriptionRef.current) {
+              const topic = isAiChat ? `/topic/ai-chat.${roomId}` : `/topic/chat.${roomId}`;
               subscriptionRef.current = stomp.subscribe(
-                `/topic/chat.${roomId}`,
+                topic,
                 (message) => {
                   try {
                     const parsedMessage = JSON.parse(message.body);
@@ -145,7 +148,7 @@ export function useChatSocket(
                   }
                 }
               );
-              console.log("Subscribed to topic:", `/topic/chat.${roomId}`);
+              console.log("Subscribed to topic:", topic);
             }
 
             const pending = [...pendingMessages.current];
@@ -221,7 +224,7 @@ export function useChatSocket(
       } else if (clientRef.current?.connected && !subscriptionRef.current) {
         console.log(`Subscribing to room ${roomId} on existing connection`);
         subscriptionRef.current = clientRef.current.subscribe(
-          `/topic/chat.${roomId}`,
+          isAiChat ? `/topic/ai-chat.${roomId}` : `/topic/chat.${roomId}`,
           (message) => {
             try {
               const parsedMessage = JSON.parse(message.body);
@@ -239,7 +242,7 @@ export function useChatSocket(
             }
           }
         );
-        console.log("Subscribed to topic:", `/topic/chat.${roomId}`);
+        console.log("Subscribed to topic:", isAiChat ? `/topic/ai-chat.${roomId}` : `/topic/chat.${roomId}`);
       }
     };
 
@@ -266,7 +269,7 @@ export function useChatSocket(
         heartbeatIntervalRef.current = null;
       }
     };
-  }, [roomId, onMessage, isAuthenticated]);
+  }, [roomId, onMessage, isAuthenticated, isAiChat]);
   
   useEffect(() => {
     return () => {
@@ -343,19 +346,20 @@ export function useChatSocket(
         chatRoomId: roomId,
         content: content.trim(),
         senderId: userId || 1,
+        ...(isAiChat ? { provider: 'HERMES' } : {}),
       };
 
       console.log("메시지 전송:", content.trim(), "from userId:", userId);
 
       stomp.send(
-        "/app/chat.sendMessage",
+        isAiChat ? "/app/ai-chat.sendMessage" : "/app/chat.sendMessage",
         {},
         JSON.stringify(messagePayload)
       );
     } catch (error) {
       console.error("Failed to send message:", error);
     }
-  }, [roomId]);
+  }, [roomId, isAiChat]);
 
   const send = useCallback(
     (content: string) => {

@@ -190,7 +190,7 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     // 새 메시지 수신 시에만 아래로 스크롤 (기존 메시지 로드 시에는 스크롤 안함)
     const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
 
-    const { send } = useChatSocket(roomId, handleMessage);
+    const { send } = useChatSocket(roomId, handleMessage, { isAiChat });
 
     // 최초 진입 시 기존 메시지 내역 조회
     useEffect(() => {
