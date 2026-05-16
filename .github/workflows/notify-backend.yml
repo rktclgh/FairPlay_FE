@@ -11,12 +11,12 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify BE repo via repository_dispatch
+      - name: Dispatch BE main deploy workflow
         run: |
           set -euo pipefail
           curl -fsSL \
             -X POST \
             -H "Authorization: token ${{ secrets.CI_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/rktclgh/FairPlay_BE/dispatches \
-            -d '{"event_type":"fe-updated","client_payload":{"fe_ref":"main"}}'
+            https://api.github.com/repos/rktclgh/FairPlay_BE/actions/workflows/deploy-main.yml/dispatches \
+            -d '{"ref":"main","inputs":{"fe_ref":"main"}}'
