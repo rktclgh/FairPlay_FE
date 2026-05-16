@@ -45,7 +45,7 @@ export interface EventSummaryDto {
 export interface EventSummaryResponseDto {
     message?: string;
     events: EventSummaryDto[];
-    pageable?: any; // 필요시 타입 지정
+    pageable?: unknown; // 필요시 타입 지정
     totalElements: number;
     totalPages: number;
     currentPage?: number;
@@ -419,8 +419,8 @@ export interface EventVersionComparisonDto {
     snapshot2: EventSnapshotDto;
     fieldDifferences: Record<string, {
         displayName: string;
-        oldValue: any;
-        newValue: any;
+        oldValue: unknown;
+        newValue: unknown;
         changeType: 'added' | 'removed' | 'modified';
     }>;
 }

@@ -20,6 +20,8 @@ import type {
   EventSummaryDto
 } from "../services/types/eventType";
 import { useTranslation } from 'react-i18next';
+import type { i18n as I18nInstance } from "i18next";
+import type { Swiper as SwiperInstance } from "swiper";
 import "swiper/css/effect-coverflow";
 import type { HotPick } from "../services/event";
 import NewLoader from "../components/NewLoader";
@@ -30,8 +32,48 @@ const ENABLE_NEW_PICKS = import.meta.env.VITE_ENABLE_NEW_PICKS === "true";
 
 // HMR 테스트 주석 제거
 
+declare global {
+  interface Window {
+    heroSwiper?: SwiperInstance;
+  }
+}
+
+type Translator = (key: string) => string;
+type BannerValue = string | number | boolean | null | undefined;
+type FlexibleBannerResp = BannerResp & {
+  bannerType?: string | null;
+  status?: string | null;
+  event_id?: number | null;
+  image_url?: string | null;
+  link_url?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+};
+
+const getHttpErrorInfo = (err: unknown): { status?: number; data?: unknown } => {
+  if (typeof err === "object" && err !== null && "response" in err) {
+    const response = (err as { response?: { status?: number; data?: unknown } }).response;
+    return { status: response?.status, data: response?.data };
+  }
+  return {};
+};
+
+const getBannerValue = (o: FlexibleBannerResp, ...keys: Array<keyof FlexibleBannerResp>): BannerValue => {
+  for (const key of keys) {
+    const value = o[key];
+    if (value != null) return value as BannerValue;
+  }
+  return undefined;
+};
+
+const asString = (value: BannerValue, fallback = ""): string =>
+  typeof value === "string" ? value : fallback;
+
+const asNumber = (value: BannerValue, fallback: number | null = null): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback;
+
 // 카테고리 번역 함수
-const translateCategory = (category: string, t: any): string => {
+const translateCategory = (category: string, t: Translator): string => {
   const categoryMap: Record<string, string> = {
     "박람회": "categories.박람회",
     "공연": "categories.공연",
@@ -53,7 +95,7 @@ const categoryColors = {
 };
 
 // 이벤트 제목 선택 함수 (번역 여부에 따라 한글/영문 제목 선택)
-const getEventTitle = (event: EventSummaryDto, i18n: any): string => {
+const getEventTitle = (event: EventSummaryDto, i18n: Pick<I18nInstance, "language">): string => {
   // 현재 언어가 영어이고 영문 제목이 있는 경우 영문 제목 사용
   if (i18n.language === 'en' && event.titleEng && event.titleEng.trim() !== '') {
     return event.titleEng;
@@ -175,6 +217,7 @@ type SearchTopDto = {
 // ★ NEW 픽 응답 (백엔드 /api/banner/new-picks)
 type NewPickDto = {
   id: number;         // = eventId
+  eventId?: number;
   title: string;
   image: string | null;
   date: string | null;
@@ -210,7 +253,7 @@ const fetchNewPicks = async (size = 20): Promise<NewPickDto[]> => {
       const created = getCreated(item) || "";
       const eid =
         Number.isFinite(item.id) ? item.id
-          : Number.isFinite((item as any).eventId) ? (item as any).eventId
+          : Number.isFinite(item.eventId) ? item.eventId
             : NaN;
       return {
         ...item,
@@ -531,8 +574,9 @@ export const Main: React.FC = () => {
         const { data } = await api.get<BannerResp[] | BannerResp>(url, { params });
         const list = Array.isArray(data) ? data : data ? [data] : [];
         if (list.length) return list;
-      } catch (err: any) {
-        console.warn("[HERO] request fail:", url, err?.response?.status, err?.response?.data);
+      } catch (err: unknown) {
+        const { status, data } = getHttpErrorInfo(err);
+        console.warn("[HERO] request fail:", url, status, data);
       }
     }
     return [];
@@ -556,9 +600,9 @@ export const Main: React.FC = () => {
       const raw = await fetchHeroBanners();
       console.log("[HERO] raw count:", raw.length, raw);
 
-      const filtered = raw.filter(r => {
-        const type = asUpper((r as any).bannerTypeCode ?? (r as any).bannerType);
-        const status = asUpper((r as any).statusCode ?? (r as any).status);
+      const filtered = raw.filter((r: FlexibleBannerResp) => {
+        const type = asUpper(r.bannerTypeCode ?? r.bannerType);
+        const status = asUpper(r.statusCode ?? r.status);
         const okType = ["HERO", "MAIN", "HERO_MAIN"].includes(type || "HERO");
         const okStatus = ["ACTIVE", "APPROVED", "PUBLISHED"].includes(status || "ACTIVE");
         return okType && okStatus && isTodayInRange(r.startDate, r.endDate);
@@ -577,28 +621,24 @@ export const Main: React.FC = () => {
         return;
       }
 
-      const get = (o: any, ...keys: string[]) => {
-        for (const k of keys) if (o && o[k] != null) return o[k];
-        return undefined;
-      };
       setPaidAdvertisements(
         filtered
           .map(r => {
-            const eid = get(r, "eventId", "event_id") ?? null;
-            const img = get(r, "imageUrl", "image_url") ?? "/images/FPlogo.png";
-            const rawLink = get(r, "linkUrl", "link_url") ?? "";
+            const eid = asNumber(getBannerValue(r, "eventId", "event_id"));
+            const img = asString(getBannerValue(r, "imageUrl", "image_url"), "/images/FPlogo.png");
+            const rawLink = asString(getBannerValue(r, "linkUrl", "link_url"));
             return {
-              id: get(r, "id"),
+              id: asNumber(getBannerValue(r, "id"), 0) ?? 0,
               eventId: eid,
-              title: get(r, "title") ?? "",
+              title: asString(getBannerValue(r, "title")),
               imageUrl: img,
-              thumbnailUrl: get(r, "smallImageUrl", "smallImageUrl") ?? img,
+              thumbnailUrl: asString(getBannerValue(r, "smallImageUrl"), img),
               // ★ eventId가 있으면 상세로 바로 가는 내부 링크를 만들어 둠
               linkUrl: rawLink || (eid ? `/eventdetail/${eid}` : ""),
-              startDate: get(r, "startDate", "start_date") ?? "",
-              endDate: get(r, "endDate", "end_date") ?? "",
+              startDate: asString(getBannerValue(r, "startDate", "start_date")),
+              endDate: asString(getBannerValue(r, "endDate", "end_date")),
               isActive: true,
-              priority: get(r, "priority") ?? 999,
+              priority: asNumber(getBannerValue(r, "priority"), 999) ?? 999,
             } as PaidAdvertisement;
           })
           .sort((a, b) => a.priority - b.priority)
@@ -700,8 +740,9 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
               setShowNewDeltaBanner(true);
               setTimeout(() => setShowNewDeltaBanner(false), 3500);
             }
-          } catch (err: any) {
-            if (err?.response?.status === 403) {
+          } catch (err: unknown) {
+            const { status } = getHttpErrorInfo(err);
+            if (status === 403) {
               console.warn("[NEW-PICKS] 403: 인증/권한 이슈. NEW 배지는 숨김 처리.");
             } else {
               console.warn("[NEW-PICKS] 로드 실패:", err);
@@ -714,7 +755,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
         }
         // 2) 기본 리스트
         const eventsData = await eventAPI.getEventList({ size: 30, includeHidden: false });
-        let baseEvents = eventsData?.events ?? [];
+        const baseEvents = eventsData?.events ?? [];
 
         // 제목으로도 보강
         for (const s of searchTop) {
@@ -833,43 +874,6 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
     const dup = keys.filter((k, i) => keys.indexOf(k) !== i);
     if (dup.length) console.warn('[HOT DUP KEYS]', dup, keys);
   }, [hotPicks]);
-
-  const todayKey = dayjs().format("YYYY-MM-DD");
-
-  function getMdPickIdsForToday(): Set<number> {
-    try {
-      if (typeof window === "undefined") return new Set<number>();
-      const raw = localStorage.getItem(`mdpick:${todayKey}`);
-      const arr = raw ? JSON.parse(raw) : null;
-      if (!Array.isArray(arr)) return new Set<number>();
-      return new Set<number>(
-        arr
-          .slice(0, 2)
-          .map((v: unknown) => Number(v))
-          .filter((n) => Number.isFinite(n))
-      );
-    } catch {
-      return new Set<number>();
-    }
-  }
-
-  function getMdPickTitlesForToday(): Set<string> {
-    try {
-      if (typeof window === "undefined") return new Set<string>();
-      const raw = localStorage.getItem(`mdpick_titles:${todayKey}`);
-      const arr = raw ? JSON.parse(raw) : null;
-      if (!Array.isArray(arr)) return new Set<string>();
-      return new Set<string>(arr.slice(0, 2).map((v: unknown) => String(v)));
-    } catch {
-      return new Set<string>();
-    }
-  }
-  const normalize = (s: string) => (s || '').toLowerCase().replace(/[\s\-_/·・‧ㆍ]/g, '');
-
-  const mdPickIds = getMdPickIdsForToday();
-  const mdPickTitles = getMdPickTitlesForToday();
-  const mdPickTitleNorms = new Set(Array.from(mdPickTitles).map(normalize));
-
 
   const isEventMdPick = (e: EventSummaryDto) => mdPickEventIds.has(e.id);
   const hasMdPickInCurrentList = events.some(e => mdPickEventIds.has(e.id));
@@ -1101,7 +1105,7 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
             autoplay={heroLoop ? { delay: 4000 } : false}
             loop={heroLoop}
             className="w-full h-full"
-            onSwiper={(swiper) => { (window as any).heroSwiper = swiper; }}
+            onSwiper={(swiper) => { window.heroSwiper = swiper; }}
           >
 
             {paidAdvertisements.map((ad, index) => (
@@ -1129,8 +1133,8 @@ setMdPickEventIds(new Set(searchTop.map(s => Number(s.eventId)).filter(Number.is
                   <div key={`hero-thumb-${ad.id ?? 'na'}-${index}`}
                     className="w-12 h-16 md:w-16 md:h-20 cursor-pointer transition-all duration-300 hover:scale-110 opacity-60 hover:opacity-100"
                     onMouseEnter={() => {
-                      if (heroLoop && (window as any).heroSwiper) {
-                        (window as any).heroSwiper.slideToLoop(index);
+                      if (heroLoop && window.heroSwiper) {
+                        window.heroSwiper.slideToLoop(index);
                       }
                     }}
                   >

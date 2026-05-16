@@ -32,6 +32,41 @@ export function useChatSocket(
   const isMountedRef = useRef(true);
   const initRef = useRef(false);
 
+  const sendMessageInternal = useCallback(async (content: string, stomp: Stomp.Client) => {
+    try {
+      let userId = null;
+      try {
+        const response = await fetch('/api/events/user/role', {
+          credentials: 'include',
+          headers: { 'X-Silent-Auth': 'true' }
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          userId = userData.userId;
+        }
+      } catch (error) {
+        console.error("사용자 ID 조회 실패:", error);
+      }
+
+      const messagePayload = {
+        chatRoomId: roomId,
+        content: content.trim(),
+        senderId: userId || 1,
+        ...(isAiChat ? { provider: 'HERMES' } : {}),
+      };
+
+      console.log("메시지 전송:", content.trim(), "from userId:", userId);
+
+      stomp.send(
+        isAiChat ? "/app/ai-chat.sendMessage" : "/app/chat.sendMessage",
+        {},
+        JSON.stringify(messagePayload)
+      );
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
+  }, [roomId, isAiChat]);
+
   useEffect(() => {
     isMountedRef.current = true;
     if (!initRef.current) {
@@ -269,7 +304,7 @@ export function useChatSocket(
         heartbeatIntervalRef.current = null;
       }
     };
-  }, [roomId, onMessage, isAuthenticated, isAiChat]);
+  }, [roomId, onMessage, isAuthenticated, isAiChat, sendMessageInternal]);
   
   useEffect(() => {
     return () => {
@@ -325,41 +360,6 @@ export function useChatSocket(
       }, 100);
     };
   }, []);
-
-  const sendMessageInternal = useCallback(async (content: string, stomp: Stomp.Client) => {
-    try {
-      let userId = null;
-      try {
-        const response = await fetch('/api/events/user/role', {
-          credentials: 'include',
-          headers: { 'X-Silent-Auth': 'true' }
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          userId = userData.userId;
-        }
-      } catch (error) {
-        console.error("사용자 ID 조회 실패:", error);
-      }
-
-      const messagePayload = {
-        chatRoomId: roomId,
-        content: content.trim(),
-        senderId: userId || 1,
-        ...(isAiChat ? { provider: 'HERMES' } : {}),
-      };
-
-      console.log("메시지 전송:", content.trim(), "from userId:", userId);
-
-      stomp.send(
-        isAiChat ? "/app/ai-chat.sendMessage" : "/app/chat.sendMessage",
-        {},
-        JSON.stringify(messagePayload)
-      );
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    }
-  }, [roomId, isAiChat]);
 
   const send = useCallback(
     (content: string) => {

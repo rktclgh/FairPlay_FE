@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "../../api/axios";
 import { useChatSocket } from "./useChatSocket";
-import { ArrowLeft, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import UserOnlineStatus from "./UserOnlineStatus";
 
 // 메시지 DTO 타입
@@ -24,7 +24,12 @@ type Props = {
     isAiChat?: boolean; // AI 채팅방 여부
 };
 
-export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUserId, isAdminInquiry, isAiChat }: Props) {
+type ChatRoomSummary = {
+    chatRoomId: number;
+    eventTitle?: string;
+};
+
+export default function ChatRoom({ roomId, eventTitle, userName, otherUserId, isAdminInquiry, isAiChat }: Props) {
     const [messages, setMessages] = useState<ChatMessageDto[]>([]);
     const [input, setInput] = useState("");
     const [myUserId, setMyUserId] = useState<number>(0);
@@ -34,8 +39,6 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
     );
     const [detectedOtherUserId, setDetectedOtherUserId] = useState<number | null>(null);
     const [isSending, setIsSending] = useState(false); // 전송 중 상태
-    const [pendingMessage, setPendingMessage] = useState<string | null>(null); // 대기 중인 메시지
-    const [lastAiMessageId, setLastAiMessageId] = useState<number | null>(null); // 마지막 AI 메시지 ID 추적
     const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true); // 더 많은 메시지가 있는지
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false); // 추가 메시지 로딩 중
     const [oldestMessageId, setOldestMessageId] = useState<number | null>(null); // 가장 오래된 메시지 ID
@@ -99,8 +102,6 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         if (isAiChat && msg.senderId === 999) {
             console.log("🤖 AI 봇 응답 도착! 전송 버튼 활성화 및 즉시 읽음 처리");
             setIsSending(false);
-            setPendingMessage(null);
-            setLastAiMessageId(msg.chatMessageId);
             
             // AI 메시지는 즉시 백엔드로 읽음 처리 요청
             setTimeout(() => markMessagesAsRead(), 100);
@@ -235,7 +236,8 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         // 채팅방 정보 가져오기 (제목 설정용)
         if (!eventTitle && !isAdminInquiry) {
             api.get(`/api/chat/rooms`).then(res => {
-                const room = res.data.find((r: any) => r.chatRoomId === roomId);
+                const rooms = Array.isArray(res.data) ? (res.data as ChatRoomSummary[]) : [];
+                const room = rooms.find((r) => r.chatRoomId === roomId);
                 if (room && room.eventTitle) {
                     setRoomTitle(room.eventTitle);
                 }
@@ -290,7 +292,6 @@ export default function ChatRoom({ roomId, onBack, eventTitle, userName, otherUs
         if (isAiChat) {
             console.log("🚀 AI 메시지 전송 시작 - 버튼 비활성화!");
             setIsSending(true);
-            setPendingMessage(message);
         }
         
         send(message);

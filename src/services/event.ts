@@ -5,11 +5,10 @@ import type {
     EventDetailRequestDto,
     EventDetailResponseDto,
     EventDetailModificationRequestDto,
-    ExternalLinkRequestDto,
     EventSummaryResponseDto,
     EventApplyRequestDto,
     EventApplyResponseDto,
-    Page, PageResponse, EventApplyListItem, EventApplyDetail
+    PageResponse, EventApplyListItem, EventApplyDetail
 } from './types/eventType';
 
 export interface HotPick {
@@ -21,6 +20,21 @@ export interface HotPick {
   image: string;
 }
 
+type HttpError = {
+  response?: {
+    status?: number;
+    data?: unknown;
+  };
+};
+
+const getHttpErrorInfo = (err: unknown): { status?: number; data?: unknown } => {
+  if (typeof err === 'object' && err !== null && 'response' in err) {
+    const response = (err as HttpError).response;
+    return { status: response?.status, data: response?.data };
+  }
+  return {};
+};
+
 export const eventAPI = {
 
    async getHotPicks({ size = 10 }: { size?: number } = {}): Promise<HotPick[]> {
@@ -30,10 +44,13 @@ export const eventAPI = {
       ["/api/banner/hot-picks",  { size }],
     ] as const;
 
-    const parse = (data: any): HotPick[] => {
-      if (Array.isArray(data)) return data;
-      if (Array.isArray(data?.items))   return data.items;
-      if (Array.isArray(data?.content)) return data.content;
+    const parse = (data: unknown): HotPick[] => {
+      if (Array.isArray(data)) return data as HotPick[];
+      if (typeof data === 'object' && data !== null) {
+        const envelope = data as { items?: unknown; content?: unknown };
+        if (Array.isArray(envelope.items)) return envelope.items as HotPick[];
+        if (Array.isArray(envelope.content)) return envelope.content as HotPick[];
+      }
       return [];
     };
 
@@ -41,10 +58,10 @@ export const eventAPI = {
       try {
         const { data } = await api.get(url, { params });
         return parse(data);
-      } catch (err: any) {
-        const status = err?.response?.status;
+      } catch (err: unknown) {
+        const { status, data } = getHttpErrorInfo(err);
         if (status === 404 || status === 405) continue; // 엔드포인트 없을 때만 폴백
-        console.warn("[HOT-PICKS] request failed:", url, status, err?.response?.data);
+        console.warn("[HOT-PICKS] request failed:", url, status, data);
         break;
       }
     }
@@ -152,7 +169,7 @@ export const eventAPI = {
      * @param {Object} modificationData - EventDetailModificationRequestDto 형식
      * @returns 생성된 수정 요청 정보
      */
-    createEventModificationRequest: async (eventId: number, data: EventDetailModificationRequestDto): Promise<any> => {
+    createEventModificationRequest: async (eventId: number, data: EventDetailModificationRequestDto): Promise<unknown> => {
         const res = await api.post(`/api/events/${eventId}/modification-request`, data);
         return res.data;
     },

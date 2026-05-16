@@ -27,7 +27,7 @@ const KakaoCallback = () => {
                 console.log('User Agent:', navigator.userAgent);
                 console.log('Current URL:', window.location.href);
                 
-                const response = await api.post('/api/auth/kakao', { code }); // POST JSON!
+                await api.post('/api/auth/kakao', { code }); // POST JSON!
 
                 // HTTP-only 쿠키 방식에서는 토큰을 localStorage에 저장하지 않음
                 toast.success('카카오 로그인에 성공했습니다!');
@@ -58,21 +58,25 @@ const KakaoCallback = () => {
                     console.error("Role API 호출 실패:", error);
                     navigate("/"); // 기본적으로 메인 페이지로
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
+                const responseError =
+                    typeof error === 'object' && error !== null && 'response' in error
+                        ? (error as { response?: { status?: number; data?: unknown; headers?: unknown }; config?: unknown; message?: string; name?: string })
+                        : {};
                 console.error('카카오 로그인 에러 상세:', {
-                    status: error?.response?.status,
-                    data: error?.response?.data,
-                    headers: error?.response?.headers,
-                    config: error?.config,
-                    message: error?.message,
-                    name: error?.name
+                    status: responseError.response?.status,
+                    data: responseError.response?.data,
+                    headers: responseError.response?.headers,
+                    config: responseError.config,
+                    message: responseError.message,
+                    name: responseError.name
                 });
                 toast.error('카카오 로그인에 실패했습니다.');
                 navigate('/login');
             }
         };
         handleKakaoLogin(code);
-    }, [location, navigate]);
+    }, [location, navigate, login]);
 
     return (
         <div className="flex justify-center items-center h-screen">
