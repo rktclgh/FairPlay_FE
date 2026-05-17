@@ -9,6 +9,7 @@ interface UseFileUploadResult {
     uploadFile: (file: File, usage: string) => Promise<FileUploadResponse | null>;
     removeFile: (usage: string) => void;
     getFileByUsage: (usage: string) => FileUploadResponse | null;
+    getPreviewUrlByUsage: (usage: string) => string | null;
     getFileUploadDtos: () => FileUploadDto[];
     clearAllFiles: () => void;
 }
@@ -95,7 +96,7 @@ export const useFileUpload = (): UseFileUploadResult => {
             });
 
             toast.success(`${file.name} 파일이 업로드되었습니다.`);
-            return response;
+            return responseWithSize;
         } catch (error) {
             console.error('파일 업로드 실패:', error);
             // axios 인터셉터에서 이미 에러 토스트를 표시하므로 별도 처리 불필요
@@ -115,6 +116,11 @@ export const useFileUpload = (): UseFileUploadResult => {
 
     const getFileByUsage = (usage: string): FileUploadResponse | null => {
         return uploadedFiles.get(usage) || null;
+    };
+
+    const getPreviewUrlByUsage = (usage: string): string | null => {
+        const file = getFileByUsage(usage);
+        return file ? uploadAPI.getPreviewUrl(file) : null;
     };
 
     const getFileUploadDtos = (): FileUploadDto[] => {
@@ -143,6 +149,7 @@ export const useFileUpload = (): UseFileUploadResult => {
         uploadFile,
         removeFile,
         getFileByUsage,
+        getPreviewUrlByUsage,
         getFileUploadDtos,
         clearAllFiles
     };
