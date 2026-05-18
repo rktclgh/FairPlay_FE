@@ -261,18 +261,19 @@ class PaymentService {
         quantity:number,
         price:number,
         amount:number,
-        reservationData: ReservationPaymentData
+        reservationData: ReservationPaymentData,
+        merchantUid?: string
     ): Promise<PaymentProcessResult> {
         try {
             // 무료 티켓인지 확인
             if (amount === 0) {
                 return await this.processFreeTicket(
-                    title, userId, userName, eventId, paymentTargetType, quantity, price, amount, reservationData
+                    title, userId, userName, eventId, paymentTargetType, quantity, price, amount, reservationData, merchantUid
                 );
             }
 
-            const merchantUid = await this.generateMerchantUid(paymentTargetType);
-            console.log('merchantUid:', merchantUid);
+            const paymentMerchantUid = merchantUid ?? await this.generateMerchantUid(paymentTargetType);
+            console.log('merchantUid:', paymentMerchantUid);
 
             // 1. 백엔드에 결제 요청 정보 저장 (PENDING 상태) - paymentId 반환
             console.log('🔵 [PaymentService] savePaymentRequest 데이터:', {
@@ -281,7 +282,7 @@ class PaymentService {
                 quantity: quantity,
                 price: amount / quantity,
                 amount: amount,
-                merchantUid: merchantUid,
+                merchantUid: paymentMerchantUid,
                 pgProvider: 'uplus',
                 scheduleId: reservationData.scheduleId,
                 ticketId: reservationData.ticketId,
@@ -294,7 +295,7 @@ class PaymentService {
                 quantity: quantity,
                 price: amount / quantity,
                 amount:amount,
-                merchantUid: merchantUid,
+                merchantUid: paymentMerchantUid,
                 pgProvider: 'uplus',
                 scheduleId: reservationData.scheduleId,
                 ticketId: reservationData.ticketId
@@ -308,7 +309,7 @@ class PaymentService {
             const paymentRequest: PaymentRequest = {
                 pg: 'uplus',
                 pay_method: 'card',
-                merchant_uid: merchantUid,
+                merchant_uid: paymentMerchantUid,
                 name: `${title}`,
                 amount: amount,
                 buyer_name: userName,
@@ -370,15 +371,16 @@ class PaymentService {
         quantity: number,
         _price: number,
         _amount: number,
-        _reservationData: ReservationPaymentData
+        _reservationData: ReservationPaymentData,
+        merchantUid?: string
     ): Promise<PaymentProcessResult> {
         try {
             void _price;
             void _amount;
             void _reservationData;
 
-            const merchantUid = await this.generateMerchantUid(paymentTargetType);
-            console.log('무료 티켓 처리 - merchantUid:', merchantUid);
+            const paymentMerchantUid = merchantUid ?? await this.generateMerchantUid(paymentTargetType);
+            console.log('무료 티켓 처리 - merchantUid:', paymentMerchantUid);
 
             // 1. 무료 티켓 직접 처리 (백엔드에서 즉시 완료 처리) - paymentId 반환
             const freeTicketResult = await this.processFreeTicketOnServer({
@@ -386,7 +388,7 @@ class PaymentService {
                 paymentTargetType: paymentTargetType,
                 quantity: quantity,
                 price: 0, // 무료 티켓이므로 0
-                merchantUid: merchantUid,
+                merchantUid: paymentMerchantUid,
                 pgProvider: 'free'
             });
             
@@ -408,7 +410,7 @@ class PaymentService {
                 paymentId: freeTicketResult.paymentId,
                 paymentResponse: {
                     success: true,
-                    merchant_uid: freeTicketResult.merchantUid ?? merchantUid,
+                    merchant_uid: freeTicketResult.merchantUid ?? paymentMerchantUid,
                     imp_uid: freeTicketResult.impUid,
                     paid_amount: 0,
                     apply_num: 'FREE_TICKET'
