@@ -190,7 +190,7 @@ export const EditEventInfo = () => {
     }, []);
 
     const [formData, setFormData] = useState({
-        eventId: null as number,
+        eventId: null as number | null,
         eventNameKr: "",
         eventNameEn: "",
         startDate: "",
@@ -273,7 +273,7 @@ export const EditEventInfo = () => {
             if (myEvent) {
                 console.log('로드된 이벤트 데이터:', myEvent);
                 console.log('썸네일 URL:', myEvent.thumbnailUrl);
-                console.log('배너 URL:', myEvent.bannerUrl);
+                console.log('배너 URL:', myEvent.thumbnailUrl);
                 console.log('썸네일 URL에 tmp 포함여부:', myEvent.thumbnailUrl?.includes('/tmp') ? 'YES - tmp 파일입니다!' : 'NO - 정상 파일입니다');
                 setEventData(myEvent);
                 setFormData({
@@ -607,7 +607,7 @@ export const EditEventInfo = () => {
                 checkOutAllowed: formData.exitScanRequired,
                 age: formData.viewingGrade === "청소년불가",
                 businessNumber: formData.organizerBusinessNumber || undefined,
-                verified: businessVerified,
+                verified: businessVerified ?? undefined,
                 managerName: formData.managerName || undefined,
                 managerPhone: formData.phone || undefined,
                 managerEmail: formData.email || undefined,

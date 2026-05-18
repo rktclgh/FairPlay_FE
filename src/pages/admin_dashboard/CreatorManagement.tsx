@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { AdminSideNav } from '../../components/AdminSideNav';
 import { getAllCreators, createCreator, updateCreator, deleteCreator, CreatorRequest } from '../../api/creatorApi';
@@ -30,6 +30,7 @@ export const CreatorManagement: React.FC = () => {
     const [editingCreator, setEditingCreator] = useState<Creator | null>(null);
     const [isCreateMode, setIsCreateMode] = useState(false);
     const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null);
+    const profileImagePreviewUrlRef = useRef<string | null>(null);
 
     // 파일 업로드 훅
     const {
@@ -37,12 +38,29 @@ export const CreatorManagement: React.FC = () => {
         uploadFile,
         removeFile,
         getFileByUsage,
+        getFileUploadDtos,
         clearAllFiles
     } = useFileUpload();
 
     useEffect(() => {
         fetchCreators();
     }, []);
+
+    useEffect(() => {
+        return () => {
+            if (profileImagePreviewUrlRef.current) {
+                URL.revokeObjectURL(profileImagePreviewUrlRef.current);
+            }
+        };
+    }, []);
+
+    const replaceProfilePreviewUrl = (nextUrl: string | null) => {
+        setProfileImagePreviewUrl((current) => {
+            if (current) URL.revokeObjectURL(current);
+            profileImagePreviewUrlRef.current = nextUrl;
+            return nextUrl;
+        });
+    };
 
     // 프로필 이미지 업로드 핸들러
     const handleProfileImageUpload = async (file: File) => {
@@ -51,10 +69,7 @@ export const CreatorManagement: React.FC = () => {
             const uploadedFile = await uploadFile(file, 'profile_image');
             if (uploadedFile && editingCreator) {
                 const previewUrl = URL.createObjectURL(file);
-                setProfileImagePreviewUrl((current) => {
-                    if (current) URL.revokeObjectURL(current);
-                    return previewUrl;
-                });
+                replaceProfilePreviewUrl(previewUrl);
                 toast.success('프로필 이미지가 업로드되었습니다.');
             }
         } catch (error) {
@@ -90,13 +105,13 @@ export const CreatorManagement: React.FC = () => {
             createdAt: '',
             updatedAt: ''
         });
-        setProfileImagePreviewUrl(null);
+        replaceProfilePreviewUrl(null);
     };
 
     const handleEdit = (creator: Creator) => {
         setIsCreateMode(false);
         setEditingCreator({ ...creator });
-        setProfileImagePreviewUrl(null);
+        replaceProfilePreviewUrl(null);
     };
 
     const handleDelete = async (id: number) => {
@@ -122,6 +137,7 @@ export const CreatorManagement: React.FC = () => {
         }
 
         try {
+            const tempFiles = getFileUploadDtos();
             const requestData: CreatorRequest = {
                 name: editingCreator.name,
                 email: editingCreator.email,
@@ -135,7 +151,8 @@ export const CreatorManagement: React.FC = () => {
                 twitterUrl: editingCreator.twitter,
                 websiteUrl: editingCreator.website,
                 displayOrder: editingCreator.displayOrder,
-                isActive: editingCreator.isActive
+                isActive: editingCreator.isActive,
+                ...(tempFiles.length > 0 ? { tempFiles } : {})
             };
 
             if (isCreateMode) {
@@ -148,7 +165,7 @@ export const CreatorManagement: React.FC = () => {
 
             setEditingCreator(null);
             setIsCreateMode(false);
-            setProfileImagePreviewUrl(null);
+            replaceProfilePreviewUrl(null);
             clearAllFiles(); // 업로드된 파일 정리
             fetchCreators();
         } catch (error) {
@@ -160,7 +177,7 @@ export const CreatorManagement: React.FC = () => {
     const handleCancel = () => {
         setEditingCreator(null);
         setIsCreateMode(false);
-        setProfileImagePreviewUrl(null);
+        replaceProfilePreviewUrl(null);
         clearAllFiles(); // 업로드된 파일 정리
     };
 
@@ -342,7 +359,7 @@ export const CreatorManagement: React.FC = () => {
                                                                     type="button"
                                                                     onClick={() => {
                                                                         removeFile('profile_image');
-                                                                        setProfileImagePreviewUrl(null);
+                                                                        replaceProfilePreviewUrl(null);
                                                                         updateField('profileImage', '');
                                                                     }}
                                                                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"

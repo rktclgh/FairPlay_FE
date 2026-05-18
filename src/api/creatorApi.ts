@@ -1,4 +1,5 @@
 import api from './axios';
+import type { FileUploadDto } from '../services/types/eventType';
 
 export interface Creator {
     id: number;
@@ -33,6 +34,7 @@ export interface CreatorRequest {
     websiteUrl?: string;
     displayOrder: number;
     isActive?: boolean;
+    tempFiles?: FileUploadDto[];
 }
 
 // ==================== Public Creator APIs ====================

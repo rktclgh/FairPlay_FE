@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import ts from "typescript";
 
 const appPath = resolve("src/App.tsx");
 const source = readFileSync(appPath, "utf8");
+const sourceFile = ts.createSourceFile(appPath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 
 const protectedRouteRules = [
   { prefix: "/host", guard: "HostRouteGuard" },
@@ -10,13 +12,54 @@ const protectedRouteRules = [
   { prefix: "/booth-admin", guard: "BoothAdminRouteGuard" },
 ];
 
-const routePattern = /<Route\s+path="([^"]+)"\s+element=\{([^]*?)\}\s*\/>/g;
 const violations = [];
 const routesByPath = new Map();
 
-for (const match of source.matchAll(routePattern)) {
-  const [, path, element] = match;
-  const line = source.slice(0, match.index).split("\n").length;
+function getAttribute(node, name) {
+  return node.attributes.properties.find((property) => (
+    ts.isJsxAttribute(property) && property.name.getText(sourceFile) === name
+  ));
+}
+
+function getAttributeText(node, name) {
+  const attribute = getAttribute(node, name);
+  if (!attribute?.initializer) {
+    return null;
+  }
+
+  if (ts.isStringLiteral(attribute.initializer)) {
+    return attribute.initializer.text;
+  }
+
+  if (ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression) {
+    return attribute.initializer.expression.getText(sourceFile);
+  }
+
+  return null;
+}
+
+function getRouteNodes(node, routes = []) {
+  const isRoute = (
+    (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) &&
+    node.tagName.getText(sourceFile) === "Route"
+  );
+
+  if (isRoute) {
+    routes.push(node);
+  }
+
+  ts.forEachChild(node, (child) => getRouteNodes(child, routes));
+  return routes;
+}
+
+for (const routeNode of getRouteNodes(sourceFile)) {
+  const path = getAttributeText(routeNode, "path");
+  if (!path) {
+    continue;
+  }
+
+  const element = getAttributeText(routeNode, "element") ?? "";
+  const line = sourceFile.getLineAndCharacterOfPosition(routeNode.getStart(sourceFile)).line + 1;
 
   if (!routesByPath.has(path)) {
     routesByPath.set(path, []);
