@@ -417,12 +417,13 @@ export const EditEventInfo = () => {
                 return;
             }
 
-            const ps = new window.kakao.maps.services.Places();
+            const services = window.kakao.maps.services;
+            const ps = new services.Places();
             ps.keywordSearch(searchKeyword, (data: KakaoPlace[], status: string) => {
-                if (status === window.kakao.maps.services.Status.OK) {
+                if (status === services.Status.OK) {
                     setSearchResults(data);
                     setShowSearchResults(true);
-                } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+                } else if (status === services.Status.ZERO_RESULT) {
                     alert('검색 결과가 없습니다.');
                     setSearchResults([]);
                     setShowSearchResults(false);
