@@ -342,20 +342,6 @@ function AppContent() {
                         <Route path="/booth-admin/experience-detail/:experienceId" element={<BoothAdminRouteGuard><ExperienceDetailPage /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/booth/:boothId/edit" element={<BoothAdminRouteGuard><BoothEdit /></BoothAdminRouteGuard>} />
 
-                        <Route path="/host/dashboard" element={<HostDashboard />} />
-                        <Route path="/host/edit-event-info" element={<EditEventInfo />} />
-                        <Route path="/host/ticket-management" element={<TicketManagement />} />
-                        <Route path="/host/status-management" element={<EventStatusBanner />} />
-                        <Route path="/host/reservation-list" element={<ReservationList />} />
-                        <Route path="/host/reservation-stats" element={<ReservationStats />} />
-                        <Route path="/host/booth-type" element={<BoothTypeManagement />} />
-                        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
-                        <Route path="/host/booth-participants" element={<BoothParticipants />} />
-                        <Route path="/host/booth-participants/:id" element={<BoothParticipantDetail />} />
-                        <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
-                        <Route path="/host/revenue-summary" element={<RevenueSummary />} />
-                        <Route path="/host/time-analysis" element={<TimeAnalysis />} />
-                        <Route path="/host/qr-scan" element={<QRScanPage />} />
                         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
 
                         {/* 부스 관련 공개 페이지 (이메일에서 접근) */}

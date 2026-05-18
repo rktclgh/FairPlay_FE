@@ -40,6 +40,15 @@ export const uploadAPI = {
     },
 
     /**
+     * 임시 업로드 파일의 미리보기 URL 생성
+     * @param file - 임시 업로드 응답
+     * @returns 백엔드가 제공한 URL 또는 프록시 다운로드 URL
+     */
+    getPreviewUrl: (file: Pick<FileUploadResponse, 'key' | 'url'>): string => {
+        return file.url || uploadAPI.getDownloadUrl(file.key);
+    },
+
+    /**
      * 여러 파일 동시 업로드
      * @param files - 업로드할 파일 배열
      * @returns 업로드 결과 배열

@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { AdminSideNav } from '../../components/AdminSideNav';
-import { useNavigate } from 'react-router-dom';
-import { getAllCreators, createCreator, updateCreator, deleteCreator, Creator as ApiCreator, CreatorRequest } from '../../api/creatorApi';
+import { getAllCreators, createCreator, updateCreator, deleteCreator, CreatorRequest } from '../../api/creatorApi';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { toast } from 'react-toastify';
 
@@ -26,19 +25,20 @@ interface Creator {
 }
 
 export const CreatorManagement: React.FC = () => {
-    const navigate = useNavigate();
     const [creators, setCreators] = useState<Creator[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingCreator, setEditingCreator] = useState<Creator | null>(null);
     const [isCreateMode, setIsCreateMode] = useState(false);
+    const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null);
+    const profileImagePreviewUrlRef = useRef<string | null>(null);
 
     // 파일 업로드 훅
     const {
-        uploadedFiles,
         isUploading,
         uploadFile,
         removeFile,
         getFileByUsage,
+        getFileUploadDtos,
         clearAllFiles
     } = useFileUpload();
 
@@ -46,26 +46,30 @@ export const CreatorManagement: React.FC = () => {
         fetchCreators();
     }, []);
 
-    // CDN URL 생성 유틸
-    const toCdnUrl = (path: string) => {
-        const base = import.meta.env.VITE_CDN_BASE_URL || "";
-        if (/^https?:\/\//.test(path)) return path;
-        const clean = path.startsWith("/") ? path.slice(1) : path;
-        return `${base}/${clean}`;
+    useEffect(() => {
+        return () => {
+            if (profileImagePreviewUrlRef.current) {
+                URL.revokeObjectURL(profileImagePreviewUrlRef.current);
+            }
+        };
+    }, []);
+
+    const replaceProfilePreviewUrl = (nextUrl: string | null) => {
+        setProfileImagePreviewUrl((current) => {
+            if (current) URL.revokeObjectURL(current);
+            profileImagePreviewUrlRef.current = nextUrl;
+            return nextUrl;
+        });
     };
 
     // 프로필 이미지 업로드 핸들러
     const handleProfileImageUpload = async (file: File) => {
         if (!file) return;
         try {
-            await uploadFile(file, 'profile_image');
-            const uploadedFile = getFileByUsage('profile_image');
+            const uploadedFile = await uploadFile(file, 'profile_image');
             if (uploadedFile && editingCreator) {
-                const profileImageUrl = toCdnUrl(uploadedFile.key);
-                setEditingCreator({
-                    ...editingCreator,
-                    profileImage: profileImageUrl
-                });
+                const previewUrl = URL.createObjectURL(file);
+                replaceProfilePreviewUrl(previewUrl);
                 toast.success('프로필 이미지가 업로드되었습니다.');
             }
         } catch (error) {
@@ -101,11 +105,13 @@ export const CreatorManagement: React.FC = () => {
             createdAt: '',
             updatedAt: ''
         });
+        replaceProfilePreviewUrl(null);
     };
 
     const handleEdit = (creator: Creator) => {
         setIsCreateMode(false);
         setEditingCreator({ ...creator });
+        replaceProfilePreviewUrl(null);
     };
 
     const handleDelete = async (id: number) => {
@@ -131,16 +137,11 @@ export const CreatorManagement: React.FC = () => {
         }
 
         try {
-            // 업로드된 프로필 이미지가 있으면 URL 설정
-            const uploadedProfileImage = getFileByUsage('profile_image');
-            const profileImageUrl = uploadedProfileImage
-                ? toCdnUrl(uploadedProfileImage.key)
-                : editingCreator.profileImage;
-
+            const tempFiles = getFileUploadDtos();
             const requestData: CreatorRequest = {
                 name: editingCreator.name,
                 email: editingCreator.email,
-                profileImageUrl: profileImageUrl,
+                profileImageUrl: editingCreator.profileImage,
                 role: editingCreator.role,
                 bio: editingCreator.bio,
                 responsibilities: editingCreator.responsibilities,
@@ -150,7 +151,8 @@ export const CreatorManagement: React.FC = () => {
                 twitterUrl: editingCreator.twitter,
                 websiteUrl: editingCreator.website,
                 displayOrder: editingCreator.displayOrder,
-                isActive: editingCreator.isActive
+                isActive: editingCreator.isActive,
+                ...(tempFiles.length > 0 ? { tempFiles } : {})
             };
 
             if (isCreateMode) {
@@ -163,6 +165,7 @@ export const CreatorManagement: React.FC = () => {
 
             setEditingCreator(null);
             setIsCreateMode(false);
+            replaceProfilePreviewUrl(null);
             clearAllFiles(); // 업로드된 파일 정리
             fetchCreators();
         } catch (error) {
@@ -174,10 +177,11 @@ export const CreatorManagement: React.FC = () => {
     const handleCancel = () => {
         setEditingCreator(null);
         setIsCreateMode(false);
+        replaceProfilePreviewUrl(null);
         clearAllFiles(); // 업로드된 파일 정리
     };
 
-    const updateField = (field: keyof Creator, value: any) => {
+    const updateField = <K extends keyof Creator>(field: K, value: Creator[K]) => {
         if (!editingCreator) return;
         setEditingCreator({ ...editingCreator, [field]: value });
     };
@@ -345,9 +349,7 @@ export const CreatorManagement: React.FC = () => {
                                                         <div className="relative">
                                                             <img
                                                                 src={
-                                                                    getFileByUsage('profile_image')
-                                                                        ? toCdnUrl(getFileByUsage('profile_image')!.key)
-                                                                        : editingCreator.profileImage || '/images/blank_profile.jpg'
+                                                                    profileImagePreviewUrl || editingCreator.profileImage || '/images/blank_profile.jpg'
                                                                 }
                                                                 alt="프로필 이미지"
                                                                 className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
@@ -357,6 +359,7 @@ export const CreatorManagement: React.FC = () => {
                                                                     type="button"
                                                                     onClick={() => {
                                                                         removeFile('profile_image');
+                                                                        replaceProfilePreviewUrl(null);
                                                                         updateField('profileImage', '');
                                                                     }}
                                                                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"

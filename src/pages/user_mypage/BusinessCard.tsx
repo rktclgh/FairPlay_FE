@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TopNav } from '../../components/TopNav';
 import { AttendeeSideNav } from './AttendeeSideNav';
 import { AdminSideNav } from '../../components/AdminSideNav';
@@ -9,9 +9,9 @@ import { hasAdminPermission, hasEventManagerPermission, hasBoothManagerPermissio
 import { QRCodeModal } from '../../components/QRCodeModal';
 import { toast } from 'react-toastify';
 import { HiOutlineMenu, HiOutlineX } from 'react-icons/hi';
-import { User, Building, Phone, Mail, Globe, MapPin, FileText, Camera, QrCode, Share } from 'lucide-react';
+import { User, Phone, Globe, FileText, Camera, QrCode } from 'lucide-react';
 import businessCardService from '../../services/businessCardService';
-import type { BusinessCardFormData, BusinessCardResponse } from '../../types/businessCard';
+import type { BusinessCardFormData } from '../../types/businessCard';
 import { loadKakaoMap } from '../../lib/loadKakaoMap';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,19 @@ import { useTranslation } from 'react-i18next';
 // 카카오맵 전역 인터페이스 선언
 declare global {
     interface Window {
-        kakao: any;
+        kakao: {
+            maps?: {
+                services?: {
+                    Places: new () => {
+                        keywordSearch: (keyword: string, callback: (data: KakaoPlace[], status: string) => void) => void;
+                    };
+                    Status: {
+                        OK: string;
+                        ZERO_RESULT: string;
+                    };
+                };
+            };
+        };
     }
 }
 
@@ -42,6 +54,8 @@ export default function BusinessCard(): JSX.Element {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [qrModalOpen, setQrModalOpen] = useState(false);
     const [qrUrl, setQrUrl] = useState('');
+    const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null);
+    const profileImagePreviewUrlRef = useRef<string | null>(null);
 
     // 카카오맵 관련 상태
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -56,21 +70,39 @@ export default function BusinessCard(): JSX.Element {
 
     // 파일 업로드 훅
     const {
-        uploadedFiles,
         isUploading,
         uploadFile,
         removeFile,
         getFileByUsage,
+        getFileUploadDtos,
+        clearAllFiles,
     } = useFileUpload();
 
     useEffect(() => {
         loadBusinessCard();
     }, []);
 
+    useEffect(() => {
+        return () => {
+            if (profileImagePreviewUrlRef.current) {
+                URL.revokeObjectURL(profileImagePreviewUrlRef.current);
+            }
+        };
+    }, []);
+
+    const replaceProfilePreviewUrl = (nextUrl: string | null) => {
+        setProfileImagePreviewUrl((current) => {
+            if (current) URL.revokeObjectURL(current);
+            profileImagePreviewUrlRef.current = nextUrl;
+            return nextUrl;
+        });
+    };
+
     const loadBusinessCard = async () => {
         try {
             setLoading(true);
             const card = await businessCardService.getMyBusinessCard();
+            replaceProfilePreviewUrl(null);
             if (card) {
                 setFormData({
                     name: card.name || '',
@@ -83,8 +115,8 @@ export default function BusinessCard(): JSX.Element {
                     address: card.address || '',
                     detailAddress: card.detailAddress || '',
                     placeName: card.placeName || '',
-                    latitude: card.latitude || null,
-                    longitude: card.longitude || null,
+                    latitude: card.latitude || undefined,
+                    longitude: card.longitude || undefined,
                     placeUrl: card.placeUrl || '',
                     description: card.description || '',
                     linkedIn: card.linkedIn || '',
@@ -120,27 +152,15 @@ export default function BusinessCard(): JSX.Element {
         }));
     };
 
-    // CDN URL 생성 유틸
-    const toCdnUrl = (path: string) => {
-        const base = import.meta.env.VITE_CDN_BASE_URL || "";
-        if (/^https?:\/\//.test(path)) return path;
-        const clean = path.startsWith("/") ? path.slice(1) : path;
-        return `${base}/${clean}`;
-    };
-
     // 프로필 이미지 업로드 핸들러
     const handleProfileImageUpload = async (file: File) => {
         if (!file) return;
         try {
-            await uploadFile(file, 'profile_image');
-            const uploadedFile = getFileByUsage('profile_image');
+            const uploadedFile = await uploadFile(file, 'profile_image');
             if (uploadedFile) {
-                const profileImageUrl = toCdnUrl(uploadedFile.key);
-                setFormData(prev => ({
-                    ...prev,
-                    profileImageUrl,
-                    hasChanges: true
-                }));
+                const previewUrl = URL.createObjectURL(file);
+                replaceProfilePreviewUrl(previewUrl);
+                setFormData(prev => ({ ...prev, hasChanges: true }));
             }
         } catch (error) {
             console.error('프로필 이미지 업로드 실패:', error);
@@ -156,17 +176,18 @@ export default function BusinessCard(): JSX.Element {
         }
 
         loadKakaoMap(() => {
-            if (!window.kakao?.maps?.services) {
+            const services = window.kakao?.maps?.services;
+            if (!services) {
                 toast.error(t('businessCard.kakaoMapError'));
                 return;
             }
 
-            const ps = new window.kakao.maps.services.Places();
+            const ps = new services.Places();
             ps.keywordSearch(searchKeyword, (data: KakaoPlace[], status: string) => {
-                if (status === window.kakao.maps.services.Status.OK) {
+                if (status === services.Status.OK) {
                     setSearchResults(data);
                     setShowSearchResults(true);
-                } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+                } else if (status === services.Status.ZERO_RESULT) {
                     toast.error(t('businessCard.noSearchResults'));
                     setSearchResults([]);
                     setShowSearchResults(false);
@@ -187,8 +208,8 @@ export default function BusinessCard(): JSX.Element {
             address: preferredAddress,
             placeName: place.place_name,
             detailAddress: '',
-            longitude: place.x ? parseFloat(place.x) : null,
-            latitude: place.y ? parseFloat(place.y) : null,
+            longitude: place.x ? parseFloat(place.x) : undefined,
+            latitude: place.y ? parseFloat(place.y) : undefined,
             placeUrl: `https://place.map.kakao.com/${place.id}`,
             hasChanges: true
         }));
@@ -337,24 +358,24 @@ export default function BusinessCard(): JSX.Element {
         try {
             setSaving(true);
 
-            // 업로드된 프로필 이미지가 있으면 URL 설정
-            const uploadedProfileImage = getFileByUsage('profile_image');
-
             // 전화번호에서 대쉬 제거
             const cleanPhoneNumber = formData.phoneNumber ? formData.phoneNumber.replace(/[^0-9]/g, '') : '';
+            const tempFiles = getFileUploadDtos();
 
             const saveData = {
                 ...formData,
                 phoneNumber: cleanPhoneNumber, // 대쉬 제거된 전화번호
-                profileImageUrl: uploadedProfileImage ? toCdnUrl(uploadedProfileImage.key) : formData.profileImageUrl
+                ...(tempFiles.length > 0 ? { tempFiles } : {}),
             };
 
             await businessCardService.saveBusinessCard(saveData);
             toast.success(t('businessCard.saved'));
             setFormData(prev => ({ ...prev, hasChanges: false }));
-        } catch (error: any) {
+            replaceProfilePreviewUrl(null);
+            clearAllFiles();
+        } catch (error: unknown) {
             console.error('전자명함 저장 실패:', error);
-            const message = error.response?.data?.message || t('businessCard.saveError');
+            const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || t('businessCard.saveError');
             toast.error(message);
         } finally {
             setSaving(false);
@@ -372,9 +393,9 @@ export default function BusinessCard(): JSX.Element {
             const url = await businessCardService.generateQRCode();
             setQrUrl(url);
             setQrModalOpen(true);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('QR 코드 생성 실패:', error);
-            const message = error.response?.data?.message || 'QR 코드 생성에 실패했습니다.';
+            const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'QR 코드 생성에 실패했습니다.';
             toast.error(message);
         }
     };
@@ -630,9 +651,7 @@ export default function BusinessCard(): JSX.Element {
                                     <div className="relative">
                                         <img
                                             src={
-                                                getFileByUsage('profile_image')
-                                                    ? toCdnUrl(getFileByUsage('profile_image')!.key)
-                                                    : formData.profileImageUrl || '/images/blank_profile.jpg'
+                                                profileImagePreviewUrl || formData.profileImageUrl || '/images/blank_profile.jpg'
                                             }
                                             alt={t('businessCard.profileImage')}
                                             className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
@@ -642,6 +661,7 @@ export default function BusinessCard(): JSX.Element {
                                                 type="button"
                                                 onClick={() => {
                                                     removeFile('profile_image');
+                                                    replaceProfilePreviewUrl(null);
                                                     setFormData(prev => ({ ...prev, profileImageUrl: '', hasChanges: true }));
                                                 }}
                                                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
