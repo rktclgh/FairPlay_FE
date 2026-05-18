@@ -3,25 +3,71 @@ import { existsSync } from "node:fs";
 
 const mode = process.argv[2] ?? "all";
 const baseRef = process.env.GITHUB_BASE_REF || process.env.FAIRPLAY_CHECK_BASE || "develop";
+const isPushEvent = process.env.GITHUB_EVENT_NAME === "push";
+const isPullRequestEvent = process.env.GITHUB_EVENT_NAME === "pull_request";
 
 function git(args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
+function refExists(ref) {
+  try {
+    execFileSync("git", ["rev-parse", "--verify", "--quiet", ref], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function unique(items) {
+  return [...new Set(items.filter(Boolean))];
+}
+
 function resolveBase() {
-  const refCandidates = baseRef.startsWith("origin/")
-    ? [baseRef, "HEAD^"]
-    : [`origin/${baseRef}`, baseRef, "HEAD^"];
-  const candidates = process.env.GITHUB_EVENT_NAME === "push"
-    ? ["HEAD^", ...refCandidates]
-    : refCandidates;
+  const baseCandidates = baseRef.startsWith("origin/")
+    ? [baseRef]
+    : [`origin/${baseRef}`, baseRef];
+  const fallbackBranchCandidates = unique([
+    "origin/develop",
+    "develop",
+    "origin/main",
+    "main",
+  ]).filter((candidate) => !baseCandidates.includes(candidate));
+  const candidates = unique([
+    ...(isPushEvent ? ["HEAD^"] : []),
+    ...baseCandidates,
+    ...fallbackBranchCandidates,
+    ...(!isPullRequestEvent ? ["HEAD^"] : []),
+  ]);
+
   for (const candidate of candidates) {
     try {
-      return git(["merge-base", candidate, "HEAD"]);
+      if (!refExists(candidate)) {
+        continue;
+      }
+      const base = git(["merge-base", candidate, "HEAD"]);
+      console.log(`Using changed-file base ${candidate} (${base.slice(0, 12)})`);
+      return base;
     } catch {
-      // Try the next candidate. CI uses fetch-depth 0 so origin/base should exist.
+      // Try the next candidate.
     }
   }
+
+  if (isPullRequestEvent) {
+    throw new Error(`Unable to resolve PR diff base for ${baseRef}. Ensure actions/checkout uses fetch-depth: 0.`);
+  }
+
+  for (const candidate of ["HEAD^"]) {
+    try {
+      if (!refExists(candidate)) {
+        continue;
+      }
+      return git(["merge-base", candidate, "HEAD"]);
+    } catch {
+      // Try the next fallback.
+    }
+  }
+
   throw new Error(`Unable to resolve a diff base for ${baseRef}`);
 }
 
