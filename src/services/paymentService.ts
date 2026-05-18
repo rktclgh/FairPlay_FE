@@ -1,6 +1,29 @@
 // 아임포트 결제 서비스
 import authManager from "../utils/auth";
-import ticketReservationService from "./ticketReservationService";
+
+type ApiObject = Record<string, unknown>;
+
+interface PaymentSaveResponse extends ApiObject {
+    paymentId?: number;
+}
+
+interface PaymentCompleteResponse extends ApiObject {
+    targetId?: number | string;
+}
+
+interface FreeTicketResponse extends PaymentCompleteResponse {
+    paymentId?: number;
+    merchantUid?: string;
+    impUid?: string;
+}
+
+interface PaymentProcessResult {
+    success: boolean;
+    paymentId?: number;
+    paymentResponse: IamportResponse;
+    completionResult: PaymentCompleteResponse | FreeTicketResponse;
+    targetId: number | string;
+}
 
 // 아임포트 타입 선언
 declare global {
@@ -44,8 +67,19 @@ export interface PaymentCompletionRequest {
     impUid: string;
     amount: number;
     applyNum?: string; // 카드 승인번호
-    scheduleId?: number;
-    ticketId?: number;
+    scheduleId: number;
+    ticketId: number;
+}
+
+export interface ReservationPaymentData {
+    scheduleId: number;
+    ticketId: number;
+    quantity: number;
+    totalAmount: number;
+    buyer_name: string;
+    buyer_phone: string;
+    buyer_email: string;
+    paymentMethod: string;
 }
 
 // 아임포트 응답 인터페이스
@@ -165,7 +199,7 @@ class PaymentService {
     /**
      * 환불 요청
      */
-    async requestRefund(refundData: RefundRequest): Promise<any> {
+    async requestRefund(refundData: RefundRequest): Promise<ApiObject> {
         try {
             const response = await authManager.authenticatedFetch(`/api/refunds/${refundData.paymentId}/request`, {
                 method: 'POST',
@@ -184,7 +218,7 @@ class PaymentService {
                 throw new Error(`환불 요청 실패: ${response.status} - ${errorData}`);
             }
 
-            return await response.json();
+            return await response.json() as ApiObject;
         } catch (error) {
             console.error('환불 요청 중 오류:', error);
             throw error;
@@ -194,7 +228,7 @@ class PaymentService {
     /**
      * 환불 승인
      */
-    async approveRefund(refundId: number): Promise<any> {
+    async approveRefund(refundId: number): Promise<ApiObject> {
         try {
             const response = await authManager.authenticatedFetch(`/api/refunds/${refundId}/approve`, {
                 method: 'POST',
@@ -208,7 +242,7 @@ class PaymentService {
                 throw new Error(`환불 승인 실패: ${response.status} - ${errorData}`);
             }
 
-            return await response.json();
+            return await response.json() as ApiObject;
         } catch (error) {
             console.error('환불 승인 중 오류:', error);
             throw error;
@@ -227,8 +261,8 @@ class PaymentService {
         quantity:number,
         price:number,
         amount:number,
-        reservationData?: any
-    ): Promise<any> {
+        reservationData: ReservationPaymentData
+    ): Promise<PaymentProcessResult> {
         try {
             // 무료 티켓인지 확인
             if (amount === 0) {
@@ -249,8 +283,8 @@ class PaymentService {
                 amount: amount,
                 merchantUid: merchantUid,
                 pgProvider: 'uplus',
-                scheduleId: reservationData?.scheduleId,
-                ticketId: reservationData?.ticketId,
+                scheduleId: reservationData.scheduleId,
+                ticketId: reservationData.ticketId,
                 reservationData: reservationData
             });
             
@@ -262,17 +296,14 @@ class PaymentService {
                 amount:amount,
                 merchantUid: merchantUid,
                 pgProvider: 'uplus',
-                scheduleId: reservationData?.scheduleId,
-                ticketId: reservationData?.ticketId
+                scheduleId: reservationData.scheduleId,
+                ticketId: reservationData.ticketId
             });
             
             console.log('저장된 paymentId:', savedPayment.paymentId);
 
             // 3. 결제 요청 데이터 준비
-            const scheduleId = reservationData?.scheduleId;
-            const redirectUrl = scheduleId 
-                ? `${window.location.origin}/ticket-reservation/${eventId}?scheduleId=${scheduleId}&success=true`
-                : `${window.location.origin}/ticket-reservation/${eventId}?success=true`;
+            const redirectUrl = `${window.location.origin}/ticket-reservation/${eventId}?scheduleId=${reservationData.scheduleId}&ticketId=${reservationData.ticketId}&success=true`;
                 
             const paymentRequest: PaymentRequest = {
                 pg: 'uplus',
@@ -298,8 +329,8 @@ class PaymentService {
                 impUid: paymentResponse.imp_uid!,
                 amount: paymentResponse.paid_amount!,
                 applyNum: paymentResponse.apply_num,
-                scheduleId: reservationData?.scheduleId,
-                ticketId: reservationData?.ticketId
+                scheduleId: reservationData.scheduleId,
+                ticketId: reservationData.ticketId
             });
 
             console.log('결제 완료 결과:', completionResult);
@@ -307,7 +338,7 @@ class PaymentService {
             // completionResult에서 targetId를 가져옵니다 (백엔드에서 예약 생성 후 반환)
             const targetId = completionResult.targetId;
             
-            if (!targetId) {
+            if (targetId == null) {
                 throw new Error('결제 완료 후 예약 ID를 가져올 수 없습니다.');
             }
 
@@ -337,11 +368,15 @@ class PaymentService {
         eventId: number,
         paymentTargetType: string,
         quantity: number,
-        price: number,
-        amount: number,
-        reservationData?: any
-    ): Promise<any> {
+        _price: number,
+        _amount: number,
+        _reservationData: ReservationPaymentData
+    ): Promise<PaymentProcessResult> {
         try {
+            void _price;
+            void _amount;
+            void _reservationData;
+
             const merchantUid = await this.generateMerchantUid(paymentTargetType);
             console.log('무료 티켓 처리 - merchantUid:', merchantUid);
 
@@ -362,7 +397,7 @@ class PaymentService {
             // freeTicketResult에서 targetId를 가져옵니다 (백엔드에서 예약 생성 후 반환)
             const targetId = freeTicketResult.targetId;
             
-            if (!targetId) {
+            if (targetId == null) {
                 throw new Error('무료 티켓 처리 후 예약 ID를 가져올 수 없습니다.');
             }
 
@@ -373,7 +408,7 @@ class PaymentService {
                 paymentId: freeTicketResult.paymentId,
                 paymentResponse: {
                     success: true,
-                    merchant_uid: freeTicketResult.merchantUid,
+                    merchant_uid: freeTicketResult.merchantUid ?? merchantUid,
                     imp_uid: freeTicketResult.impUid,
                     paid_amount: 0,
                     apply_num: 'FREE_TICKET'
@@ -399,9 +434,9 @@ class PaymentService {
         amount: number;
         merchantUid: string;
         pgProvider: string;
-        scheduleId?: number;
-        ticketId?: number;
-    }): Promise<any> {
+        scheduleId: number;
+        ticketId: number;
+    }): Promise<PaymentSaveResponse> {
         try {
             const response = await authManager.authenticatedFetch('/api/payments/request', {
                 method: 'POST',
@@ -426,7 +461,7 @@ class PaymentService {
                 throw new Error(`결제 요청 저장 실패: ${response.status} - ${errorData}`);
             }
 
-            return await response.json();
+            return await response.json() as PaymentSaveResponse;
         } catch (error) {
             console.error('결제 요청 저장 중 오류:', error);
             throw error;
@@ -443,7 +478,7 @@ class PaymentService {
         price: number;
         merchantUid: string;
         pgProvider: string;
-    }): Promise<any> {
+    }): Promise<FreeTicketResponse> {
         try {
             const response = await authManager.authenticatedFetch('/api/payments/free', {
                 method: 'POST',
@@ -465,7 +500,7 @@ class PaymentService {
                 throw new Error(`무료 티켓 처리 실패: ${response.status} - ${errorData}`);
             }
 
-            return await response.json();
+            return await response.json() as FreeTicketResponse;
         } catch (error) {
             console.error('무료 티켓 서버 처리 중 오류:', error);
             throw error;
@@ -475,7 +510,7 @@ class PaymentService {
     /**
      * 결제 완료 처리 (백엔드로 결과 전송)
      */
-    async completePayment(completionData: PaymentCompletionRequest): Promise<any> {
+    async completePayment(completionData: PaymentCompletionRequest): Promise<PaymentCompleteResponse> {
         try {
             const response = await authManager.authenticatedFetch('/api/payments/complete', {
                 method: 'POST',
@@ -497,7 +532,7 @@ class PaymentService {
                 throw new Error(`결제 완료 처리 실패: ${response.status} - ${errorData}`);
             }
 
-            return await response.json();
+            return await response.json() as PaymentCompleteResponse;
         } catch (error) {
             console.error('결제 완료 처리 중 오류:', error);
             throw error;
