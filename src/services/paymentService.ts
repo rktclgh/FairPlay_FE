@@ -363,9 +363,9 @@ class PaymentService {
      * 무료 티켓 처리 (PG사 연동 없이 직접 처리)
      */
     async processFreeTicket(
-        title: string,
-        userId: number,
-        userName: string,
+        _title: string,
+        _userId: number,
+        _userName: string,
         eventId: number,
         paymentTargetType: string,
         quantity: number,
@@ -375,6 +375,9 @@ class PaymentService {
         merchantUid?: string
     ): Promise<PaymentProcessResult> {
         try {
+            void _title;
+            void _userId;
+            void _userName;
             void _price;
             void _amount;
             void _reservationData;
