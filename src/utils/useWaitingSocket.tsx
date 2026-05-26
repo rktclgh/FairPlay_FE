@@ -33,7 +33,7 @@ export function useWaitingSocket(userId: number, onMessage: (msg: string) => voi
     });
 
     eventSource.addEventListener("waiting-status", (event) => {
-      handleMessage(event.data);
+      handleMessage((event as MessageEvent).data);
     });
 
     eventSource.onerror = (error) => {
@@ -41,10 +41,8 @@ export function useWaitingSocket(userId: number, onMessage: (msg: string) => voi
     };
 
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        console.log("🔌 웨이팅 SSE 연결 해제");
-      }
+      eventSource.close();
+      console.log("🔌 웨이팅 SSE 연결 해제");
       eventSourceRef.current = null;
     };
   }, [userId, handleMessage]); // onMessage 제거, handleMessage 사용

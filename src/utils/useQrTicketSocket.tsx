@@ -32,7 +32,7 @@ export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) =
     });
 
     eventSource.addEventListener("qr-ticket-status", (event) => {
-      handleMessage(event.data);
+      handleMessage((event as MessageEvent).data);
     });
 
     eventSource.onerror = (error) => {
@@ -40,10 +40,8 @@ export function useQrTicketSocket(qrTicketId: number, onMessage: (msg: string) =
     };
 
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        console.log("🔌 QR SSE 연결 해제");
-      }
+      eventSource.close();
+      console.log("🔌 QR SSE 연결 해제");
       eventSourceRef.current = null;
     };
   }, [qrTicketId, handleMessage]); // onMessage 제거, handleMessage 사용
