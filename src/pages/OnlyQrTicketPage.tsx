@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     Calendar,
     MapPin,
     RefreshCw,
     User,
     AlertCircle,
-    Check,
     Ban
 } from "lucide-react";
 
@@ -17,11 +16,10 @@ import {
 import { QRCodeCanvas } from 'qrcode.react';
 import type {
     QrTicketReissueGuestRequestDto,
-    QrTicketGuestResponseDto,
-    QrTicketResponseDto
+    QrTicketGuestResponseDto
 } from "../services/types/qrTicketType";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useQrTicketSocket } from "../utils/useQrTicketSocket";
+import axios from "axios";
 
 
 // 스크롤바 숨기기 CSS
@@ -41,29 +39,10 @@ export const OnlyQrTicketPage = () => {
     const navigate = useNavigate();
     const token = searchParam.get("token");
     const [timeLeft, setTimeLeft] = useState(300); // 5분 = 300초
-    const [qrTicketId, setQrTicketId] = useState(0);
     const [qrCode, setQrCode] = useState(""); // QR 코드 상태
     const [manualCode, setManualCode] = useState(""); // 수동 코드 상태
     const [resData, setResData] = useState<QrTicketGuestResponseDto | null>(null);
-    const [isTicketUsed, setIsTicketUsed] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const [successMessage, setSuccessMessage] = useState("");
-    const [updateIds, setUpdateIds] = useState({
-        reservationId: 0,
-        qrTicketId: 0
-    });
-
-    // 웹소켓 메시지 핸들러를 useCallback으로 메모이제이션
-    const handleWebSocketMessage = useCallback((msg: string) => {
-        setSuccessMessage(msg);
-        // 입장 완료 상태로 변경
-        setIsTicketUsed(true);
-        // 타이머 멈추기
-        if (timerRef.current) clearInterval(timerRef.current);
-    }, []);
-
-    // ✅ 웹소켓 구독 (qrTicketId가 유효할 때만)
-    useQrTicketSocket(qrTicketId > 0 ? qrTicketId : 0, handleWebSocketMessage);
 
     // QR 코드와 수동 코드 초기화 + 모달 오픈 시 타이머 시작
     useEffect(() => {
@@ -98,10 +77,9 @@ export const OnlyQrTicketPage = () => {
                 setResData(data);
                 setQrCode(data.qrCode);
                 setManualCode(data.manualCode);
-                setQrTicketId(data.qrTicketId);
                 console.log(data);
-            } catch (error: any) {
-                if (error.response) {  
+            } catch (error: unknown) {
+                if (axios.isAxiosError<{ message?: string }>(error) && error.response) {
                     const { message } = error.response.data;
                     navigate(`/qr-ticket/participant/error`, {
                         state: {
@@ -109,7 +87,7 @@ export const OnlyQrTicketPage = () => {
                             message: message,
                     }
                 });
-                } else if (error.request) {
+                } else if (axios.isAxiosError(error) && error.request) {
                     navigate(`/qr-ticket/participant/error`, {
                         state: {
                             title: "죄송합니다",
@@ -127,7 +105,7 @@ export const OnlyQrTicketPage = () => {
             }
         };
         getMyTicketInfo();
-    }, []);
+    }, [navigate, token]);
 
     // 새로고침 함수
     const handleRefresh = async () => {
@@ -143,7 +121,6 @@ export const OnlyQrTicketPage = () => {
         const res = await reissueQrTicketByGuest(data);
         setQrCode(res.qrCode);
         setManualCode(res.manualCode);
-        setIsTicketUsed(false);
         setTimeLeft(300); // 타이머 리셋
     };
 
@@ -180,11 +157,6 @@ export const OnlyQrTicketPage = () => {
 
                 {/* QR 코드 섹션 */}
                 <div className="p-2 sm:p-3 md:p-4">
-                    {isTicketUsed && (
-                        <div className="text-center mb-4 p-2 bg-green-100 text-green-800 font-semibold rounded-lg">
-                                ✅ {successMessage}
-                        </div>
-                    )}
                     {timeLeft === 0 && (
                         <div className="text-center mb-4 p-2 rounded-lg font-semibold 
                                         bg-red-100 text-red-800">
@@ -198,8 +170,6 @@ export const OnlyQrTicketPage = () => {
                                     <div className="w-16 h-16 sm:w-20 md:w-24 sm:h-20 md:h-24 bg-gray-200 rounded-md sm:rounded-lg flex items-center justify-center">
                                         {timeLeft === 0 ? (
                                             <Ban size={120} color="#ff0000" strokeWidth={2.25} />
-                                        ): isTicketUsed ? (
-                                            <Check size={120} color="#613cf4ff" strokeWidth={2.25} />
                                         ) : (
                                             <QRCodeCanvas value={qrCode} size={120} fgColor={'#000'} />
                                         )}
@@ -209,9 +179,7 @@ export const OnlyQrTicketPage = () => {
                         </div>
 
                         <div className="text-center">
-                            {!isTicketUsed && (
-                                <p className="text-xs sm:text-sm font-mono text-gray-600 mb-2">{manualCode}</p>
-                            )}
+                            <p className="text-xs sm:text-sm font-mono text-gray-600 mb-2">{manualCode}</p>
                             <p className="font-mono text-xs sm:text-sm text-gray-600 mb-2">TicketNo.{resData?.ticketNo}</p>
                             <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
