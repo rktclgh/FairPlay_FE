@@ -12,11 +12,36 @@ type ChatMessage = {
   isRead: boolean;
 };
 
+type IncomingChatMessage = Partial<ChatMessage> & {
+  type?: string;
+  content?: string;
+};
+
+const normalizeIncomingMessage = (
+  message: IncomingChatMessage,
+  roomId: number
+): ChatMessage => {
+  if (message.type === "system_error") {
+    return {
+      chatMessageId: -Date.now(),
+      chatRoomId: message.chatRoomId ?? roomId,
+      senderId: 999,
+      content: message.content ?? "AI 응답 생성 중 오류가 발생했습니다.",
+      sentAt: message.sentAt ?? new Date().toISOString(),
+      isRead: true,
+    };
+  }
+
+  return message as ChatMessage;
+};
+
 export function useChatSocket(
   roomId: number,
-  onMessage: (msg: ChatMessage) => void
+  onMessage: (msg: ChatMessage) => void,
+  options: { isAiChat?: boolean } = {}
 ) {
   const { isAuthenticated } = useAuth();
+  const isAiChat = Boolean(options.isAiChat);
   const clientRef = useRef<Stomp.Client | null>(null);
   const isConnectedRef = useRef(false);
   const currentRoomIdRef = useRef<number | null>(null);
@@ -29,6 +54,41 @@ export function useChatSocket(
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
   const initRef = useRef(false);
+
+  const sendMessageInternal = useCallback(async (content: string, stomp: Stomp.Client) => {
+    try {
+      let userId = null;
+      try {
+        const response = await fetch('/api/events/user/role', {
+          credentials: 'include',
+          headers: { 'X-Silent-Auth': 'true' }
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          userId = userData.userId;
+        }
+      } catch (error) {
+        console.error("사용자 ID 조회 실패:", error);
+      }
+
+      const messagePayload = {
+        chatRoomId: roomId,
+        content: content.trim(),
+        senderId: userId || 1,
+        ...(isAiChat ? { provider: 'HERMES' } : {}),
+      };
+
+      console.log("메시지 전송:", content.trim(), "from userId:", userId);
+
+      stomp.send(
+        isAiChat ? "/app/ai-chat.sendMessage" : "/app/chat.sendMessage",
+        {},
+        JSON.stringify(messagePayload)
+      );
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
+  }, [roomId, isAiChat]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -126,11 +186,12 @@ export function useChatSocket(
             }, 30000);
 
             if (!subscriptionRef.current) {
+              const topic = isAiChat ? `/topic/ai-chat.${roomId}` : `/topic/chat.${roomId}`;
               subscriptionRef.current = stomp.subscribe(
-                `/topic/chat.${roomId}`,
+                topic,
                 (message) => {
                   try {
-                    const parsedMessage = JSON.parse(message.body);
+                    const parsedMessage = normalizeIncomingMessage(JSON.parse(message.body), roomId);
                     console.log(
                       "메시지 수신:",
                       parsedMessage.content,
@@ -145,7 +206,7 @@ export function useChatSocket(
                   }
                 }
               );
-              console.log("Subscribed to topic:", `/topic/chat.${roomId}`);
+              console.log("Subscribed to topic:", topic);
             }
 
             const pending = [...pendingMessages.current];
@@ -221,10 +282,10 @@ export function useChatSocket(
       } else if (clientRef.current?.connected && !subscriptionRef.current) {
         console.log(`Subscribing to room ${roomId} on existing connection`);
         subscriptionRef.current = clientRef.current.subscribe(
-          `/topic/chat.${roomId}`,
+          isAiChat ? `/topic/ai-chat.${roomId}` : `/topic/chat.${roomId}`,
           (message) => {
             try {
-              const parsedMessage = JSON.parse(message.body);
+              const parsedMessage = normalizeIncomingMessage(JSON.parse(message.body), roomId);
               console.log(
                 "메시지 수신:",
                 parsedMessage.content,
@@ -239,7 +300,7 @@ export function useChatSocket(
             }
           }
         );
-        console.log("Subscribed to topic:", `/topic/chat.${roomId}`);
+        console.log("Subscribed to topic:", isAiChat ? `/topic/ai-chat.${roomId}` : `/topic/chat.${roomId}`);
       }
     };
 
@@ -266,7 +327,7 @@ export function useChatSocket(
         heartbeatIntervalRef.current = null;
       }
     };
-  }, [roomId, onMessage, isAuthenticated]);
+  }, [roomId, onMessage, isAuthenticated, isAiChat, sendMessageInternal]);
   
   useEffect(() => {
     return () => {
@@ -322,40 +383,6 @@ export function useChatSocket(
       }, 100);
     };
   }, []);
-
-  const sendMessageInternal = useCallback(async (content: string, stomp: Stomp.Client) => {
-    try {
-      let userId = null;
-      try {
-        const response = await fetch('/api/events/user/role', {
-          credentials: 'include',
-          headers: { 'X-Silent-Auth': 'true' }
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          userId = userData.userId;
-        }
-      } catch (error) {
-        console.error("사용자 ID 조회 실패:", error);
-      }
-
-      const messagePayload = {
-        chatRoomId: roomId,
-        content: content.trim(),
-        senderId: userId || 1,
-      };
-
-      console.log("메시지 전송:", content.trim(), "from userId:", userId);
-
-      stomp.send(
-        "/app/chat.sendMessage",
-        {},
-        JSON.stringify(messagePayload)
-      );
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    }
-  }, [roomId]);
 
   const send = useCallback(
     (content: string) => {
