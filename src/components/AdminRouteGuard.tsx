@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hasAdminPermission } from '../utils/permissions';
 import { getRoleCode } from '../utils/role';
+import { useAuth } from '../context/AuthContext';
 
 interface AdminRouteGuardProps {
     children: React.ReactNode;
@@ -10,8 +11,16 @@ interface AdminRouteGuardProps {
 export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({ children }) => {
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
     const navigate = useNavigate();
+    const { isAuthenticated, loading } = useAuth();
 
     useEffect(() => {
+        if (loading) return;
+
+        if (!isAuthenticated) {
+            navigate('/login');
+            return;
+        }
+
         const check = async () => {
             const role = await getRoleCode();
             if (!role) {
@@ -25,7 +34,7 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({ children }) =>
             }
         };
         check();
-    }, [navigate]);
+    }, [isAuthenticated, loading, navigate]);
 
     if (isAuthorized === null) {
         return (
@@ -40,5 +49,4 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({ children }) =>
 
     return isAuthorized ? <>{children}</> : null;
 };
-
 
