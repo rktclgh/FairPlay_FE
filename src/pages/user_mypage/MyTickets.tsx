@@ -19,12 +19,17 @@ import { getFormLink } from "../../services/attendee";
 import { useQrTicketSocket } from "../../utils/useQrTicketSocket";
 import { useWaitingSocket } from "../../utils/useWaitingSocket";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { createReservation, getAvailableExperiences } from "../../services/boothExperienceService";
 import { getBooths,  getUserRecentlyEventWaitingCount,  getBoothDetails } from "../../api/boothApi";
 import type { BoothExperienceReservationRequest, BoothExperienceFilters, BoothExperience, BoothExperienceReservation } from "../../services/types/boothExperienceType";
-import type { BoothSummary } from '../../types/booth';
+import type { BoothDetailResponse, BoothSummary } from '../../types/booth';
+
+type ApiError = {
+    response?: { data?: { message?: string } | string };
+    request?: unknown;
+    message?: string;
+};
 
 export default function MyTickets(): JSX.Element {
     const navigate = useNavigate();
@@ -56,7 +61,7 @@ export default function MyTickets(): JSX.Element {
 
     //======= 웨이팅 순서 ======= //
     const [waitingCount, setWaitingCount] = useState(0);
-    const [savedExperience, setSavedExperience] = useState<BoothExperienceReservation | null>();
+    const [, setSavedExperience] = useState<BoothExperienceReservation | null>();
     const [waitingMessage, setWaitingMessage] = useState("");
 
     //======= 조회중인 사용자 ID ======= //
@@ -67,9 +72,9 @@ export default function MyTickets(): JSX.Element {
     const [isBoothDetailModalOpen, setIsBoothDetailModalOpen] = useState(false); // 부스 상세정보 모달 상태
     const [experiences, setExperiences] = useState<BoothExperience[] | null>(null); // 부스 요약 목록
     const [booths, setBooths] = useState<BoothSummary[] | null>(null); // 부스 목록
-    const [selectedBooth, setSelectedBooth] = useState<any | null>(null); // 부스 상세정보
+    const [selectedBooth, setSelectedBooth] = useState<BoothDetailResponse | null>(null); // 부스 상세정보
     const [selectedExperience, setSelectedExperience] = useState<BoothExperience | null>(null);
-    const [isWaiting, setIsWaiting] = useState(false);
+    const [, setIsWaiting] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
 
     // 모바일 사이드바 상태
@@ -172,16 +177,18 @@ export default function MyTickets(): JSX.Element {
             setIsQrTicketOpen(true);
             setQrTicketId(res.qrTicketId);
         } catch (error) {
-            if (error.response) {
-                const { message } = error.response.data;
-                alert(message);
-            } else if (error.request) {
+            const apiError = error as ApiError;
+            if (apiError.response) {
+                const responseData = apiError.response.data;
+                const message = typeof responseData === "string" ? responseData : responseData?.message;
+                alert(message ?? t('errors.unknown'));
+            } else if (apiError.request) {
                 // 요청은 됐지만 응답 없음
-                console.error(t('errors.noResponse'), error.request);
+                console.error(t('errors.noResponse'), apiError.request);
                 alert(t('errors.noResponse'));
             } else {
                 // 기타 오류
-                console.error(t('errors.unknown'), error.message);
+                console.error(t('errors.unknown'), apiError.message);
                 alert(t('errors.unknown'));
             }
 
@@ -308,7 +315,9 @@ export default function MyTickets(): JSX.Element {
             alert("대기 등록이 완료되었습니다.");
             handleBoothDetailClose();
         } catch (error) {
-            alert(error.response.data);
+            const apiError = error as ApiError;
+            const responseData = apiError.response?.data;
+            alert(typeof responseData === "string" ? responseData : responseData?.message ?? "대기 등록에 실패했습니다.");
         }
     };
 
@@ -355,7 +364,7 @@ export default function MyTickets(): JSX.Element {
 
             await navigator.clipboard.writeText(link);
             toast.success(t('mypage.tickets.linkCopySuccess'));
-        } catch (error) {
+        } catch {
             toast.error(t('mypage.tickets.linkError'));
         }
     }
@@ -782,11 +791,11 @@ export default function MyTickets(): JSX.Element {
                                         {booths?.filter(booth => (booth.boothTitle || '').toLowerCase().includes(searchTerm.toLowerCase()))
                                             .map((booth, index) => {
                                                 console.log('부스 데이터:', booth);
-                                                const id = booth.boothId || booth.id || index;
+                                                const id = booth.boothId || index;
                                                 return (
                                                     <div key={id} className="group cursor-pointer" onClick={() => {
-                                                        console.log('부스 클릭 - boothId:', booth.boothId, 'id:', booth.id, 'index:', index);
-                                                        const validId = booth.boothId || booth.id;
+                                                        console.log('부스 클릭 - boothId:', booth.boothId, 'index:', index);
+                                                        const validId = booth.boothId;
                                                         if (validId && typeof validId === 'number') {
                                                             handleBoothDetailOpen(validId);
                                                         } else {
@@ -869,16 +878,15 @@ export default function MyTickets(): JSX.Element {
                                         </div>
 
                                         {/* 외부 링크 */}
-                                        {((selectedBooth.boothExternalLinks && selectedBooth.boothExternalLinks.length > 0) ||
-                                            (selectedBooth.externalLinks && selectedBooth.externalLinks.length > 0)) && (
+                                        {(selectedBooth.boothExternalLinks && selectedBooth.boothExternalLinks.length > 0) && (
                                                 <div className="border-t border-gray-300 pt-4 mt-4">
                                                     <h5 className="font-medium text-gray-900 mb-3 text-base">관련 링크</h5>
                                                     <div className="space-y-3">
-                                                        {(selectedBooth.boothExternalLinks || selectedBooth.externalLinks || [])
-                                                            .filter(link => link && (link.url || link.link))
+                                                        {selectedBooth.boothExternalLinks
+                                                            .filter(link => link && link.url)
                                                             .map((link, index) => {
-                                                                const linkUrl = link.url || link.link;
-                                                                const linkText = link.displayText || link.text || linkUrl;
+                                                                const linkUrl = link.url;
+                                                                const linkText = link.displayText || linkUrl;
                                                                 const fullUrl = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
 
                                                                 return (

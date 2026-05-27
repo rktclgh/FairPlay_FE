@@ -108,11 +108,13 @@ class ReservationService {
       }
 
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 네트워크 에러 처리
+      const message = error instanceof Error ? error.message : "";
+      const name = error instanceof Error ? error.name : "";
       if (
-        error.message?.includes("Failed to fetch") ||
-        error.name === "TypeError"
+        message.includes("Failed to fetch") ||
+        name === "TypeError"
       ) {
         throw new Error(
           "백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요."
@@ -131,52 +133,48 @@ class ReservationService {
     eventId: number,
     filter: ReservationFilter = {}
   ): Promise<void> {
-    try {
-      // 필터 조건을 쿼리 파라미터로 전달
-      const params = new URLSearchParams();
-      if (filter.name) params.append("name", filter.name);
-      if (filter.phone) params.append("phone", filter.phone);
-      if (filter.reservationStatus)
-        params.append("status", filter.reservationStatus);
+    // 필터 조건을 쿼리 파라미터로 전달
+    const params = new URLSearchParams();
+    if (filter.name) params.append("name", filter.name);
+    if (filter.phone) params.append("phone", filter.phone);
+    if (filter.reservationStatus)
+      params.append("status", filter.reservationStatus);
 
-      const apiUrl = `/api/events/${eventId}/reservations/attendees/excel?${params.toString()}`;
-      const response = await authManager.authenticatedFetch(apiUrl);
+    const apiUrl = `/api/events/${eventId}/reservations/attendees/excel?${params.toString()}`;
+    const response = await authManager.authenticatedFetch(apiUrl);
 
-      if (!response.ok) {
-        throw new Error(
-          `엑셀 다운로드 API 호출 실패: ${response.status} ${response.statusText}`
-        );
-      }
-
-      // 브라우저에서 파일 다운로드 처리
-      const blob = await response.blob();
-
-      // Content-Type 확인
-      if (!blob.type.includes("spreadsheet") && !blob.type.includes("excel")) {
-        // blob을 텍스트로 읽어서 에러 메시지 확인
-        const text = await blob.text();
-        throw new Error(`잘못된 응답 형식: ${text}`);
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-
-      // 파일명 생성 (현재 날짜 포함)
-      const today = new Date();
-      const dateString =
-        today.getFullYear() +
-        String(today.getMonth() + 1).padStart(2, "0") +
-        String(today.getDate()).padStart(2, "0");
-      link.download = `예약자목록_이벤트${eventId}_${dateString}.xlsx`;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      throw error;
+    if (!response.ok) {
+      throw new Error(
+        `엑셀 다운로드 API 호출 실패: ${response.status} ${response.statusText}`
+      );
     }
+
+    // 브라우저에서 파일 다운로드 처리
+    const blob = await response.blob();
+
+    // Content-Type 확인
+    if (!blob.type.includes("spreadsheet") && !blob.type.includes("excel")) {
+      // blob을 텍스트로 읽어서 에러 메시지 확인
+      const text = await blob.text();
+      throw new Error(`잘못된 응답 형식: ${text}`);
+    }
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+
+    // 파일명 생성 (현재 날짜 포함)
+    const today = new Date();
+    const dateString =
+      today.getFullYear() +
+      String(today.getMonth() + 1).padStart(2, "0") +
+      String(today.getDate()).padStart(2, "0");
+    link.download = `예약자목록_이벤트${eventId}_${dateString}.xlsx`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 
   /**
@@ -218,7 +216,7 @@ class ReservationService {
       const minutes = String(date.getMinutes()).padStart(2, "0");
 
       return `${year}.${month}.${day} ${hours}:${minutes}`;
-    } catch (error) {
+    } catch {
       return isoString;
     }
   }

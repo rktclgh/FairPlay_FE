@@ -18,7 +18,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import type {
     QrTicketReissueMemberRequestDto,
     QrTicketData
-} from "@/services/types/qrTicketType";
+} from "../services/types/qrTicketType";
 
 // 스크롤바 숨기기 CSS
 const scrollbarHideStyles = `
@@ -256,4 +256,4 @@ const QrTicket: React.FC<QrTicketProps> = ({ isOpen, onClose, ticketData, update
     );
 };
 
-export default QrTicket; 
+export default QrTicket;
