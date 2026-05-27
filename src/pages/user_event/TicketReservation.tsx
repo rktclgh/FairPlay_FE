@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TopNav } from "../../components/TopNav";
 import { toast } from "react-toastify";
@@ -8,7 +8,6 @@ import authManager from "../../utils/auth";
 import paymentService from "../../services/paymentService";
 import NewLoader from "../../components/NewLoader";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
-import { useAuth } from "../../context/AuthContext";
 
 // 이벤트 회차 정보
 interface EventSchedule {
@@ -33,6 +32,18 @@ interface TicketReservationOption {
     visible: boolean;
 }
 
+interface ScheduleTicketApiResponse {
+    ticketId: number;
+    name: string;
+    price?: number;
+    maxPurchase?: number;
+    saleQuantity?: number;
+    remainingStock?: number;
+    salesStartAt?: string;
+    salesEndAt?: string;
+    visible?: boolean;
+}
+
 // 이벤트 상세 정보 (예매 페이지에서 실제 사용되는 필드만)
 interface EventDetail {
     titleKr: string;
@@ -54,6 +65,39 @@ interface TicketReservationForm {
     paymentMethod: string;
 }
 
+const PENDING_PAYMENT_KEYS = [
+    'pending_imp_uid',
+    'pending_merchant_uid',
+    'pending_event_id',
+    'pending_schedule_id',
+    'pending_ticket_id',
+    'pending_amount',
+    'pending_quantity'
+];
+
+const parseStoredNumber = (value: string | null): number | null => {
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getPendingPaymentItem = (key: string): string | null => {
+    return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+};
+
+const setPendingPaymentItem = (key: string, value: string) => {
+    sessionStorage.setItem(key, value);
+};
+
+const clearPendingPaymentStorage = () => {
+    PENDING_PAYMENT_KEYS.forEach(key => {
+        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
+    });
+    localStorage.removeItem('ticketReservationForm');
+    localStorage.removeItem('selectedTicket');
+};
+
 export const TicketReservation = () => {
     useScrollToTop();
     // eventId
@@ -61,10 +105,6 @@ export const TicketReservation = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     
-    // ================================= 생년월일 검증용 추가 =================================
-    const { user } = useAuth();
-    // ====================================================================================
-
     // URL 파라미터에서 scheduleId 가져오기
     const scheduleIdParam = searchParams.get('scheduleId');
     const scheduleId = scheduleIdParam ? parseInt(scheduleIdParam) : null;
@@ -84,7 +124,7 @@ export const TicketReservation = () => {
     // 중복 클릭 방지를 위한 상태
     const [isProcessing, setIsProcessing] = useState(
         // PG사 결제 완료 시 즉시 로딩 상태로 시작
-        impSuccess === 'true' && impUid && merchantUid
+        Boolean(impSuccess === 'true' && impUid && merchantUid)
     );
     const [paymentAttempts, setPaymentAttempts] = useState(0);
     const [lastAttemptTime, setLastAttemptTime] = useState(0);
@@ -100,92 +140,166 @@ export const TicketReservation = () => {
         buyer_name: "",
         buyer_phone: "",
         buyer_email: "",
-        buyer_id: "",
+        buyer_id: 0,
         paymentMethod: "card"
     });
 
     // 사용 가능한 티켓 옵션을 백엔드에서 가져온 데이터로 사용
     const ticketReservationOptions = availableTickets;
 
-    // PG사 중간 페이지 감지 및 리다이렉션 (전역 감지)
-    useEffect(() => {
-        const handlePGRedirect = () => {
-            const currentUrl = window.location.href;
-            const pgUrls = [
-                'service.iamport.kr',
-                'm_uplus_payments',
-                'authenticated',
-                'lgdacom',
-                'lguplus',
-                'inicis',
-                'kcp',
-                'toss'
-            ];
+    // 모바일 결제 성공 후 처리 함수
+    const handleMobilePaymentSuccess = useCallback(async (impUid: string, merchantUid: string) => {
+        // 재미있는 메시지들
+        const funMessages = [
+            '박람회를 지배하는 중...',
+            '공연을 나의 것으로 만드는 중...',
+            '축제의 주인공이 되는 중...',
+            '티켓을 황금으로 변환하는 중...',
+            '최고의 자리를 예약하는 중...'
+        ];
 
-            // PG사 URL 감지
-            const isPGPage = pgUrls.some(pgUrl => currentUrl.includes(pgUrl));
+        let messageIndex = 0;
+        setPaymentSuccess(false);
+        setPaymentStep(funMessages[messageIndex]);
 
-            if (isPGPage) {
-                console.log('PG사 중간 페이지 감지:', currentUrl);
+        // 메시지 로테이션 인터벌
+        const messageInterval = setInterval(() => {
+            messageIndex = (messageIndex + 1) % funMessages.length;
+            setPaymentStep(funMessages[messageIndex]);
+        }, 1500);
 
-                // 모든 방법으로 결제 정보 추출 시도
-                const urlParams = new URLSearchParams(window.location.search);
-                const impUid = urlParams.get('imp_uid') ||
-                    urlParams.get('IMP_UID') ||
-                    localStorage.getItem('pending_imp_uid');
+        try {
+            console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
 
-                const merchantUid = urlParams.get('merchant_uid') ||
-                    urlParams.get('LGD_OID') ||
-                    localStorage.getItem('pending_merchant_uid');
+            const mobileScheduleId = scheduleId ?? parseStoredNumber(getPendingPaymentItem('pending_schedule_id'));
+            const mobileTicketId =
+                parseStoredNumber(searchParams.get('ticketId')) ??
+                parseStoredNumber(getPendingPaymentItem('pending_ticket_id'));
+            const mobileAmount = parseStoredNumber(getPendingPaymentItem('pending_amount'));
+            const mobileQuantity = parseStoredNumber(getPendingPaymentItem('pending_quantity'));
 
-                const savedEventId = localStorage.getItem('pending_event_id') || eventId;
-                const savedScheduleId = localStorage.getItem('pending_schedule_id') || scheduleId;
+            if (!mobileScheduleId || !mobileTicketId || mobileAmount === null || mobileQuantity === null) {
+                throw new Error('결제 완료에 필요한 예약 정보가 없습니다. 다시 예매를 진행해주세요.');
+            }
 
-                console.log('추출된 결제 정보:', {
-                    impUid, merchantUid, savedEventId, savedScheduleId,
-                    currentUrl, urlParams: Object.fromEntries(urlParams)
+            // 1. 결제 완료 처리 API 호출
+            const completeResult = await paymentService.completePayment({
+                merchantUid: merchantUid,
+                impUid: impUid,
+                amount: mobileAmount,
+                scheduleId: mobileScheduleId,
+                ticketId: mobileTicketId
+            });
+            console.log('결제 완료 처리 성공:', completeResult);
+
+            const reservationData = {
+                scheduleId: mobileScheduleId,
+                ticketId: mobileTicketId,
+                quantity: mobileQuantity,
+                totalAmount: mobileAmount
+            };
+
+            // 예약은 결제 완료 시 자동으로 생성됨 (PaymentService에서 처리)
+            console.log('모바일 결제 완료:', { completeResult, reservationData });
+
+            // 결제 성공 시 저장소 정리
+            clearPendingPaymentStorage();
+
+            // 메시지 로테이션 중지
+            clearInterval(messageInterval);
+            setPaymentStep('티켓 발급 완료!');
+            setPaymentSuccess(true);
+
+            // PC와 동일하게 2.5초 후 이동 (토스트 알림 제거)
+            setTimeout(() => {
+                navigate('/mypage/reservation');
+            }, 2500);
+
+            // URL 정리
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.delete('imp_uid');
+            newUrl.searchParams.delete('merchant_uid');
+            newUrl.searchParams.delete('imp_success');
+            window.history.replaceState({}, '', newUrl);
+
+        } catch (error) {
+            console.error('모바일 결제 완료 처리 오류:', error);
+            // 메시지 로테이션 중지
+            clearInterval(messageInterval);
+            setPaymentStep('결제 실패');
+
+            // 모바일 결제 실패 시 백엔드 락도 해제
+            try {
+                await authManager.authenticatedFetch('/api/payments/status/clear', {
+                    method: 'POST'
                 });
+                console.log('백엔드 결제 락 해제 완료');
+            } catch (clearError) {
+                console.warn('백엔드 결제 락 해제 실패:', clearError);
+            }
 
-                // 일정 시간 후 강제 리다이렉션 (결제 정보가 없어도)
-                const forceRedirect = () => {
-                    if (savedEventId && savedScheduleId) {
-                        const redirectUrl = `/ticketreservation/${savedEventId}/${savedScheduleId}?imp_success=pending&force_redirect=true`;
-                        console.log('강제 리다이렉션:', redirectUrl);
-                        window.location.href = redirectUrl;
-                    }
-                };
-
-                if (impUid && merchantUid && savedEventId && savedScheduleId) {
-                    // 결제 완료 처리 페이지로 리다이렉션
-                    const redirectUrl = `/ticketreservation/${savedEventId}/${savedScheduleId}?imp_success=true&imp_uid=${impUid}&merchant_uid=${merchantUid}`;
-                    console.log('PG사 중간 페이지에서 결제 완료 페이지로 리다이렉션:', redirectUrl);
-                    window.location.href = redirectUrl;
+            // PC와 동일한 상세 에러 메시지 처리
+            let errorMessage = '결제 완료 처리 중 오류가 발생했습니다.';
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
                 } else {
-                    // 3초 후 강제 리다이렉션
-                    console.log('결제 정보 부족, 3초 후 강제 리다이렉션');
-                    setTimeout(forceRedirect, 3000);
+                    errorMessage = error.message;
                 }
             }
-        };
 
-        // 즉시 체크
-        handlePGRedirect();
+            toast.error(errorMessage);
 
-        // 주기적 체크 (1초마다)
-        const intervalId = setInterval(handlePGRedirect, 1000);
+            clearPendingPaymentStorage();
 
-        // URL 변경 감지
-        const handleUrlChange = () => {
-            setTimeout(handlePGRedirect, 100);
-        };
+            // PC와 동일하게 3초 후 상태 초기화
+            setTimeout(() => {
+                setPaymentStep('');
+                setPaymentSuccess(false);
+            }, 3000);
+        } finally {
+            // 메시지 로테이션 정리 (에러가 발생하더라도 인터벌 정리)
+            clearInterval(messageInterval);
+            // PC와 동일한 상태 초기화
+            setIsProcessing(false);
+        }
+    }, [navigate, scheduleId, searchParams]);
 
-        window.addEventListener('popstate', handleUrlChange);
+    // 회차별 티켓 로드 함수
+    const loadScheduleTickets = useCallback(async (scheduleId: number) => {
+        try {
+            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule/${scheduleId}/tickets`);
 
-        return () => {
-            clearInterval(intervalId);
-            window.removeEventListener('popstate', handleUrlChange);
-        };
-    }, [eventId, scheduleId]);
+            if (!response.ok) {
+                throw new Error(`회차별 티켓 조회 실패: ${response.status}`);
+            }
+
+            const ticketList = await response.json() as ScheduleTicketApiResponse[];
+            console.log('회차별 티켓 목록:', ticketList);
+
+            // 회차별 티켓 정보
+            const formattedTickets = ticketList.map((ticket) => ({
+                ticketId: ticket.ticketId,
+                name: ticket.name,
+                price: ticket.price || 0,
+                maxPurchase: ticket.maxPurchase, // 1인 최대 구매 수량 추가
+                saleQuantity: ticket.saleQuantity || 0,
+                remainingStock: ticket.remainingStock || 0,
+                salesStartAt: ticket.salesStartAt,
+                salesEndAt: ticket.salesEndAt,
+                visible: ticket.visible !== false // 기본값 true
+            }));
+
+            // 판매 활성화된 티켓만 필터링
+            const visibleTickets = formattedTickets.filter(ticket => ticket.visible);
+            setAvailableTickets(visibleTickets);
+
+        } catch (error) {
+            console.error('회차별 티켓 로드 실패:', error);
+            toast.error('티켓 정보를 불러올 수 없습니다.');
+            setAvailableTickets([]);
+        }
+    }, [eventId]);
 
     useEffect(() => {
         // 모바일 결제 완료 후 리다이렉트 처리
@@ -200,7 +314,7 @@ export const TicketReservation = () => {
             setPaymentStep('결제 상태 확인 중...');
 
             // 저장된 정보로 결제 상태 확인 시도
-            const savedMerchantUid = localStorage.getItem('pending_merchant_uid');
+            const savedMerchantUid = getPendingPaymentItem('pending_merchant_uid');
             if (savedMerchantUid) {
                 // TODO: 결제 상태 확인 API 호출
                 toast.info('결제 상태를 확인 중입니다...');
@@ -212,7 +326,8 @@ export const TicketReservation = () => {
         } else if (impSuccess === 'false') {
             // 결제 취소 또는 실패 시 URL 파라미터만 정리
             console.log('모바일 결제 취소/실패 감지');
-            const newUrl = new URL(window.location);
+            clearPendingPaymentStorage();
+            const newUrl = new URL(window.location.href);
             newUrl.searchParams.delete('imp_uid');
             newUrl.searchParams.delete('merchant_uid');
             newUrl.searchParams.delete('imp_success');
@@ -221,7 +336,7 @@ export const TicketReservation = () => {
             // 기존 success=true 파라미터 처리 (호환성)
             toast.success('결제가 성공적으로 완료되었습니다!');
             // URL에서 success 파라미터 제거
-            const newUrl = new URL(window.location);
+            const newUrl = new URL(window.location.href);
             newUrl.searchParams.delete('success');
             window.history.replaceState({}, '', newUrl);
         }
@@ -237,7 +352,7 @@ export const TicketReservation = () => {
                     buyer_name: userData.name || "",
                     buyer_phone: userData.phone || "",
                     buyer_email: userData.email || "",
-                    buyer_id: userData.userId || ""
+                    buyer_id: userData.userId || 0
                 }));
             } catch {
                 console.error("사용자 정보 로드 실패");
@@ -317,43 +432,7 @@ export const TicketReservation = () => {
         };
 
         initializeData();
-    }, [eventId, scheduleId, navigate, impSuccess, impUid, merchantUid, success]);
-
-    // 회차별 티켓 로드 함수
-    const loadScheduleTickets = async (scheduleId: number) => {
-        try {
-            const response = await authManager.authenticatedFetch(`/api/events/${eventId}/schedule/${scheduleId}/tickets`);
-
-            if (!response.ok) {
-                throw new Error(`회차별 티켓 조회 실패: ${response.status}`);
-            }
-
-            const ticketList = await response.json();
-            console.log('회차별 티켓 목록:', ticketList);
-
-            // 회차별 티켓 정보
-            const formattedTickets = ticketList.map((ticket: any) => ({
-                ticketId: ticket.ticketId,
-                name: ticket.name,
-                price: ticket.price || 0,
-                maxPurchase: ticket.maxPurchase, // 1인 최대 구매 수량 추가
-                saleQuantity: ticket.saleQuantity || 0,
-                remainingStock: ticket.remainingStock || 0,
-                salesStartAt: ticket.salesStartAt,
-                salesEndAt: ticket.salesEndAt,
-                visible: ticket.visible !== false // 기본값 true
-            }));
-
-            // 판매 활성화된 티켓만 필터링
-            const visibleTickets = formattedTickets.filter(ticket => ticket.visible);
-            setAvailableTickets(visibleTickets);
-
-        } catch (error) {
-            console.error('회차별 티켓 로드 실패:', error);
-            toast.error('티켓 정보를 불러올 수 없습니다.');
-            setAvailableTickets([]);
-        }
-    };
+    }, [eventId, scheduleId, navigate, impSuccess, impUid, merchantUid, success, searchParams, handleMobilePaymentSuccess, loadScheduleTickets]);
 
     // 선택된 티켓 가져오기
     const getSelectedTicket = () => {
@@ -467,142 +546,6 @@ export const TicketReservation = () => {
         };
     }, [isProcessing]);
 
-
-    // 모바일 결제 성공 후 처리 함수
-    const handleMobilePaymentSuccess = async (impUid: string, merchantUid: string) => {
-        // 재미있는 메시지들
-        const funMessages = [
-            '박람회를 지배하는 중...',
-            '공연을 나의 것으로 만드는 중...',
-            '축제의 주인공이 되는 중...',
-            '티켓을 황금으로 변환하는 중...',
-            '최고의 자리를 예약하는 중...'
-        ];
-
-        let messageIndex = 0;
-        setPaymentSuccess(false);
-        setPaymentStep(funMessages[messageIndex]);
-
-        // 메시지 로테이션 인터벌
-        const messageInterval = setInterval(() => {
-            messageIndex = (messageIndex + 1) % funMessages.length;
-            setPaymentStep(funMessages[messageIndex]);
-        }, 1500);
-
-        try {
-            console.log('모바일 결제 완료 처리 시작:', { impUid, merchantUid });
-
-            // 1. 결제 완료 처리 API 호출
-            const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL || window.location.origin;
-            const completeResponse = await fetch(`${backendUrl}/api/payments/complete`, {
-                method: 'POST',
-                credentials: 'include', // HTTP-only 쿠키 자동 전송
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    merchantUid: merchantUid,
-                    impUid: impUid
-                })
-            });
-
-            if (!completeResponse.ok) {
-                if (completeResponse.status === 401) {
-                    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-                }
-                throw new Error(`결제 완료 처리 실패: ${completeResponse.status}`);
-            }
-
-            const completeResult = await completeResponse.json();
-            console.log('결제 완료 처리 성공:', completeResult);
-
-            // 2. 저장된 폼 데이터로 예약 생성 (PC와 동일한 로직)
-            const savedFormData = JSON.parse(localStorage.getItem('ticketReservationForm') || '{}');
-            const savedSelectedTicket = JSON.parse(localStorage.getItem('selectedTicket') || '{}');
-
-            if (savedFormData && savedSelectedTicket) {
-                console.log('저장된 예약 정보로 예약 생성:', { savedFormData, savedSelectedTicket });
-
-                const reservationData = {
-                    scheduleId: scheduleId,
-                    ticketId: savedSelectedTicket.ticketId,
-                    quantity: savedFormData.quantity,
-                    totalAmount: savedSelectedTicket.price * savedFormData.quantity,
-                    buyer_name: savedFormData.buyer_name,
-                    buyer_phone: savedFormData.buyer_phone,
-                    buyer_email: savedFormData.buyer_email,
-                    paymentMethod: savedFormData.paymentMethod || 'card'
-                };
-
-                // 예약은 결제 완료 시 자동으로 생성됨 (PaymentService에서 처리)
-                console.log('모바일 결제 완료:', completeResult);
-            }
-
-            // 결제 성공 시 localStorage 정리
-            localStorage.removeItem('pending_imp_uid');
-            localStorage.removeItem('pending_merchant_uid');
-            localStorage.removeItem('pending_event_id');
-            localStorage.removeItem('pending_schedule_id');
-
-            // 메시지 로테이션 중지
-            clearInterval(messageInterval);
-            setPaymentStep('티켓 발급 완료!');
-            setPaymentSuccess(true);
-
-            // PC와 동일하게 2.5초 후 이동 (토스트 알림 제거)
-            setTimeout(() => {
-                navigate('/mypage/reservation');
-            }, 2500);
-
-            // URL 정리
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.delete('imp_uid');
-            newUrl.searchParams.delete('merchant_uid');
-            newUrl.searchParams.delete('imp_success');
-            window.history.replaceState({}, '', newUrl);
-
-        } catch (error) {
-            console.error('모바일 결제 완료 처리 오류:', error);
-            // 메시지 로테이션 중지
-            clearInterval(messageInterval);
-            setPaymentStep('결제 실패');
-
-            // 모바일 결제 실패 시 백엔드 락도 해제
-            try {
-                await authManager.authenticatedFetch('/api/payments/status/clear', {
-                    method: 'POST'
-                });
-                console.log('백엔드 결제 락 해제 완료');
-            } catch (clearError) {
-                console.warn('백엔드 결제 락 해제 실패:', clearError);
-            }
-
-            // PC와 동일한 상세 에러 메시지 처리
-            let errorMessage = '결제 완료 처리 중 오류가 발생했습니다.';
-            if (error instanceof Error) {
-                if (error.message.includes('network') || error.message.includes('fetch')) {
-                    errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
-                } else {
-                    errorMessage = error.message;
-                }
-            }
-
-            toast.error(errorMessage);
-
-            // PC와 동일하게 3초 후 상태 초기화
-            setTimeout(() => {
-                setPaymentStep('');
-                setPaymentSuccess(false);
-            }, 3000);
-        } finally {
-            // 메시지 로테이션 정리 (에러가 발생하더라도 인터벌 정리)
-            clearInterval(messageInterval);
-            // PC와 동일한 상태 초기화
-            setIsProcessing(false);
-        }
-    };
-
     // 중복 클릭 방지 및 결제 처리 함수
     const handlePayment = async () => {
         // ================================= 생년월일 검증 로직 =================================
@@ -672,6 +615,16 @@ export const TicketReservation = () => {
             return;
         }
 
+        if (!scheduleId) {
+            toast.error('회차 정보가 없습니다. 이벤트 상세 페이지에서 회차를 다시 선택해주세요.');
+            return;
+        }
+
+        if (!eventId || !eventData) {
+            toast.error('이벤트 정보를 확인할 수 없습니다. 다시 시도해주세요.');
+            return;
+        }
+
         const totalAmount = calculateTotal();
         const paymentTargetType = "RESERVATION";
 
@@ -701,11 +654,14 @@ export const TicketReservation = () => {
 
             setPaymentStep('결제 처리 중...');
 
-            // PG사 중간 페이지 감지를 위한 정보 저장 (최소화)
-            const tempMerchantUid = `TICKET_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-            localStorage.setItem('pending_merchant_uid', tempMerchantUid);
-            localStorage.setItem('pending_event_id', eventId);
-            localStorage.setItem('pending_schedule_id', scheduleId);
+            // 모바일 redirect 복구용 정보는 결제 완료에 필요한 최소값만 저장합니다.
+            const paymentMerchantUid = await paymentService.generateMerchantUid(paymentTargetType);
+            setPendingPaymentItem('pending_merchant_uid', paymentMerchantUid);
+            setPendingPaymentItem('pending_event_id', eventId);
+            setPendingPaymentItem('pending_schedule_id', String(scheduleId));
+            setPendingPaymentItem('pending_ticket_id', String(selectedTicket.ticketId));
+            setPendingPaymentItem('pending_amount', String(totalAmount));
+            setPendingPaymentItem('pending_quantity', String(ticketReservationForm.quantity));
 
             // 결제 처리 (결제 → 예약 생성 → target_id 업데이트)
             const result = await paymentService.processPayment(
@@ -717,7 +673,8 @@ export const TicketReservation = () => {
                 ticketReservationForm.quantity,
                 selectedTicket.price,
                 totalAmount,
-                reservationData
+                reservationData,
+                paymentMerchantUid
             );
 
             setPaymentStep('티켓 발급 중...');
@@ -725,10 +682,7 @@ export const TicketReservation = () => {
             console.log('결제 및 예약 성공:', result);
 
             // 결제 성공 시 localStorage 정리
-            localStorage.removeItem('pending_imp_uid');
-            localStorage.removeItem('pending_merchant_uid');
-            localStorage.removeItem('pending_event_id');
-            localStorage.removeItem('pending_schedule_id');
+            clearPendingPaymentStorage();
 
             setPaymentStep('결제 완료!');
             setPaymentSuccess(true);
@@ -741,6 +695,7 @@ export const TicketReservation = () => {
         } catch (error) {
             console.error('결제 처리 중 오류:', error);
             setPaymentStep('결제 실패');
+            clearPendingPaymentStorage();
 
             // 결제 실패 시 백엔드 락도 해제
             try {
@@ -1232,7 +1187,7 @@ export const TicketReservation = () => {
             </div>
 
             {/* 커스텀 CSS 애니메이션 */}
-            <style jsx>{`
+            <style>{`
                 @keyframes fade-in {
                     from { opacity: 0; transform: translateY(20px); }
                     to { opacity: 1; transform: translateY(0); }

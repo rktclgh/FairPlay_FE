@@ -11,6 +11,7 @@
     "lint:changed": "node scripts/check-changed.mjs lint",
     "typecheck:changed": "node scripts/check-changed.mjs typecheck",
     "verify:changed": "node scripts/check-changed.mjs all",
+    "route:check": "node scripts/check-route-guards.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

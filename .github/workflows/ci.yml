@@ -12,21 +12,41 @@ permissions:
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
+    env:
+      FAIRPLAY_CHECK_BASE: ${{ github.base_ref || 'develop' }}
+      VITE_BACKEND_BASE_URL: http://192.168.123.103:8080
+      VITE_FRONTEND_BASE_URL: http://192.168.123.103
+      VITE_CDN_BASE_URL: http://192.168.123.103/uploads
+      VITE_KAKAO_CLIENT_ID: ci-placeholder
+      VITE_KAKAO_MAP_ID: ci-placeholder
+      VITE_BUSINESS_SERVICE_KEY: ci-placeholder
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Typecheck changed files
+        timeout-minutes: 5
+        run: npm run typecheck:changed
+
+      - name: Lint changed files
+        timeout-minutes: 5
+        run: npm run lint:changed
+
+      - name: Check protected routes
+        run: npm run route:check
 
       - name: Build
         timeout-minutes: 10
@@ -39,11 +59,3 @@ jobs:
             echo "The deployed Cloudflare zone blocks /assets/vendor-*.js. Rename the chunk before merging."
             exit 1
           fi
-
-      - name: Typecheck changed files
-        timeout-minutes: 5
-        run: npm run typecheck:changed
-
-      - name: Lint changed files
-        timeout-minutes: 5
-        run: npm run lint:changed

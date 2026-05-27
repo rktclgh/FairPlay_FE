@@ -1,33 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-
-declare global {
-    interface Window {
-        IMP?: {
-            init: (code: string) => void;
-            request_pay: (
-                param: {
-                    pg: string;
-                    pay_method: string;
-                    merchant_uid: string;
-                    name: string;
-                    amount: number;
-                    buyer_email: string;
-                    buyer_name: string;
-                },
-                cb: (rsp: IamportResponse) => void
-            ) => void;
-        };
-    }
-}
-
-interface IamportResponse {
-    success: boolean;
-    merchant_uid: string;
-    imp_uid?: string;
-    paid_amount?: number;
-    error_msg?: string;
-}
+import paymentService from "../services/paymentService";
 
 interface PaymentResponse {
     paymentId: number;
@@ -63,51 +36,78 @@ export default function PaymentTest(): JSX.Element {
 
     const onClickPayment = async () => {
         setLoading(true);
-        const { IMP } = window;
-        if (!IMP) {
-            alert("포트원 SDK 로딩 실패");
-            return;
-        }
-
-        IMP.init(IMP_CODE);
-        // 1. 결제 준비 (DB에 결제 정보 미리 등록)
-        const requestResponse = await api.post<PaymentResponse>("/api/payments/request", {
-            targetId: 2,
-            amount: 100,
-            eventId: 1,
-            quantity: 2,
-            price: 50,
-            targetType: "RESERVATION"
-        });
-
-        // 2. 결제 요청
-        IMP.request_pay(
-            {
-                pg: "uplus",
-                pay_method: "card",
-                merchant_uid: requestResponse.data.merchantUid,
-                name: "공연 티켓 결제",
-                amount: 100,
-                buyer_email: user.email,
-                buyer_name: user.name
-            },
-            async (rsp) => {
-                if (rsp.success) {
-                    // 3. 결제 검증 (백엔드에서 imp_uid로 포트원 검증)
-                    await api.post("/api/payments/complete", {
-                        impUid: rsp.imp_uid,
-                        merchantUid: rsp.merchant_uid,
-                        paymentId: requestResponse.data.paymentId
-
-                    });
-                    alert("결제 성공!");
-                    setLoading(false);
-                } else {
-                    alert("결제 실패: " + rsp.error_msg);
-                    setLoading(false);
-                }
+        try {
+            const { IMP } = window;
+            if (!IMP) {
+                alert("포트원 SDK 로딩 실패");
+                setLoading(false);
+                return;
             }
-        );
+
+            const eventId = 1;
+            const scheduleId = 1;
+            const ticketId = 2;
+            const quantity = 2;
+            const price = 50;
+            const amount = quantity * price;
+            const paymentTargetType = "RESERVATION";
+            const merchantUid = await paymentService.generateMerchantUid(paymentTargetType);
+
+            IMP.init(IMP_CODE);
+            // 1. 결제 준비 (DB에 결제 정보 미리 등록)
+            await paymentService.savePaymentRequest({
+                eventId,
+                paymentTargetType,
+                quantity,
+                price,
+                amount,
+                merchantUid,
+                pgProvider: "uplus",
+                scheduleId,
+                ticketId
+            });
+
+            // 2. 결제 요청
+            IMP.request_pay(
+                {
+                    pg: "uplus",
+                    pay_method: "card",
+                    merchant_uid: merchantUid,
+                    name: "공연 티켓 결제",
+                    amount,
+                    buyer_email: user.email,
+                    buyer_name: user.name
+                },
+                async (rsp) => {
+                    if (rsp.success) {
+                        if (!rsp.imp_uid) {
+                            alert("결제 승인번호를 확인할 수 없습니다.");
+                            setLoading(false);
+                            return;
+                        }
+
+                        // 3. 결제 검증 (백엔드에서 imp_uid로 포트원 검증)
+                        await paymentService.completePayment({
+                            impUid: rsp.imp_uid,
+                            merchantUid: rsp.merchant_uid,
+                            amount: rsp.paid_amount ?? amount,
+                            applyNum: rsp.apply_num,
+                            scheduleId,
+                            ticketId
+                        });
+                        alert("결제 성공!");
+                        setLoading(false);
+                    } else {
+                        alert("결제 실패: " + rsp.error_msg);
+                        setLoading(false);
+                    }
+                }
+            );
+        } catch (error) {
+            console.error("결제 테스트 실패:", error);
+            alert("결제 요청에 실패했습니다.");
+            setLoading(false);
+        }
     };
 
 
@@ -126,7 +126,7 @@ export default function PaymentTest(): JSX.Element {
                 reason: '테스트 결제 환불1'
             });
             alert("환불 요청이 성공적으로 접수되었습니다.");
-        } catch (error) {
+        } catch {
             alert("환불 요청에 실패했습니다.");
         } finally {
             setLoading(false);
@@ -140,7 +140,7 @@ export default function PaymentTest(): JSX.Element {
 
             await api.post<PaymentResponse>("/api/refunds/" + refundId + "/approve");
             alert("환불이 승인되었습니다.");
-        } catch (error) {
+        } catch {
             alert("환불 승인에 실패했습니다.");
         } finally {
             setLoading(false);

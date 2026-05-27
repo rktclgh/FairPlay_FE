@@ -95,15 +95,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 로그아웃 처리 (HTTP-only 쿠키 + Redis 세션 + 로컬스토리지 정리)
   const logout = async (): Promise<void> => {
+    // presence disconnect는 세션 쿠키가 삭제되기 전에 조용히 정리한다.
+    await presenceManager.stopHeartbeat();
+
     try {
       // 서버에 로그아웃 요청 (HTTP-only 쿠키 삭제 + Redis 세션 삭제)
       await api.post('/api/auth/logout');
     } catch (error) {
       console.error('서버 로그아웃 요청 실패:', error);
     }
-
-    // presenceManager heartbeat 중지
-    presenceManager.stopHeartbeat();
 
     // 로컬 상태 초기화
     setIsAuthenticated(false);
