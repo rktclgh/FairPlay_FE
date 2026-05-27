@@ -1,3 +1,5 @@
+import type { FileUploadDto } from '../services/types/eventType';
+
 // 전자명함 요청 타입
 export interface BusinessCardRequest {
     name?: string;
@@ -21,6 +23,7 @@ export interface BusinessCardRequest {
     twitter?: string;
     github?: string;
     profileImageUrl?: string;
+    tempFiles?: FileUploadDto[];
 }
 
 // 전자명함 응답 타입

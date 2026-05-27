@@ -2,11 +2,8 @@ import React, {useState, useEffect} from "react";
 import {useParams, useNavigate, useLocation} from "react-router-dom";
 import {TopNav} from "../../components/TopNav";
 import {MapPin} from "lucide-react";
-import {FaHeart} from "react-icons/fa";
-import {requireAuth} from "../../utils/authGuard";
 import {useAuth} from "../../context/AuthContext";
 import {VenueInfo} from "./VenueInfo";
-import {CancelPolicy} from "./CancelPolicy";
 import {Reviews} from "./Reviews";
 import {Expectations} from "./Expectations";
 import {ParticipatingBooths} from "./ParticipatingBooths";
@@ -26,11 +23,12 @@ import {
 
 type WishlistResponseDto = { eventId: number };
 
-import authManager from "../../utils/auth";
 import {toast} from 'react-toastify';
 import NewLoader from "../../components/NewLoader";
 import {useScrollToTop} from "../../hooks/useScrollToTop";
 import HeartBox from "../../components/Heart";
+
+const EVENT_IMAGE_FALLBACK_SRC = "/images/NoImage.png";
 
 // 회차 정보 인터페이스
 interface EventSchedule {
@@ -47,6 +45,22 @@ interface EventSchedule {
 const authHeaders = () => ({});
 
 // 인증 상태는 useAuth 훅으로 확인 (컴포넌트 내부에서 isAuthenticated 사용)
+type TicketPrice = { name: string; price: number };
+type EventScheduleResponse = {
+    scheduleId: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    weekday: number;
+    hasActiveTickets?: boolean;
+    soldTicketCount?: number;
+};
+type TicketResponse = {
+    name?: string;
+    ticketName?: string;
+    title?: string;
+    price?: number;
+};
 
 const EventDetail = (): JSX.Element => {
     const {setAutoScrolling} = useScrollToTop();
@@ -55,6 +69,7 @@ const EventDetail = (): JSX.Element => {
     const {isAuthenticated} = useAuth();
     const [eventData, setEventData] = useState<EventDetailResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
+    const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(() => new Set());
 
     const [currentCalendarYear, setCurrentCalendarYear] = useState<number>(2025);
     const [currentCalendarMonth, setCurrentCalendarMonth] = useState<number>(7);
@@ -64,7 +79,7 @@ const EventDetail = (): JSX.Element => {
     const [availableSchedules, setAvailableSchedules] = useState<EventSchedule[]>([]); // 선택된 날짜의 회차 목록
     const [allSchedules, setAllSchedules] = useState<EventSchedule[]>([]); // 전체 회차 목록
     const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null); // 선택된 회차 ID
-    const [ticketPrices, setTicketPrices] = useState<{ name: string, price: number }[]>([]); // 티켓 가격 목록
+    const [ticketPrices, setTicketPrices] = useState<TicketPrice[]>([]); // 티켓 가격 목록
     const [isExternalBookingOpen, setIsExternalBookingOpen] = useState(false);
     const [reviews, setReviews] = useState<ReviewForEventResponseDto | null>(null)
     const [currentPage, setCurrentPage] = useState(0);
@@ -145,99 +160,6 @@ const EventDetail = (): JSX.Element => {
         }
     };
 
-    // 이벤트 데이터 로드 시 달력 초기화
-    // useEffect(() => {
-    //     if (eventData) {
-    //         const eventDates = parseEventDates(eventData.schedule);
-    //         if (eventDates) {
-    //             setCurrentCalendarYear(eventDates.startYear);
-    //             setCurrentCalendarMonth(eventDates.startMonth);
-    //         }
-    //     }
-    // }, [eventData]);
-
-    // 날짜 파싱 함수
-
-
-    const parseEventDates = (schedule: string) => {
-        // "2025.07.26 - 2025.07.27 11:00" 형식에서 날짜 추출
-        const dateMatches = schedule.match(/(\d{4})\.(\d{2})\.(\d{2})/g);
-        if (dateMatches && dateMatches.length >= 2) {
-            const startDate = dateMatches[0].split('.').map(Number);
-            const endDate = dateMatches[1].split('.').map(Number);
-
-            return {
-                startYear: startDate[0],
-                startMonth: startDate[1],
-                startDay: startDate[2],
-                endYear: endDate[0],
-                endMonth: endDate[1],
-                endDay: endDate[2]
-            };
-        }
-        return null;
-    };
-
-    // 달력 네비게이션 함수들
-    const handlePrevMonth = () => {
-        if (currentCalendarMonth === 1) {
-            setCurrentCalendarYear(currentCalendarYear - 1);
-            setCurrentCalendarMonth(12);
-        } else {
-            setCurrentCalendarMonth(currentCalendarMonth - 1);
-        }
-    };
-
-    const handleNextMonth = () => {
-        if (currentCalendarMonth === 12) {
-            setCurrentCalendarYear(currentCalendarYear + 1);
-            setCurrentCalendarMonth(1);
-        } else {
-            setCurrentCalendarMonth(currentCalendarMonth + 1);
-        }
-    };
-
-    // 달력 생성 함수
-    const generateCalendar = (year: number, month: number) => {
-        const firstDay = new Date(year, month - 1, 1).getDay();
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const calendar = [];
-
-        // 이전 달의 마지막 날짜들
-        const prevMonth = month === 1 ? 12 : month - 1;
-        const prevYear = month === 1 ? year - 1 : year;
-        const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
-
-        for (let i = firstDay - 1; i >= 0; i--) {
-            calendar.push({
-                day: daysInPrevMonth - i,
-                isCurrentMonth: false,
-                isEventDay: false
-            });
-        }
-
-        // 현재 달의 날짜들
-        for (let day = 1; day <= daysInMonth; day++) {
-            calendar.push({
-                day,
-                isCurrentMonth: true,
-                isEventDay: false
-            });
-        }
-
-        // 다음 달의 날짜들 (6주 완성)
-        const remainingDays = 42 - calendar.length;
-        for (let day = 1; day <= remainingDays; day++) {
-            calendar.push({
-                day,
-                isCurrentMonth: false,
-                isEventDay: false
-            });
-        }
-
-        return calendar;
-    };
-
     // 이벤트 데이터 로드 (실제로는 API 호출)
     useEffect(() => {
         const loadEventData = async () => {
@@ -309,11 +231,11 @@ const EventDetail = (): JSX.Element => {
             console.log('전체 회차 조회 시도...');
             const response = await api.get(`/api/events/${eventId}/schedule`);
 
-            const scheduleList = response.data;
+            const scheduleList: EventScheduleResponse[] = response.data;
             console.log('API로부터 받은 전체 회차 목록:', scheduleList);
 
             // 전체 회차 데이터 포맷팅
-            const formattedSchedules = scheduleList.map((schedule: any) => ({
+            const formattedSchedules = scheduleList.map((schedule) => ({
                 scheduleId: schedule.scheduleId,
                 date: schedule.date,
                 startTime: schedule.startTime,
@@ -348,29 +270,6 @@ const EventDetail = (): JSX.Element => {
         }
 
         console.log(`${date} 날짜의 회차:`, dateSchedules);
-    };
-
-    // 목업 회차 데이터 생성 함수 (단일 날짜)
-    const generateMockSchedules = (date: string) => {
-        const schedules = [];
-        const times = [
-            {start: '14:00', end: '16:00'},
-            {start: '19:00', end: '21:00'}
-        ];
-
-        times.forEach((time, index) => {
-            schedules.push({
-                scheduleId: index + 1,
-                date: date,
-                startTime: time.start,
-                endTime: time.end,
-                weekday: new Date(date + 'T00:00:00').getDay(),
-                hasActiveTickets: true,
-                soldTicketCount: Math.floor(Math.random() * 50)
-            });
-        });
-
-        return schedules;
     };
 
     // 전체 날짜에 대한 목업 회차 데이터 생성 함수
@@ -424,13 +323,13 @@ const EventDetail = (): JSX.Element => {
             }
 
             // 티켓 가격 목록 생성
-            const priceList = ticketList.map((ticket: any) => {
+            const priceList: TicketPrice[] = ticketList.map((ticket: TicketResponse) => {
                 console.log('개별 티켓 데이터:', ticket);
                 return {
                     name: ticket.name || ticket.ticketName || ticket.title || '이름 없음',
                     price: ticket.price || 0
                 };
-            }).sort((a, b) => b.price - a.price); // 가격 높은 순으로 정렬
+            }).sort((a: TicketPrice, b: TicketPrice) => b.price - a.price); // 가격 높은 순으로 정렬
 
             setTicketPrices(priceList);
             console.log('이벤트 티켓 가격 목록:', priceList);
@@ -530,38 +429,6 @@ const EventDetail = (): JSX.Element => {
         }, 100);
     };
 
-    // 회차 선택 핸들러
-    const handleScheduleSelect = (scheduleId: number) => {
-        setSelectedScheduleId(scheduleId);
-
-        // 선택된 날짜가 있으면 해당 날짜로 자동 스크롤
-        if (selectedDate) {
-            // 자동 스크롤 시작
-            setAutoScrolling(true);
-
-            setTimeout(() => {
-                const selectedDateElement = document.querySelector(`[data-date="${selectedDate}"]`);
-                if (selectedDateElement) {
-                    const container = selectedDateElement.closest('.max-h-60');
-                    if (container) {
-                        selectedDateElement.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center',
-                            inline: 'nearest'
-                        });
-                    }
-                }
-                // 자동 스크롤 완료 후 상태 해제
-                setTimeout(() => setAutoScrolling(false), 500);
-            }, 100);
-        }
-    };
-
-    // 선택된 회차 정보 가져오기
-    const getSelectedSchedule = () => {
-        return availableSchedules.find(schedule => schedule.scheduleId === selectedScheduleId);
-    };
-
     // 현재 날짜(오늘) 가져오기
     const getTodayDateString = () => {
         const today = new Date();
@@ -596,6 +463,27 @@ const EventDetail = (): JSX.Element => {
         return dateSchedules.some(schedule => schedule.hasActiveTickets);
     };
 
+    const getImageSrc = (src?: string | null) => (
+        src && !failedImageUrls.has(src) ? src : EVENT_IMAGE_FALLBACK_SRC
+    );
+
+    const handleImageError = (
+        event: React.SyntheticEvent<HTMLImageElement>,
+        originalSrc?: string | null
+    ) => {
+        event.currentTarget.onerror = null;
+        event.currentTarget.src = EVENT_IMAGE_FALLBACK_SRC;
+
+        if (originalSrc) {
+            setFailedImageUrls((prev) => {
+                if (prev.has(originalSrc)) return prev;
+                const next = new Set(prev);
+                next.add(originalSrc);
+                return next;
+            });
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -622,9 +510,10 @@ const EventDetail = (): JSX.Element => {
                 <div className="flex flex-col lg:flex-row gap-4 md:gap-8">
                     <div className="relative w-full lg:w-auto">
                         <img
-                            src={eventData.thumbnailUrl}
+                            src={getImageSrc(eventData.thumbnailUrl)}
                             alt={eventData.titleKr}
                             className="w-full max-w-[438px] h-auto max-h-[526px] object-cover mx-auto lg:mx-0"
+                            onError={(event) => handleImageError(event, eventData.thumbnailUrl)}
                         />
                     </div>
 
@@ -952,9 +841,6 @@ const EventDetail = (): JSX.Element => {
                                                 const isPastDate = !isDateInFuture(date);
                                                 const dateObj = new Date(date + 'T00:00:00');
                                                 const dayName = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
-
-                                                // 선택된 날짜의 경우 해당 회차 정보 가져오기
-                                                const schedulesForDate = isSelected ? availableSchedules : [];
 
                                                 return (
                                                     <div

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { getBooths, getBoothDetails, applyForBooth, getBoothTypes } from "../../api/boothApi";
 import {BoothDetailResponse, BoothSummary, BoothType} from "../../types/booth";
 import { eventAPI } from "../../services/event";
@@ -7,19 +7,9 @@ import { useFileUpload } from "../../hooks/useFileUpload";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-interface Booth {
-    id: number;
-    name: string;
-    company: string;
-    category: string;
-    description: string;
-    location: string;
-    contactEmail: string;
-    contactPhone: string;
-    website?: string;
-    logoUrl?: string;
-    isActive: boolean;
-}
+const BOOTH_IMAGE_FALLBACK_SRC = "/images/NoImage.png";
+
+type UploadedEditorImage = { url?: string | null };
 
 interface ParticipatingBoothsProps {
     eventId?: string;
@@ -28,48 +18,48 @@ interface ParticipatingBoothsProps {
 export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventId }) => {
     const [booths, setBooths] = useState<BoothSummary[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedBooth, setSelectedBooth] = useState<BoothDetailResponse | null>(null);
     const [showApplicationForm, setShowApplicationForm] = useState(false);
     const [boothTypes, setBoothTypes] = useState<BoothType[]>([]);
     const [eventDetail, setEventDetail] = useState<EventDetailResponseDto | null>(null);
+    const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(() => new Set());
     
     // 파일 업로드 훅
-    const { uploadFile, getFileByUsage, removeFile, getFileUploadDtos, isUploading } = useFileUpload();
+    const { uploadFile, getFileByUsage, removeFile, isUploading } = useFileUpload();
     
     // ReactQuill 참조
     const quillRef = useRef<ReactQuill>(null);
     
     // 파일 선택
-    const pickImageFile = () =>
+    const pickImageFile = useCallback(() =>
         new Promise<File | null>((resolve) => {
             const input = document.createElement("input");
             input.type = "file";
             input.accept = "image/*";
             input.onchange = () => resolve(input.files?.[0] || null);
             input.click();
-        });
+        }), []);
 
     // 이미지 삽입
-    const insertImage = (url: string) => {
+    const insertImage = useCallback((url: string) => {
         const quill = quillRef.current?.getEditor();
         if (!quill) return;
         const range = quill.getSelection(true) ?? { index: quill.getLength(), length: 0 };
         quill.insertEmbed(range.index, "image", url, "user");
         quill.setSelection(range.index + 1, 0, "user");
-    };
+    }, []);
 
     // 서버 업로드 → CDN URL
-    const uploadEditorImageAndGetUrl = async (file: File) => {
+    const uploadEditorImageAndGetUrl = useCallback(async (file: File) => {
         try {
-            const uploaded: any = await uploadFile(file, "editor_image");
+            const uploaded = await uploadFile(file, "editor_image") as UploadedEditorImage | null;
             return uploaded?.url || null;
         } catch (error) {
             console.error("이미지 업로드 실패:", error);
             return null;
         }
-    };
+    }, [uploadFile]);
 
     // 에디터 모듈 설정
     const editorModules = useMemo(() => ({
@@ -92,7 +82,7 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         },
         clipboard: { matchVisual: false },
         history: { delay: 1000, maxStack: 100, userOnly: true },
-    }), []);
+    }), [insertImage, pickImageFile, uploadEditorImageAndGetUrl]);
 
     const quillFormats = [
         "header", "bold", "italic", "underline", "strike",
@@ -135,14 +125,6 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
     const handleFileRemove = (usage: string) => {
         removeFile(usage);
     };
-
-    // 이미지 업로드 핸들러 (에디터용)
-    const handleImageUpload = async (file: File): Promise<string | null> => {
-        const response = await uploadFile(file, `description_image_${Date.now()}`);
-        return response ? response.url : null;
-    };
-
-
 
     // 목업 부스 데이터
     // const mockBooths: Booth[] = [
@@ -268,7 +250,6 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                 setEventDetail(eventDetailData);
             } catch (error) {
                 console.error('데이터 로드 실패:', error);
-                setError('데이터를 불러오는 데 실패했습니다.');
             } finally {
                 setLoading(false);
             }
@@ -282,6 +263,27 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         const matchesSearch = booth.boothTitle.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
+
+    const getImageSrc = (src?: string | null) => (
+        src && !failedImageUrls.has(src) ? src : BOOTH_IMAGE_FALLBACK_SRC
+    );
+
+    const handleImageError = (
+        event: React.SyntheticEvent<HTMLImageElement>,
+        originalSrc?: string | null
+    ) => {
+        event.currentTarget.onerror = null;
+        event.currentTarget.src = BOOTH_IMAGE_FALLBACK_SRC;
+
+        if (originalSrc) {
+            setFailedImageUrls((prev) => {
+                if (prev.has(originalSrc)) return prev;
+                const next = new Set(prev);
+                next.add(originalSrc);
+                return next;
+            });
+        }
+    };
 
     // 부스 클릭 핸들러
     const handleBoothClick = async (booth: BoothSummary) => {
@@ -304,7 +306,6 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
             }, 100);
         } catch (error) {
             console.error('부스 상세 정보 불러오기 실패:', error);
-            setError('부스 상세 정보를 불러오는 데 실패했습니다.');
         }
     };
 
@@ -401,8 +402,6 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         try {
             setLoading(true);
             
-            // 부스 신청 데이터 생성
-            const uploadedFiles = getFileUploadDtos();
             const bannerFile = getFileByUsage('banner');
             
             const applicationData = {
@@ -486,9 +485,10 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                 <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
                                     {selectedBooth.boothBannerUrl ? (
                                         <img
-                                            src={selectedBooth.boothBannerUrl}
+                                            src={getImageSrc(selectedBooth.boothBannerUrl)}
                                             alt={selectedBooth.boothTitle}
                                             className="w-full h-full object-cover rounded-lg"
+                                            onError={(event) => handleImageError(event, selectedBooth.boothBannerUrl)}
                                         />
                                     ) : (
                                         <div className="text-gray-400 text-center">
@@ -1002,9 +1002,10 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
                                 <div className="aspect-square bg-gray-100 rounded-t-[10px] flex items-center justify-center">
                                     {booth.boothBannerUrl ? (
                                         <img
-                                            src={booth.boothBannerUrl}
+                                            src={getImageSrc(booth.boothBannerUrl)}
                                             alt={booth.boothTitle}
                                             className="w-full h-full object-cover rounded-t-[10px]"
+                                            onError={(event) => handleImageError(event, booth.boothBannerUrl)}
                                         />
                                     ) : (
                                         <div className="text-gray-400 text-center">

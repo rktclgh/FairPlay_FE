@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from "react";
 import {TopNav} from "../../components/TopNav";
 import {HostSideNav} from "../../components/HostSideNav";
 import {loadKakaoMap} from "../../lib/loadKakaoMap";
-import ReactQuill, { Quill } from "react-quill";
+import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import {useFileUpload} from "../../hooks/useFileUpload";
 import type {EventDetailResponseDto, EventDetailModificationRequestDto} from "../../services/types/eventType";
@@ -70,7 +70,19 @@ const customCheckboxStyles = `
 
 declare global {
     interface Window {
-        kakao: any;
+        kakao: {
+            maps?: {
+                services?: {
+                    Places: new () => {
+                        keywordSearch: (keyword: string, callback: (data: KakaoPlace[], status: string) => void) => void;
+                    };
+                    Status: {
+                        OK: string;
+                        ZERO_RESULT: string;
+                    };
+                };
+            };
+        };
     }
 }
 
@@ -97,75 +109,24 @@ export const EditEventInfo = () => {
     const policyRef = useRef<ReactQuill | null>(null);
     const inquiryRef = useRef<ReactQuill | null>(null);
 
-    // CDN URL 생성 유틸
-    const toCdnUrl = (path: string) => {
-        const base = import.meta.env.VITE_CDN_BASE_URL || "";
-        if (/^https?:\/\//.test(path)) return path;
-        const clean = path.startsWith("/") ? path.slice(1) : path;
-        return `${base}/${clean}`;
-    };
-
-    // 파일 선택
-    const pickImageFile = () =>
-        new Promise<File | null>((resolve) => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "image/*";
-            input.onchange = () => resolve(input.files?.[0] ?? null);
-            input.click();
-        });
-
-    // 에디터에 이미지 삽입
-    const insertImage = (ref: React.RefObject<ReactQuill>, url: string) => {
-        const quill = ref.current?.getEditor();
-        if (!quill) return;
-        const range = quill.getSelection(true) ?? { index: quill.getLength(), length: 0 };
-        quill.insertEmbed(range.index, "image", url, "user");
-        quill.setSelection(range.index + 1, 0, "user");
-    };
-
-    // 서버 업로드 → CDN URL
-    const uploadEditorImageAndGetUrl = async (file: File) => {
-        try {
-            const uploaded: any = await uploadFile(file, "editor_image"); // tempFiles에 쌓임
-            const key: string | undefined =
-                uploaded?.key ??
-                uploaded?.data?.key ??
-                (Array.isArray(uploadedFiles) ? uploadedFiles[uploadedFiles.length - 1]?.key : undefined);
-            if (!key) throw new Error("No key");
-            return toCdnUrl(key);
-        } catch {
-            toast.error("이미지 업로드에 실패했습니다.");
-            return null;
-        }
-    };
-
-    // 이미지 버튼 핸들러가 포함된 모듈(메모이즈)
-    const createModules = (ref: React.RefObject<ReactQuill>) =>
+    // 현 BE 수정요청 치환 계약은 Quill 임시 다운로드 URL을 영구 URL로 승격하지 못하므로 이미지 삽입 버튼은 비활성화한다.
+    const createModules = () =>
         ({
             toolbar: {
                 container: [
                     [{ header: [1, 2, 3, false] }],
                     ["bold", "italic", "underline"],
-                    // 리스트/링크/이미지 버튼
+                    // 리스트/링크 버튼
                     [{ list: "ordered" }, { list: "bullet" }],
-                    ["link", "image"],
+                    ["link"],
                     ["clean"],
                 ],
-                handlers: {
-                    image: async () => {
-                        const file = await pickImageFile();
-                        if (!file) return;
-                        const url = await uploadEditorImageAndGetUrl(file);
-                        if (url) insertImage(ref, url);
-                    },
-                },
             },
             clipboard: { matchVisual: false },
             history: { delay: 1000, maxStack: 100, userOnly: true },
         }) as const;
 
-    const createInquiryModules = (ref: React.RefObject<ReactQuill>) =>
+    const createInquiryModules = () =>
         ({
             toolbar: {
                 container: [
@@ -181,65 +142,55 @@ export const EditEventInfo = () => {
         }) as const;
 
     // modules는 렌더마다 바뀌지 않게 고정
-    const detailModules = useMemo(() => createModules(detailRef), []);
-    const policyModules = useMemo(() => createModules(policyRef), []);
-    const inquiryModules = useMemo(() => createInquiryModules(inquiryRef), []);
+    const detailModules = useMemo(() => createModules(), []);
+    const policyModules = useMemo(() => createModules(), []);
+    const inquiryModules = useMemo(() => createInquiryModules(), []);
 
     const quillFormats = useMemo(
         () => ["header", "bold", "italic", "underline", "list", "bullet", "link", "image"],
         []
     );
 
-    // 붙여넣기/드롭 이미지 업로드
+    // 현 BE 계약에서는 붙여넣기/드롭 이미지도 안전하게 영구 URL로 승격할 수 없어 차단한다.
     useEffect(() => {
         const bind = (ref: React.RefObject<ReactQuill>) => {
             const quill = ref.current?.getEditor();
             if (!quill) return () => {};
             const root = quill.root;
 
-            const onPaste = async (e: ClipboardEvent) => {
+            const onPaste = (e: ClipboardEvent) => {
                 const items = Array.from(e.clipboardData?.items || []);
                 const imgs = items.filter((i) => i.type.startsWith("image/"));
                 if (imgs.length === 0) return;
                 e.preventDefault();
-                for (const it of imgs) {
-                    const f = it.getAsFile();
-                    if (!f) continue;
-                    const url = await uploadEditorImageAndGetUrl(f);
-                    if (url) insertImage(ref, url);
-                }
+                toast.info("본문 이미지는 백엔드 승격 계약 보완 후 다시 지원됩니다.");
             };
 
-            const onDrop = async (e: DragEvent) => {
+            const onDrop = (e: DragEvent) => {
                 const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith("image/"));
                 if (files.length === 0) return;
                 e.preventDefault();
-                for (const f of files) {
-                    const url = await uploadEditorImageAndGetUrl(f);
-                    if (url) insertImage(ref, url);
-                }
+                toast.info("본문 이미지는 백엔드 승격 계약 보완 후 다시 지원됩니다.");
             };
 
             const onDragOver = (e: DragEvent) => e.preventDefault();
 
-            root.addEventListener("paste", onPaste as any);
-            root.addEventListener("drop", onDrop as any);
-            root.addEventListener("dragover", onDragOver as any);
+            root.addEventListener("paste", onPaste);
+            root.addEventListener("drop", onDrop);
+            root.addEventListener("dragover", onDragOver);
             return () => {
-                root.removeEventListener("paste", onPaste as any);
-                root.removeEventListener("drop", onDrop as any);
-                root.removeEventListener("dragover", onDragOver as any);
+                root.removeEventListener("paste", onPaste);
+                root.removeEventListener("drop", onDrop);
+                root.removeEventListener("dragover", onDragOver);
             };
         };
 
         const unbinders = [bind(detailRef), bind(policyRef), bind(inquiryRef)];
         return () => unbinders.forEach((u) => u && u());
-        // 의도적으로 빈 deps: ref.current가 바뀌면 다음 렌더에서 다시 바인딩됨
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const [formData, setFormData] = useState({
-        eventId: null as number,
+        eventId: null as number | null,
         eventNameKr: "",
         eventNameEn: "",
         startDate: "",
@@ -282,11 +233,11 @@ export const EditEventInfo = () => {
     const [showSearchResults, setShowSearchResults] = useState(false);
 
     const {
-        uploadedFiles,
         isUploading,
         uploadFile,
         removeFile,
         getFileByUsage,
+        getPreviewUrlByUsage,
         getFileUploadDtos,
     } = useFileUpload();
 
@@ -300,17 +251,6 @@ export const EditEventInfo = () => {
         setUploading(type);
         await uploadFile(file, usage);
         setUploading(null);
-    };
-
-    // Quill 에디터 설정
-    const quillModules = {
-        toolbar: [
-            [{'header': [1, 2, 3, false]}],
-            ['bold', 'italic', 'underline'],
-            [{'list': 'ordered'}, {'list': 'bullet'}],
-            ['link', 'image'],
-            ['clean']
-        ],
     };
 
     // const quillFormats = [
@@ -333,7 +273,7 @@ export const EditEventInfo = () => {
             if (myEvent) {
                 console.log('로드된 이벤트 데이터:', myEvent);
                 console.log('썸네일 URL:', myEvent.thumbnailUrl);
-                console.log('배너 URL:', myEvent.bannerUrl);
+                console.log('배너 URL:', myEvent.thumbnailUrl);
                 console.log('썸네일 URL에 tmp 포함여부:', myEvent.thumbnailUrl?.includes('/tmp') ? 'YES - tmp 파일입니다!' : 'NO - 정상 파일입니다');
                 setEventData(myEvent);
                 setFormData({
@@ -477,12 +417,13 @@ export const EditEventInfo = () => {
                 return;
             }
 
-            const ps = new window.kakao.maps.services.Places();
+            const services = window.kakao.maps.services;
+            const ps = new services.Places();
             ps.keywordSearch(searchKeyword, (data: KakaoPlace[], status: string) => {
-                if (status === window.kakao.maps.services.Status.OK) {
+                if (status === services.Status.OK) {
                     setSearchResults(data);
                     setShowSearchResults(true);
-                } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+                } else if (status === services.Status.ZERO_RESULT) {
                     alert('검색 결과가 없습니다.');
                     setSearchResults([]);
                     setShowSearchResults(false);
@@ -641,10 +582,6 @@ export const EditEventInfo = () => {
                 formData.subCategory
             );
 
-            // 업로드된 배너 이미지 URL 확인
-            const bannerFile = getFileByUsage('banner_vertical');
-            const thumbnailUrl = bannerFile ? toCdnUrl(bannerFile.key) : undefined;
-
             const modificationRequest: EventDetailModificationRequestDto = {
                 titleKr: formData.eventNameKr || undefined,
                 titleEng: formData.eventNameEn || undefined,
@@ -671,16 +608,15 @@ export const EditEventInfo = () => {
                 checkOutAllowed: formData.exitScanRequired,
                 age: formData.viewingGrade === "청소년불가",
                 businessNumber: formData.organizerBusinessNumber || undefined,
-                verified: businessVerified,
+                verified: businessVerified ?? undefined,
                 managerName: formData.managerName || undefined,
                 managerPhone: formData.phone || undefined,
                 managerEmail: formData.email || undefined,
-                thumbnailUrl: thumbnailUrl,
+                thumbnailUrl: undefined,
                 tempFiles: getFileUploadDtos(),
             };
 
             console.log('전송될 tempFiles:', getFileUploadDtos());
-            console.log('설정된 thumbnailUrl:', thumbnailUrl);
 
             await eventAPI.createEventModificationRequest(
                 eventData.eventId,
@@ -994,7 +930,7 @@ export const EditEventInfo = () => {
                                             {getFileByUsage('banner_vertical') ? (
                                                 <div className="space-y-2">
                                                     <img
-                                                        src={`${import.meta.env.VITE_CDN_BASE_URL}/${getFileByUsage('banner_vertical')?.key}`}
+                                                        src={getPreviewUrlByUsage('banner_vertical')!}
                                                         alt="세로형 배너 미리보기"
                                                         className="mx-auto max-h-48 max-w-full object-contain rounded"
                                                     />

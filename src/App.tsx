@@ -1,5 +1,5 @@
-import { useEffect, useState, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect, useState, lazy, Suspense, type ReactNode } from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 // import axios from "axios";
 // import authManager from "./utils/auth";
@@ -83,7 +83,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 import KakaoCallback from "./pages/user_auth/KakaoCallback";
 import ChatFloatingModal from "./components/chat/ChatFloatingModal";
@@ -113,6 +113,42 @@ import BoothEdit from "./pages/booth_admin/BoothEdit";
 import CreatorList from "./pages/creators/CreatorList";
 import CreatorDetail from "./pages/creators/CreatorDetail";
 import { CreatorManagement } from "./pages/admin_dashboard/CreatorManagement";
+
+interface UserRouteGuardProps {
+    children: ReactNode;
+}
+
+function RouteGuardFallback() {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-600">권한을 확인하고 있습니다...</p>
+            </div>
+        </div>
+    );
+}
+
+function UserRouteGuard({ children }: UserRouteGuardProps) {
+    const { isAuthenticated, loading } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (loading || isAuthenticated) return;
+
+        navigate('/login', {
+            replace: true,
+            state: { from: `${location.pathname}${location.search}` },
+        });
+    }, [isAuthenticated, loading, location.pathname, location.search, navigate]);
+
+    if (loading || !isAuthenticated) {
+        return <RouteGuardFallback />;
+    }
+
+    return <>{children}</>;
+}
 
 function AppContent() {
     const [isTokenValidated, setIsTokenValidated] = useState(false);
@@ -228,24 +264,24 @@ function AppContent() {
                         <Route path="/eventoverview" element={<EventOverview />} />
                         <Route path="/eventdetail/:eventId" element={<EventDetail />} />
                         <Route path="/event/:eventId" element={<EventDetail />} />
-                        <Route path="/ticket-reservation/:eventId" element={<TicketReservation />} />
+                        <Route path="/ticket-reservation/:eventId" element={<UserRouteGuard><TicketReservation /></UserRouteGuard>} />
                         <Route path="/events/:eventId/participating-booths" element={<ParticipatingBooths />} />
                         <Route path="/events/:eventId/booths" element={<BoothList />} />
                         <Route path="/events/:eventId/booths/:boothId" element={<BoothDetail />} />
                         <Route path="/events/:eventId/booth-application" element={<BoothApplication />} />
-                        <Route path="/mypage/info" element={<MyPageInfo />} />
-                        <Route path="/mypage/account" element={<MyPageAccount />} />
-                        <Route path="/mypage/favorites" element={<MyPageFavorites />} />
-                        <Route path="/mypage/reservation" element={<Reservation />} />
-                        <Route path="/mypage/tickets" element={<MyTickets />} />
-                        <Route path="/mypage/participant-form" element={<ParticipantForm />} />
-                        <Route path="/mypage/participant-list" element={<ParticipantList />} />
-                        <Route path="/mypage/write-review" element={<MyPageMyReview />} />
-                        <Route path="/mypage/my-review" element={<MyPageMyReview />} />
-                        <Route path="/mypage/withdrawal" element={<Withdrawal />} />
-                        <Route path="/mypage/refund" element={<RefundList />} />
-                        <Route path="/mypage/business-card" element={<BusinessCard />} />
-                        <Route path="/mypage/business-card-wallet" element={<BusinessCardWallet />} />
+                        <Route path="/mypage/info" element={<UserRouteGuard><MyPageInfo /></UserRouteGuard>} />
+                        <Route path="/mypage/account" element={<UserRouteGuard><MyPageAccount /></UserRouteGuard>} />
+                        <Route path="/mypage/favorites" element={<UserRouteGuard><MyPageFavorites /></UserRouteGuard>} />
+                        <Route path="/mypage/reservation" element={<UserRouteGuard><Reservation /></UserRouteGuard>} />
+                        <Route path="/mypage/tickets" element={<UserRouteGuard><MyTickets /></UserRouteGuard>} />
+                        <Route path="/mypage/participant-form" element={<UserRouteGuard><ParticipantForm /></UserRouteGuard>} />
+                        <Route path="/mypage/participant-list" element={<UserRouteGuard><ParticipantList /></UserRouteGuard>} />
+                        <Route path="/mypage/write-review" element={<UserRouteGuard><MyPageMyReview /></UserRouteGuard>} />
+                        <Route path="/mypage/my-review" element={<UserRouteGuard><MyPageMyReview /></UserRouteGuard>} />
+                        <Route path="/mypage/withdrawal" element={<UserRouteGuard><Withdrawal /></UserRouteGuard>} />
+                        <Route path="/mypage/refund" element={<UserRouteGuard><RefundList /></UserRouteGuard>} />
+                        <Route path="/mypage/business-card" element={<UserRouteGuard><BusinessCard /></UserRouteGuard>} />
+                        <Route path="/mypage/business-card-wallet" element={<UserRouteGuard><BusinessCardWallet /></UserRouteGuard>} />
 
                         {/* 제작자 페이지 */}
                         <Route path="/creators" element={<CreatorList />} />
@@ -342,20 +378,6 @@ function AppContent() {
                         <Route path="/booth-admin/experience-detail/:experienceId" element={<BoothAdminRouteGuard><ExperienceDetailPage /></BoothAdminRouteGuard>} />
                         <Route path="/booth-admin/booth/:boothId/edit" element={<BoothAdminRouteGuard><BoothEdit /></BoothAdminRouteGuard>} />
 
-                        <Route path="/host/dashboard" element={<HostDashboard />} />
-                        <Route path="/host/edit-event-info" element={<EditEventInfo />} />
-                        <Route path="/host/ticket-management" element={<TicketManagement />} />
-                        <Route path="/host/status-management" element={<EventStatusBanner />} />
-                        <Route path="/host/reservation-list" element={<ReservationList />} />
-                        <Route path="/host/reservation-stats" element={<ReservationStats />} />
-                        <Route path="/host/booth-type" element={<BoothTypeManagement />} />
-                        <Route path="/host/booth-applications" element={<BoothApplicationList />} />
-                        <Route path="/host/booth-participants" element={<BoothParticipants />} />
-                        <Route path="/host/booth-participants/:id" element={<BoothParticipantDetail />} />
-                        <Route path="/host/booking-analysis" element={<BookingAnalysis />} />
-                        <Route path="/host/revenue-summary" element={<RevenueSummary />} />
-                        <Route path="/host/time-analysis" element={<TimeAnalysis />} />
-                        <Route path="/host/qr-scan" element={<QRScanPage />} />
                         <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
 
                         {/* 부스 관련 공개 페이지 (이메일에서 접근) */}
@@ -367,8 +389,8 @@ function AppContent() {
 
                         {/* 부스 체험 (행사관리자) 라우트 제거됨 */}
                         <Route path="/events/:eventId/booth-experiences" element={<BoothExperienceList />} />
-                        <Route path="/mypage/booth-experiences" element={<BoothExperienceList />} />
-                        <Route path="/mypage/booth-experiences-reservation" element={<MyBoothExperienceReservations />} />
+                        <Route path="/mypage/booth-experiences" element={<UserRouteGuard><BoothExperienceList /></UserRouteGuard>} />
+                        <Route path="/mypage/booth-experiences-reservation" element={<UserRouteGuard><MyBoothExperienceReservations /></UserRouteGuard>} />
                         {/* Footer pages */}
                         <Route path="/support/notices" element={<Notices />} />
                         <Route path="/support/faq" element={<FAQ />} />
