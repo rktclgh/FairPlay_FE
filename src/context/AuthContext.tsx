@@ -11,6 +11,11 @@ interface User {
   role?: string;
 }
 
+interface AuthSessionResponse {
+  authenticated: boolean;
+  user?: User | null;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -32,16 +37,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 서버에서 사용자 정보 가져오기 (HTTP-only 쿠키 자동 전송)
   const fetchUserInfo = async (): Promise<User | null> => {
     try {
-      const response = await api.get('/api/users/mypage', {
+      const response = await api.get<AuthSessionResponse>('/api/auth/session', {
         headers: { 'X-Silent-Auth': 'true' }
       });
-      
-      if (response.data && response.data.userId) {
+      const userData = response.data.user;
+
+      if (response.data.authenticated && userData?.userId) {
         return {
-          userId: response.data.userId,
-          email: response.data.email || '',
-          name: response.data.name || '',
-          role: response.data.role
+          userId: userData.userId,
+          email: userData.email || '',
+          name: userData.name || '',
+          role: userData.role
         };
       }
       return null;
