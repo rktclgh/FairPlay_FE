@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowLeft, Clock, Users, MapPin, Calendar, AlertCircle, 
-  CheckCircle, XCircle, RefreshCw, User, Phone, Star, X
+  Clock, Users, MapPin, Calendar, AlertCircle,
+  CheckCircle, XCircle, RefreshCw, User, X
 } from 'lucide-react';
 import {
   getExperienceDetail,
@@ -18,7 +18,12 @@ import {
   QueueStatusResponse
 } from '../../services/types/boothExperienceType';
 import { toast } from 'react-toastify';
-import authManager from '../../utils/auth';
+import { useAuth } from '../../context/AuthContext';
+
+type ApiError = {
+  response?: { status?: number; data?: { message?: string } | string };
+  message?: string;
+};
 
 interface BoothExperienceReservationModalProps {
   experienceId: number;
@@ -26,6 +31,7 @@ interface BoothExperienceReservationModalProps {
 }
 
 const BoothExperienceReservationModal: React.FC<BoothExperienceReservationModalProps> = ({ experienceId, onClose }) => {
+  const { isAuthenticated } = useAuth();
   const [experience, setExperience] = useState<BoothExperience | null>(null);
   const [queueStatus, setQueueStatus] = useState<QueueStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +81,7 @@ const BoothExperienceReservationModal: React.FC<BoothExperienceReservationModalP
       const queueData = await getQueueStatus(experienceId);
       setQueueStatus(queueData);
       toast.success('정보가 업데이트되었습니다.');
-    } catch (error) {
+    } catch {
       toast.error('정보 업데이트에 실패했습니다.');
     } finally {
       setRefreshing(false);
@@ -92,9 +98,7 @@ const BoothExperienceReservationModal: React.FC<BoothExperienceReservationModalP
 
     setReserving(true);
     try {
-      // 현재 로그인한 사용자 ID 가져오기
-      const userId = authManager.getCurrentUserId();
-      if (!userId) {
+      if (!isAuthenticated) {
         toast.error('로그인이 필요합니다.');
         return;
       }
@@ -103,22 +107,25 @@ const BoothExperienceReservationModal: React.FC<BoothExperienceReservationModalP
         notes: '' // 예약 메모 (선택사항)
       };
 
-      await createReservation(experienceId, userId, reservationData);
+      await createReservation(experienceId, reservationData);
       toast.success('예약이 완료되었습니다!');
       
       // 예약 후 정보 새로고침
       loadExperienceDetail();
-    } catch (error: any) {
+    } catch (error) {
+      const apiError = error as ApiError;
       console.error('예약 실패:', error);
       
       // 에러 응답 상세 로깅
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
-        toast.error(`예약 실패: ${error.response.data?.message || '서버 오류가 발생했습니다.'}`);
-      } else if (error.message) {
-        console.error('Error message:', error.message);
-        toast.error(`예약 실패: ${error.message}`);
+      if (apiError.response) {
+        const responseData = apiError.response.data;
+        const message = typeof responseData === 'string' ? responseData : responseData?.message;
+        console.error('Response status:', apiError.response.status);
+        console.error('Response data:', responseData);
+        toast.error(`예약 실패: ${message || '서버 오류가 발생했습니다.'}`);
+      } else if (apiError.message) {
+        console.error('Error message:', apiError.message);
+        toast.error(`예약 실패: ${apiError.message}`);
       } else {
         toast.error('예약에 실패했습니다. 다시 시도해주세요.');
       }

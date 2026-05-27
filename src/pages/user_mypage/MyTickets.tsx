@@ -308,8 +308,7 @@ export default function MyTickets(): JSX.Element {
 
 
         try {
-            // HTTP-only 쿠키로 인증 - AuthContext에서 userId 사용
-            const res = await createReservation(selectedExperience.experienceId, user?.userId || 0, requestData);
+            const res = await createReservation(selectedExperience.experienceId, requestData);
             setSavedExperience(res);
             // 실제 대기 등록 로직은 여기에 구현
             alert("대기 등록이 완료되었습니다.");

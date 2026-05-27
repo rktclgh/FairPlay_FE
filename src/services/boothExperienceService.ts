@@ -191,49 +191,23 @@ export const getAvailableExperiences = async (
  */
 export const createReservation = async (
   experienceId: number,
-  userId: number,
   reservationData: BoothExperienceReservationRequest
 ): Promise<BoothExperienceReservation> => {
-  try {
-    // 먼저 인증된 요청 시도
-    const response = await authManager.authenticatedFetch(
-      `/api/booth-experiences/${experienceId}/reservations?userId=${userId}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(reservationData),
-      }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Authenticated API Error Response:', errorData);
-      throw new Error(`HTTP ${response.status}: ${errorData}`);
+  const response = await authManager.authenticatedFetch(
+    `/api/booth-experiences/${experienceId}/reservations`,
+    {
+      method: 'POST',
+      body: JSON.stringify(reservationData),
     }
-    
-    return await response.json();
-  } catch (authError) {
-    console.log('인증된 요청 실패, 일반 요청 시도:', authError);
-    
-    // 인증 실패 시 일반 fetch 시도 (HTTP 테스트와 동일하게)
-    const response = await fetch(
-      `/api/booth-experiences/${experienceId}/reservations?userId=${userId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reservationData),
-      }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Regular API Error Response:', errorData);
-      throw new Error(`HTTP ${response.status}: ${errorData}`);
-    }
-    
-    return await response.json();
+  );
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error('Booth experience reservation API error:', errorData);
+    throw new Error(`HTTP ${response.status}: ${errorData}`);
   }
+
+  return await response.json();
 };
 
 /**
