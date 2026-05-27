@@ -7,6 +7,7 @@ import {
   RESERVATION_STATUS_STYLES,
   getCheckinStatus,
   ReservationStatusType,
+  PageResponse,
 } from "./types/reservationType";
 import authManager from "../utils/auth";
 
@@ -226,9 +227,31 @@ class ReservationService {
    * 내 예약 목록 조회
    */
   async getMyReservations(): Promise<ReservationResponseDto[]> {
+    const pageSize = 50;
+    const firstPage = await this.getMyReservationsPage(0, pageSize);
+    const reservations = [...firstPage.content];
+
+    for (let page = 1; page < firstPage.totalPages; page += 1) {
+      const nextPage = await this.getMyReservationsPage(page, pageSize);
+      reservations.push(...nextPage.content);
+    }
+
+    return reservations;
+  }
+
+  async getMyReservationsPage(
+    page: number = 0,
+    size: number = 5,
+    activeOnly: boolean = false
+  ): Promise<PageResponse<ReservationResponseDto>> {
     try {
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        activeOnly: String(activeOnly),
+      });
       const response = await authManager.authenticatedFetch(
-        "/api/me/reservations"
+        `/api/me/reservations?${params.toString()}`
       );
 
       if (!response.ok) {

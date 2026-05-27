@@ -5,7 +5,6 @@ import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
 import reservationService from "../../services/reservationService";
 import type { ReservationResponseDto } from "../../services/reservationService";
-import { eventAPI } from "../../services/event";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 
@@ -16,51 +15,19 @@ export default function Reservation(): JSX.Element {
     const [loading, setLoading] = useState(true);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
     const itemsPerPage = 5;
-
-    // 카테고리 정보 캐시
-    const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
 
 
 
 
     useEffect(() => {
-        const loadReservationsWithCategories = async () => {
+        const loadReservations = async () => {
             try {
                 setLoading(true);
-                const reservations = await reservationService.getMyReservations();
-
-                // 각 예약에 대해 카테고리 정보 추가 (캐시 활용)
-                const reservationsWithCategories = await Promise.all(
-                    reservations.map(async (reservation) => {
-                        // 캐시된 카테고리 정보가 있으면 사용
-                        if (eventCategoryCache.current.has(reservation.eventId)) {
-                            const cached = eventCategoryCache.current.get(reservation.eventId)!;
-                            return { ...reservation, ...cached };
-                        }
-
-                        try {
-                            const eventDetail = await eventAPI.getEventDetail(reservation.eventId);
-                            const categoryInfo = {
-                                mainCategory: eventDetail.mainCategory,
-                                subCategory: eventDetail.subCategory
-                            };
-
-                            // 캐시에 저장
-                            eventCategoryCache.current.set(reservation.eventId, categoryInfo);
-
-                            return { ...reservation, ...categoryInfo };
-                        } catch (error) {
-                            console.error(`이벤트 ${reservation.eventId} 카테고리 로드 실패:`, error);
-                            return reservation;
-                        }
-                    })
-                );
-
-                const sortedReservations = [...reservationsWithCategories].sort((a, b) =>
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
-                setReservations(sortedReservations);
+                const page = await reservationService.getMyReservationsPage(currentPage - 1, itemsPerPage);
+                setReservations(page.content);
+                setTotalPages(page.totalPages);
             } catch (error) {
                 console.error('예약 목록 로드 실패:', error);
                 toast.error(t('mypage.reservation.loadReservationsError'));
@@ -69,8 +36,8 @@ export default function Reservation(): JSX.Element {
             }
         };
 
-        loadReservationsWithCategories();
-    }, []);
+        loadReservations();
+    }, [currentPage, t]);
 
     // 페이지 변경 시 맨 위로 스크롤
     useEffect(() => {
@@ -196,7 +163,6 @@ export default function Reservation(): JSX.Element {
                     ) : (
                         <div className="space-y-[50px]">
                             {reservations
-                                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                 .map((reservation) => (
                                     <div
                                         key={reservation.reservationId}
@@ -317,7 +283,7 @@ export default function Reservation(): JSX.Element {
                                 ))}
 
                             {/* 페이지네이션 */}
-                            {reservations.length > itemsPerPage && (
+                            {totalPages > 1 && (
                                 <div className="flex justify-center items-center space-x-2 mt-8">
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -327,7 +293,7 @@ export default function Reservation(): JSX.Element {
                                         이전
                                     </button>
 
-                                    {Array.from({ length: Math.ceil(reservations.length / itemsPerPage) }, (_, i) => (
+                                    {Array.from({ length: totalPages }, (_, i) => (
                                         <button
                                             key={i + 1}
                                             onClick={() => setCurrentPage(i + 1)}
@@ -341,8 +307,8 @@ export default function Reservation(): JSX.Element {
                                     ))}
 
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(reservations.length / itemsPerPage)))}
-                                        disabled={currentPage === Math.ceil(reservations.length / itemsPerPage)}
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
                                         className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         다음
@@ -355,4 +321,4 @@ export default function Reservation(): JSX.Element {
             </div>
         </div>
     );
-} 
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { TopNav } from "../../components/TopNav";
 import { AttendeeSideNav } from "./AttendeeSideNav";
 import QrTicket from "../../components/QrTicket";
@@ -12,7 +12,6 @@ import type {
     QrTicketRequestDto,
     QrTicketData
 } from "../../services/types/qrTicketType";
-import { eventAPI } from "../../services/event";
 import {
     getQrTicketForMypage,
 } from "../../services/qrTicket"
@@ -76,6 +75,7 @@ export default function MyTickets(): JSX.Element {
     // 모바일 사이드바 상태
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
     const itemsPerPage = 5;
 
     // // ✅  웨이팅 메세지 설정
@@ -85,9 +85,6 @@ export default function MyTickets(): JSX.Element {
         setWaitingCount(parseInt(data.waitingCount));
         setWaitingMessage(data.statusMessage);
     }, []);
-
-    // 카테고리 정보 캐시
-    const eventCategoryCache = React.useRef(new Map<number, { mainCategory: string; subCategory: string }>());
 
     // ✅ 여기서 웹소켓 구독 시작
     useQrTicketSocket(qrTicketId, (msg) => {
@@ -100,70 +97,17 @@ export default function MyTickets(): JSX.Element {
 
     //======= 예약 내역 조회 ======= // 
     useEffect(() => {
-        const loadMyReservationsWithCategories = async () => {
+        const loadMyReservations = async () => {
             try {
                 setLoading(true);
-                const reservations = await reservationService.getMyReservations();
-
-                // 환불된 예약 제외 (다양한 환불 상태 확인)
-                const activeReservations = reservations.filter(reservation => {
-                    const paymentStatus = reservation.paymentStatus?.toLowerCase();
-                    const reservationStatus = reservation.reservationStatus?.toLowerCase();
-                    
-                    // 환불 관련 상태들을 모두 확인
-                    const isRefunded = paymentStatus?.includes('환불') || 
-                                      paymentStatus?.includes('refund') ||
-                                      reservationStatus?.includes('환불') || 
-                                      reservationStatus?.includes('refund') ||
-                                      reservationStatus?.includes('취소') ||
-                                      reservationStatus?.includes('cancel');
-                    
-                    console.log('Reservation filter check:', {
-                        reservationId: reservation.reservationId,
-                        paymentStatus: reservation.paymentStatus,
-                        reservationStatus: reservation.reservationStatus,
-                        isRefunded: isRefunded
-                    });
-                    
-                    return !isRefunded;
-                });
-
-                // 각 예약에 대해 카테고리 정보 추가 (캐시 활용)
-                const reservationsWithCategories = await Promise.all(
-                    activeReservations.map(async (reservation) => {
-                        // 캐시된 카테고리 정보가 있으면 사용
-                        if (eventCategoryCache.current.has(reservation.eventId)) {
-                            const cached = eventCategoryCache.current.get(reservation.eventId)!;
-                            return { ...reservation, ...cached };
-                        }
-
-                        try {
-                            const eventDetail = await eventAPI.getEventDetail(reservation.eventId);
-                            const categoryInfo = {
-                                mainCategory: eventDetail.mainCategory,
-                                subCategory: eventDetail.subCategory
-                            };
-
-                            // 캐시에 저장
-                            eventCategoryCache.current.set(reservation.eventId, categoryInfo);
-
-                            return { ...reservation, ...categoryInfo };
-                        } catch (error) {
-                            console.error(`이벤트 ${reservation.eventId} 카테고리 로드 실패:`, error);
-                            return reservation;
-                        }
-                    })
-                );
-
-                const sortedReservations = [...reservationsWithCategories].sort((a, b) =>
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
-                setReservations(sortedReservations);
+                const page = await reservationService.getMyReservationsPage(currentPage - 1, itemsPerPage, true);
+                setReservations(page.content);
+                setTotalPages(page.totalPages);
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 // QR 티켓 사용 가능 여부: 관람일자 1일 전부터 행사 날까지 버튼 활성화
-                const canUseList = sortedReservations.map((reservation: ReservationResponseDto) => {
+                const canUseList = page.content.map((reservation: ReservationResponseDto) => {
                     if (!reservation.scheduleDate || !reservation.startTime) return false;
                     const eventDate = new Date(reservation.scheduleDate); // 행사일
                     eventDate.setHours(0, 0, 0, 0);
@@ -177,8 +121,8 @@ export default function MyTickets(): JSX.Element {
                 setLoading(false);
             }
         };
-        loadMyReservationsWithCategories();
-    }, [t]);
+        loadMyReservations();
+    }, [currentPage, t]);
 
     //======= QR 티켓 창 열기 ======= //    
     const handleQrTicketOpen = async (reservation: ReservationResponseDto) => {
@@ -526,7 +470,6 @@ export default function MyTickets(): JSX.Element {
                         <>
                             <div className="space-y-[47px] w-full md:w-[921px]">
                                 {reservations
-                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                     .map((reservation, index) => {
                                 console.log('reservation:', reservation);
 
@@ -708,7 +651,7 @@ export default function MyTickets(): JSX.Element {
                             </div>
 
                             {/* 페이지네이션 */}
-                            {reservations.length > itemsPerPage && (
+                            {totalPages > 1 && (
                                 <div className="flex justify-center items-center space-x-2 mt-8">
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -718,7 +661,7 @@ export default function MyTickets(): JSX.Element {
                                         이전
                                     </button>
 
-                                    {Array.from({ length: Math.ceil(reservations.length / itemsPerPage) }, (_, i) => (
+                                    {Array.from({ length: totalPages }, (_, i) => (
                                         <button
                                             key={i + 1}
                                             onClick={() => setCurrentPage(i + 1)}
@@ -732,8 +675,8 @@ export default function MyTickets(): JSX.Element {
                                     ))}
 
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(reservations.length / itemsPerPage)))}
-                                        disabled={currentPage === Math.ceil(reservations.length / itemsPerPage)}
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
                                         className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         다음
@@ -1038,4 +981,4 @@ export default function MyTickets(): JSX.Element {
 
         </div>
     );
-} 
+}
