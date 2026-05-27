@@ -1,4 +1,5 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useState} from 'react';
+import axios from 'axios';
 import api from '../../api/axios'; // HTTP-only 쿠키 기반 인증
 import {TopNav} from '../../components/TopNav';
 import {AdminSideNav} from '../../components/AdminSideNav';
@@ -62,9 +63,6 @@ const AdvertisementApplicationList: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-
-//백엔드 베이스 URL
-    const BASE_URL = useMemo(() => import.meta.env.VITE_API_BASE_URL ?? 'https://fair-play.ink', []);
     // HTTP-only 쿠키 기반 인증 - withCredentials로 자동 전송됨
 
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -143,7 +141,7 @@ const AdvertisementApplicationList: React.FC = () => {
             const mapped = content.map(mapBackendItem);
             setApplications(mapped);
         } catch (e: unknown) {
-            if (api.isAxiosError<{ message?: string }>(e)) {
+            if (axios.isAxiosError<{ message?: string }>(e)) {
                 const apiMsg = e.response?.data?.message ?? e.message;
                 setError(apiMsg || '목록 조회 실패');
             } else {
@@ -230,14 +228,6 @@ const AdvertisementApplicationList: React.FC = () => {
                 return 600000;
         }
     };
-
-
-    // 메인 배너 총액 계산 (선택 매핑)
-    const calculateMainBannerTotalFromSelections = (selections: { date: string; rank: string }[]) => {
-        return selections.reduce((total, sel) => total + getMainBannerPrice(sel.rank), 0);
-    };
-
-
     // 승인/반려 → 백엔드 호출
     const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
         // 상태에 따른 확인창 표시
@@ -294,7 +284,7 @@ const AdvertisementApplicationList: React.FC = () => {
         } catch (err: unknown) {
             console.error('API 호출 에러:', err);
 
-            if (api.isAxiosError<{ message?: string }>(err)) {
+            if (axios.isAxiosError<{ message?: string }>(err)) {
                 const code = err.response?.status;
                 const msg =
                     err.response?.data?.message ??
