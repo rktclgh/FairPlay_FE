@@ -120,11 +120,18 @@ class PresenceManager {
 
             console.log('🔴 연결 해제 신호 전송 완료 (HTTP-only 쿠키)');
         } catch (error) {
-            if (error instanceof DOMException && error.name === 'AbortError') {
+            if (this.isExpectedUnloadAbort(error)) {
                 return;
             }
             console.error('❌ 연결 해제 신호 전송 실패:', error);
         }
+    }
+
+    private isExpectedUnloadAbort(error: unknown) {
+        if (!error) return false;
+        if (error instanceof DOMException && error.name === 'AbortError') return true;
+        const message = error instanceof Error ? error.message : String(error);
+        return /abort|failed to fetch|networkerror/i.test(message);
     }
 
     /**

@@ -21,6 +21,7 @@ export function useNotificationSse() {
   const { isAuthenticated, loading } = useAuth();
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closingRef = useRef(false);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000;
@@ -91,6 +92,7 @@ export function useNotificationSse() {
     }
 
     console.log("✅ SSE 연결 시작...");
+    closingRef.current = false;
 
     // SSE 엔드포인트 URL (HTTP-only 쿠키 자동 전송)
     const sseUrl = `${import.meta.env.VITE_BACKEND_BASE_URL}/api/notifications/stream`;
@@ -164,7 +166,11 @@ export function useNotificationSse() {
 
     // 에러 처리 및 자동 재연결
     eventSource.onerror = (error) => {
-      console.error("❌ SSE 연결 에러:", error);
+      if (closingRef.current || eventSource.readyState === EventSource.CLOSED) {
+        console.debug("SSE 연결 종료 감지");
+      } else {
+        console.error("❌ SSE 연결 에러:", error);
+      }
       setIsConnected(false);
 
       // EventSource는 자동으로 재연결 시도하지만,
@@ -196,6 +202,7 @@ export function useNotificationSse() {
 
     if (eventSourceRef.current) {
       console.log("🔌 SSE 연결 종료");
+      closingRef.current = true;
       eventSourceRef.current.close();
       eventSourceRef.current = null;
       setIsConnected(false);
