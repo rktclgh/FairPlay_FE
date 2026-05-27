@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getBooths } from '../../api/boothApi';
 import { BoothSummary } from '../../types/booth';
 import { useScrollToTop } from '../../hooks/useScrollToTop';
+import { getCdnImageUrl } from '../../lib/utils';
 
 const BoothList: React.FC = () => {
     useScrollToTop();
@@ -15,9 +16,7 @@ const BoothList: React.FC = () => {
         if (eventId) {
             getBooths(parseInt(eventId))
                 .then(data => {
-                    // Assuming the summary response DTO matches BoothSummary
-                    // You might need to adjust the type or mapping
-                    setBooths(data as any);
+                    setBooths(data);
                     setLoading(false);
                 })
                 .catch(err => {
@@ -38,7 +37,7 @@ const BoothList: React.FC = () => {
                 {booths.map(booth => (
                     <div key={booth.boothId} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem', textDecoration: 'none', color: 'inherit' }}>
                         <Link to={`/events/${eventId}/booths/${booth.boothId}`}>
-                            <img src={booth.boothBannerUrl || '/placeholder.png'} alt={booth.boothTitle} style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <img src={booth.boothBannerUrl ? getCdnImageUrl(booth.boothBannerUrl) : '/images/NoImage.png'} alt={booth.boothTitle} style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '4px' }} />
                             <h2 style={{ marginTop: '1rem', fontSize: '1.25rem' }}>{booth.boothTitle}</h2>
                             <p style={{ color: '#666' }}>{booth.location}</p>
                         </Link>
