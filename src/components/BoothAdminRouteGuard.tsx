@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hasBoothManagerPermission } from '../utils/permissions';
 import { getRoleCode } from '../utils/role';
+import { useAuth } from '../context/AuthContext';
 
 interface BoothAdminRouteGuardProps {
     children: React.ReactNode;
@@ -10,8 +11,16 @@ interface BoothAdminRouteGuardProps {
 export const BoothAdminRouteGuard: React.FC<BoothAdminRouteGuardProps> = ({ children }) => {
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
     const navigate = useNavigate();
+    const { isAuthenticated, loading } = useAuth();
 
     useEffect(() => {
+        if (loading) return;
+
+        if (!isAuthenticated) {
+            navigate('/login');
+            return;
+        }
+
         const checkPermission = async () => {
             const roleCode = await getRoleCode();
 
@@ -28,7 +37,7 @@ export const BoothAdminRouteGuard: React.FC<BoothAdminRouteGuardProps> = ({ chil
         };
 
         checkPermission();
-    }, [navigate]);
+    }, [isAuthenticated, loading, navigate]);
 
     // 권한 확인 중이거나 권한이 없는 경우 로딩 표시
     if (isAuthorized === null) {
