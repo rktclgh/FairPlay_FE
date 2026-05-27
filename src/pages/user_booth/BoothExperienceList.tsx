@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Clock, Users, MapPin, Calendar } from 'lucide-react';
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import {
@@ -8,7 +8,6 @@ import {
   formatTime
 } from '../../services/boothExperienceService';
 import { BoothExperience, BoothExperienceFilters } from '../../services/types/boothExperienceType';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AttendeeSideNav } from "../../pages/user_mypage/AttendeeSideNav";
 import { TopNav } from "../../components/TopNav";
@@ -16,11 +15,12 @@ import BoothExperienceReservationModal from '../../components/booth/BoothExperie
 import reservationService from '../../services/reservationService';
 import { useTranslation } from 'react-i18next';
 import { useScrollToTop } from '../../hooks/useScrollToTop';
+import { useAuth } from '../../context/AuthContext';
 
 const BoothExperienceList: React.FC = () => {
   useScrollToTop();
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [experiences, setExperiences] = useState<BoothExperience[]>([]);
   const [filteredExperiences, setFilteredExperiences] = useState<BoothExperience[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,8 +51,17 @@ const BoothExperienceList: React.FC = () => {
 
   // 사용자 참가 신청 행사 목록 로딩
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
+      setUserRegisteredEvents([]);
+      setAvailableEvents([]);
+      setUserEventsLoaded(true);
+      return;
+    }
+
     loadUserRegisteredEvents();
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   // 데이터 로딩 - 사용자 행사 로딩이 완료된 후에 체험을 로딩
   useEffect(() => {
@@ -346,7 +355,7 @@ const BoothExperienceList: React.FC = () => {
                             if (input.showPicker) {
                               try {
                                 input.showPicker();
-                              } catch (error) {
+                              } catch {
                                 console.log('showPicker failed, falling back to focus');
                                 input.focus();
                               }
@@ -384,7 +393,7 @@ const BoothExperienceList: React.FC = () => {
                             if (input.showPicker) {
                               try {
                                 input.showPicker();
-                              } catch (error) {
+                              } catch {
                                 console.log('showPicker failed, falling back to focus');
                                 input.focus();
                               }
@@ -411,7 +420,7 @@ const BoothExperienceList: React.FC = () => {
                         boxShadow: 'none'
                       }}
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
+                      onChange={(e) => setSortBy(e.target.value as 'congestionRate' | 'startTime' | 'createdAt')}
                     >
                       <option value="startTime" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>{t('boothExperience.sortByTime')}</option>
                       <option value="congestionRate" style={{ backgroundColor: 'white', color: '#374151', padding: '8px 12px' }}>{t('boothExperience.sortByCongestion')}</option>
