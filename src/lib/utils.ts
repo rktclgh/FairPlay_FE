@@ -9,9 +9,29 @@ export const getCdnImageUrl = (imagePath: string): string => {
   
   // EC2 Static 서빙 URL
   const staticBaseUrl = import.meta.env.VITE_CDN_BASE_URL || 'https://fair-play.ink/uploads';
+  const normalizedStaticBaseUrl = staticBaseUrl.replace(/\/+$/, '');
+
+  const appendUploadKey = (path: string): string => {
+    const cleanPath = path.replace(/^\/+/, '');
+    if (cleanPath.startsWith('uploads/')) {
+      const uploadKey = normalizedStaticBaseUrl.endsWith('/uploads')
+        ? cleanPath.slice('uploads/'.length)
+        : cleanPath;
+      return `${normalizedStaticBaseUrl}/${uploadKey}`;
+    }
+    return `${normalizedStaticBaseUrl}/${cleanPath}`;
+  };
   
   // 이미 완전한 URL인 경우 그대로 반환
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    try {
+      const url = new URL(imagePath);
+      if (url.hostname === 'd3lmalqtze27ii.cloudfront.net') {
+        return appendUploadKey(url.pathname);
+      }
+    } catch {
+      return imagePath;
+    }
     return imagePath;
   }
   
@@ -27,12 +47,12 @@ export const getCdnImageUrl = (imagePath: string): string => {
   
   // uploads/ 경로인 경우 Static URL 생성
   if (imagePath.startsWith('uploads/')) {
-    return `${staticBaseUrl}/${imagePath}`;
+    return appendUploadKey(imagePath);
   }
   
   // Static URL 생성
   const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `${staticBaseUrl}${cleanPath}`;
+  return `${normalizedStaticBaseUrl}${cleanPath}`;
 };
 
 /**

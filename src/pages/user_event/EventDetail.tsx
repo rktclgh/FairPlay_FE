@@ -12,6 +12,7 @@ import {eventAPI} from "../../services/event";
 import type {EventDetailResponseDto} from "../../services/types/eventType";
 import {getEventStatusText, getEventStatusStyle} from "../../utils/eventStatus";
 import api from "../../api/axios";
+import {getCdnImageUrl} from "../../lib/utils";
 import {openChatRoomGlobal} from "../../components/chat/ChatFloatingModal";
 import type {
     PageableRequest,
@@ -463,9 +464,10 @@ const EventDetail = (): JSX.Element => {
         return dateSchedules.some(schedule => schedule.hasActiveTickets);
     };
 
-    const getImageSrc = (src?: string | null) => (
-        src && !failedImageUrls.has(src) ? src : EVENT_IMAGE_FALLBACK_SRC
-    );
+    const getImageSrc = (src?: string | null) => {
+        if (!src || failedImageUrls.has(src)) return EVENT_IMAGE_FALLBACK_SRC;
+        return getCdnImageUrl(src);
+    };
 
     const handleImageError = (
         event: React.SyntheticEvent<HTMLImageElement>,

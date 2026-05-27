@@ -4,6 +4,7 @@ import {BoothDetailResponse, BoothSummary, BoothType} from "../../types/booth";
 import { eventAPI } from "../../services/event";
 import type { EventDetailResponseDto } from "../../services/types/eventType";
 import { useFileUpload } from "../../hooks/useFileUpload";
+import { getCdnImageUrl } from "../../lib/utils";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -264,9 +265,10 @@ export const ParticipatingBooths: React.FC<ParticipatingBoothsProps> = ({ eventI
         return matchesSearch;
     });
 
-    const getImageSrc = (src?: string | null) => (
-        src && !failedImageUrls.has(src) ? src : BOOTH_IMAGE_FALLBACK_SRC
-    );
+    const getImageSrc = (src?: string | null) => {
+        if (!src || failedImageUrls.has(src)) return BOOTH_IMAGE_FALLBACK_SRC;
+        return getCdnImageUrl(src);
+    };
 
     const handleImageError = (
         event: React.SyntheticEvent<HTMLImageElement>,
