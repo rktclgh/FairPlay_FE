@@ -401,14 +401,6 @@ export default function ChatRoom({ roomId, eventTitle, userName, otherUserId, is
                 })}
                 <div ref={bottomRef} />
                 
-                {/* 더 이상 메시지가 없을 때 표시 */}
-                {!hasMoreMessages && messages.length > 20 && (
-                    <div className="flex justify-center py-2 mb-2">
-                        <div className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
-                            🎉 첫 메시지입니다
-                        </div>
-                    </div>
-                )}
             </div>
             <div className="flex items-center gap-2 p-3 border-t bg-white flex-none">
                 <input
