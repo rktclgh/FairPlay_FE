@@ -59,6 +59,67 @@ export interface ReservationResponseDto {
 }
 
 class ReservationService {
+  private isActiveReservation(reservation: ReservationResponseDto): boolean {
+    if (reservation.canceled) {
+      return false;
+    }
+
+    const statuses = [reservation.reservationStatus, reservation.paymentStatus]
+      .filter((status): status is string => Boolean(status))
+      .map((status) => status.toLowerCase());
+
+    return !statuses.some(
+      (status) =>
+        status.includes("cancel") ||
+        status.includes("refund") ||
+        status.includes("취소") ||
+        status.includes("환불")
+    );
+  }
+
+  private normalizeMyReservationsPage(
+    data: unknown,
+    page: number,
+    size: number,
+    activeOnly: boolean
+  ): PageResponse<ReservationResponseDto> {
+    const normalizedPage = Math.max(page, 0);
+    const normalizedSize = Math.max(size, 1);
+
+    // 구버전 백엔드는 전체 예약 배열을 반환한다. 새 Page 계약과 함께
+    // 배포되는 동안에도 화면이 응답 형태에 따라 깨지지 않도록 페이지로 변환한다.
+    if (Array.isArray(data)) {
+      const reservations = (data as ReservationResponseDto[]).filter(
+        (reservation) => !activeOnly || this.isActiveReservation(reservation)
+      );
+      const totalPages = Math.ceil(reservations.length / normalizedSize);
+      const start = normalizedPage * normalizedSize;
+      const content = reservations.slice(start, start + normalizedSize);
+
+      return {
+        content,
+        totalElements: reservations.length,
+        totalPages,
+        size: normalizedSize,
+        number: normalizedPage,
+        numberOfElements: content.length,
+        first: normalizedPage === 0,
+        last: totalPages === 0 || normalizedPage >= totalPages - 1,
+        empty: content.length === 0,
+      };
+    }
+
+    if (
+      data === null ||
+      typeof data !== "object" ||
+      !Array.isArray((data as { content?: unknown }).content)
+    ) {
+      throw new Error("예약 목록 응답 형식이 올바르지 않습니다.");
+    }
+
+    return data as PageResponse<ReservationResponseDto>;
+  }
+
   /**
    * 행사별 예약자 목록 조회 (페이지네이션 + 필터링)
    * 백엔드: GET /api/events/{eventId}/reservations/attendees
@@ -256,7 +317,8 @@ class ReservationService {
         throw new Error(`예약 목록 조회 실패: ${response.status}`);
       }
 
-      return await response.json();
+      const data: unknown = await response.json();
+      return this.normalizeMyReservationsPage(data, page, size, activeOnly);
     } catch (error) {
       console.error("예약 목록 조회 중 오류:", error);
       throw error;
